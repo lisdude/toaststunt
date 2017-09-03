@@ -52,12 +52,12 @@
 
 #include "version_src.h"
 #ifndef VERSION_MAJOR
-#  define VERSION_MAJOR 1
-#  define VERSION_MINOR 8
-#  define VERSION_RELEASE 3
+#  define VERSION_MAJOR 2
+#  define VERSION_MINOR 1
+#  define VERSION_RELEASE 1
 #endif
 #ifndef VERSION_EXT
-#  define VERSION_EXT "+toastsoft_2"
+#  define VERSION_EXT "_toastsoft"
 #endif
 #ifndef VERSION_STRING
 #  define _V(MAJ,MIN,REL) #MAJ "." #MIN "." #REL
