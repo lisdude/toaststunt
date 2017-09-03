@@ -57,7 +57,7 @@
 #  define VERSION_RELEASE 3
 #endif
 #ifndef VERSION_EXT
-#  define VERSION_EXT "+?_ad_hoc_??"
+#  define VERSION_EXT "+toastsoft_2"
 #endif
 #ifndef VERSION_STRING
 #  define _V(MAJ,MIN,REL) #MAJ "." #MIN "." #REL
