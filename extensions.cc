@@ -26,10 +26,6 @@
 #include <mach/clock.h>
 #endif
 
-
-// Forward declarations
-extern Var string_to_moo_type(char *, bool, bool);  // from extension-sqlite.c
-
 /* Returns a float of the time (including milliseconds)
    Optional arguments specify monotonic time; 1: Monotonic. 2. Monotonic raw.
    (seconds since an arbitrary period of time. More useful for timing
