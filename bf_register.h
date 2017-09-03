@@ -36,3 +36,4 @@ extern void register_fileio(void);
 extern void register_system(void);
 extern void register_exec(void);
 extern void register_crypto(void);
+extern void register_sqlite(void);

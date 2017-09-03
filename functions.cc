@@ -66,7 +66,8 @@ static registry bi_function_registries[] =
     register_fileio,
     register_system,
     register_exec,
-    register_crypto
+    register_crypto,
+    register_sqlite
 };
 
 void
