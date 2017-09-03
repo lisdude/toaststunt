@@ -46,12 +46,7 @@ bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
     if (arglist.v.list[0].v.num == 0)
         clock_type = CLOCK_REALTIME;
     else
-#if defined(__WIN32) || defined(__CYGWIN__)
-        // CYGWIN doesn't give us MONOTONIC_RAW
-        clock_type = CLOCK_MONOTONIC;
-#else
-    clock_type = arglist.v.list[1].v.num == 2 ? CLOCK_MONOTONIC_RAW : CLOCK_MONOTONIC;
-#endif
+        clock_type = arglist.v.list[1].v.num == 2 ? CLOCK_MONOTONIC_RAW : CLOCK_MONOTONIC;
 #endif
 
     struct timespec ts;
