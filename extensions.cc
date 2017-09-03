@@ -1,25 +1,14 @@
-#include <sys/time.h>
-#include <time.h>
-#include <math.h>
-#include <string.h>
-#include <stdbool.h>
-
-#include "bf_register.h"
-#include "functions.h"
-#include "db_tune.h"
-#include "my-unistd.h"
-#include "log.h"
-#include "net_multi.h"
-#include "storage.h"
-#include "tasks.h"
-#include "utils.h"
-#include "numbers.h"
-#include "list.h"
-#include "my-stdlib.h"
-#include "random.h"
-#include "name_lookup.h"
-#include "db.h"
-#include "server.h"
+#include <math.h>           // sqrt, atan, round, etc
+#include "functions.h"      // register builtins
+#include "log.h"            // oklog()
+#include "utils.h"          // streams
+#include "numbers.h"        // new_float()
+#include "list.h"           // listappend and friends
+#include "my-stdlib.h"      // rand()
+#include "random.h"         // random() (nowai)
+#include "server.h"         // panic()
+#include <sys/time.h>       // getrusage
+#include <sys/resource.h>   // getrusage
 
 // Millisecond time for OS X
 #ifdef __MACH__
