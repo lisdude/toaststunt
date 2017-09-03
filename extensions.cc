@@ -9,10 +9,8 @@
 #include "server.h"         // panic()
 #include <sys/time.h>       // getrusage
 #include <sys/resource.h>   // getrusage
-
-// Millisecond time for OS X
 #ifdef __MACH__
-#include <mach/clock.h>
+#include <mach/clock.h>     // Millisecond time for OS X
 #endif
 
 /* Returns a float of the time (including milliseconds)
@@ -56,10 +54,10 @@ bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 
+/* Locates objects in the database by name. Wizard only because of the potential to lock up the whole MOO. */
     static package
 bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    // Locates objects in the database by name. Wizard only because of the potential to lock up the whole MOO.
 
     if(!is_wizard(progr))
     {
@@ -95,6 +93,7 @@ bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ret);
 }
 
+/* Calculates the distance between two n-dimensional sets of coordinates. */
     static package
 bf_distance(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -123,6 +122,7 @@ bf_distance(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(s);
 }
 
+/* Calculates the bearing between two sets of three dimensional floating point coordinates. */
     static package
 bf_relative_heading(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -156,6 +156,7 @@ bf_relative_heading(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(s);
 }
 
+/* Returns total memory usage, resident set size, shared pages, text/code, and data + stack. */
     static package
 bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -188,6 +189,7 @@ bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(s);
 }
 
+/* Unceremoniously exit the server, creating a panic dump of the database. */
     static package
 bf_panic(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -210,6 +212,7 @@ bf_panic(Var arglist, Byte next, void *vdata, Objid progr)
     return make_error_pack(E_NONE);
 }
 
+/* Return a random floating point value between 0.0..args[1] or args[1]..args[2] */
     static package
 bf_frandom(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -225,6 +228,7 @@ bf_frandom(Var arglist, Byte next, void *vdata, Objid progr)
 
 }
 
+/* Round numbers to the nearest integer value to args[1] */
     static package
 bf_round(Var arglist, Byte next, void *vdata, Objid progr)
 {
