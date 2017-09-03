@@ -37,7 +37,7 @@
 sosemanuk_key_context key_context;
 sosemanuk_run_context run_context;
 
-static int
+int
 parse_number(const char *str, int *result, int try_floating_point)
 {
     char *p;
@@ -72,7 +72,7 @@ parse_object(const char *str, Objid * result)
 	return 0;
 }
 
-static int
+int
 parse_float(const char *str, double *result)
 {
     char *p;
