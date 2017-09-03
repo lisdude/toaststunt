@@ -70,8 +70,8 @@ struct file_handle {
   char *name;                /* pathname of the file     */
   file_type type;            /* text or binary, sir?     */
   file_mode mode;            /* readin', writin' or both */
- 
-  FILE  *file;               /* the actual file handle   */  
+
+  FILE  *file;               /* the actual file handle   */
 };
 
 typedef struct line_buffer line_buffer;
@@ -86,7 +86,7 @@ struct line_buffer {
  ***************************************************************/
 
 char file_package_name[]    = "FIO";
-char file_package_version[] = "1.5p4";
+char file_package_version[] = "1.5p7";
 
 
 /***************************************************************
@@ -119,12 +119,12 @@ const char *file_handle_name(Var fhandle) {
 file_type file_handle_type(Var fhandle) {
   int32 i = fhandle.v.num;
   return file_table[i].type;
-}  
+}
 
 file_mode file_handle_mode(Var fhandle) {
   int32 i = fhandle.v.num;
   return file_table[i].mode;
-}  
+}
 
 
 void file_handle_destroy(Var fhandle) {
@@ -163,7 +163,7 @@ int32 file_allocate_next_handle(void) {
 Var file_handle_new(const char *name, file_type type, file_mode mode) {
   Var r;
   int32 handle = file_allocate_next_handle();
-  
+
   r.type = TYPE_INT;
   r.v.num = handle;
 
@@ -187,10 +187,10 @@ void file_handle_set_file(Var fhandle, FILE *f) {
  ***************************************************************/
 
 /*
- *  Convert modestring to settings for type and mode.  
+ *  Convert modestring to settings for type and mode.
  *  Returns pointer to stdio modestring if successfull and
  *  NULL if not.
- */ 
+ */
 
 const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode) {
   static char buffer[4] = {0, 0, 0, 0};
@@ -207,19 +207,19 @@ const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode
 	 file_type_text->out_filter = clean_to_raw_bytes;
   }
 
-  
+
   if(strlen(s) != 4)
 	 return 0;
-  
+
   if(s[0] == 'r')           m |= FILE_O_READ;
   else if(s[0] == 'w')      m |= FILE_O_WRITE;
   else if(s[0] == 'a')      m |= FILE_O_WRITE;
-  else 
+  else
 	 return NULL;
-  
-  
+
+
   buffer[p++] = s[0];
-  
+
   if(s[1] == '+') {
 	 m |= (s[0] == 'r') ? FILE_O_WRITE : FILE_O_READ;
 	 buffer[p++] = '+';
@@ -242,13 +242,13 @@ const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode
   buffer[p] = 0;
   return buffer;
 }
-  
+
 
 /***************************************************************
  * Various error handlers
  ***************************************************************/
 
-package 
+package
 file_make_error(const char *errtype, const char *msg) {
   package p;
   Var value;
@@ -267,7 +267,7 @@ file_make_error(const char *errtype, const char *msg) {
 
 package file_raise_errno(const char *value_str) {
   char *strerr;
-  
+
   if(errno) {
 	 strerr = strerror(errno);
 	 return file_make_error(value_str, strerr);
@@ -282,7 +282,7 @@ package file_raise_notokcall(const char *funcid, Objid progr) {
 }
 
 package file_raise_notokfilename(const char *funcid, const char *pathname) {
-  Var p;   
+  Var p;
 
   p.type = TYPE_STR;
   p.v.str = str_dup(pathname);
@@ -311,7 +311,7 @@ int file_verify_path(const char *pathname) {
 
   if(strindex(pathname, strlen(pathname), "/.", 2, 0))
 		return 0;
-  
+
   return 1;
 }
 
@@ -339,21 +339,21 @@ const char *file_handle_name_safe(Var handle) {
 
 const char *file_resolve_path(const char *pathname) {
   static Stream *s = 0;
-  
+
   if(!s)
 	 s = new_stream(strlen(pathname) + strlen(FILE_SUBDIR) + 1);
-  
+
   if(!file_verify_path(pathname))
 	 return NULL;
-  
+
   stream_add_string(s, FILE_SUBDIR);
   if(pathname[0] == '/')
 	 stream_add_string(s, pathname + 1);
   else
 	 stream_add_string(s, pathname);
-  
+
   return reset_stream(s);
-  
+
 }
 
 /***************************************************************
@@ -363,19 +363,19 @@ const char *file_resolve_path(const char *pathname) {
 
 static package
 bf_file_version(Var arglist, Byte next, void *vdata, Objid progr)
-{ 
+{
   char tmpbuffer[50];
   Var rv;
-  
+
   sprintf(tmpbuffer, "%s/%s", file_package_name, file_package_version);
-  
+
   rv.type = TYPE_STR;
   rv.v.str = str_dup(tmpbuffer);
 
   return make_var_pack(rv);
 
 }
-  
+
 
 /***************************************************************
  * File open and close.
@@ -388,7 +388,7 @@ bf_file_version(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_file_open(Var arglist, Byte next, void *vdata, Objid progr)
-{ 
+{
   package r;
   Var fhandle;
   const char *real_filename;
@@ -414,7 +414,7 @@ bf_file_open(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = file_raise_errno("file_open");
   } else {
 	 /* phew, we actually got a successfull open */
-	 file_handle_set_file(fhandle, f);		  
+	 file_handle_set_file(fhandle, f);
 	 r = make_var_pack(fhandle);
   }
   free_var(arglist);
@@ -457,7 +457,7 @@ bf_file_name(Var arglist, Byte next, void *vdata, Objid progr)
   package r;
   Var fhandle = arglist.v.list[1];
   const char *name;
-  Var rv;   
+  Var rv;
 
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_name", progr);
@@ -480,7 +480,7 @@ bf_file_openmode(Var arglist, Byte next, void *vdata, Objid progr)
   char buffer[5] = {0, 0, 0, 0, 0};
   file_mode mode;
   file_type type;
-  Var rv;   
+  Var rv;
 
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_name", progr);
@@ -503,12 +503,12 @@ bf_file_openmode(Var arglist, Byte next, void *vdata, Objid progr)
 		buffer[2] = 'b';
 	 else
 		buffer[2] = 't';
-	 
+
 	 if(mode & FILE_O_FLUSH)
 		buffer[3] = 'f';
 	 else
 		buffer[3] = 'n';
-	 
+
 
 	 rv.type = TYPE_STR;
 	 rv.v.str = str_dup(buffer);
@@ -521,23 +521,24 @@ bf_file_openmode(Var arglist, Byte next, void *vdata, Objid progr)
 
 
 /**********************************************************
- * string (line-based) i/o                                
+ * string (line-based) i/o
  **********************************************************/
 
-/* 
- * common functionality of file_readline and file_readlines 
+/*
+ * common functionality of file_readline and file_readlines
  */
 
+/* DEPRECATED. file_get_line is approximately 2x faster */
 static const char *file_read_line(Var fhandle, int *count) {
   static Stream *str = 0;
   FILE *f;
   int c;
 
   f = file_handle_file(fhandle);
-  
+
   if(str == 0)
 	 str = new_stream(FILE_IO_BUFFER_LENGTH);
-  
+
   while((c = fgetc(f)) != EOF && c != '\n')
 	 stream_add_char(str, c);
 
@@ -550,7 +551,24 @@ static const char *file_read_line(Var fhandle, int *count) {
   *count = stream_length(str);
   return reset_stream(str);
 }
-  
+
+static const char *file_get_line(Var fhandle, int *count)
+{
+  FILE *fp = file_handle_file(fhandle);
+
+  ssize_t read = getline(&line_read, &line_size, fp);
+
+  if (read == -1)
+  {
+    *count = 0;
+    return NULL;
+  }
+
+  *count = read;
+
+  return line_read;
+}
+
 
 /*
  * STR file_readline(FHANDLE handle)
@@ -577,16 +595,16 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
-	 if((line = file_read_line(fhandle, &len)) == NULL)
+	 if((line = file_get_line(fhandle, &len)) == NULL)
 		r = file_raise_errno("readline");
-	 else {		
+	 else {
 		rv.type = TYPE_STR;
 		rv.v.str = str_dup((type->in_filter)(line, len));
 		r = make_var_pack(rv);
 	 }
   }
   free_var(arglist);
-  return r;			 
+  return r;
 }
 
 /*
@@ -605,10 +623,10 @@ void free_line_buffer(line_buffer *head, int strings_too) {
 		  free_str(head->line);
 		myfree(head, M_STRUCT);
 		head = next;
-	 }   
+	 }
   }
 }
-    
+
 line_buffer *new_line_buffer(char *line) {
   line_buffer *p = (line_buffer *)mymalloc(sizeof(line_buffer), M_STRUCT);
   p->line = line;
@@ -649,29 +667,29 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 
 	 /* "seek" to that line */
 	 begin--;
-	 while((current_line != begin) 
-			 && ((line = file_read_line(fhandle, &len)) != NULL)) 
-		current_line++;	
-	 
+	 while((current_line != begin)
+			 && ((line = file_get_line(fhandle, &len)) != NULL))
+		current_line++;
+
 	 if(((begin != 0) && (line == NULL)) || ((begin_loc = ftell(f)) == -1))
 		r = file_raise_errno("read_line");
 	 else {
 		type = file_handle_type(fhandle);
 
-		/* 
-		 * now that we have where to begin, it's time to slurp lines 
+		/*
+		 * now that we have where to begin, it's time to slurp lines
 		 * and seek to EOF or to the end_line, whichever comes first
 		 */
-		
+
 		linebuf_head = linebuf_cur = new_line_buffer(NULL);
-		
-		while((current_line != end) 
-				&& ((line = file_read_line(fhandle, &len)) != NULL)) {
+
+		while((current_line != end)
+				&& ((line = file_get_line(fhandle, &len)) != NULL)) {
 		  linebuf_cur->next = new_line_buffer(str_dup((type->in_filter)(line, len)));
 		  linebuf_cur = linebuf_cur->next;
-		  
+
 		  current_line++;
-		  }	
+		  }
 		linecount =  current_line - begin;
 
 		linebuf_cur = linebuf_head->next;
@@ -680,7 +698,7 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 		  free_line_buffer(linebuf_head, 1);
 		  r = file_raise_errno("seeking");
 		} else {
-		  rv = new_list(linecount);		  
+		  rv = new_list(linecount);
 		  i = 1;
 		  while(linebuf_cur != NULL) {
 			 rv.v.list[i].type = TYPE_STR;
@@ -695,7 +713,7 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
   }
 
   free_var(arglist);
-  return r;			 
+  return r;
 }
 
 /*
@@ -706,7 +724,7 @@ static package
 bf_file_writeline(Var arglist, Byte next, void *vdata, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1];  
+  Var fhandle = arglist.v.list[1];
   const char *buffer = arglist.v.list[2].v.str;
   const char *rawbuffer;
   file_mode mode;
@@ -736,7 +754,7 @@ bf_file_writeline(Var arglist, Byte next, void *vdata, Objid progr)
 	 }
   }
   free_var(arglist);
-  return r;			 
+  return r;
 }
 
 /********************************************************
@@ -786,12 +804,12 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
   try_again:
 	 read = fread(buffer, sizeof(char), read_length, f);
 	 if(!read && !len) {
-		/* 
+		/*
 		 * No more to read.  This is only an error if nothing
 		 * has been read so far.
 		 *
 		 */
-		r = file_raise_errno(file_handle_name(fhandle));		
+		r = file_raise_errno(file_handle_name(fhandle));
 	 } else if (read && ((len += read) < record_length)){
 		/*
 		 * We got something this time, but it isn't enough.
@@ -805,17 +823,17 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
 		 * OR
 		 * We got everything we need.
 		 */
-		
+
 		stream_add_string(str, (type->in_filter)(buffer, read));
 
 		rv.type = TYPE_STR;
-		rv.v.str = str_dup(reset_stream(str));					 
+		rv.v.str = str_dup(reset_stream(str));
 
 		r = make_var_pack(rv);
 	 }
   }
   free_var(arglist);
-  return r;			 
+  return r;
 }
 
 /*
@@ -854,7 +872,7 @@ static package
 bf_file_write(Var arglist, Byte next, void *vdata, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1], rv;  
+  Var fhandle = arglist.v.list[1], rv;
   const char *buffer = arglist.v.list[2].v.str;
   const char *rawbuffer;
   file_mode mode;
@@ -886,7 +904,7 @@ bf_file_write(Var arglist, Byte next, void *vdata, Objid progr)
 	 }
   }
   free_var(arglist);
-  return r;			 
+  return r;
 }
 
 
@@ -917,7 +935,7 @@ bf_file_seek(Var arglist, Byte next, void *vdata, Objid progr)
 	 whnce = SEEK_CUR;
   else if (!mystrcasecmp(whence, "SEEK_END"))
 	 whnce = SEEK_END;
-  else 
+  else
 	 whence_ok = 0;
 
   if(!file_verify_caller(progr)) {
@@ -928,7 +946,7 @@ bf_file_seek(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = make_raise_pack(E_INVARG, "Invalid whence", zero);
   } else {
 	 if(fseek(f, seek_to, whnce))
-		r = file_raise_errno(file_handle_name(fhandle));		
+		r = file_raise_errno(file_handle_name(fhandle));
 	 else
 		r = no_var_pack();
   }
@@ -957,7 +975,7 @@ bf_file_tell(Var arglist, Byte next, void *vdata, Objid progr)
   } else {
 	 rv.type = TYPE_INT;
 	 if((rv.v.num = ftell(f)) < 0)
-		r = file_raise_errno(file_handle_name(fhandle));		
+		r = file_raise_errno(file_handle_name(fhandle));
 	 else
 		r = make_var_pack(rv);
   }
@@ -985,7 +1003,7 @@ bf_file_eof(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else {
 	 rv.type = TYPE_INT;
-	 rv.v.num = feof(f);	 
+	 rv.v.num = feof(f);
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -1002,7 +1020,7 @@ bf_file_eof(Var arglist, Byte next, void *vdata, Objid progr)
 
 int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
   int statok = 0;
-  
+
   if(!file_verify_caller(progr)) {
 	 *r = file_raise_notokcall("file_stat", progr);
   } else if (filespec.type == TYPE_STR) {
@@ -1012,7 +1030,7 @@ int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
 	 if((real_filename = file_resolve_path(filename)) == NULL) {
 		*r =  file_raise_notokfilename("file_stat", filename);
 	 } else {
-		if(stat(real_filename, buf) != 0)		  
+		if(stat(real_filename, buf) != 0)
 		  *r = file_raise_errno(filename);
 		else {
 		  statok = 1;
@@ -1055,7 +1073,7 @@ const char *file_mode_string(mode_t st_mode) {
   stream_printf(s, "%03o", st_mode & 0777);
   return reset_stream(s);
 }
- 
+
 /*
  * INT file_size(STR filename)
  * INT file_size(FHANDLE fh)
@@ -1063,7 +1081,7 @@ const char *file_mode_string(mode_t st_mode) {
 
 static package
 bf_file_size(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   Var     rv;
   Var filespec = arglist.v.list[1];
@@ -1085,7 +1103,7 @@ bf_file_size(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_file_mode(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   Var     rv;
   Var filespec = arglist.v.list[1];
@@ -1107,7 +1125,7 @@ bf_file_mode(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_file_type(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   Var     rv;
   Var filespec = arglist.v.list[1];
@@ -1129,7 +1147,7 @@ bf_file_type(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_file_last_access(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   Var     rv;
   Var filespec = arglist.v.list[1];
@@ -1151,7 +1169,7 @@ bf_file_last_access(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_file_last_modify(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   Var     rv;
   Var filespec = arglist.v.list[1];
@@ -1173,7 +1191,7 @@ bf_file_last_modify(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_file_last_change(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   Var     rv;
   Var filespec = arglist.v.list[1];
@@ -1195,7 +1213,7 @@ bf_file_last_change(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_file_stat(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   Var     rv;
   Var filespec = arglist.v.list[1];
@@ -1246,7 +1264,7 @@ int file_list_select(const struct dirent *d) {
 
 static package
 bf_file_list(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   /* modified to use opendir/readdir which is slightly more "standard"
      than the original scandir method.   -- AAB 06/03/97
    */
@@ -1256,7 +1274,7 @@ bf_file_list(Var arglist, Byte next, void *vdata, Objid progr)
   int	detailed = (arglist.v.list[0].v.num > 1
 						? is_true(arglist.v.list[2])
 						: 0);
-  
+
     if(!file_verify_caller(progr)) {
         r = file_raise_notokcall("file_list", progr);
     } else if((real_pathname = file_resolve_path(pathspec)) == NULL) {
@@ -1320,7 +1338,7 @@ bf_file_list(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_file_mkdir(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   const char *pathspec = arglist.v.list[1].v.str;
   const char *real_pathname;
@@ -1330,15 +1348,15 @@ bf_file_mkdir(Var arglist, Byte next, void *vdata, Objid progr)
   } else if((real_pathname = file_resolve_path(pathspec)) == NULL) {
 	 r =  file_raise_notokfilename("file_mkdir", pathspec);
   } else {
-	 if(mkdir(real_pathname, 0777) != 0) 
+	 if(mkdir(real_pathname, 0777) != 0)
 		r = file_raise_errno(pathspec);
-	 else 
+	 else
 		r = no_var_pack();
-	 
+
   }
   free_var(arglist);
   return r;
-}			 
+}
 
 /*
  * void file_rmdir(STR pathname)
@@ -1346,7 +1364,7 @@ bf_file_mkdir(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_file_rmdir(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   const char *pathspec = arglist.v.list[1].v.str;
   const char *real_pathname;
@@ -1358,13 +1376,13 @@ bf_file_rmdir(Var arglist, Byte next, void *vdata, Objid progr)
   } else {
 	 if(rmdir(real_pathname) != 0)
 		r = file_raise_errno(pathspec);
-	 else 
+	 else
 		r = no_var_pack();
-	 
+
   }
   free_var(arglist);
   return r;
-}			 
+}
 
 /*
  * void file_remove(STR pathname)
@@ -1372,7 +1390,7 @@ bf_file_rmdir(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_file_remove(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   const char *pathspec = arglist.v.list[1].v.str;
   const char *real_pathname;
@@ -1384,12 +1402,12 @@ bf_file_remove(Var arglist, Byte next, void *vdata, Objid progr)
   } else {
 	 if(remove(real_pathname) != 0)
 		r = file_raise_errno(pathspec);
-	 else 
-		r = no_var_pack();	 
+	 else
+		r = no_var_pack();
   }
   free_var(arglist);
   return r;
-}			 
+}
 
 /*
  * void file_rename(STR pathname)
@@ -1397,13 +1415,13 @@ bf_file_remove(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_file_rename(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   const char *fromspec = arglist.v.list[1].v.str;
   const char *tospec = arglist.v.list[2].v.str;
   char *real_fromspec = NULL;
   const char *real_tospec;
-  
+
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_rename", progr);
   } else if((real_fromspec = str_dup(file_resolve_path(fromspec))) == NULL) {
@@ -1413,14 +1431,14 @@ bf_file_rename(Var arglist, Byte next, void *vdata, Objid progr)
   } else {
 	 if(rename(real_fromspec, real_tospec) != 0)
 		r = file_raise_errno("rename");
-	 else 
-		r = no_var_pack();	 
+	 else
+		r = no_var_pack();
   }
   if(real_fromspec)
 	 free_str(real_fromspec);
   free_var(arglist);
   return r;
-}			 
+}
 
 
 
@@ -1452,7 +1470,7 @@ int file_chmodstr_to_mode(const char *modespec, mode_t *newmode) {
 
 static package
 bf_file_chmod(Var arglist, Byte next, void *vdata, Objid progr)
-{  
+{
   package r;
   const char *pathspec = arglist.v.list[1].v.str;
   const char *modespec = arglist.v.list[2].v.str;
@@ -1462,19 +1480,145 @@ bf_file_chmod(Var arglist, Byte next, void *vdata, Objid progr)
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_chmod", progr);
   } else if(!file_chmodstr_to_mode(modespec, &newmode)) {
-	 r = make_raise_pack(E_INVARG, "Invalid mode string", zero);	 
+	 r = make_raise_pack(E_INVARG, "Invalid mode string", zero);
   } else if((real_filename = file_resolve_path(pathspec)) == NULL) {
 	 r =  file_raise_notokfilename("file_chmod", pathspec);
   } else {
 	 if(chmod(real_filename, newmode) != 0)
 		r = file_raise_errno("chmod");
-	 else 
-		r = no_var_pack();	 
+	 else
+		r = no_var_pack();
   }
   free_var(arglist);
   return r;
 }
 
+static package bf_file_handles(Var arglist, Byte next, void *vdata, Objid progr)
+{
+  Var r;
+  free_var(arglist);
+  if (!is_wizard(progr))
+    return make_error_pack(E_PERM);
+  int count=0;
+  int lcv=0;
+  for (lcv=0;lcv<FILE_IO_MAX_FILES;lcv++)
+    if (file_table[lcv].valid == 1)
+      count++;
+  r = new_list(count); /* needed to know how many to allocate the list firstly */
+  count = 0;
+  for (lcv=0;lcv<FILE_IO_MAX_FILES;lcv++)
+    {
+      if (file_table[lcv].valid == 1)
+        {
+          count++;
+          r.v.list[count].type = TYPE_INT;
+          r.v.list[count].v.num = lcv;
+        }
+    }
+  return make_var_pack(r);
+}
+
+/*
+ * STR file_grep(FHANDLE handle)
+ * A naughty, naughty FUP-style function that breaks the whole philosophy of FIO.
+ */
+
+static package
+bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
+{
+  package r;
+  Var fhandle = arglist.v.list[1];
+  int len;
+  file_mode mode;
+  const char *line = NULL;
+  int line_num = 0;
+  int match_all = 0;
+  int arg_length = 0;
+  Var ret, tmp, tmp_name, tmp_num;
+
+  if (!file_verify_caller(progr))
+    r = file_raise_notokcall("file_readline", progr);
+  else if (!file_handle_valid(fhandle))
+    r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
+  else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
+    r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
+  else
+  {
+    tmp_name.type = TYPE_STR;
+    tmp_num.type = TYPE_INT;
+    arg_length = memo_strlen(arglist.v.list[2].v.str);
+    ret = new_list(0);
+
+    if (arglist.v.list[0].v.num >= 3 && is_true(arglist.v.list[3]))
+      match_all = 1;
+
+    rewind(file_handle_file_safe(fhandle));
+
+    while ((line = file_get_line(fhandle, &len)) != NULL)
+    {
+      line_num++;
+      if (len > 0 && strindex(line, len, arglist.v.list[2].v.str, arg_length, 0))
+      {
+        tmp = new_list(0);
+        // Have to get rid of the newline, woops
+//        line[strcspn(line, "\r\n")] = 0;
+        // strcspn is more elegant but slower
+        // Dirty hack: C++isms won't let me modify a const char (for uh, good reason)
+        // BUT I KNOW BETTER. famous last words
+        char *dirty_hack = (char*)line;
+        dirty_hack[strlen(dirty_hack) - 1] = '\0';
+        tmp_name.v.str = str_dup(dirty_hack);
+        tmp = listappend(tmp, tmp_name);
+        tmp_num.v.num = line_num;
+        tmp = listappend(tmp, tmp_num);
+        ret = listappend(ret, tmp);
+
+        if (!match_all)
+          break;
+      }
+    }
+    r = make_var_pack(ret);
+  }
+  free_var(arglist);
+  return r;
+}
+
+/*
+ * STR file_count_lines(FHANDLE handle)
+ */
+
+static package
+bf_file_count_lines(Var arglist, Byte next, void *vdata, Objid progr)
+{
+  package r;
+  Var fhandle = arglist.v.list[1];
+  file_mode mode;
+  Var rv;
+
+  if (!file_verify_caller(progr))
+    r = file_raise_notokcall("file_readline", progr);
+  else if (!file_handle_valid(fhandle))
+    r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
+  else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
+    r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
+  else
+  {
+    int throwaway = 0;
+    FILE *fp = file_handle_file_safe(fhandle);
+
+    rewind(fp);
+
+    long count = 0;
+    while (file_get_line(fhandle, &throwaway) != NULL)
+      count++;
+
+    rv.type = TYPE_INT;
+    rv.v.num = count;
+  }
+    r = make_var_pack(rv);
+
+    return r;
+  }
 /************************************************************************/
 
 void
@@ -1483,6 +1627,7 @@ register_fileio(void)
 #if FILE_IO
 
   register_function("file_version", 0, 0, bf_file_version);
+  register_function("file_handles", 0, 0, bf_file_handles);
 
   register_function("file_open", 2, 2, bf_file_open, TYPE_STR, TYPE_STR);
   register_function("file_close", 1, 1, bf_file_close, TYPE_INT);
@@ -1493,6 +1638,7 @@ register_fileio(void)
   register_function("file_readline", 1, 1, bf_file_readline, TYPE_INT);
   register_function("file_readlines", 3, 3, bf_file_readlines, TYPE_INT, TYPE_INT, TYPE_INT);
   register_function("file_writeline", 2, 2, bf_file_writeline, TYPE_INT, TYPE_STR);
+  register_function("file_grep", 2, 3, bf_file_grep, TYPE_INT, TYPE_STR, TYPE_INT);
 
   register_function("file_read", 2, 2, bf_file_read, TYPE_INT, TYPE_INT);
   register_function("file_write", 2, 2, bf_file_write, TYPE_INT, TYPE_STR);
@@ -1503,6 +1649,7 @@ register_fileio(void)
   register_function("file_tell", 1, 1, bf_file_tell, TYPE_INT);
 
   register_function("file_eof", 1, 1, bf_file_eof, TYPE_INT);
+  register_function("file_count_lines", 1, 1, bf_file_count_lines, TYPE_INT);
 
   register_function("file_list", 1, 2, bf_file_list, TYPE_STR, TYPE_ANY);
   register_function("file_mkdir", 1, 1, bf_file_mkdir, TYPE_STR);
