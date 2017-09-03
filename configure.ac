@@ -232,6 +232,23 @@ main ()
 ], AC_DEFINE(POSIX_NONBLOCKING_WORKS))
 
 dnl ***************************************************************************
+    AC_CHECK_HEADER([sqlite3.h], [found_sqlite=yes], [found_sqlite=no])
+    if test "$found_sqlite" != "yes" ; then
+        AC_MSG_ERROR([SQLite could not be found.])
+    else
+        LIBS+=" -lsqlite3"
+    fi
+
+dnl ***************************************************************************
+	AC_CHECK_PROG([PCRE_CONFIG], [pcre-config], [pcre-config], [:])
+	if test "x$PCRE_CONFIG" = "x:"; then
+			AC_MSG_ERROR([PCRE could not be found.])
+	else
+		LIBS+=" `$PCRE_CONFIG --libs`"
+		CFLAGS+=" `$PCRE_CONFIG --cflags`"
+	fi
+
+dnl ***************************************************************************
 echo checking which MOO networking configurations are likely to work...
 define(MOO_ADD_NET_CONFIG,[
     NETWORK_CONFIGURATIONS="$NETWORK_CONFIGURATIONS $1"])
