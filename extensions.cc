@@ -75,21 +75,6 @@ bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-    static package
-bf_strtol(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    Var r;
-    int base = 0;
-
-    if (arglist.v.list[0].v.num == 2)
-        base = arglist.v.list[2].v.num;
-
-    r.v.num = strtol(arglist.v.list[1].v.str, NULL, base);
-
-    free_var(arglist);
-    return make_var_pack(r);
-}
-
 
     static package
 bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
@@ -413,7 +398,6 @@ register_extensions()
     register_function("ftime", 0, 1, bf_ftime, TYPE_INT);
     register_function("panic", 0, 1, bf_panic, TYPE_STR);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR);
-    register_function("strtol", 1, 2, bf_strtol, TYPE_STR, TYPE_INT);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
