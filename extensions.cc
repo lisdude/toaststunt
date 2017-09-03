@@ -157,7 +157,7 @@ bf_relative_heading(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
     static package
-bf_memory_info(Var arglist, Byte next, void *vdata, Objid progr)
+bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
 {
     // Values are returned in pages. To get KB, multiply by 4.
     free_var(arglist);
@@ -374,7 +374,7 @@ register_extensions()
     register_function("round", 1, 1, bf_round, TYPE_FLOAT);
     register_function("distance", 2, 2, bf_distance, TYPE_LIST, TYPE_LIST);
     register_function("relative_heading", 2, 2, bf_relative_heading, TYPE_LIST, TYPE_LIST);
-    register_function("memory_info", 0, 0, bf_memory_info);
+    register_function("memory_usage", 0, 0, bf_memory_usage);
     register_function("ftime", 0, 1, bf_ftime, TYPE_INT);
     register_function("panic", 0, 1, bf_panic, TYPE_STR);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR);

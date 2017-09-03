@@ -1765,16 +1765,6 @@ bf_reset_max_object(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    Var r = new_list(0);
-
-    free_var(arglist);
-
-    return make_var_pack(r);
-}
-
-static package
 bf_shutdown(Var arglist, Byte next, void *vdata, Objid progr)
 {
     int nargs = arglist.v.list[0].v.num;
@@ -2219,7 +2209,6 @@ register_server(void)
     register_function("server_version", 0, 1, bf_server_version, TYPE_ANY);
     register_function("renumber", 1, 1, bf_renumber, TYPE_OBJ);
     register_function("reset_max_object", 0, 0, bf_reset_max_object);
-    register_function("memory_usage", 0, 0, bf_memory_usage);
     register_function("process_id", 0, 0, bf_process_id);
     register_function("shutdown", 0, 1, bf_shutdown, TYPE_STR);
     register_function("dump_database", 0, 0, bf_dump_database);
