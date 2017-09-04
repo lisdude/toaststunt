@@ -9,6 +9,7 @@
 #include "server.h"         // panic()
 #include <sys/time.h>       // getrusage
 #include <sys/resource.h>   // getrusage
+#include <sys/sysinfo.h>    // CPU usage
 #ifdef __MACH__
 #include <mach/clock.h>     // Millisecond time for OS X
 #endif
@@ -187,6 +188,53 @@ bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
     s.v.list[5] = new_float(data);           // Data + stack
 
     return make_var_pack(s);
+}
+
+/* Return resource usage information from the operating system.
+ * Values returned: {{load averages}, user time, system time, page reclaims, page faults, block input ops, block output ops, voluntary context switches, involuntary context switches, signals received
+ * Divide load averages by 65536. */
+    static package
+bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+    if (!is_wizard(progr))
+        return make_error_pack(E_PERM);
+
+    Var r = new_list(9);
+    Var cpu = new_list(3);
+
+    // Setup all of our types ahead of time.
+    int x = 0;
+    for (x = 3; x <= r.v.list[0].v.num; x++)
+        r.v.list[x].type = TYPE_INT;
+
+    for (x = 1; x <= 3; x++)
+        cpu.v.list[x].type = TYPE_INT;
+
+    /*** Begin CPU load averages ***/
+    struct sysinfo sys_info;
+    int info_ret = sysinfo(&sys_info);
+
+    for (x = 0; x < 3; x++)
+        cpu.v.list[x+1].v.num = (info_ret != 0 ? 0 : sys_info.loads[x]);
+
+    /*** Now rusage ***/
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+
+    r.v.list[1] = new_float((double)usage.ru_utime.tv_sec + (double)usage.ru_utime.tv_usec / CLOCKS_PER_SEC);
+    r.v.list[2] = new_float((double)usage.ru_stime.tv_sec + (double)usage.ru_stime.tv_usec / CLOCKS_PER_SEC);
+    r.v.list[3].v.num = usage.ru_minflt;
+    r.v.list[4].v.num = usage.ru_majflt;
+    r.v.list[5].v.num = usage.ru_inblock;
+    r.v.list[6].v.num = usage.ru_oublock;
+    r.v.list[7].v.num = usage.ru_nvcsw;
+    r.v.list[8].v.num = usage.ru_nivcsw;
+    r.v.list[9].v.num = usage.ru_nsignals;
+
+    // Add in our load averages.
+    r = listinsert(r, cpu, 1);
+    return make_var_pack(r);
 }
 
 /* Unceremoniously exit the server, creating a panic dump of the database. */
@@ -379,6 +427,7 @@ register_extensions()
     register_function("distance", 2, 2, bf_distance, TYPE_LIST, TYPE_LIST);
     register_function("relative_heading", 2, 2, bf_relative_heading, TYPE_LIST, TYPE_LIST);
     register_function("memory_usage", 0, 0, bf_memory_usage);
+    register_function("usage", 0, 0, bf_usage);
     register_function("ftime", 0, 1, bf_ftime, TYPE_INT);
     register_function("panic", 0, 1, bf_panic, TYPE_STR);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR);
