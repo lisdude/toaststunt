@@ -538,7 +538,12 @@ bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 	if (task_timed_out)
 	    free_program(program);
 	else
+    {
+#ifdef LOG_CODE_CHANGES
+        oklog("CODE_CHANGE: %s (#%d) set verb #%d:%s\n", db_object_name(progr), progr, obj.v.obj, str_ref(db_verb_names(h)));
+#endif
 	    db_set_verb_program(h, program);
+    }
     }
     free_var(arglist);
     return make_var_pack(errors);

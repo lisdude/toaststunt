@@ -28,6 +28,13 @@
 /* #define LOG_COMMANDS */
 
 /******************************************************************************
+ * When enabled, this option will cause .program and set_verb_code to write
+ * a line in the log file indicating who changed which verb.
+ */
+
+#define LOG_CODE_CHANGES
+
+/******************************************************************************
  * Define ENABLE_GC to enable automatic garbage collection of cyclic data
  * structures.  This is safe but adds overhead to the reference counting
  * mechanism -- currently about a 5% penalty, even for operations that do not
