@@ -324,12 +324,15 @@ lookup_name_from_addr(struct sockaddr_in *addr, unsigned timeout)
 		 != sizeof(len))
 	    abandon_intermediary("LOOKUP_NAME: Read from intermediary failed");
 	else if (len != 0) {
-	    ensure_buffer(&buffer, &buflen, len + 1);
+	    ensure_buffer(&buffer, &buflen, len + 21);  // 21 to ensure enough space for the numeric IP
 	    if (robust_read(from_intermediary, buffer, len) != len)
 		abandon_intermediary("LOOKUP_NAME: "
 				   "Data-read from intermediary failed");
 	    else {
-		buffer[len] = '\0';
+        unsigned32      a = ntohl(addr->sin_addr.s_addr);
+        sprintf((char *)buffer+len, " [%u.%u.%u.%u]", (unsigned) (a >> 24) & 0xff, (unsigned) (a >> 16) & 0xff, (unsigned) (a >> 8) & 0xff, (unsigned) a & 0xff);
+
+//        buffer[len] = '\0';
 		return buffer;
 	    }
 	}
