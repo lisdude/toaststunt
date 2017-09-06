@@ -19,7 +19,7 @@ CCAS = @CCAS@
 LIBRARIES = @LIBS@
 YACC = @YACC@
 
-CFLAGS = -g -Wall -march=native -O3 -flto
+CFLAGS = -Wall -march=native -O3 -flto
 #CFLAGS = -g -Wall -march=native -O3
 CXXFLAGS = $(CFLAGS)
 # If you're using GCC, you may prefer:
