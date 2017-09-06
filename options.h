@@ -384,7 +384,8 @@
 /******************************************************************************
  * Configurable options for the FileIO subsystem.  FILE_SUBDIR is the
  * directory inside the working directory in which all files must
- * reside.
+ * reside. FILE_IO_MAX_FILES can be overridden in-database by adding the
+ * $server_options.file_io_max_files property and calling load_server_options()
  ******************************************************************************
  */
 

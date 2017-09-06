@@ -127,23 +127,26 @@ int32 file_allocate_next_handle(void) {
 }
 
 Var file_handle_new(const char *name, file_type type, file_mode mode) {
-  Var r;
-  int32 handle = file_allocate_next_handle();
-  file_handle file;
+    int32 handle = file_allocate_next_handle();
 
-  r.type = TYPE_INT;
-  r.v.num = handle;
+    if (handle > server_int_option("file_io_max_files", FILE_IO_MAX_FILES))
+        handle = -1;
 
-  if (handle >= 0) {
-	 file.valid = 1;
-	 file.name = str_dup(name);
-	 file.type = type;
-	 file.mode = mode;
-     file_table[handle] = file;
-     next_handle++;
-  }
+    Var r;
+    r.type = TYPE_INT;
+    r.v.num = handle;
 
-  return r;
+    if (handle >= 0) {
+        file_handle file;
+        file.valid = 1;
+        file.name = str_dup(name);
+        file.type = type;
+        file.mode = mode;
+        file_table[handle] = file;
+        next_handle++;
+    }
+
+    return r;
 }
 
 void file_handle_set_file(Var fhandle, FILE *f) {
