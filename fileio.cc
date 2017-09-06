@@ -27,8 +27,7 @@
 #include "streams.h"
 #include "server.h"
 #include "network.h"
-
-
+#include <map>
 #include "tasks.h"
 #include "log.h"
 
@@ -56,7 +55,6 @@ file_type file_type_binary = NULL;
 file_type file_type_text = NULL;
 
 
-
 #define FILE_O_READ       1
 #define FILE_O_WRITE      2
 #define FILE_O_FLUSH      4
@@ -81,6 +79,7 @@ struct line_buffer {
   struct line_buffer *next;
 };
 
+
 /***************************************************************
  * Version and package informaion
  ***************************************************************/
@@ -94,13 +93,14 @@ char file_package_version[] = "1.5p7";
  ***************************************************************/
 
 
-file_handle file_table[FILE_IO_MAX_FILES];
+std::map <int32, file_handle> file_table;
+int32 next_handle = 1;
 
 char file_handle_valid(Var fhandle) {
   int32 i = fhandle.v.num;
   if(fhandle.type != TYPE_INT)
 	 return 0;
-  if((i < 0) || (i >= FILE_IO_MAX_FILES))
+  if((i < 0) || (i >= next_handle))
 	 return 0;
   return file_table[i].valid;
 }
@@ -129,49 +129,33 @@ file_mode file_handle_mode(Var fhandle) {
 
 void file_handle_destroy(Var fhandle) {
   int32 i = fhandle.v.num;
-  file_table[i].file = NULL;
-  file_table[i].valid = 0;
   free_str(file_table[i].name);
+  file_table.erase(i);
+  if (file_table.size() == 0)
+      next_handle = 1;
 }
 
 
 int32 file_allocate_next_handle(void) {
-  static int32 current_handle = 0;
-  int32 wrapped = current_handle;
-
-  if(current_handle > FILE_IO_MAX_FILES)
-	 wrapped = current_handle = 0;
-
-  while(current_handle < FILE_IO_MAX_FILES) {
-	 if(!file_table[current_handle].valid)
-		break;
-
-	 current_handle++;
-	 if(current_handle > FILE_IO_MAX_FILES)
-		current_handle = 0;
-	 if(current_handle == wrapped)
-		current_handle = FILE_IO_MAX_FILES;
-  }
-  if(current_handle == FILE_IO_MAX_FILES) {
-	 current_handle = 0;
-	 return -1;
-  }
-  return current_handle;
+    return next_handle;
 }
 
 
 Var file_handle_new(const char *name, file_type type, file_mode mode) {
   Var r;
   int32 handle = file_allocate_next_handle();
+  file_handle file;
 
   r.type = TYPE_INT;
   r.v.num = handle;
 
   if(handle >= 0) {
-	 file_table[handle].valid = 1;
-	 file_table[handle].name = str_dup(name);
-	 file_table[handle].type = type;
-	 file_table[handle].mode = mode;
+	 file.valid = 1;
+	 file.name = str_dup(name);
+	 file.type = type;
+	 file.mode = mode;
+     file_table[handle] = file;
+     next_handle++;
   }
 
   return r;
@@ -1495,26 +1479,24 @@ bf_file_chmod(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package bf_file_handles(Var arglist, Byte next, void *vdata, Objid progr)
 {
-  Var r;
   free_var(arglist);
+  Var r = new_list(file_table.size());
+
   if (!is_wizard(progr))
     return make_error_pack(E_PERM);
-  int count=0;
-  int lcv=0;
-  for (lcv=0;lcv<FILE_IO_MAX_FILES;lcv++)
-    if (file_table[lcv].valid == 1)
-      count++;
-  r = new_list(count); /* needed to know how many to allocate the list firstly */
-  count = 0;
-  for (lcv=0;lcv<FILE_IO_MAX_FILES;lcv++)
-    {
-      if (file_table[lcv].valid == 1)
-        {
+
+  std::map <int32, file_handle>::iterator it;
+  int count = 0;
+  for (it = file_table.begin(); it != file_table.end(); it++)
+  {
+      if (it->second.valid == 1)
+      {
           count++;
           r.v.list[count].type = TYPE_INT;
-          r.v.list[count].v.num = lcv;
-        }
-    }
+          r.v.list[count].v.num = it->first;
+      }
+  }
+
   return make_var_pack(r);
 }
 
