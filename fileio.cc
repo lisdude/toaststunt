@@ -1446,11 +1446,11 @@ bf_file_chmod(Var arglist, Byte next, void *vdata, Objid progr)
 static package bf_file_handles(Var arglist, Byte next, void *vdata, Objid progr)
 {
   free_var(arglist);
-  Var r = new_list(file_table.size());
 
   if (!is_wizard(progr))
     return make_error_pack(E_PERM);
 
+  Var r = new_list(file_table.size());
   std::map <int32, file_handle>::iterator it;
   int count = 0;
   for (it = file_table.begin(); it != file_table.end(); it++)
