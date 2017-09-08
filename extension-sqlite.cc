@@ -6,10 +6,6 @@
  * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
  * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
  * ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- *
- * TODO:
- *      * Make SQLITE_CONNECTIONS a linked list with a server option controlling how many
- *        connections are allowed to be open at once.
  */
 
 #include "extension-sqlite.h"
@@ -25,45 +21,48 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    int index = find_next_index();
+    int index = next_handle();
     if (index == -1)
     {
-        // There's no room left in the connection array.
+        // We've exceeded SQLITE_MAX_HANDLES and the $server_options setting and didn't allocate anything.
         free_var(arglist);
         return make_raise_pack(E_QUOTA, "Too many database connections open.", var_ref(zero));
     }
 
-    SQLITE_CONN *handle = &SQLITE_CONNECTIONS[index];
-
     /* NOTE: This relies on having FileIO. If you don't, you'll need
      *       a function to resolve a SAFE path. */
     const char *path = file_resolve_path(arglist.v.list[1].v.str);
+    if (path == NULL)
+    {
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
+    }
+
+    int dup_check = database_already_open(path);
+    if (dup_check != -1)
+    {
+        free_var(arglist);
+        char ohno[50];
+        sprintf(ohno, "Database already open with handle: %i", dup_check);
+        return make_raise_pack(E_INVARG, ohno, var_ref(zero));
+    }
+
+    index = allocate_handle();
+    sqlite_conn *handle = &sqlite_connections[index];
 
     if (arglist.v.list[0].v.num >= 2)
         handle->options = arglist.v.list[2].v.num;
 
     free_var(arglist);
 
-    if (path == NULL)
-        return make_error_pack(E_INVARG);
-
-    int dup_check = database_already_open(path);
-    if (dup_check != -1)
-    {
-        char ohno[256];
-        sprintf(ohno, "Database already open with handle: %i", dup_check);
-        return make_raise_pack(E_INVARG, ohno, var_ref(zero));
-    }
-
     int rc = sqlite3_open(path, &handle->id);
 
     if (rc != SQLITE_OK)
     {
         const char *err = sqlite3_errmsg(handle->id);
-        sqlite3_close(handle->id);
+        deallocate_handle(index);
         return make_raise_pack(E_NONE, err, var_ref(zero));
     } else {
-        handle->active = true;
         handle->path = str_dup(path);
         Var r;
         r.type = TYPE_INT;
@@ -86,15 +85,10 @@ bf_sqlite_close(Var arglist, Byte next, void *vdata, Objid progr)
     int index = arglist.v.list[1].v.num;
     free_var(arglist);
 
-    if (index < 0 || index >= SQLITE_MAX_CON || SQLITE_CONNECTIONS[index].active == false)
+    if (!valid_handle(index))
         return make_raise_pack(E_INVARG, "Invalid database handle", var_ref(zero));
 
-    SQLITE_CONN *handle = &SQLITE_CONNECTIONS[index];
-
-    sqlite3_close(handle->id);
-    handle->active = false;
-    free_str(handle->path);
-    handle->path = NULL;
+    deallocate_handle(index);
 
     return no_var_pack();
 }
@@ -103,27 +97,22 @@ bf_sqlite_close(Var arglist, Byte next, void *vdata, Objid progr)
     static package
 bf_sqlite_handles(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    if (!is_wizard(progr))
-    {
-        free_var(arglist);
-        return make_error_pack(E_PERM);
-    }
-
-    Var r = new_list(0);
-
-    int x = 0;
-    for (x = 0; x < SQLITE_MAX_CON; x++)
-    {
-        if (SQLITE_CONNECTIONS[x].active)
-        {
-            Var tmp;
-            tmp.type = TYPE_INT;
-            tmp.v.num = x;
-            r = setadd(r, tmp);
-        }
-    }
-
     free_var(arglist);
+
+    if (!is_wizard(progr))
+        return make_error_pack(E_PERM);
+
+    Var r = new_list(sqlite_connections.size());
+
+    std::map <int, sqlite_conn>::iterator it;
+    int count = 0;
+    for (it = sqlite_connections.begin(); it != sqlite_connections.end(); it++)
+    {
+        count++;
+        r.v.list[count].type = TYPE_INT;
+        r.v.list[count].v.num = it->first;
+    }
+
     return make_var_pack(r);
 }
 
@@ -141,13 +130,10 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
     int index = arglist.v.list[1].v.num;
     free_var(arglist);
 
-    if (index < 0 || index > SQLITE_MAX_CON)
+    if (!valid_handle(index))
         return make_error_pack(E_INVARG);
 
-    SQLITE_CONN *handle = &SQLITE_CONNECTIONS[index];
-
-    if (handle->active == false)
-        return make_raise_pack(E_NONE, "Database handle not open", var_ref(zero));
+    sqlite_conn *handle = &sqlite_connections[index];
 
     // Currently: {path, ?parse types, ?parse objects, ?sanitize strings}
     Var ret = new_list(0);
@@ -181,14 +167,14 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     int index = arglist.v.list[1].v.num;
-    if (index < 0 || index >= SQLITE_MAX_CON || SQLITE_CONNECTIONS[index].active == false)
+    if (!valid_handle(index))
     {
         free_var(arglist);
         return make_error_pack(E_INVARG);
     }
 
     const char *query = arglist.v.list[2].v.str;
-    SQLITE_CONN *handle = &SQLITE_CONNECTIONS[index];
+    sqlite_conn *handle = &sqlite_connections[index];
     sqlite3_stmt *stmt;
 
     int rc = sqlite3_prepare_v2(handle->id, query, -1, &stmt, 0);
@@ -273,7 +259,7 @@ bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
 
     int index = arglist.v.list[1].v.num;
 
-    if (index < 0 || index >= SQLITE_MAX_CON || SQLITE_CONNECTIONS[index].active == false)
+    if (!valid_handle(index))
     {
         free_var(arglist);
         return make_error_pack(E_INVARG);
@@ -282,7 +268,7 @@ bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
     const char *query = arglist.v.list[2].v.str;
     char *err_msg = 0;
 
-    SQLITE_CONN *handle = &SQLITE_CONNECTIONS[index];
+    sqlite_conn *handle = &sqlite_connections[index];
 
     int rc = sqlite3_exec(handle->id, query, callback, handle, &err_msg);
     free_var(arglist);
@@ -319,10 +305,10 @@ bf_sqlite_last_insert_row_id(Var arglist, Byte next, void *vdata, Objid progr)
     int index = arglist.v.list[1].v.num;
     free_var(arglist);
 
-    if (index < 0 || index >= SQLITE_MAX_CON || SQLITE_CONNECTIONS[index].active == false)
+    if (!valid_handle(index))
         return make_error_pack(E_INVARG);
 
-    SQLITE_CONN *handle = &SQLITE_CONNECTIONS[index];
+    sqlite_conn *handle = &sqlite_connections[index];
 
     Var r;
     r.type = TYPE_INT;
@@ -333,45 +319,68 @@ bf_sqlite_last_insert_row_id(Var arglist, Byte next, void *vdata, Objid progr)
 
 /* -------------------------------------------------------- */
 
-/* Set default known good values on the SQLite connections and initialize
- * the last_result list so that SQL results can be appended. */
-void initialize_sqlite_connections()
+/* Return true if a handle is valid and active. */
+bool valid_handle(int handle)
 {
-    last_result = new_list(0);
+    if (handle < 0 || handle >= next_sqlite_handle)
+        return false;
 
-    int x = 0;
-    for (x = 0; x < SQLITE_MAX_CON; x++)
-    {
-        SQLITE_CONNECTIONS[x].active = false;
-        SQLITE_CONNECTIONS[x].path = NULL;
-        SQLITE_CONNECTIONS[x].options = SQLITE_PARSE_TYPES | SQLITE_PARSE_OBJECTS;
-    }
+    return true;
 }
 
-/* Find the next inactive entry in the connection list and return its index. */
-int find_next_index()
+/* Return the index of the next handle.
+ * If we've exceeded our maximum connection limit, -1 will be returned.
+ * Otherwise, a valid SQLite handle integer is returned. */
+int next_handle()
 {
-    int x = 0;
-    for (x = 0; x < SQLITE_MAX_CON; x++)
-    {
-        if (SQLITE_CONNECTIONS[x].active == false)
-            return x;
-    }
+    if (sqlite_connections.size() >= server_int_option("sqlite_max_handles", SQLITE_MAX_HANDLES))
+        return -1;
 
-    return -1;
+    return next_sqlite_handle;
 }
+
+/* Create an empty connection and add it to the open connection map. */
+int allocate_handle()
+{
+    int handle = next_handle();
+    if (handle == -1)
+        return -1;
+
+    next_sqlite_handle++;
+
+    sqlite_conn connection;
+    connection.path = NULL;
+    connection.options = SQLITE_PARSE_TYPES | SQLITE_PARSE_OBJECTS;
+
+    sqlite_connections[handle] = connection;
+
+    return handle;
+}
+
+/* Free up memory and remove a handle from the connection map. */
+void deallocate_handle(int handle)
+{
+    sqlite_conn conn = sqlite_connections[handle];
+
+    sqlite3_close(conn.id);
+    if (conn.path != NULL)
+        free_str(conn.path);
+    sqlite_connections.erase(handle);
+
+    if (sqlite_connections.size() == 0)
+        next_sqlite_handle = 1;
+}
+
 
 /* Check if a database at 'path' is already open.
  * If so, return its handle. Otherwise, return -1. */
 int database_already_open(const char *path)
 {
-    int x = 0;
-    for (x = 0; x < SQLITE_MAX_CON; x++)
+    std::map <int, sqlite_conn>::iterator it;
+    for (it = sqlite_connections.begin(); it != sqlite_connections.end(); it++)
     {
-        SQLITE_CONN *handle = &SQLITE_CONNECTIONS[x];
-
-        if (handle->active && handle->path != NULL && strcmp(handle->path, path) == 0)
-            return x;
+        if (it->second.path != NULL && strcmp(it->second.path, path) == 0)
+            return it->first;
     }
 
     return -1;
@@ -381,7 +390,7 @@ int database_already_open(const char *path)
  * for the MOO to soak into a Var. */
 int callback(void *index, int argc, char **argv, char **azColName)
 {
-    SQLITE_CONN *handle = (SQLITE_CONN*)index;
+    sqlite_conn *handle = (sqlite_conn*)index;
 
     Var ret = new_list(0);
 
@@ -478,7 +487,6 @@ Stream* object_to_string(Var *thing)
 void
 register_sqlite() {
     oklog("REGISTER_SQLITE: v%s (SQLite Library v%s)\n", SQLITE_MOO_VERSION, sqlite3_libversion());
-    initialize_sqlite_connections();
 
     register_function("sqlite_open", 1, 2, bf_sqlite_open, TYPE_STR, TYPE_INT);
     register_function("sqlite_close", 1, 1, bf_sqlite_close, TYPE_INT);

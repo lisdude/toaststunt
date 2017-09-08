@@ -3,6 +3,7 @@
 
 #include <sqlite3.h>
 #include <stdbool.h>
+#include <map>
 
 #include "functions.h"
 #include "numbers.h"
@@ -10,29 +11,32 @@
 #include "list.h"
 #include "storage.h"
 #include "log.h"
+#include "server.h"
 
-#define SQLITE_MOO_VERSION      "1.0"
-#define SQLITE_MAX_CON          20  // Maximum number of SQLite databases
-                                    // that can be open at a single time.
+#define SQLITE_MOO_VERSION      "2.0"
+#define SQLITE_MAX_HANDLES      20  /* Maximum number of SQLite databases that can be open
+                                     * at a single time. Can be overridden with an INT in
+                                     * $server_options.sqlite_max_handles */
 
 #define SQLITE_PARSE_TYPES      2   // Return all strings if unset
 #define SQLITE_PARSE_OBJECTS    4   // Turn "#100" into OBJ
 #define SQLITE_SANITIZE_STRINGS 8   // Strip newlines from returned strings.
 
-typedef struct SQLITE_CONN
+typedef struct sqlite_conn
 {
     sqlite3 *id;
-    bool active;
     char *path;
     unsigned char options;
-} SQLITE_CONN;
+} sqlite_conn;
 
 // Array of open connections
-static SQLITE_CONN SQLITE_CONNECTIONS[SQLITE_MAX_CON];
+static std::map <int, sqlite_conn> sqlite_connections;
+// Next database handle. This will get reset to 1 when all connections get closed.
+static int next_sqlite_handle = 1;
 
-// The result of our last query from the callback
-// so the MOO can copy it into a Var from the builtin function.
-Var last_result;
+/* The result of our last query from the callback
+ * so the MOO can copy it into a Var from the builtin function. */
+Var last_result = new_list(0);
 
 // Forward declarations
 extern const char *file_resolve_path(const char *);             // from extension-fileio.c
@@ -40,8 +44,10 @@ extern int parse_number(const char *, int *, int);              // from numbers.
 extern int parse_float(const char *, double *);                 // from numbers.c
 
 // Other helper functions
-void initialize_sqlite_connections();
-int find_next_index();
+bool valid_handle(int handle);
+int next_handle();
+int allocate_handle();
+void deallocate_handle(int handle);
 int database_already_open(const char *path);
 int callback(void *, int, char **, char **);
 void sanitize_string_for_moo(char *);
