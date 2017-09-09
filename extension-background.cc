@@ -1,7 +1,11 @@
 #include "extension-background.h"
 
 /*
-  An example of how to suspend tasks in the MOO until an external thread is finished doing work.
+  A general-purpose extension for doing work in separate threads. The entrypoint (background_thread)
+  will suspend the MOO task, create a thread, run the callback function on the thread, and then resume
+  the MOO task with the return value from the callback thread. A sample function (background_test)
+  is provided for demonstration purposes. Additionally, you can set $server_options.max_background_threads
+  to limit the number of threads that the MOO can spawn at any given moment.
 
   Demonstrates:
      - Suspending tasks
@@ -10,8 +14,8 @@
 */
 
 
-/* @forked will use the enumerator to find relevant tasks in your external queue, so everything we've spawned will need to return TEA_CONTINUE to get counted
- * The enumerator handles cases where you kill_task from inside the MOO. */
+/* @forked will use the enumerator to find relevant tasks in your external queue, so everything we've spawned
+ * will need to return TEA_CONTINUE to get counted. The enumerator handles cases where you kill_task from inside the MOO. */
 static task_enum_action
 background_enumerator(task_closure closure, void *data)
 {
@@ -31,43 +35,35 @@ background_enumerator(task_closure closure, void *data)
     return TEA_CONTINUE;
 }
 
-// The thread that does all of the actual work. Receives a pointer to the relevant background_waiter struct.
-void *background_thread(void *bw)
+/* The default thread callback function: This will first call the actual callback function
+ * and then handle resuming the MOO task and cleaning up RAM. */
+void *run_callback(void *bw)
 {
     background_waiter *w = (background_waiter*)bw;
-    int wait = (w->args.v.list[0].v.num >= 2 ? w->args.v.list[2].v.num : 5);
-    sleep(wait);
-    Var v;
-    v.type = TYPE_STR;
-    if (w->args.v.list[0].v.num == 0)
-        v.v.str = str_dup("Hello, world.");
-    else
-        v.v.str = str_dup(w->args.v.list[1].v.str);
-    resume_task(w->the_vm, v);
+
+    Var ret = w->callback(bw);
+    resume_task(w->the_vm, ret);
 
     deallocate_background_waiter(w);
-
     pthread_exit(NULL);
 }
 
-// Creates the background_waiter struct and starts the worker thread.
+/* Creates the background_waiter struct and starts the worker thread. */
 static enum error
 background_suspender(vm the_vm, void *data)
 {
     background_waiter *w = (background_waiter*)data;
     w->the_vm = the_vm;
 
-    // Create our worker thread and make the background_waiter aware of its existance
-    int thread_error = 0;
-
     // Create our new worker thread as detached so that resources are immediately freed
     pthread_t new_thread;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    pthread_attr_setstacksize(&attr, 1000000);          // Stack size of 1 MB should be sufficient. 
+    pthread_attr_setstacksize(&attr, 1000000);          // Stack size of 1 MB should be sufficient.
 
-    if ((thread_error = pthread_create(&new_thread, &attr, background_thread, data)))
+    int thread_error = 0;
+    if ((thread_error = pthread_create(&new_thread, &attr, run_callback, data)))
     {
         errlog("Failed to create a background thread for bf_background. Error code: %i\n", thread_error);
         pthread_attr_destroy(&attr);
@@ -81,49 +77,94 @@ background_suspender(vm the_vm, void *data)
     return E_NONE;
 }
 
-static package
-bf_background(Var arglist, Byte next, void *vdata, Objid progr)
+/* Create a new background thread, supplying a callback function and a Var of data.
+ * You should check can_create_thread from your own functions before relying on moo_background_thread. */
+package
+background_thread(Var (*callback)(void*), void* data)
 {
-    // Make sure we don't overrun the background thread limit.
-    if (next_background_handle > server_int_option("max_background_threads", MAX_BACKGROUND_THREADS))
-    {
-        errlog("No space left in the background process table. Aborting bf_background call...\n");
+    if (!can_create_thread())
         return make_error_pack(E_QUOTA);
-    }
 
-    background_waiter *w = (background_waiter*)mymalloc(sizeof(background_waiter), M_TASK);
+    background_waiter *w = (background_waiter*)mymalloc(sizeof(background_waiter), M_STRUCT);
     initialize_background_waiter(w);
-    w->args = arglist;
+    w->callback = callback;
+    w->data = data;
 
     return make_suspend_pack(background_suspender, (void*)w);
 }
 
 /********************************************************************************************************/
 
+/* Make sure creating a new thread won't exceed MAX_BACKGROUND_THREADS or $server_options.max_background_threads */
+bool can_create_thread()
+{
+    // Make sure we don't overrun the background thread limit.
+    if (next_background_handle > server_int_option("max_background_threads", MAX_BACKGROUND_THREADS))
+    {
+        errlog("No space left in the background process table. Aborting bf_background call...\n");
+        return false;
+    }
+    return true;
+}
+
+/* Insert the background waiter into the process table. */
+void initialize_background_waiter(background_waiter *waiter)
+{
+    waiter->handle = next_background_handle;
+    background_process_table[next_background_handle] = waiter;
+    next_background_handle++;
+}
+
+/* Remove the background waiter from the process table, free any memory,
+ * and reset the maximum handle if there are no threads running. */
 void deallocate_background_waiter(background_waiter *waiter)
 {
     int handle = waiter->handle;
-    free_var(waiter->args);
-    myfree(waiter, M_TASK);
+    myfree(waiter->data, M_STRUCT);
+    myfree(waiter, M_STRUCT);
     background_process_table.erase(handle);
 
     if (background_process_table.size() == 0)
         next_background_handle = 1;
 }
 
-void initialize_background_waiter(background_waiter *waiter)
+/********************************************************************************************************/
+
+/* The background testing function. Accepts a string argument and a time argument. Its goal is simply
+ * to spawn a helper thread, sleep, and then return the string back to you. */
+static package
+bf_background_test(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    // Insert the background_waiter into the process table for housekeeping.
-    waiter->handle = next_background_handle;
-    waiter->the_vm = NULL;
-    background_process_table[next_background_handle] = waiter;
-    next_background_handle++;
+    Var *stupid = (Var*)mymalloc(sizeof(arglist), M_STRUCT);
+    *stupid = var_dup(arglist);
+    free_var(arglist);
+
+    return background_thread(background_test_callback, stupid);
 }
 
+/* The actual callback function for our background_test function. This function does all of the actual work
+ * for the background_test. Receives a pointer to the relevant background_waiter struct. */
+Var background_test_callback(void *bw)
+{
+    Var v;
+    background_waiter *w = (background_waiter*)bw;
+    Var *args = (Var*)w->data;
+    int wait = (args->v.list[0].v.num >= 2 ? args->v.list[2].v.num : 5);
+
+    sleep(wait);
+
+    v.type = TYPE_STR;
+    if (args->v.list[0].v.num == 0)
+        v.v.str = str_dup("Hello, world.");
+    else
+        v.v.str = str_dup(args->v.list[1].v.str);
+
+    return v;
+}
 
 void
 register_background()
 {
     register_task_queue(background_enumerator);
-    register_function("background", 0, 2, bf_background, TYPE_STR, TYPE_INT);
+    register_function("background_test", 0, 2, bf_background_test, TYPE_STR, TYPE_INT);
 }
