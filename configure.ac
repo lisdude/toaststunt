@@ -239,6 +239,14 @@ dnl ***************************************************************************
         LIBS+=" -lsqlite3"
     fi
 
+ dnl ***************************************************************************
+    AC_CHECK_HEADER([pthread.h], [found_pthread=yes], [found_pthread=no])
+    if test "$found_pthread" != "yes" ; then
+        AC_MSG_ERROR([Pthread could not be found.])
+    else
+        LIBS+=" -lpthread"
+    fi
+
 dnl ***************************************************************************
 	AC_CHECK_PROG([PCRE_CONFIG], [pcre-config], [pcre-config], [:])
 	if test "x$PCRE_CONFIG" = "x:"; then

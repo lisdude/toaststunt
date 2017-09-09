@@ -38,3 +38,4 @@ extern void register_exec(void);
 extern void register_crypto(void);
 extern void register_sqlite(void);
 extern void register_pcre(void);
+extern void register_background(void);
