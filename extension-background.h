@@ -1,5 +1,5 @@
 #ifndef EXTENSION_BACKGROUND_H
-#define EXTENSION_BACKGROUND_H
+#define EXTENSION_BACKGROUND_H 1
 
 #include <pthread.h>
 #include <map>
@@ -7,7 +7,6 @@
 #include "bf_register.h"
 #include "functions.h"
 #include "my-unistd.h"      // sleep()
-#include "log.h"            // oklog
 #include "storage.h"        // myfree, mymalloc
 #include "tasks.h"          // TEA
 #include "utils.h"          // var_dup
@@ -19,26 +18,27 @@
                                        * $server_options.max_background_threads */
 
 typedef struct background_waiter {
-    vm the_vm;                 // Where we resume when we're done.
-    pthread_t thread;          // The thread data so we can pthread_cancel if the task gets killed in-MOO
-    int handle;                // Our position in the process table.
-    Var (*callback)(void*);    // The callback function that does the actual work.
-    void* data;                // Any data the callback function should be aware of.
+    vm the_vm;                          // Where we resume when we're done.
+    pthread_t thread;                   // The thread data so we can pthread_cancel if the task gets killed in-MOO
+    int handle;                         // Our position in the process table.
+    void (*callback)(void*, Var*);      // The callback function that does the actual work.
+    void* data;                         // Any data the callback function should be aware of.
+    bool active;                        // @kill will set active to false and the callback should handle it accordingly.
 } background_waiter;
 
 static std::map <int, background_waiter*> background_process_table;
 static int next_background_handle = 1;
 
 // User-visible functions
-extern package background_thread(Var (*callback)(void*), void* data);
+extern package background_thread(void (*callback)(void*, Var*), void* data);
 extern bool can_create_thread();
 
 // Other helper functions
-void deallocate_background_waiter(background_waiter *waiter);
+extern void deallocate_background_waiter(background_waiter *waiter);
 void initialize_background_waiter(background_waiter *waiter);
 void *run_callback(void *bw);
 
 // Example functions
-Var background_test_callback(void *bw);
+void background_test_callback(void *bw, Var *ret);
 
 #endif /* EXTENSION_BACKGROUND_H */

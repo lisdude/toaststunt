@@ -1,4 +1,5 @@
 #include "extension-background.h"
+#include "log.h"
 
 /*
   A general-purpose extension for doing work in separate threads. The entrypoint (background_thread)
@@ -6,6 +7,10 @@
   the MOO task with the return value from the callback thread. A sample function (background_test)
   is provided for demonstration purposes. Additionally, you can set $server_options.max_background_threads
   to limit the number of threads that the MOO can spawn at any given moment.
+
+  Your callback function should periodically (or oftenly) check the status of the background_waiter's active
+  member, which will indicate whether or not the MOO task has been killed or not. If active is 0, the task is dead
+  and your function should clean up and not bother worrying about returning anything.
 
   Demonstrates:
      - Suspending tasks
@@ -22,29 +27,38 @@ background_enumerator(task_closure closure, void *data)
     std::map<int, background_waiter*>::iterator it;
     for (it = background_process_table.begin(); it != background_process_table.end(); it++)
     {
-        task_enum_action tea = (*closure) (it->second->the_vm, "waiting on thread", data);
+        if (it->second->active)
+        {
+            task_enum_action tea = (*closure) (it->second->the_vm, "waiting on thread", data);
 
-        if (tea == TEA_KILL) {
-            pthread_cancel(it->second->thread);
-            deallocate_background_waiter(it->second);
+            if (tea == TEA_KILL) {
+                // When the task gets killed, it's responsible for cleaning up after itself by checking active.
+                it->second->active = false;
+            }
+            if (tea != TEA_CONTINUE)
+                return tea;
         }
-        if (tea != TEA_CONTINUE)
-            return tea;
     }
 
     return TEA_CONTINUE;
 }
 
 /* The default thread callback function: This will first call the actual callback function
- * and then handle resuming the MOO task and cleaning up RAM. */
+ * and then handle resuming the MOO task and cleaning up the temporary Var and background waiter. */
 void *run_callback(void *bw)
 {
     background_waiter *w = (background_waiter*)bw;
 
-    Var ret = w->callback(bw);
-    resume_task(w->the_vm, ret);
+    Var ret;
+    w->callback(bw, &ret);
+
+    if (w->active)
+        resume_task(w->the_vm, ret);
+    else
+        free_var(ret);
 
     deallocate_background_waiter(w);
+
     pthread_exit(NULL);
 }
 
@@ -54,6 +68,7 @@ background_suspender(vm the_vm, void *data)
 {
     background_waiter *w = (background_waiter*)data;
     w->the_vm = the_vm;
+    w->active = true;
 
     // Create our new worker thread as detached so that resources are immediately freed
     pthread_t new_thread;
@@ -80,7 +95,7 @@ background_suspender(vm the_vm, void *data)
 /* Create a new background thread, supplying a callback function and a Var of data.
  * You should check can_create_thread from your own functions before relying on moo_background_thread. */
 package
-background_thread(Var (*callback)(void*), void* data)
+background_thread(void (*callback)(void*, Var*), void* data)
 {
     if (!can_create_thread())
         return make_error_pack(E_QUOTA);
@@ -100,11 +115,9 @@ bool can_create_thread()
 {
     // Make sure we don't overrun the background thread limit.
     if (next_background_handle > server_int_option("max_background_threads", MAX_BACKGROUND_THREADS))
-    {
-        errlog("No space left in the background process table. Aborting bf_background call...\n");
         return false;
-    }
-    return true;
+    else
+        return true;
 }
 
 /* Insert the background waiter into the process table. */
@@ -135,31 +148,33 @@ void deallocate_background_waiter(background_waiter *waiter)
 static package
 bf_background_test(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var *stupid = (Var*)mymalloc(sizeof(arglist), M_STRUCT);
-    *stupid = var_dup(arglist);
+    Var *sample = (Var*)mymalloc(sizeof(arglist), M_STRUCT);
+    *sample = var_dup(arglist);
     free_var(arglist);
 
-    return background_thread(background_test_callback, stupid);
+    return background_thread(background_test_callback, sample);
 }
 
 /* The actual callback function for our background_test function. This function does all of the actual work
  * for the background_test. Receives a pointer to the relevant background_waiter struct. */
-Var background_test_callback(void *bw)
+void background_test_callback(void *bw, Var *ret)
 {
-    Var v;
     background_waiter *w = (background_waiter*)bw;
     Var *args = (Var*)w->data;
     int wait = (args->v.list[0].v.num >= 2 ? args->v.list[2].v.num : 5);
 
     sleep(wait);
 
-    v.type = TYPE_STR;
-    if (args->v.list[0].v.num == 0)
-        v.v.str = str_dup("Hello, world.");
-    else
-        v.v.str = str_dup(args->v.list[1].v.str);
-
-    return v;
+    if (w->active)
+    {
+        ret->type = TYPE_STR;
+        if (args->v.list[0].v.num == 0)
+            ret->v.str = str_dup("Hello, world.");
+        else
+            ret->v.str = str_dup(args->v.list[1].v.str);
+    } else {
+        oklog("INACTIVE\n");
+    }
 }
 
 void
