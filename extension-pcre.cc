@@ -1,5 +1,5 @@
 /******************************************************************************
- * Pearl-compatible Regular Expressions for LambdaMOO.
+ * Perl-compatible Regular Expressions for LambdaMOO.
  *
  * Original Author: Josh "Randal" Benner <josh@bennerweb.com>
  * Current Maintainer: Albori "lisdude" Sninvel <albori@toastsoft.net>
@@ -28,8 +28,8 @@
 
 void free_pcre_vars(Var *, Var *, Var *, Var *);
 
-// We're only using the caseless option so we can save some memory by using
-// unsigned char instead of an int for options.
+/* We're only using the caseless option so we can save some memory by using
+ * unsigned char instead of an int for options. */
 struct pcre_cache_entry {
     char *string;
     char *error;
@@ -47,8 +47,6 @@ static void
 setup_pcre_cache() {
     unsigned int i;
 
-//    oklog("          -> Initializing PCRE cache...\n");
-
     for (i = 0; i < PATTERN_CACHE_SIZE; i++) {
         pcre_cache_entries[i].string = 0;
         pcre_cache_entries[i].error = 0;
@@ -61,8 +59,6 @@ setup_pcre_cache() {
 
     pcre_cache_entries[PATTERN_CACHE_SIZE - 1].next = 0;
     pcre_cache = &(pcre_cache_entries[0]);
-
- //   oklog("          -> done!\n");
 }
 
 static struct pcre_cache_entry *
@@ -81,9 +77,9 @@ get_pcre(const char *string, unsigned char options) {
             // Cache hit; move to front of cache;
             break;
         } else if (!entry->next) {
-            // Cache miss; this is the last entry in cache, so reuse this one
-            // for the new pattern, and move it to the front of the cache upon
-            // successful compile.
+            /* Cache miss; this is the last entry in cache, so reuse this one
+             * for the new pattern, and move it to the front of the cache upon
+             * successful compile. */
             if (entry->string) {
                 free_str(entry->string);
                 pcre_free(entry->re);
@@ -269,16 +265,16 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
                     tmp.v.str = str_dup(buf);
                 }
 
-                // Store the resulting substrings either as a group or into the main return var.
-                // group used to use setadd but we were losing results, this now we don't!
+                /* Store the resulting substrings either as a group or into the main return var.
+                 * group used to use setadd but we were losing results, this now we don't! */
                 if (flags & RETURN_GROUPS)
                     group = listappend(group, var_dup(tmp));
                 else
                     ret = listappend(ret, var_dup(tmp));
 
-                // We duped the string above so we need to free it before replacing it.
-                // We also replace it with NULL to make 100% sure we don't free it when
-                // it's still referencing memory we just freed.
+                /* We duped the string above so we need to free it before replacing it.
+                 * We also replace it with NULL to make 100% sure we don't free it when
+                 * it's still referencing memory we just freed. */
                 if (tmp.type == TYPE_STR)
                 {
                     free_str(tmp.v.str);
@@ -308,10 +304,10 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     return make_var_pack(ret);
 }
 
-// Free the billions of variables that we had to declare.
-// We give extra checks to the lists to make sure they actually
-// have memory to give up. Also some vars can be null because,
-// well, I'm lazy and it's easier to keep it all together like this.
+/* Free the billions of variables that we had to declare.
+ * We give extra checks to the lists to make sure they actually
+ * have memory to give up. Also some vars can be null because,
+ * well, I'm lazy and it's easier to keep it all together like this. */
 void free_pcre_vars(Var *ret, Var *group, Var *tmp, Var *arglist)
 {
     if (arglist != NULL)
