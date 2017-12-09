@@ -20,142 +20,43 @@
 #include "pcrs.h"
 #include "server.h"
 
-#define EXT_PCRE_VERSION "2.0"
+#define EXT_PCRE_VERSION "2.1"
 #define DEFAULT_LOOPS 1000
 #define RETURN_INDEXES  2
 #define RETURN_GROUPS   4
 #define FIND_ALL        8
 
-void free_pcre_vars(Var *, Var *, Var *, Var *);
-
-/* We're only using the caseless option so we can save some memory by using
- * unsigned char instead of an int for options. */
 struct pcre_cache_entry {
-    char *string;
     char *error;
     pcre *re;
     //pcre_extra *extra;
-    unsigned char options;
     int captures;
-    struct pcre_cache_entry *next;
 };
 
-static struct pcre_cache_entry *pcre_cache;
-static struct pcre_cache_entry pcre_cache_entries[PATTERN_CACHE_SIZE];
-
-static void
-setup_pcre_cache() {
-    unsigned int i;
-
-    for (i = 0; i < PATTERN_CACHE_SIZE; i++) {
-        pcre_cache_entries[i].string = 0;
-        pcre_cache_entries[i].error = 0;
-        pcre_cache_entries[i].re = NULL;
-    }
-
-    for (i = 0; i < PATTERN_CACHE_SIZE - 1; i++) {
-        pcre_cache_entries[i].next = &(pcre_cache_entries[i + 1]);
-    }
-
-    pcre_cache_entries[PATTERN_CACHE_SIZE - 1].next = 0;
-    pcre_cache = &(pcre_cache_entries[0]);
-}
+void free_pcre_vars(Var *, Var *, Var *, Var *, pcre_cache_entry *);
+void free_entry(pcre_cache_entry *);
 
 static struct pcre_cache_entry *
 get_pcre(const char *string, unsigned char options) {
-    struct pcre_cache_entry *entry, **entry_ptr;
     const char *err;
     int eos; // Error offset
     char buf[256];
 
-    entry = pcre_cache;
-    entry_ptr = &pcre_cache;
+    pcre_cache_entry *entry = (pcre_cache_entry*)malloc(sizeof(pcre_cache_entry));
+    entry->error = NULL;
+    entry->re = NULL;
+    entry->captures = 0;
 
-    while (1) {
-        if (entry->string && !strcmp(string, entry->string)
-                && options == entry->options) {
-            // Cache hit; move to front of cache;
-            break;
-        } else if (!entry->next) {
-            /* Cache miss; this is the last entry in cache, so reuse this one
-             * for the new pattern, and move it to the front of the cache upon
-             * successful compile. */
-            if (entry->string) {
-                free_str(entry->string);
-                pcre_free(entry->re);
-            }
-            if (entry->error) {
-                free_str(entry->error);
-            }
-            entry->re = pcre_compile(string, options, &err, &eos, NULL);
-            if (entry->re == NULL) {
-                entry->string = 0;
-                sprintf(buf, "PCRE compile error at offset %d: %s", eos, err);
-                entry->error = str_dup(buf);
-            } else {
-                entry->string = str_dup(string);
-                entry->options = options;
-                //entry->extra = pcre_study(entry->re, 0, NULL);
-                (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
-            }
-            break;
-        } else {
-            // still searching the cache...
-            entry_ptr = &(entry->next);
-            entry = entry->next;
-        }
+    entry->re = pcre_compile(string, options, &err, &eos, NULL);
+    if (entry->re == NULL) {
+        sprintf(buf, "PCRE compile error at offset %d: %s", eos, err);
+        entry->error = str_dup(buf);
+    } else {
+        //entry->extra = pcre_study(entry->re, 0, NULL);
+        (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
     }
-
-    *entry_ptr = entry->next;
-    entry->next = pcre_cache;
-    pcre_cache = entry;
 
     return entry;
-}
-
-static package
-bf_pcre_match_cache(Var arglist, Byte next, void *vdata, Objid progr) {
-    Var ret, tmp;
-    struct pcre_cache_entry *entry;
-
-    ret = new_list(0);
-
-    entry = pcre_cache;
-
-    while (1) {
-        if (!(entry->string))
-        {
-            tmp.type = TYPE_INT;
-            tmp.v.num = 0;
-        } else {
-            tmp = new_list(4);
-            if (entry->string)
-            {
-                tmp.v.list[1].type = TYPE_STR;
-                tmp.v.list[1].v.str = str_ref(entry->string);
-            }
-            if (entry->error)
-            {
-                tmp.v.list[2].type = TYPE_STR;
-                tmp.v.list[2].v.str = str_ref(entry->error);
-            } else {
-                tmp.v.list[2].type = TYPE_INT;
-                tmp.v.list[2].v.num = 0;
-            }
-            tmp.v.list[3].type = TYPE_INT;
-            tmp.v.list[3].v.num = entry->options;
-            tmp.v.list[4].type = TYPE_INT;
-            tmp.v.list[4].v.num = entry->captures;
-        }
-        ret = listappend(ret, tmp.type == TYPE_INT ? var_dup(tmp) : tmp);
-        if (!(entry->next))
-            break;
-        else
-            entry = entry->next;
-    }
-
-    free_var(arglist);
-    return make_var_pack(ret);
 }
 
 static package
@@ -183,13 +84,15 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         return make_error_pack(E_INVARG);
     }
 
-    // Compile the pattern (using a cached copy if one exists)
+    // Compile the pattern
     struct pcre_cache_entry *entry = get_pcre(pattern, options);
 
-    if (entry->re == NULL)
+    if (entry->error != NULL)
     {
+        package r = make_raise_pack(E_INVARG, entry->error, var_ref(zero));
         free_var(arglist);
-        return make_raise_pack(E_INVARG, entry->error, var_ref(zero));
+        free_entry(entry);
+        return r;
     }
 
     // Determine how many subpatterns match so we can allocate memory.
@@ -234,12 +137,12 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         if (rc < 0 && rc != PCRE_ERROR_NOMATCH)
         {
             // We've encountered some funky error. Back out and let them know what it is.
-            free_pcre_vars(&ret, &group, &tmp, &arglist);
+            free_pcre_vars(&ret, &group, &tmp, &arglist, entry);
             sprintf(err, "pcre_exec returned error: %d", rc);
             return make_raise_pack(E_INVARG, err, var_ref(zero));
         } else if (rc == 0) {
             // We don't have enough room to store all of these substrings.
-            free_pcre_vars(&ret, &group, &tmp, &arglist);
+            free_pcre_vars(&ret, &group, &tmp, &arglist, entry);
             sprintf(err, "pcre_exec only has room for %d substrings", entry->captures);
             return make_raise_pack(E_QUOTA, err, var_ref(zero));
         } else if (rc == PCRE_ERROR_NOMATCH) {
@@ -247,7 +150,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             break;
         } else if (loops >= total_loops) {
             // The loop has iterated beyond the maximum limit, probably locking the server. Kill it.
-            free_pcre_vars(&ret, &group, &tmp, &arglist);
+            free_pcre_vars(&ret, &group, &tmp, &arglist, entry);
             sprintf(err, "Too many iterations of matching loop: %d", loops);
             return make_raise_pack(E_MAXREC, err, var_ref(zero));
         } else {
@@ -299,7 +202,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             break;
     }
 
-    free_pcre_vars(NULL, &group, &tmp, &arglist);
+    free_pcre_vars(NULL, &group, &tmp, &arglist, entry);
 
     return make_var_pack(ret);
 }
@@ -308,7 +211,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
  * We give extra checks to the lists to make sure they actually
  * have memory to give up. Also some vars can be null because,
  * well, I'm lazy and it's easier to keep it all together like this. */
-void free_pcre_vars(Var *ret, Var *group, Var *tmp, Var *arglist)
+void free_pcre_vars(Var *ret, Var *group, Var *tmp, Var *arglist, pcre_cache_entry *entry)
 {
     if (arglist != NULL)
         free_var(*arglist);
@@ -322,6 +225,19 @@ void free_pcre_vars(Var *ret, Var *group, Var *tmp, Var *arglist)
 
     if (group != NULL && group->type == TYPE_LIST)
         free_var(*group);
+
+    free_entry(entry);
+}
+
+void free_entry(pcre_cache_entry *entry)
+{
+    if (entry->re != NULL)
+        pcre_free(entry->re);
+
+    if (entry->error != NULL)
+        free_str(entry->error);
+
+    free(entry);
 }
 
 static package
@@ -366,10 +282,8 @@ bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr) {
 void
 register_pcre() {
     oklog("REGISTER_PCRE: v%s (PCRE Library v%s)\n", EXT_PCRE_VERSION, pcre_version());
-    setup_pcre_cache();
     //                                                   string    pattern   ?case     ?group    ?indexes  ?find_all
     register_function("pcre_match", 2, 6, bf_pcre_match, TYPE_STR, TYPE_STR, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT);
-    register_function("pcre_match_cache", 0, 0, bf_pcre_match_cache);
     register_function("pcre_replace", 2, 2, bf_pcre_replace, TYPE_STR, TYPE_STR);
 }
 
