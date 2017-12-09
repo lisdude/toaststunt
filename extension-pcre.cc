@@ -1,11 +1,7 @@
 /******************************************************************************
  * Perl-compatible Regular Expressions for LambdaMOO.
  *
- * Original Author: Josh "Randal" Benner <josh@bennerweb.com>
- * Current Maintainer: Albori "lisdude" Sninvel <albori@toastsoft.net>
- *
- * Note: Most of the original code has been replaced with the exception of the
- *       cache. The caching code was written by Josh Benner.
+ * Albori "lisdude" Sninvel <albori@toastsoft.net>
  ******************************************************************************/
 
 #include <pcre.h>
