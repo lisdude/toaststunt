@@ -217,15 +217,15 @@ db_add_propdef(Var obj, const char *pname, Var value, Objid owner,
 }
 
  static void
- rename_prop_recursively(Objid root, const char *old, const char *new)
+ rename_prop_recursively(Objid root, const char *old, const char *_new)
  {
      Objid c;
      Object *o = dbpriv_find_object(root);
 
      if (o->waif_propdefs)
- 	waif_rename_propdef(o, old, new);
+ 	waif_rename_propdef(o, old, _new);
      for (c = o->child; c != NOTHING; c = dbpriv_find_object(c)->sibling)
- 	rename_prop_recursively(c, old, new);
+ 	rename_prop_recursively(c, old, _new);
  }
 
 int
@@ -248,7 +248,7 @@ db_rename_propdef(Var obj, const char *old, const char *_new)
 		if (h.ptr || property_defined_at_or_below(_new, str_hash(_new), o))
 		    return 0;
 	    }
-		rename_prop_recursively(oid, props->l[i].name, new);
+		rename_prop_recursively(oid, props->l[i].name, _new);
 	    free_str(props->l[i].name);
 	    props->l[i].name = str_ref(_new);
 	    props->l[i].hash = str_hash(_new);

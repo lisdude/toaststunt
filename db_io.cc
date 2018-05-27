@@ -260,7 +260,7 @@ dbio_read_var(void)
 	break;
     case TYPE_WAIF:
     r = read_waif();
-    break
+    break;
     default:
 	errlog("DBIO_READ_VAR: Unknown type (%d) at DB file pos. %ld\n",
 	       l, ftell(input));

@@ -35,8 +35,8 @@
 #include "storage.h"
 #include "streams.h"
 #include "structures.h"
-#include "utils.h"
 #include "waif.h"
+#include "utils.h"
 
 static const char ascii[] =
 "\000\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017"

@@ -83,7 +83,7 @@ typedef enum {
     _TYPE_MAP,			/* map; user-visible */
     _TYPE_ITER,			/* map iterator; not visible */
     _TYPE_ANON,			/* anonymous object; user-visible */
-    _TYPE_WAIF          /* lightweight object; user-visible */
+    _TYPE_WAIF,         /* lightweight object; user-visible */
     /* THE END - complex aliases come next */
     TYPE_STR = (_TYPE_STR | TYPE_COMPLEX_FLAG),
     TYPE_FLOAT = (_TYPE_FLOAT | TYPE_COMPLEX_FLAG),
@@ -131,24 +131,25 @@ struct WaifPropdefs;
   * If checkpoints are unforked, save space for an index used while saving.
   * Otherwise we can alias propdefs and clobber it in the child.
   */
-#ifdef UNFORKED_CHECKPOINTS
-#define WAIF_MAPSZ 2
-#else
-#define WAIF_MAPSZ 3
-#endif
+
+ #ifdef UNFORKED_CHECKPOINTS                                                                                                                                                                                                            
+ #define WAIF_MAPSZ 2                                                                                                                                                                                                                   
+ #else                                                                                                                                                                                                                                  
+ #define WAIF_MAPSZ 3                                                                                                                                                                                                                   
+ #endif   
 
 typedef struct Waif
 {
-    Objid class;
+    Objid _class;
     Objid owner;
     struct WaifPropdefs *propdefs;
     Var *propvals;
     unsigned long map[WAIF_MAPSZ];
-#ifdef UNFORKED_CHECKPOINTS
-    unsigned long waif_save_index;
-#else
-#define waif_save_index map[0]
-#endif
+#ifdef UNFORKED_CHECKPOINTS                                                                                                                                                                                         
+unsigned long       waif_save_index;                                                                                                                                                                            
+#else                                                                                                                                                                                                           
+#define waif_save_index     map[0]                                                                                                                                                                              
+#endif                                      
 } Waif;
 
 struct Var {

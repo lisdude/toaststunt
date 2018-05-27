@@ -483,7 +483,7 @@ unparse_value(Stream * s, Var v)
 	stream_add_string(s, "*anonymous*");
 	break;
     case TYPE_WAIF:
-    stream_add_string(s, "[[class = #%d, owner = #%d]]", v.v.waif->class, v.v.waif->owner);
+    stream_add_string(s, "[[class = #%d, owner = #%d]]", v.v.waif->_class, v.v.waif->owner);
     break;
     default:
 	errlog("UNPARSE_VALUE: Unknown Var type = %d\n", v.type);

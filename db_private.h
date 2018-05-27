@@ -18,6 +18,8 @@
 /*****************************************************************************
  * Private interface for internal communication in the DB implementation
  *****************************************************************************/
+#ifndef DB_PRIVATE_h
+#define DB_PRIVATE_h
 
 #include <stdexcept>
 
@@ -236,3 +238,4 @@ dbpriv_dereference(Var v)
            ? dbpriv_find_object(v.v.obj)
            : v.v.anon;
 }
+#endif DB_PRIVATE_h
