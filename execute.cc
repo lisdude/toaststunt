@@ -41,6 +41,7 @@
 #include "tasks.h"
 #include "timers.h"
 #include "utils.h"
+#include "waif.h"
 #include "version.h"
 
 /* the following globals are the guts of the virtual machine: */
@@ -424,6 +425,8 @@ make_stack_list(activation * stack, int start, int end, int include_end,
 
 	if (include_end || i != end) {
 	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
+		v.v.list[1].type = TYPE_OBJ;
+		v.v.list[1].v.obj = stack[i]._this.v.obj;
 	    v.v.list[1] = anonymizing_var_ref(stack[i]._this, progr);
 	    v.v.list[2] = str_ref_to_var(stack[i].verb);
 	    v.v.list[3] = Var::new_obj(stack[i].progr);
@@ -713,7 +716,12 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 #undef ENV_COPY
 
     v.type = TYPE_STR;
-    v.v.str = str_ref(vname);
+	if (vname[0] == WAIF_VERB_PREFIX) {
+		v.v.str = str_dup(vname + 1);
+		free_str(vname);
+	} else {
+    	v.v.str = str_ref(vname);
+	}
     set_rt_env_var(env, SLOT_VERB, v);	/* no var_dup */
     set_rt_env_var(env, SLOT_ARGS, args);	/* no var_dup */
 
@@ -1562,7 +1570,17 @@ do {								\
 
 		propname = POP();	/* should be string */
 		obj = POP();		/* should be an object */
-		if (!obj.is_object() || propname.type != TYPE_STR) {
+		if (obj.type == TYPE_WAIF && propname.type == TYPE_STR) {
+			enum error err;
+
+			err = waif_get_prop(obj.v.waif, propname.v.str, &prop, RUN_ACTIV.progr);
+			free_var(propname);
+			free_var(obj);
+			if (err == E_NONE)
+				PUSH(prop);
+			else
+				PUSH_ERROR(err);
+		} else if (!obj.is_object() || propname.type != TYPE_STR) {
 		    free_var(propname);
 		    free_var(obj);
 		    PUSH_ERROR(E_TYPE);
@@ -1600,7 +1618,15 @@ do {								\
 
 		propname = TOP_RT_VALUE;	/* should be string */
 		obj = NEXT_TOP_RT_VALUE;	/* should be an object */
-		if (!obj.is_object() || propname.type != TYPE_STR)
+		if (obj.type == TYPE_WAIF && propname.type == TYPE_STR) {
+			enum error err;
+
+			err = waif_get_prop(obj.v.waif, propname.v.str, &prop, RUN_ACTIV.progr);
+			if (err == E_NONE)
+				PUSH(prop);
+			else
+				PUSH_ERROR(err);
+		} else if (!obj.is_object() || propname.type != TYPE_STR)
 		    PUSH_ERROR(E_TYPE);
 		else if (!is_valid(obj))
 		    PUSH_ERROR(E_INVIND);
@@ -1631,7 +1657,19 @@ do {								\
 		rhs = POP();		/* any type */
 		propname = POP();	/* should be string */
 		obj = POP();		/* should be an object */
-		if (!obj.is_object() || propname.type != TYPE_STR) {
+		if (obj.type == TYPE_WAIF && propname.type == TYPE_STR) {
+			enum error err;
+
+			err = waif_put_prop(obj.v.waif, propname.v.str, rhs, RUN_ACTIV.progr);
+			free_var(propname);
+			free_var(obj);
+			if (err == E_NONE) {
+				PUSH(rhs);
+			} else {
+				free_var(rhs);
+				PUSH_ERROR(err);
+			}
+		} else if (!obj.is_object() || propname.type != TYPE_STR) {
 		    free_var(rhs);
 		    free_var(propname);
 		    free_var(obj);
@@ -1755,8 +1793,9 @@ do {								\
 
 	case OP_CALL_VERB:
 	    {
-		enum error err;
+		enum error err = E_NONE;
 		Var args, verb, obj;
+		Objid _class;
 
 		args = POP();	/* args, should be list */
 		verb = POP();	/* verbname, should be string */
@@ -1764,7 +1803,18 @@ do {								\
 
 		if (args.type != TYPE_LIST || verb.type != TYPE_STR)
 		    err = E_TYPE;
-		else if (obj.is_object() && !is_valid(obj))
+		else if (obj.type == TYPE_WAIF) {
+			char *str = (char *)mymalloc(strlen(verb.v.str) + 2, M_STRING);
+
+			_class = obj.v.waif->_class;
+			str[0] = WAIF_VERB_PREFIX;
+			strcpy(str + 1, verb.v.str);
+			free_str(verb.v.str);
+			verb.v.str = str;
+			STORE_STATE_VARIABLES();
+			err = call_verb2(_class, verb.v.str, obj, args, 0);
+			LOAD_STATE_VARIABLES();
+		} else if (obj.is_object() && !is_valid(obj))
 		    err = E_INVIND;
 		else {
 		    Objid recv = NOTHING;

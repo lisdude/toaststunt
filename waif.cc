@@ -119,6 +119,7 @@ gen_waif_propdefs(Object *o)
 	wpd->length = cnt;
 	cnt = 0;
 	FOR_EACH(ancestor, ancestors, x, c) {
+		p = dbpriv_find_object(ancestor.v.obj);
 	    Propdef *pd = p->propdefs.l;
 
 	    for (i = 0; i < p->propdefs.cur_length; ++i, ++pd)

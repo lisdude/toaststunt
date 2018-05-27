@@ -258,7 +258,7 @@ dbio_read_var(void)
     case _TYPE_ANON:
 	r = db_read_anonymous();
 	break;
-    case TYPE_WAIF:
+    case _TYPE_WAIF:
     r = read_waif();
     break;
     default:
