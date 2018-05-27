@@ -54,7 +54,7 @@ CSRCS = http_parser.c regexpr.c yajl/yajl.c yajl/yajl_alloc.c \
 	nettle/sha384-meta.c nettle/sha512.c nettle/sha512-compress.c \
 	nettle/sha512-meta.c nettle/write-be32.c nettle/write-le32.c \
 	nettle/write-le64.c crypt/crypt_blowfish.c \
-	crypt/crypt_gensalt.c sosemanuk.c linenoise.c pcrs.c
+	crypt/crypt_gensalt.c sosemanuk.c linenoise.c pcrs.c waif.c
 
 CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
 	db_file.cc db_io.cc db_objects.cc db_properties.cc \

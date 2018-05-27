@@ -107,6 +107,8 @@ typedef enum Memory_Type {
 
     M_ANON, /* anonymous object */
 
+    M_WAIF, M_WAIF_XTRA,
+
     /* to be used when no more specific type applies */
     M_STRUCT, M_ARRAY,
 

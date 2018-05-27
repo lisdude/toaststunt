@@ -60,6 +60,8 @@ refcount_overhead(Memory_Type type)
 #endif /* MEMO_STRLEN */
     case M_ANON:
 	return MAX(sizeof(int), sizeof(struct Object *));
+    case M_WAIF:
+    return MAX(sizeof(int), sizeof(void *));
     default:
 	return 0;
     }

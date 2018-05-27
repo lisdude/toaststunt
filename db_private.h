@@ -80,6 +80,8 @@ typedef struct Object {
      * globally unique.
      */
     unsigned int nonce;
+
+    void *waif_propdefs;
 } Object;
 
 /*

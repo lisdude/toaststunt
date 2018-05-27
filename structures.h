@@ -83,13 +83,15 @@ typedef enum {
     _TYPE_MAP,			/* map; user-visible */
     _TYPE_ITER,			/* map iterator; not visible */
     _TYPE_ANON,			/* anonymous object; user-visible */
+    _TYPE_WAIF          /* lightweight object; user-visible */
     /* THE END - complex aliases come next */
     TYPE_STR = (_TYPE_STR | TYPE_COMPLEX_FLAG),
     TYPE_FLOAT = (_TYPE_FLOAT | TYPE_COMPLEX_FLAG),
     TYPE_LIST = (_TYPE_LIST | TYPE_COMPLEX_FLAG),
     TYPE_MAP = (_TYPE_MAP | TYPE_COMPLEX_FLAG),
     TYPE_ITER = (_TYPE_ITER | TYPE_COMPLEX_FLAG),
-    TYPE_ANON = (_TYPE_ANON | TYPE_COMPLEX_FLAG)
+    TYPE_ANON = (_TYPE_ANON | TYPE_COMPLEX_FLAG),
+    TYPE_WAIF = (_TYPE_WAIF | TYPE_COMPLEX_FLAG)
 } var_type;
 
 #define TYPE_ANY ((var_type) -1)	/* wildcard for use in declaring built-ins */
@@ -121,6 +123,34 @@ typedef struct rbtrav rbtrav;
 /* defined in db_private.h */
 typedef struct Object Object;
 
+struct WaifPropdefs;
+
+/* Try to make struct Waif fit into 32 bytes with this mapsz.  These bytes
+  * are probably "free" (from a powers-of-two allocator) and we can use them
+  * to save lots of space.  With 64bit addresses I think the right value is 8.
+  * If checkpoints are unforked, save space for an index used while saving.
+  * Otherwise we can alias propdefs and clobber it in the child.
+  */
+#ifdef UNFORKED_CHECKPOINTS
+#define WAIF_MAPSZ 2
+#else
+#define WAIF_MAPSZ 3
+#endif
+
+typedef struct Waif
+{
+    Objid class;
+    Objid owner;
+    struct WaifPropdefs *propdefs;
+    Var *propvals;
+    unsigned long map[WAIF_MAPSZ];
+#ifdef UNFORKED_CHECKPOINTS
+    unsigned long waif_save_index;
+#else
+#define waif_save_index map[0]
+#endif
+} Waif;
+
 struct Var {
     union {
 	const char *str;	/* STR */
@@ -132,6 +162,7 @@ struct Var {
 	rbtrav *trav;		/* ITER */
 	double *fnum;		/* FLOAT */
 	Object *anon;		/* ANON */
+    Waif *waif;         /* WAIF */
     } v;
     var_type type;
 

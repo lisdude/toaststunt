@@ -29,6 +29,7 @@
 #include "server.h"
 #include "storage.h"
 #include "utils.h"
+#include "waif.h"
 
 Propdef
 dbpriv_new_propdef(const char *name)
@@ -118,6 +119,9 @@ insert_prop2(Var obj, int pos, Pval pval)
 
     nprops = ++o->nval;
     new_propval = (Pval *)mymalloc(nprops * sizeof(Pval), M_PVAL);
+
+	free_waif_propdefs(o->waif_propdefs);
+	o->waif_propdefs = NULL;
 
     dbpriv_assign_nonce(o);
 
@@ -212,6 +216,18 @@ db_add_propdef(Var obj, const char *pname, Var value, Objid owner,
     return 1;
 }
 
+ static void
+ rename_prop_recursively(Objid root, const char *old, const char *new)
+ {
+     Objid c;
+     Object *o = dbpriv_find_object(root);
+
+     if (o->waif_propdefs)
+ 	waif_rename_propdef(o, old, new);
+     for (c = o->child; c != NOTHING; c = dbpriv_find_object(c)->sibling)
+ 	rename_prop_recursively(c, old, new);
+ }
+
 int
 db_rename_propdef(Var obj, const char *old, const char *_new)
 {
@@ -232,6 +248,7 @@ db_rename_propdef(Var obj, const char *old, const char *_new)
 		if (h.ptr || property_defined_at_or_below(_new, str_hash(_new), o))
 		    return 0;
 	    }
+		rename_prop_recursively(oid, props->l[i].name, new);
 	    free_str(props->l[i].name);
 	    props->l[i].name = str_ref(_new);
 	    props->l[i].hash = str_hash(_new);
@@ -253,6 +270,9 @@ remove_prop2(Var obj, int pos)
     nprops = --o->nval;
 
     dbpriv_assign_nonce(o);
+
+	free_waif_propdefs(o->waif_propdefs);
+	o->waif_propdefs = NULL;
 
     free_var(o->propval[pos].var);	/* free deleted property */
 

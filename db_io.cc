@@ -40,6 +40,7 @@
 #include "str_intern.h"
 #include "unparse.h"
 #include "version.h"
+#include "waif.h"
 
 
 /*********** Input ***********/
@@ -257,6 +258,9 @@ dbio_read_var(void)
     case _TYPE_ANON:
 	r = db_read_anonymous();
 	break;
+    case TYPE_WAIF:
+    r = read_waif();
+    break
     default:
 	errlog("DBIO_READ_VAR: Unknown type (%d) at DB file pos. %ld\n",
 	       l, ftell(input));
@@ -433,6 +437,9 @@ dbio_write_var(Var v)
     case TYPE_ANON:
 	db_write_anonymous(v);
 	break;
+    case TYPE_WAIF:
+    write_waif(v);
+    break;
     default:
 	errlog("DBIO_WRITE_VAR: Unknown type (%d)\n", (int)v.type);
 	break;

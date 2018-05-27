@@ -40,6 +40,7 @@
 #include "timers.h"
 #include "utils.h"
 #include "version.h"
+#include "waif.h"
 
 static char *input_db_name, *dump_db_name;
 static int dump_generation = 0;
@@ -1046,6 +1047,7 @@ read_db_file(void)
 
     /* see db_objects.c */
     dbpriv_after_load();
+	waif_after_loading();
 
     return 1;
 }
@@ -1065,6 +1067,7 @@ write_db_file(const char *reason)
     volatile int success = 1;
 
     try {
+	waif_before_saving();
 	dbio_printf(header_format_string, current_db_version);
 
 	user_list = db_all_users();
@@ -1123,6 +1126,7 @@ write_db_file(const char *reason)
 		}
 	    }
 	}
+	waif_after_saving();
     }
     catch (dbpriv_dbio_failed& exception) {
 	success = 0;

@@ -36,6 +36,7 @@
 #include "streams.h"
 #include "structures.h"
 #include "utils.h"
+#include "waif.h"
 
 static const char ascii[] =
 "\000\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017"
@@ -207,6 +208,10 @@ complex_free_var(Var v)
 	if (delref(v.v.trav) == 0)
 	    destroy_iter(v);
 	break;
+	case TYPE_WAIF:
+	if (delref(v.v.waif) == 0)
+		free_waif(v.v.waif);
+	break;
     case TYPE_ANON:
 	/* The first time an anonymous object's reference count drops
 	 * to zero, it isn't immediately destroyed/freed.  Instead, it
@@ -305,6 +310,9 @@ complex_var_ref(Var v)
     case TYPE_ITER:
 	addref(v.v.trav);
 	break;
+	case TYPE_WAIF:
+	addref(v.v.waif);
+	break;
     case TYPE_ANON:
 	if (v.v.anon) {
 	    addref(v.v.anon);
@@ -335,6 +343,9 @@ complex_var_ref(Var v)
     case TYPE_ITER:
 	addref(v.v.trav);
 	break;
+	case TYPE_WAIF:
+	addref(v.v.waif);
+	break;
     case TYPE_ANON:
 	if (v.v.anon)
 	    addref(v.v.anon);
@@ -362,6 +373,9 @@ complex_var_dup(Var v)
 	break;
     case TYPE_ITER:
 	v = iter_dup(v);
+	break;
+	case TYPE_WAIF:
+	v.v.waif = dup_waif(v.v.waif);
 	break;
     case TYPE_ANON:
 	panic("cannot var_dup() anonymous objects\n");
@@ -478,6 +492,8 @@ equality(Var lhs, Var rhs, int case_matters)
 	    return mapequal(lhs, rhs, case_matters);
 	case TYPE_ANON:
 	    return lhs.v.anon == rhs.v.anon;
+	case TYPE_WAIF:
+		return lhs.v.waif == rhs.v.waif;
 	default:
 	    panic("EQUALITY: Unknown value type");
 	}
@@ -615,6 +631,9 @@ value_bytes(Var v)
 	break;
     case TYPE_MAP:
 	size += map_sizeof(v.v.tree);
+	break;
+	case TYPE_WAIF:
+	size += waif_bytes(v.v.waif);
 	break;
     default:
 	break;
