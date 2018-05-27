@@ -31,6 +31,9 @@ static char rcsid[] = "$Id: waif.c,v 1.6 1999/08/20 05:55:57 bjj Exp $";
 #include "db_io.h"
 #include "waif.h"
 #include "my-string.h"
+#include "list.h" 		// FOR_EACH
+#include "server.h" 	// panic
+#include "db.h" 		// valid
 
 static unsigned long waif_count = 0;
 
@@ -89,27 +92,33 @@ static void
 gen_waif_propdefs(Object *o)
 {
 	WaifPropdefs *wpd;
-	int cnt, i;
+	int cnt, i, x, c;
 	Object *p;
+	Var ancestors, ancestor;
 
-	/* This is a lot like dbpriv_count_properties, except we're only
+	/* This is a lot like dbv4_count_properties, except we're only
 	 * counting relevant properties.
 	 */
+
 	cnt = 0;
-	for(p = o; p; p = dbpriv_find_object(p->parent))
+	ancestors = db_ancestors(Var::new_obj(o->id), true);
+	FOR_EACH(ancestor, ancestors, x, c)
+	{
+		p = dbpriv_find_object(ancestor.v.obj);
 	    for (i = 0; i < p->propdefs.cur_length; ++i)
 		if (p->propdefs.l[i].name[0] == WAIF_PROP_PREFIX)
 		    ++cnt;
+	}
 	
 	wpd = (WaifPropdefs *) mymalloc(sizeof(WaifPropdefs) +
 			(cnt-1) * sizeof(Propdef), M_WAIF_XTRA);
 	/* must free this after to avoid getting the same pointer! */
-	free_waif_propdefs(o->waif_propdefs);
+	free_waif_propdefs((WaifPropdefs *)o->waif_propdefs);
 
 	wpd->refcount = 1;
 	wpd->length = cnt;
 	cnt = 0;
-	for(p = o; p; p = dbpriv_find_object(p->parent)) {
+	FOR_EACH(ancestor, ancestors, x, c) {
 	    Propdef *pd = p->propdefs.l;
 
 	    for (i = 0; i < p->propdefs.cur_length; ++i, ++pd)
@@ -119,16 +128,15 @@ gen_waif_propdefs(Object *o)
 		    ++cnt;
 		}
 	}
-
 	o->waif_propdefs = wpd;
 }
 
 /* Rename a property in a set of propdefs.
  */
 void
-waif_rename_propdef(Object *o, const char *old, const char *new)
+waif_rename_propdef(Object *o, const char *old, const char *_new)
 {
-	WaifPropdefs *wpd = o->waif_propdefs;
+	WaifPropdefs *wpd = (WaifPropdefs *)o->waif_propdefs;
 	int i;
 
 	/* If the old AND new names are both waif properties just rename
@@ -142,12 +150,12 @@ waif_rename_propdef(Object *o, const char *old, const char *new)
 	 * them to all lose their values.  The Right Thing would be for  XXX
 	 * them to all KEEP the values, but that's not going to be easy! XXX
 	 */
-	if (old[0] == WAIF_PROP_PREFIX && new[0] == WAIF_PROP_PREFIX) {
+	if (old[0] == WAIF_PROP_PREFIX && _new[0] == WAIF_PROP_PREFIX) {
 		for (i = 0; i < wpd->length; ++i)
 			if (wpd->defs[i].name == old) {
 				free_str(old);
-				wpd->defs[i].name = str_ref(new);
-				wpd->defs[i].hash = str_hash(new);
+				wpd->defs[i].name = str_ref(_new);
+				wpd->defs[i].hash = str_hash(_new);
 				return;
 			}
 		panic("waif_rename_propdef(): missing old propdef?");
@@ -259,7 +267,7 @@ new_waif(Objid _class, Objid owner)
 	res.v.waif->owner = owner;
 	if (!classp->waif_propdefs)
 		gen_waif_propdefs(classp);
-	res.v.waif->propdefs = ref_waif_propdefs(classp->waif_propdefs);
+	res.v.waif->propdefs = ref_waif_propdefs((WaifPropdefs *)classp->waif_propdefs);
 	for (i = 0; i < WAIF_MAPSZ; ++i)
 		res.v.waif->map[i] = 0;
 	res.v.waif->propvals = alloc_waif_propvals(res.v.waif, 1);
@@ -329,7 +337,7 @@ static int
 alloc_propval_offset(Waif *w, int idx) 
 {
 	int result = -1;	/* avoid warning */
-	Var *newpv, *old, *new;
+	Var *newpv, *old, *_new;
 	int i;
 
 	/* assert(idx < N_MAPPABLE_PROPS) */
@@ -340,18 +348,18 @@ alloc_propval_offset(Waif *w, int idx)
 	newpv = alloc_waif_propvals(w, 0);
 
 	old = w->propvals;
-	new = newpv;
+	_new = newpv;
 	for (i = 0; i < N_MAPPABLE_PROPS; ++i)
 		if (PROP_MAPPED(w->map, i)) {
 			if (i == idx) {
-				new->type = TYPE_CLEAR;
-				result = new - newpv;
-				new++;
+				_new->type = TYPE_CLEAR;
+				result = _new - newpv;
+				_new++;
 			} else
-				 *new++ = *old++;
+				 *_new++ = *old++;
 		}
 	for (; i < w->propdefs->length; ++i)
-		 *new++ = *old++;
+		 *_new++ = *old++;
 	if (w->propvals)
 		myfree(w->propvals, M_WAIF_XTRA);
 	w->propvals = newpv;
@@ -407,7 +415,7 @@ update_waif_propdefs(Waif *waif)
 	}
 
 	old = waif->propdefs;
-	waif->propdefs = ref_waif_propdefs(classp->waif_propdefs);
+	waif->propdefs = ref_waif_propdefs((WaifPropdefs *)classp->waif_propdefs);
 
 	/* If the waif is totally undifferentiated, there's no need for
 	 * any remapping, is there?
@@ -568,9 +576,9 @@ bf_new_waif(Var arglist, Byte next, void *vdata, Objid progr)
 {
 	free_var(arglist);
 
-	if (!valid(caller()))
+	if (!is_valid(caller()))
 		return make_error_pack(E_INVIND);
-	return make_var_pack(new_waif(caller(), progr));
+	return make_var_pack(new_waif(caller().v.obj, progr));
 }
 
 void
@@ -649,7 +657,7 @@ waif_get_prop(Waif *w, const char *name, Var *prop, Objid progr)
 	 * flags and owner.  Get the value from the class object if
 	 * the waif's value is clear.
 	 */
-	h = db_find_property(w->_class, name,
+	h = db_find_property(Var::new_obj(w->_class), name,
 		prop->type == TYPE_CLEAR ? prop : NULL);
 	if (!h.ptr)
 		panic("waif propdef update failed in waif_get_prop");
@@ -718,7 +726,7 @@ waif_put_prop(Waif *w, const char *name, Var val, Objid progr)
 	/* If it exists, we have to find the class's def of it to get
 	 * flags and owner.
 	 */
-	h = db_find_property(w->_class, name, NULL);
+	h = db_find_property(Var::new_obj(w->_class), name, NULL);
 	if (!h.ptr)
 		panic("waif propdef update failed in waif_put_prop");
 	else if (h.built_in != BP_NONE)
@@ -994,7 +1002,7 @@ waif_after_loading()
 		}
 		if (!o->waif_propdefs)
 			gen_waif_propdefs(o);
-		w->propdefs = ref_waif_propdefs(o->waif_propdefs);
+		w->propdefs = ref_waif_propdefs((WaifPropdefs *)o->waif_propdefs);
 	}
 	myfree(saved_waifs, M_WAIF_XTRA);
 }
