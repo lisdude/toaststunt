@@ -238,4 +238,4 @@ dbpriv_dereference(Var v)
            ? dbpriv_find_object(v.v.obj)
            : v.v.anon;
 }
-#endif DB_PRIVATE_h
+#endif      /* !DB_PRIVATE_h */

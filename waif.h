@@ -45,7 +45,7 @@ extern void waif_before_loading();
 extern void waif_after_loading();
 extern void write_waif(Var);
 extern Var read_waif();
-extern void free_waif_propdefs(WaifPropdefs *);                                 
+extern void free_waif_propdefs(WaifPropdefs *);
 extern void waif_rename_propdef(Object *, const char *, const char *);
 
 #endif /* WAIF_h */
