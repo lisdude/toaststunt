@@ -1,9 +1,8 @@
-/* Copyright (c) 1998 Ben Jackson (ben@ben.com).  All rights reserved.
+/* Copyright (c) 1998-2002 Ben Jackson (ben@ben.com).  All rights reserved.
  *
- * Permission is hereby granted to use this software for private, academic
- * and non-commercial use. No commercial or profitable use of this
- * software may be made without the prior permission of the author,
- * Ben Jackson <ben@ben.com>.
+ * Use and copying of this software and preparation of derivative works based
+ * upon this software are permitted provided this copyright notice remains
+ * intact.
  *
  * THIS SOFTWARE IS PROVIDED BY BEN J JACKSON ``AS IS'' AND ANY
  * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
@@ -17,8 +16,6 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-static char rcsid[] = "$Id: waif.c,v 1.6 1999/08/20 05:55:57 bjj Exp $";
 
 #include "structures.h"
 #include "bf_register.h"
@@ -109,7 +106,7 @@ gen_waif_propdefs(Object *o)
 		if (p->propdefs.l[i].name[0] == WAIF_PROP_PREFIX)
 		    ++cnt;
 	}
-	
+
 	wpd = (WaifPropdefs *) mymalloc(sizeof(WaifPropdefs) +
 			(cnt-1) * sizeof(Propdef), M_WAIF_XTRA);
 	/* must free this after to avoid getting the same pointer! */
@@ -336,7 +333,7 @@ found:
  * propval array accordingly.
  */
 static int
-alloc_propval_offset(Waif *w, int idx) 
+alloc_propval_offset(Waif *w, int idx)
 {
 	int result = -1;	/* avoid warning */
 	Var *newpv, *old, *_new;
@@ -626,6 +623,9 @@ waif_get_prop(Waif *w, const char *name, Var *prop, Objid progr)
 		prop->type = TYPE_OBJ;
 		prop->v.obj = w->_class;
 		return E_NONE;
+    } else if (!mystrcasecmp(name, "wizard")) {
+        *prop = zero;
+        return E_NONE;
 	} else if (!valid(w->_class))
 		return E_INVIND;
 
@@ -692,6 +692,8 @@ waif_put_prop(Waif *w, const char *name, Var val, Objid progr)
 		 * explicit call at the chparent rather than really being
 		 * lazy in this case).
 		 */
+		return E_PERM;
+    else if (!mystrcasecmp(name, "wizard"))
 		return E_PERM;
 	else if (!valid(w->_class))
 		return E_INVIND;

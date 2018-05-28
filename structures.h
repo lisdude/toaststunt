@@ -126,29 +126,27 @@ typedef struct Object Object;
 struct WaifPropdefs;
 
 /* Try to make struct Waif fit into 32 bytes with this mapsz.  These bytes
-  * are probably "free" (from a powers-of-two allocator) and we can use them
-  * to save lots of space.  With 64bit addresses I think the right value is 8.
-  * If checkpoints are unforked, save space for an index used while saving.
-  * Otherwise we can alias propdefs and clobber it in the child.
-  */
-
- #ifdef UNFORKED_CHECKPOINTS
- #define WAIF_MAPSZ 2
- #else
- #define WAIF_MAPSZ 3
- #endif
-
-typedef struct Waif
-{
-    Objid _class;
-    Objid owner;
-    struct WaifPropdefs *propdefs;
-    Var *propvals;
-    unsigned long map[WAIF_MAPSZ];
+ * are probably "free" (from a powers-of-two allocator) and we can use them
+ * to save lots of space.  With 64bit addresses I think the right value is 8.
+ * If checkpoints are unforked, save space for an index used while saving.
+ * Otherwise we can alias propdefs and clobber it in the child.
+ */
 #ifdef UNFORKED_CHECKPOINTS
-unsigned long       waif_save_index;
+#define WAIF_MAPSZ	2
 #else
-#define waif_save_index     map[0]
+#define WAIF_MAPSZ	3
+#endif
+
+typedef struct Waif {
+    Objid			        class;
+    Objid			        owner;
+    struct WaifPropdefs	    *propdefs;
+    Var			            *propvals;
+    unsigned long		    map[WAIF_MAPSZ];
+#ifdef UNFORKED_CHECKPOINTS
+    unsigned long		    waif_save_index;
+#else
+#define waif_save_index		map[0]
 #endif
 } Waif;
 

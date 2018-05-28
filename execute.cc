@@ -68,6 +68,16 @@ static Var handler_verb_args;
    unloaded anonymous objects */
 static Var temp_vars = new_list(0);
 
+#ifdef WAIF_DICT
+/*
+ * Jay Carlson's WAIF DICT patch.  These static moo-strings are needed for
+ * the new call_verb2 interface which assumes verb is a moo-string rather
+ * than a (non reference-counted) C-string.
+ */
+static char *waif_index_verb;
+static char *waif_indexset_verb;
+#endif				/* WAIF_DICT */
+
 /* macros to ease indexing into activation stack */
 #define RUN_ACTIV     activ_stack[top_activ_stack]
 #define CALLER_ACTIV  activ_stack[top_activ_stack - 1]
@@ -714,11 +724,10 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 #undef ENV_COPY
 
     v.type = TYPE_STR;
-	if (vname[0] == WAIF_VERB_PREFIX) {
+	if (vname[0] == WAIF_VERB_PREFIX)
 		v.v.str = str_dup(vname + 1);
-	} else {
+	else
     	v.v.str = str_ref(vname);
-	}
     set_rt_env_var(env, SLOT_VERB, v);	/* no var_dup */
     set_rt_env_var(env, SLOT_ARGS, args);	/* no var_dup */
 
@@ -731,7 +740,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 #define bi_prop_protected(prop, progr) ((!is_wizard(progr)) && server_flag_option_cached(prop))
 #endif				/* IGNORE_PROP_PROTECTED */
 
-/** 
+/**
   the main interpreter -- run()
   everything is just an entry point to it
 **/
@@ -1047,6 +1056,38 @@ do {								\
 		list = POP();	/* lhs except last index, should be list or str */
 		/* whole thing should mean list[index] = value OR
 		 * map[key] = value */
+        #ifdef WAIF_DICT
+		if (list.type == TYPE_WAIF) {
+		    Objid _class;
+		    Var args;
+		    enum error err = E_NONE;
+
+		    args = new_list(2);
+		    args.v.list[1] = var_ref(index);
+		    args.v.list[2] = var_ref(value);
+
+		    _class = list.v.waif->_class;
+		    if (!valid(_class)) {
+			err = E_INVIND;
+		    } else if (!is_wizard(db_object_owner(_class))) {
+			err = E_TYPE;
+		    } else {
+			STORE_STATE_VARIABLES();
+			err = call_verb2(_class, waif_indexset_verb, list, args, 0);
+			if (err == E_VERBNF) {
+			    err = E_TYPE;
+			}
+			LOAD_STATE_VARIABLES();
+		    }
+		    free_var(index);
+		    free_var(value);
+		    free_var(list);
+		    if (err != E_NONE) {
+			free_var(args);
+			PUSH_ERROR(err);
+		    }
+		} else
+#endif				/* WAIF_DICT */
 		if ((list.type != TYPE_LIST && list.type != TYPE_STR &&
 		     list.type != TYPE_MAP)
 		    || ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
@@ -1860,7 +1901,7 @@ do {								\
 		free_var(obj);
 		free_var(verb);
 
-		if (err != E_NONE) {	/* there is an error, RUN_ACTIV unchanged, 
+		if (err != E_NONE) {	/* there is an error, RUN_ACTIV unchanged,
 					   args must be freed */
 		    free_var(args);
 		    PUSH_ERROR(err);
@@ -2802,7 +2843,7 @@ do_task(Program * prog, int which_vector, Var * result, int is_fg, int do_db_tra
 {				/* which vector determines the vector for the root_activ.
 				   a forked task can also have which_vector == MAIN_VECTOR.
 				   this happens iff it is recovered from a read from disk,
-				   because in that case the forked statement is parsed as 
+				   because in that case the forked statement is parsed as
 				   the main vector */
 
     RUN_ACTIV.prog = program_ref(prog);
@@ -3295,6 +3336,11 @@ register_execute(void)
     register_function("caller_perms", 0, 0, bf_caller_perms);
     register_function("callers", 0, 1, bf_callers, TYPE_ANY);
     register_function("task_stack", 1, 2, bf_task_stack, TYPE_INT, TYPE_ANY);
+
+#ifdef WAIF_DICT
+    waif_index_verb = str_dup(WAIF_INDEX_VERB);
+    waif_indexset_verb = str_dup(WAIF_INDEXSET_VERB);
+#endif				/* WAIF_DICT */
 }
 
 

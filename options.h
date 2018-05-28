@@ -417,6 +417,16 @@
 
 #define COLOR_LOGS 1
 
+/******************************************************************************
+ * Turn on WAIF_DICT for Jay Carlson's patch that makes waif[x]=y and waif[x]
+ * work by calling verbs on the waif.
+ * Verbs:
+ *   :_index(KEY) => Returns the value at KEY index.
+ *   :_set_index(KEY, VALUE) => Sets the KEY to VALUE.
+ ******************************************************************************
+*/
+#define WAIF_DICT
+
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/

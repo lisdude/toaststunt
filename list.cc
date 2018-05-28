@@ -383,7 +383,7 @@ stream_add_tostr(Stream * s, Var v)
 	stream_add_string(s, "*anonymous*");
 	break;
     case TYPE_WAIF:
-    stream_add_string(s, "{waif}");
+    stream_add_string(s, "[[waif]]");
     break;
     default:
 	panic("STREAM_ADD_TOSTR: Unknown Var type");
