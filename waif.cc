@@ -130,6 +130,7 @@ gen_waif_propdefs(Object *o)
 		}
 	}
 	o->waif_propdefs = wpd;
+    free_var(ancestors);
 }
 
 /* Rename a property in a set of propdefs.
