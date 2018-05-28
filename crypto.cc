@@ -234,7 +234,6 @@ bf_salt(Var arglist, Byte next, void *vdata, Objid progr)
     const char *prefix = arglist.v.list[1].v.str;
     size_t prefix_length = memo_strlen(prefix);
     const char *input = arglist.v.list[2].v.str;
-    size_t input_length = memo_strlen(input);
 
     const char *rest;
     size_t rest_length;
