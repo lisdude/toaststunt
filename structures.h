@@ -132,11 +132,11 @@ struct WaifPropdefs;
   * Otherwise we can alias propdefs and clobber it in the child.
   */
 
- #ifdef UNFORKED_CHECKPOINTS                                                                                                                                                                                                            
- #define WAIF_MAPSZ 2                                                                                                                                                                                                                   
- #else                                                                                                                                                                                                                                  
- #define WAIF_MAPSZ 3                                                                                                                                                                                                                   
- #endif   
+ #ifdef UNFORKED_CHECKPOINTS
+ #define WAIF_MAPSZ 2
+ #else
+ #define WAIF_MAPSZ 3
+ #endif
 
 typedef struct Waif
 {
@@ -145,11 +145,11 @@ typedef struct Waif
     struct WaifPropdefs *propdefs;
     Var *propvals;
     unsigned long map[WAIF_MAPSZ];
-#ifdef UNFORKED_CHECKPOINTS                                                                                                                                                                                         
-unsigned long       waif_save_index;                                                                                                                                                                            
-#else                                                                                                                                                                                                           
-#define waif_save_index     map[0]                                                                                                                                                                              
-#endif                                      
+#ifdef UNFORKED_CHECKPOINTS
+unsigned long       waif_save_index;
+#else
+#define waif_save_index     map[0]
+#endif
 } Waif;
 
 struct Var {
