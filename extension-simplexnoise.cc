@@ -37,7 +37,7 @@
  */
 
 // We don't really need to include this, but play nice and do it anyway.
-#include	"simplexnoise1234.h"
+#include	"extension-simplexnoise.h"
 
 #define FASTFLOOR(x) ( ((int)(x)<=(x)) ? ((int)x) : (((int)x)-1) )
 
