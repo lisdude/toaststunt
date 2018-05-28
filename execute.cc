@@ -425,8 +425,6 @@ make_stack_list(activation * stack, int start, int end, int include_end,
 
 	if (include_end || i != end) {
 	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
-		v.v.list[1].type = TYPE_OBJ;
-		v.v.list[1].v.obj = stack[i]._this.v.obj;
 	    v.v.list[1] = anonymizing_var_ref(stack[i]._this, progr);
 	    v.v.list[2] = str_ref_to_var(stack[i].verb);
 	    v.v.list[3] = Var::new_obj(stack[i].progr);
@@ -718,7 +716,6 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
     v.type = TYPE_STR;
 	if (vname[0] == WAIF_VERB_PREFIX) {
 		v.v.str = str_dup(vname + 1);
-		free_str(vname);
 	} else {
     	v.v.str = str_ref(vname);
 	}
@@ -1793,7 +1790,7 @@ do {								\
 
 	case OP_CALL_VERB:
 	    {
-		enum error err = E_NONE;
+		enum error err;
 		Var args, verb, obj;
 		Objid _class;
 
