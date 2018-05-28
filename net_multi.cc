@@ -605,6 +605,17 @@ network_process_io(int timeout)
     }
 }
 
+extern void
+rewrite_connection_name(network_handle nh, Stream *new_connection_name)
+{
+    nhandle *h = (nhandle *) nh.ptr;
+
+    char *oldname = h->name;
+    h->name = str_dup(reset_stream(new_connection_name));
+    applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", oldname, h->name);
+    free_str(oldname);
+}
+
 const char *
 network_connection_name(network_handle nh)
 {

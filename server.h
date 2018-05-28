@@ -155,6 +155,10 @@ extern void queue_anonymous_object(Var v);
 extern void write_values_pending_finalization(void);
 extern int read_values_pending_finalization(void);
 
+#include "streams.h"
+char is_localhost(Objid connection);
+void proxy_connected(Objid connection, Stream *new_connection_name);
+
 #include "db.h"
 
 /* Some server options are cached for performance reasons.

@@ -45,4 +45,8 @@ extern int network_set_nonblocking(int fd);
 				 * descriptor FD.  Return true iff successful.
 				 */
 
+#include "streams.h"
+#include "network.h"
+void rewrite_connection_name(network_handle nh, Stream *new_connection_name);
+
 #endif				/* !Net_Multi_H */

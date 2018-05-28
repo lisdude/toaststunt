@@ -59,6 +59,7 @@
 #include "unparse.h"
 #include "utils.h"
 #include "version.h"
+#include "net_multi.h"  /* rewrite connection name */
 
 extern "C" {
 #include "linenoise.h"
@@ -1399,6 +1400,24 @@ player_connected_silent(Objid old_id, Objid new_id, int is_newly_created)
 	      object_name(new_h->player),
 	      network_connection_name(new_h->nhandle));
     }
+}
+
+char
+is_localhost(Objid connection)
+{
+    shandle *existing_h = find_shandle(connection);
+    if (existing_h && strstr(network_connection_name(existing_h->nhandle), "[127.0.0.1]") != NULL)
+        return 1;
+    else
+        return 0;
+}
+
+void
+proxy_connected(Objid connection, Stream *new_connection_name)
+{
+    shandle *existing_h = find_shandle(connection);
+    if (existing_h)
+        rewrite_connection_name(existing_h->nhandle, new_connection_name);
 }
 
 void

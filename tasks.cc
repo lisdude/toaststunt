@@ -860,9 +860,64 @@ do_login_task(tqueue * tq, char *command)
 				 * or does not immediately return.
 				 */
 
-    args = parse_into_wordlist(command);
+    bool clear_command = false; /* A flag that determines whether or not do_login_command
+                                   will fall through with a blank command */
+
+    if (server_int_option("proxy_rewrite", 1) && is_localhost(tq->player))
+    {
+        /* To avoid printing the login screen (and allow redlists to work), ignore blank lines coming from localhost. */
+        if (command[0] == '\0')
+            return 1;
+
+        /* Detect and parse incoming localhost proxies. This allows us to have an SSL presence and keep the originating IP. */
+        if (strlen(command) >= 5 && strncmp(command, "PROXY", 5) == 0) {
+            applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
+            char *source = NULL;
+            char *source_port = NULL;
+            char *destination_port = NULL;
+            char *split = strtok(command, " ");
+
+            int x = 0;
+            for (x = 1; x <= 6; x++) {
+                // Just in case something goes horribly wrong...
+                if (split == NULL) {
+                    errlog("PROXY: Proxy command parsing failed!\n");
+                    break;
+                }
+                switch (x) {
+                    case 3:
+                        source = split;
+                        break;
+                    case 5:
+                        source_port = split;
+                        break;
+                    case 6:
+                        destination_port = split;
+                        break;
+                    default:
+                        break;
+                }
+                split = strtok(NULL, " ");
+            }
+
+            // TODO: Resolve DNS names here
+
+            static Stream *new_connection_name = 0;
+
+            if (!new_connection_name)
+                new_connection_name = new_stream(100);
+
+            stream_printf(new_connection_name, "port %s from %s [%s], port %s", destination_port, source, source, source_port);
+
+            proxy_connected(tq->player, new_connection_name);
+            /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */
+            clear_command = true;
+        }
+    }
+
+    args = parse_into_wordlist(clear_command ? '\0' : command);
     run_server_task_setting_id(tq->player, Var::new_obj(tq->handler),
-			       "do_login_command", args, command,
+			       "do_login_command", args, clear_command ? '\0' : command,
 			        &result, &(tq->last_input_task_id));
     /* The connected player (tq->player) may be non-negative if
      * `do_login_command' already called the `switch_player' built-in
