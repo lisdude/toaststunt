@@ -70,7 +70,8 @@ static registry bi_function_registries[] =
     register_sqlite,
     register_pcre,
     register_background,
-    register_waif
+    register_waif,
+    register_simplexnoise
 };
 
 void

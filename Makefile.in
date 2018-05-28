@@ -67,7 +67,7 @@ CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
 	streams.cc str_intern.cc sym_table.cc system.cc tasks.cc \
 	timers.cc unparse.cc utils.cc verbs.cc version.cc \
 	extension-sqlite.cc extension-pcre.cc extension-background.cc \
-	waif.cc
+	waif.cc extension-simplexnoise.cc
 
 OPT_NET_SRCS = net_single.cc net_multi.cc net_mp_selct.cc \
 	net_mp_poll.cc net_mp_fake.cc net_tcp.cc net_bsd_tcp.cc \
@@ -96,7 +96,8 @@ HDRS = ast.h base64.h bf_register.h code_gen.h collection.h crypto.h \
 	nettle/nettle-meta.h nettle/nettle-types.h \
 	nettle/nettle-write.h nettle/ripemd160.h nettle/sha1.h \
 	nettle/sha2.h sosemanuk.h linenoise.h \
-	extension-sqlite.h extension-background.h waif.h
+	extension-sqlite.h extension-background.h waif.h \
+	extension-simplexnoise.h
 
 SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
 	my-poll.h my-signal.h my-socket.h my-stat.h my-stdarg.h my-stdio.h \
