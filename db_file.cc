@@ -1095,7 +1095,7 @@ write_db_file(const char *reason)
 	    for (oid = max_oid + 1; oid <= last_oid; oid++) {
 		ng_write_object(oid);
 		if ((oid + 1) % 10000 == 0 || oid == last_oid)
-		    oklog("%s: Done writing %d objects ...\n", reason, last_oid - max_oid);
+		    oklog("%s: Done writing %d objects ...\n", reason, oid + 1);
 	    }
 	    max_oid = last_oid;
 	    last_oid = db_last_used_objid();
