@@ -297,6 +297,44 @@ bf_round(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(new_float(r));
 }
 
+/* Return a list of substrings of an argument separated by a break. */
+    static package
+bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    int nargs = arglist.v.list[0].v.num;
+    Stream *brk = new_stream(2);
+    stream_add_string(brk, (nargs > 1) ? arglist.v.list[2].v.str : " ");
+    Var r;
+
+    if (strcmp(stream_contents(brk), "") == 0) {
+        // Do we want to break it into letters here?
+        r.type = TYPE_ERR;
+        r.v.err = E_INVARG;
+    } else {
+        r = new_list(0);
+        int i, l = stream_length(brk);
+        Stream *tmp = new_stream(memo_strlen(arglist.v.list[1].v.str)+1);
+        stream_add_string(tmp, arglist.v.list[1].v.str);
+        stream_add_string(tmp, stream_contents(brk));
+
+        Var subject;
+        subject.type = TYPE_STR;
+        subject.v.str = str_dup(reset_stream(tmp));
+        free_stream(tmp);
+
+        while (memo_strlen(subject.v.str)) {
+            if ((i = strindex(subject.v.str, memo_strlen(subject.v.str), stream_contents(brk), stream_length(brk), 0)) > 1) {
+                r = listappend(r, substr(var_dup(subject), 1, i - 1));
+            }
+            subject = substr(subject, i + l, memo_strlen(subject.v.str));
+        }
+        free_var(subject);
+    }
+    free_var(arglist);
+    free_stream(brk);
+    return make_var_pack(r);
+}
+
 // ============= ANSI ===============
     static package
 bf_parse_ansi(Var arglist, Byte next, void *vdata, Objid progr)
@@ -441,6 +479,7 @@ register_extensions()
     register_function("ftime", 0, 1, bf_ftime, TYPE_INT);
     register_function("panic", 0, 1, bf_panic, TYPE_STR);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR);
+    register_function("explode", 1, 2, bf_explode, TYPE_STR, TYPE_STR);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
