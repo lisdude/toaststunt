@@ -210,14 +210,19 @@ dbio_read_string_intern(void)
 Var
 dbio_read_var(void)
 {
-    Var r;
     int i, l = dbio_read_num();
 
+    if (l == waif_conversion_type && waif_conversion_type != _TYPE_WAIF)
+        return read_waif();
+
+    Var r;
     if (l == (int) TYPE_ANY && dbio_input_version == DBV_Prehistory)
 	l = TYPE_NONE;		/* Old encoding for VM's empty temp register
 				 * and any as-yet unassigned variables.
 				 */
     r.type = (var_type) l;
+
+
     switch (l) {
     case TYPE_CLEAR:
     case TYPE_NONE:

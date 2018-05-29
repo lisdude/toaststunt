@@ -1572,6 +1572,8 @@ read_active_connections(void)
     return 1;
 }
 
+    int waif_conversion_type = _TYPE_WAIF;    /* For shame. We can remove this someday. */
+
 int
 main(int argc, char **argv)
 {
@@ -1622,7 +1624,15 @@ main(int argc, char **argv)
 	    } else
 		argc = 0;
 	    break;
-	default:
+    case 'w':       /* Specified an old waif type for conversion */
+        if (argc > 1) {
+            waif_conversion_type = atoi(argv[1]);
+            argc--;
+            argv++;
+        } else
+            argc = 0;
+        break;
+    default:
 	    argc = 0;		/* Provoke usage message below */
 	}
 	argc--;
@@ -1652,13 +1662,14 @@ main(int argc, char **argv)
     if ((emergency && (script_file || script_line))
 	|| !db_initialize(&argc, &argv)
 	|| !network_initialize(argc, argv, &desc)) {
-	fprintf(stderr, "Usage: %s [-e] [-f script-file] [-c script-line] [-l log-file] %s %s\n",
+	fprintf(stderr, "Usage: %s [-e] [-f script-file] [-c script-line] [-l log-file] [-w waif-type] %s %s\n",
 		this_program, db_usage_string(), network_usage_string());
 	fprintf(stderr, "Options:\n");
 	fprintf(stderr, "\t-e\t\temergency wizard mode\n");
 	fprintf(stderr, "\t-f\t\tfile to load and pass to `#0:do_start_script()'\n");
 	fprintf(stderr, "\t-c\t\tline to pass to `#0:do_start_script()'\n");
-	fprintf(stderr, "\t-l\t\toptional log file\n\n");
+	fprintf(stderr, "\t-l\t\toptional log file\n");
+    fprintf(stderr, "\t-w\t\tconvert waifs from the specified type to the proper type (check with typeof(waif) in your MOO)\n\n");
 	fprintf(stderr, "The emergency mode switch (-e) may not be used with either the file (-f) or line (-c) options.\n\n");
 	fprintf(stderr, "Both the file and line options may be specified. Their order on the command line determines the order of their invocation.\n\n");
 	fprintf(stderr, "Examples: \n");
@@ -1680,6 +1691,8 @@ main(int argc, char **argv)
     oklog("          (Task timeouts measured in %s seconds.)\n",
 	  virtual_timer_available()? "server CPU" : "wall-clock");
     oklog("          (Process id %d)\n", parent_pid);
+    if (waif_conversion_type != _TYPE_WAIF)
+        applog(LOG_WARNING, "(Using type '%i' for waifs; will convert to '%i' at shutdown)\n", waif_conversion_type, _TYPE_WAIF);
 
     register_bi_functions();
 

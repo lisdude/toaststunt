@@ -23,6 +23,8 @@
 #include "structures.h"
 #include "version.h"
 
+extern int waif_conversion_type;
+
 /*********** Input ***********/
 
 extern DB_Version dbio_input_version;
