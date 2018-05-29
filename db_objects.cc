@@ -193,6 +193,7 @@ db_init_object(Object *o)
     o->children = new_list(0);
 
     o->location = var_ref(nothing);
+    o->last_location = var_ref(nothing);
     o->contents = new_list(0);
 
     o->propval = 0;
@@ -940,6 +941,12 @@ dbpriv_object_location(Object *o)
     return o->location;
 }
 
+Var
+dbpriv_object_last_location(Object *o)
+{
+	   return o->last_location;
+}
+
 Objid
 db_object_location(Objid oid)
 {
@@ -985,7 +992,9 @@ db_change_location(Objid oid, Objid new_location)
 
     free_var(objects[oid]->location);
 
+
     objects[oid]->location = Var::new_obj(new_location);
+    objects[oid]->last_location = Var::new_obj(old_location);
 }
 
 int

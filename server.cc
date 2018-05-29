@@ -610,7 +610,7 @@ read_values_pending_finalization(void)
 static void
 main_loop(void)
 {
-    int i;
+    int i, res;
 
     /* First, queue anonymous objects */
     for (i = 1; i <= pending_list.v.list[0].v.num; i++) {
@@ -647,8 +647,8 @@ main_loop(void)
 	 * We only care about three cases (== 0, == 1, and > 1), so we can
 	 * map a `never' result from the task subsystem into 2.
 	 */
-	int task_seconds = next_task_start();
-	int seconds_left = task_seconds < 0 ? 2 : task_seconds;
+	int task_useconds = next_task_start();
+	int useconds_left = task_useconds < 0 ? 1000000 : task_useconds;
 	shandle *h, *nexth;
 
 #ifdef ENABLE_GC
@@ -681,10 +681,7 @@ main_loop(void)
 
 	recycle_anonymous_objects();
 
-	if (!network_process_io(seconds_left ? 1 : 0) && seconds_left > 1)
-	    db_flush(FLUSH_ONE_SECOND);
-	else
-	    db_flush(FLUSH_IF_FULL);
+	res = network_process_io(useconds_left);
 
 	run_ready_tasks();
 

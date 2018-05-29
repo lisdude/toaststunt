@@ -184,8 +184,8 @@ network_process_io(int timeout)
 	    sh = server_new_connection(slistener, nh, 0);
 	    state = STATE_OPEN;
 	    got_some = 1;
-	} else if (timeout != 0)
-	    sleep(timeout);
+	} else if (timeout > 0)
+	    sleep(timeout / 1000000);
 	break;
 
     case STATE_OPEN:
@@ -213,11 +213,11 @@ network_process_io(int timeout)
 		    }
 	    }
 
-	    if (got_some || timeout == 0)
+	    if (got_some || timeout <= 0)
 		goto done;
 
 	    sleep(1);
-	    timeout--;
+	    timeout -= 1000000;
 	}
     }
 

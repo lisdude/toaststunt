@@ -137,9 +137,10 @@ mplex_wait(unsigned timeout)
 	    }
 	}
 
+	timeout -= 1000000;
 	if (got_one)
 	    break;
-	else if (timeout-- > 0)
+	else if (timeout > 0)
 	    sleep(1);
     }
 
