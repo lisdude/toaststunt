@@ -1692,7 +1692,7 @@ main(int argc, char **argv)
 	  virtual_timer_available()? "server CPU" : "wall-clock");
     oklog("          (Process id %d)\n", parent_pid);
     if (waif_conversion_type != _TYPE_WAIF)
-        applog(LOG_WARNING, "(Using type '%i' for waifs; will convert to '%i' at shutdown)\n", waif_conversion_type, _TYPE_WAIF);
+        applog(LOG_WARNING, "(Using type '%i' for waifs; will convert to '%i' at next checkpoint)\n", waif_conversion_type, _TYPE_WAIF);
 
     register_bi_functions();
 
