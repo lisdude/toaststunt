@@ -873,6 +873,8 @@ read_db_file(void)
     db_verb_handle h;
     Program *program;
 
+    waif_before_loading();
+
     if (dbio_scanf(header_format_string, &dbio_input_version) != 1)
 	dbio_input_version = DBV_Prehistory;
 
