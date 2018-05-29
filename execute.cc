@@ -1779,6 +1779,7 @@ do {								\
 				err = E_PERM;
 			    break;
 			case BP_LOCATION:
+			case BP_LAST_LOCATION:
 			case BP_CONTENTS:
 			    err = E_PERM;
 			    break;
