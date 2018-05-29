@@ -58,8 +58,8 @@ mplex_wait(unsigned timeout)
     struct timeval tv;
     int n;
 
-    tv.tv_sec = timeout;
-    tv.tv_usec = 0;
+    tv.tv_sec = timeout / 1000000;
+    tv.tv_usec = timeout % 1000000;
 
     n = select(max_descriptor + 1, &input, &output, 0, &tv);
 

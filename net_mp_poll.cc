@@ -80,7 +80,7 @@ mplex_add_writer(int fd)
 int
 mplex_wait(unsigned timeout)
 {
-    int result = poll(ports, max_fd + 1, timeout * 1000);
+    int result = poll(ports, max_fd + 1, timeout / 1000);
 
     if (result < 0) {
 	if (errno != EINTR)
