@@ -1409,6 +1409,36 @@ do {								\
 		index = POP();
 		list = POP();	/* should be list, string, or map */
 
+		#ifdef WAIF_DICT
+		if (list.type == TYPE_WAIF) {
+		    Objid _class;
+		    Var args;
+		    enum error err = E_NONE;
+
+		    args = new_list(1);
+		    args.v.list[1] = var_ref(index);
+
+		    _class = list.v.waif->_class;
+		    if (!valid(_class)) {
+			err = E_INVIND;
+		    } else if (!is_wizard(db_object_owner(_class))) {
+			err = E_TYPE;
+		    } else {
+			STORE_STATE_VARIABLES();
+			err = call_verb2(_class, waif_index_verb, list, args, 0);
+			if (err == E_VERBNF) {
+			    err = E_TYPE;
+			}
+			LOAD_STATE_VARIABLES();
+		    }
+		    free_var(index);
+		    free_var(list);
+		    if (err != E_NONE) {
+			free_var(args);
+			PUSH_ERROR(err);
+		    }
+		} else
+#endif				/* WAIF_DICT */
 		if ((list.type != TYPE_LIST && list.type != TYPE_STR &&
 		     list.type != TYPE_MAP) ||
 		    ((list.type == TYPE_LIST || list.type == TYPE_STR) &&

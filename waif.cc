@@ -32,6 +32,7 @@
 #include "server.h" 	// panic
 #include "db.h" 		// valid
 #include "log.h"        // errlog
+#include "map.h"
 
 static unsigned long waif_count = 0;
 
@@ -586,9 +587,14 @@ bf_waif_stats(Var arglist, Byte next, void *vdata, Objid progr)
 {
     free_var(arglist);
 
-    Var r = new_list(1);
-    r.v.list[1].type = TYPE_INT;
-    r.v.list[1].v.num = waif_count;
+    Var r = new_map();
+    Var count;
+    count.type = TYPE_INT;
+    count.v.num = waif_count;
+    Var key;
+    key.type = TYPE_STR;
+    key.v.str = str_dup("total");
+    r = mapinsert(r, key, count);
 
     return make_var_pack(r);
 }
