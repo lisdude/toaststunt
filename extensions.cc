@@ -335,6 +335,37 @@ bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+/* Return a list of objects of parent, optionally with a player flag set.
+ * With only one argument, player flag is assumed to be the only condition.
+ * With two arguments, parent is the only condition.
+ * With three arguments, parent is checked first and then the player flag is checked.
+ * get_players(LIST objects, LIST parents, ?INT player flag set)
+ */
+static package
+bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (object) */
+    Var ret = new_list(0);
+    int nargs = arglist.v.list[0].v.num;
+    Var contents = arglist.v.list[1];
+    int content_length = contents.v.list[0].v.num;
+    bool check_parent = nargs == 1 ? false : true;
+    Var parent = check_parent ? arglist.v.list[2] : nothing;
+    bool check_player_flag = (nargs == 1 || (nargs > 2 && is_true(arglist.v.list[3])));
+
+    for (int x = 1; x <= content_length; x++) {
+        Objid oid = contents.v.list[x].v.obj;
+        if (valid(oid)
+            && (!check_parent ? 1 : db_object_isa(Var::new_obj(oid), parent))
+            && (!check_player_flag || (check_player_flag && is_user(oid))))
+        {
+            ret = setadd(ret, Var::new_obj(oid));
+        }
+    }
+
+    free_var(arglist);
+    return make_var_pack(ret);
+}
+
 // ============= ANSI ===============
     static package
 bf_parse_ansi(Var arglist, Byte next, void *vdata, Objid progr)
@@ -480,6 +511,7 @@ register_extensions()
     register_function("panic", 0, 1, bf_panic, TYPE_STR);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR);
     register_function("explode", 1, 2, bf_explode, TYPE_STR, TYPE_STR);
+    register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
