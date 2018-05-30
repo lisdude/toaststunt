@@ -31,6 +31,7 @@
 #include "list.h" 		// FOR_EACH
 #include "server.h" 	// panic
 #include "db.h" 		// valid
+#include "log.h"        // errlog
 
 static unsigned long waif_count = 0;
 
@@ -296,7 +297,7 @@ found:
 	if (pidx)
 		*pidx = i;
 
-	/* Now determine the offset into the acutal property values.  Use a
+	/* Now determine the offset into the actual property values.  Use a
 	 * bitmap that indicates which values aren't clear, so we don't have
 	 * to represent undifferentiated (TYPE_CLEAR) values.  Since the map
 	 * is of limited size, if there are more properties than will fit in
@@ -580,10 +581,23 @@ bf_new_waif(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_var_pack(new_waif(caller().v.obj, progr));
 }
 
+static package
+bf_waif_stats(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    Var r = new_list(1);
+    r.v.list[1].type = TYPE_INT;
+    r.v.list[1].v.num = waif_count;
+
+    return make_var_pack(r);
+}
+
 void
 register_waif()
 {
 	register_function("new_waif", 0, 0, bf_new_waif);
+	register_function("waif_stats", 0, 0, bf_waif_stats);
 }
 
 /* Waif proprety permissions are derived from the class object's property
@@ -775,7 +789,7 @@ waif_bytes(Waif *w)
 
 	update_waif_propdefs(w);
 
-	/* never need to count the propdefs becuase we're now guaranteed to
+	/* never need to count the propdefs because we're now guaranteed to
 	 * be sharing that with the class object which is billed for that
 	 * space
 	 */
@@ -870,7 +884,7 @@ waif_after_saving()
 {
 	myfree(saved_waifs, M_WAIF_XTRA);
 	if (n_saved_waifs != waif_count)
-		fprintf(stderr, "WARN: waif_count != n_saved_waifs!\n");
+		errlog("WARN: waif_count != n_saved_waifs!\n");
 }
 
 void

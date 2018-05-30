@@ -3,7 +3,7 @@
  * Use and copying of this software and preparation of derivative works based
  * upon this software are permitted provided this copyright notice remains
  * intact.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY BEN J JACKSON ``AS IS'' AND ANY
  * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -49,7 +49,7 @@ extern void waif_before_loading();
 extern void waif_after_loading();
 extern void write_waif(Var);
 extern Var read_waif();
-extern void free_waif_propdefs(WaifPropdefs *);                                 
+extern void free_waif_propdefs(WaifPropdefs *);
 extern void waif_rename_propdef(Object *, const char *, const char *);
 
 #endif /* WAIF_h */
