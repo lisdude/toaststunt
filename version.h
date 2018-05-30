@@ -78,6 +78,8 @@ typedef enum {
 				 */
     DBV_Waif,           /* Addition of waifs
                  */
+    DBV_Last_Location,  /* Addition of the 'last_location' built-in property
+                 */
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;
 

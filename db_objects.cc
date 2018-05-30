@@ -240,6 +240,7 @@ db_destroy_object(Objid oid)
     free_var(o->children);
 
     free_var(o->location);
+    free_var(o->last_location);
     free_var(o->contents);
 
     if (is_user(oid)) {
@@ -352,6 +353,7 @@ db_make_anonymous(Objid oid, Objid last)
 
     free_var(o->children);
     free_var(o->location);
+    free_var(o->last_location);
     free_var(o->contents);
 
     /* Last step, reallocate the memory and copy -- anonymous objects
@@ -991,7 +993,7 @@ db_change_location(Objid oid, Objid new_location)
 	objects[new_location]->contents = setadd(objects[new_location]->contents, me);
 
     free_var(objects[oid]->location);
-
+    free_var(objects[oid]->last_location);
 
     objects[oid]->location = Var::new_obj(new_location);
     objects[oid]->last_location = Var::new_obj(old_location);
