@@ -339,7 +339,7 @@ bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
  * With only one argument, player flag is assumed to be the only condition.
  * With two arguments, parent is the only condition.
  * With three arguments, parent is checked first and then the player flag is checked.
- * get_players(LIST objects, LIST parents, ?INT player flag set)
+ * get_players(LIST objects, OBJ parent, ?INT player flag set)
  */
 static package
 bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
