@@ -27,7 +27,6 @@
 #include "tasks.h"
 #include "log.h"
 #include "fileio.h"
-#include "extension-background.h" // Threading
 
 /******************************************************
  * Module-internal data structures
@@ -1502,64 +1501,17 @@ static package bf_file_handles(Var arglist, Byte next, void *vdata, Objid progr)
   return make_var_pack(r);
 }
 
-/*
- * STR file_grep(FHANDLE handle)
- * A naughty, naughty FUP-style function that breaks the whole philosophy of FIO.
- */
-
-void grep_thread_callback(void *bw, Var *ret)
-{
-    background_waiter *w = (background_waiter*)bw;
-    Var *args = (Var*)w->data;
-
-    Var fhandle = args->v.list[1];
-    file_lock_handle(fhandle);
-
-    int len;
-    char *line = NULL;
-    int line_num = 0;
-    int match_all = 0;
-    int arg_length = 0;
-    Var tmp, tmp_num, tmp_name;
-    arg_length = memo_strlen(args->v.list[2].v.str);
-    *ret = new_list(0);
-    tmp_num.type = TYPE_INT;
-    tmp_name.type = TYPE_STR;
-
-    if (args->v.list[0].v.num >= 3 && is_true(args->v.list[3]))
-        match_all = 1;
-
-    rewind(file_handle_file_safe(fhandle));
-
-    while (w->active && (line = file_get_line(fhandle, &len)) != NULL)
-    {
-        line_num++;
-        if (len > 0 && strindex(line, len, args->v.list[2].v.str, arg_length, 0))
-        {
-            tmp = new_list(0);
-            // Have to get rid of the newline, woops
-            //        line[strcspn(line, "\r\n")] = 0;
-            // strcspn is more elegant but slower
-            line[strlen(line) - 1] = '\0';
-            tmp_name.v.str = str_dup(line);
-            tmp = listappend(tmp, tmp_name);
-            tmp_num.v.num = line_num;
-            tmp = listappend(tmp, tmp_num);
-            *ret = listappend(*ret, tmp);
-
-            if (!match_all)
-                break;
-        }
-    }
-    file_unlock_handle(fhandle);
-}
-
 static package
 bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
 {
   package r;
   Var fhandle = arglist.v.list[1];
+  int len;
   file_mode mode;
+  char *line;
+  int line_num = 0;
+  int match_all = 0;
+  Var ret, tmp, tmp_name, tmp_num;
 
   if (!file_verify_caller(progr))
     r = file_raise_notokcall("file_readline", progr);
@@ -1567,13 +1519,38 @@ bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
     r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
     r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
-  else if (file_handle_locked(fhandle))
-      r = make_raise_pack(E_INVARG, "File is locked to another thread", var_ref(fhandle));
   else
   {
-    Var *data = (Var*)mymalloc(sizeof(arglist), M_STRUCT);
-    *data = var_dup(arglist);
-    r = background_thread(grep_thread_callback, data);
+    tmp_name.type = TYPE_STR;
+    tmp_num.type = TYPE_INT;
+    ret = new_list(0);
+
+    if (arglist.v.list[0].v.num >= 3 && is_true(arglist.v.list[3]))
+      match_all = 1;
+
+    rewind(file_handle_file_safe(fhandle));
+
+    while ((line = file_get_line(fhandle, &len)) != NULL)
+    {
+      line_num++;
+      if (strindex(line, memo_strlen(line), arglist.v.list[2].v.str, memo_strlen(arglist.v.list[2].v.str), 0))
+      {
+        tmp = new_list(0);
+        // Have to get rid of the newline, woops
+//        line[strcspn(line, "\r\n")] = 0;
+        // strcspn is more elegant but slower
+        line[strlen(line) - 1] = '\0';
+        tmp_name.v.str = str_dup(line);
+        tmp = listappend(tmp, tmp_name);
+        tmp_num.v.num = line_num;
+        tmp = listappend(tmp, tmp_num);
+        ret = listappend(ret, tmp);
+
+        if (!match_all)
+          break;
+      }
+    }
+    r = make_var_pack(ret);
   }
   free_var(arglist);
   return r;

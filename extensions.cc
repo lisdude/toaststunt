@@ -55,39 +55,6 @@ bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-
-/* Locates objects in the database by name. Wizard only because of the potential to lock up the whole MOO. */
-void locate_by_name_thread_callback(void *bw, Var *ret)
-{
-    background_waiter *w = (background_waiter*)bw;
-    Var *args = (Var*)w->data;
-
-    int x = 1, case_matters = 0;
-    *ret = new_list(0);
-    Var tmp, name;
-
-    tmp.type = TYPE_OBJ;
-
-    if (args->v.list[0].v.num == 2)
-        case_matters = is_true(args->v.list[2]);
-
-
-    for (x = 1; x < db_last_used_objid(); x++)
-    {
-        if (valid(x))
-        {
-            db_find_property(Var::new_obj(x), "name", &name);
-            if (strindex(name.v.str, memo_strlen(name.v.str), args->v.list[1].v.str, memo_strlen(args->v.list[1].v.str), case_matters))
-            {
-                tmp.v.obj = x;
-                *ret = listappend(*ret, tmp);
-            }
-        }
-    }
-
-    free_var(tmp);
-}
-
     static package
 bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -98,10 +65,32 @@ bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    Var *data = (Var*)mymalloc(sizeof(arglist), M_STRUCT);
-    *data = var_dup(arglist);
+    int x = 1, case_matters = 0;
+    Var ret = new_list(0), tmp, name;
+
+    tmp.type = TYPE_OBJ;
+
+    if (arglist.v.list[0].v.num == 2)
+        case_matters = is_true(arglist.v.list[2]);
+
+
+    for (x = 1; x < db_last_used_objid(); x++)
+    {
+        if (valid(x))
+        {
+            db_find_property(Var::new_obj(x), "name", &name);
+            if (strindex(name.v.str, memo_strlen(name.v.str), arglist.v.list[1].v.str, memo_strlen(arglist.v.list[1].v.str), case_matters))
+            {
+                tmp.v.obj = x;
+                ret = listappend(ret, tmp);
+            }
+        }
+    }
+
+    free_var(tmp);
     free_var(arglist);
-    return background_thread(locate_by_name_thread_callback, data);
+
+    return make_var_pack(ret);
 }
 
 /* Calculates the distance between two n-dimensional sets of coordinates. */
