@@ -32,6 +32,7 @@
 #include "storage.h"
 #include "utils.h"
 #include "xtrapbits.h"
+#include "map.h"
 
 static Object **objects;
 static int num_objects = 0;
@@ -193,7 +194,7 @@ db_init_object(Object *o)
     o->children = new_list(0);
 
     o->location = var_ref(nothing);
-    o->last_location = var_ref(nothing);
+    o->last_move = new_map();
     o->contents = new_list(0);
 
     o->propval = 0;
@@ -240,7 +241,7 @@ db_destroy_object(Objid oid)
     free_var(o->children);
 
     free_var(o->location);
-    free_var(o->last_location);
+    free_var(o->last_move);
     free_var(o->contents);
 
     if (is_user(oid)) {
@@ -353,7 +354,7 @@ db_make_anonymous(Objid oid, Objid last)
 
     free_var(o->children);
     free_var(o->location);
-    free_var(o->last_location);
+    free_var(o->last_move);
     free_var(o->contents);
 
     /* Last step, reallocate the memory and copy -- anonymous objects
@@ -944,9 +945,9 @@ dbpriv_object_location(Object *o)
 }
 
 Var
-dbpriv_object_last_location(Object *o)
+dbpriv_object_last_move(Object *o)
 {
-	   return o->last_location;
+	   return o->last_move;
 }
 
 Objid
@@ -993,10 +994,19 @@ db_change_location(Objid oid, Objid new_location)
 	objects[new_location]->contents = setadd(objects[new_location]->contents, me);
 
     free_var(objects[oid]->location);
-    free_var(objects[oid]->last_location);
+    if (objects[oid]->last_move.type != TYPE_MAP) {
+        free_var(objects[oid]->last_move);
+        objects[oid]->last_move = new_map();
+    }
 
     objects[oid]->location = Var::new_obj(new_location);
-    objects[oid]->last_location = Var::new_obj(old_location);
+
+    Var last_move = objects[oid]->last_move;
+    last_move = mapinsert(last_move, str_dup_to_var("time"), Var::new_int(time(0)));
+    last_move = mapinsert(last_move, str_dup_to_var("source"), Var::new_obj(old_location));
+
+    objects[oid]->last_move = last_move;
+
 }
 
 int

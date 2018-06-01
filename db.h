@@ -378,7 +378,7 @@ extern int db_for_all_propvals(Var,
     DEFINE(F,f)					\
     DEFINE(A,a)					\
     DEFINE(LOCATION,location)			\
-		  DEFINE(LAST_LOCATION,last_location)\
+		  DEFINE(LAST_MOVE,last_move)\
     DEFINE(CONTENTS,contents)
 
 enum bi_prop {

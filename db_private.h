@@ -67,7 +67,7 @@ typedef struct Object {
     int flags; /* see db.h for `flags' values */
 
     Var location;
-    Var last_location;
+    Var last_move;
     Var contents;
     Var parents;
     Var children;
@@ -141,7 +141,7 @@ extern void dbpriv_clear_object_flag(Object *, db_object_flag);
 extern Var dbpriv_object_parents(Object *);
 extern Var dbpriv_object_children(Object *);
 extern Var dbpriv_object_location(Object *);
-extern Var dbpriv_object_last_location(Object *);
+extern Var dbpriv_object_last_move(Object *);
 extern Var dbpriv_object_contents(Object *);
 				/* These functions do not change the reference
 				 * count of the list they return.  Thus, the

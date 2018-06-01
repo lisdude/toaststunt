@@ -41,6 +41,7 @@
 #include "utils.h"
 #include "version.h"
 #include "waif.h"
+#include "map.h"
 
 static char *input_db_name, *dump_db_name;
 static int dump_generation = 0;
@@ -335,8 +336,8 @@ ng_read_object(int anonymous)
     o->owner = dbio_read_objid();
 
     o->location = dbio_read_var();
-    if (dbio_input_version >= DBV_Last_Location)
-        o->last_location = dbio_read_var();
+    if (dbio_input_version >= DBV_Last_Move)
+        o->last_move = dbio_read_var();
     o->contents = dbio_read_var();
 
     o->parents = dbio_read_var();
@@ -448,7 +449,7 @@ ng_write_object(Objid oid)
     dbio_write_objid(o->owner);
 
     dbio_write_var(o->location);
-    dbio_write_var(o->last_location);
+    dbio_write_var(o->last_move);
     dbio_write_var(o->contents);
 
     dbio_write_var(o->parents);
@@ -817,7 +818,7 @@ v4_upgrade_objects()
 		_new->children = listappend(_new->children, var_dup(Var::new_obj(iter)));
 
 	    _new->location = var_dup(Var::new_obj(o->location));
-   		_new->last_location = var_dup(Var::new_obj(o->location));
+   		_new->last_move = new_map();
 
 	    _new->contents = new_list(0);
 	    for (iter = o->contents; iter != NOTHING; iter = objects[iter]->next)

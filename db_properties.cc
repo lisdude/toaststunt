@@ -468,9 +468,9 @@ get_bi_value(db_prop_handle h, Var * value)
     case BP_LOCATION:
 	*value = var_ref(dbpriv_object_location(o));
 	break;
-    case BP_LAST_LOCATION:
-        *value = var_ref(dbpriv_object_last_location(o));
-        break;
+    case BP_LAST_MOVE:
+    *value = var_ref(dbpriv_object_last_move(o));
+    break;
     case 	BP_CONTENTS:
 	*value = var_ref(dbpriv_object_contents(o));
 	break;
@@ -672,7 +672,7 @@ db_set_property_value(db_prop_handle h, Var value)
 	    free_var(value);
 	    break;
 	case BP_LOCATION:
-        case BP_LAST_LOCATION:
+    case BP_LAST_MOVE:
 	case BP_CONTENTS:
 	  complain:
 	    panic("Inappropriate value in DB_SET_PROPERTY_VALUE!");
