@@ -881,9 +881,16 @@ do_login_task(tqueue * tq, char *command)
 
     if (server_int_option("proxy_rewrite", 1) && is_localhost(tq->player))
     {
-        /* To avoid printing the login screen (and allow redlists to work), ignore blank lines coming from localhost. */
-        if (command[0] == '\0')
-            return 1;
+        /* To avoid printing the login screen (and allow redlists to work), ignore blank lines coming from localhost.
+         * For special circumstances, the user can override this behavior with a 'do_blank_command' verb on the listening object.
+         * If the verb returns a true value, the server will not ignore the blank line. */
+        if (command[0] == '\0') {
+            Var do_blank_command_result;
+                run_server_task_setting_id(tq->player, Var::new_obj(tq->handler), "do_blank_command",
+                        parse_into_wordlist(command), command, &do_blank_command_result, &(tq->last_input_task_id));
+            if (!is_true(do_blank_command_result))
+                return 1;
+        }
 
         /* Detect and parse incoming localhost proxies. This allows us to have an SSL presence and keep the originating IP. */
         if (strlen(command) >= 5 && strncmp(command, "PROXY", 5) == 0) {
