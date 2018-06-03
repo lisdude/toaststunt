@@ -1259,7 +1259,13 @@ do {								\
 
 		rhs = POP();	/* should be list or map */
 		lhs = POP();	/* lhs, any type */
-		if (rhs.type != TYPE_LIST && rhs.type != TYPE_MAP) {
+        if (lhs.type == TYPE_STR && rhs.type == TYPE_STR) {
+            ans.type = TYPE_INT;
+            ans.v.num = strindex(rhs.v.str, memo_strlen(rhs.v.str), lhs.v.str, memo_strlen(lhs.v.str), 0);
+            PUSH(ans);
+            free_var(lhs);
+            free_var(rhs);
+        } else if (rhs.type != TYPE_LIST && rhs.type != TYPE_MAP) {
 		    free_var(rhs);
 		    free_var(lhs);
 		    PUSH_ERROR(E_TYPE);
