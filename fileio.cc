@@ -60,9 +60,6 @@ struct file_handle {
   file_type type;            /* text or binary, sir?     */
   file_mode mode;            /* readin', writin' or both */
   FILE  *file;               /* the actual file handle   */
-  bool locked;               /* thread safety: is the file in use elsewhere? */
-  char *line_read;           /* a static buffer to save us from free()ing all the time */
-  size_t line_size;          /* the length of the line_read buffer */
 };
 
 typedef struct line_buffer line_buffer;
@@ -121,7 +118,6 @@ file_mode file_handle_mode(Var fhandle) {
 void file_handle_destroy(Var fhandle) {
   int32 i = fhandle.v.num;
   free_str(file_table[i].name);
-  free(file_table[i].line_read);
   file_table.erase(i);
   if (file_table.size() == 0)
       next_handle = 1;
@@ -147,9 +143,6 @@ Var file_handle_new(const char *name, file_type type, file_mode mode) {
         file.name = str_dup(name);
         file.type = type;
         file.mode = mode;
-        file.locked = false;
-        file.line_size = 1;
-        file.line_read = (char*)malloc(file.line_size * sizeof(char));
         file_table[handle] = file;
         next_handle++;
     }
@@ -160,26 +153,6 @@ Var file_handle_new(const char *name, file_type type, file_mode mode) {
 void file_handle_set_file(Var fhandle, FILE *f) {
   int32 i = fhandle.v.num;
   file_table[i].file = f;
-}
-
-void file_lock_handle(Var fhandle) {
-    int32 i = fhandle.v.num;
-    file_table[i].locked = true;
-}
-
-void file_unlock_handle(Var fhandle) {
-    int32 i = fhandle.v.num;
-    file_table[i].locked = false;
-}
-
-bool file_handle_locked(Var fhandle) {
-    int32 i = fhandle.v.num;
-    return file_table[i].locked;
-}
-
-char *file_handle_read_buffer(Var fhandle) {
-    int32 i = fhandle.v.num;
-    return file_table[i].line_read;
 }
 
 
@@ -530,27 +503,20 @@ bf_file_openmode(Var arglist, Byte next, void *vdata, Objid progr)
  * common functionality of file_readline and file_readlines
  */
 
-static char *file_get_line(Var fhandle, int *count)
+static const char *file_get_line(Var fhandle, int *count)
 {
-
-//    char *line_read = file_handle_read_buffer(fhandle);
-//    Save a function call. RIDE A COWBOY.
-    char **line_read = &(file_table[fhandle.v.num].line_read);
-    size_t *line_size = &(file_table[fhandle.v.num].line_size);
-    ssize_t nread;
-
     FILE *fp = file_handle_file(fhandle);
 
-    nread = getline(line_read, line_size, fp);
+    ssize_t read = getline(&line_read, &line_size, fp);
 
-    if (nread == -1)
+    if (read == -1)
     {
         *count = 0;
         return NULL;
     }
 
-    *count = nread;
-    return file_table[fhandle.v.num].line_read;
+    *count = read;
+    return line_read;
 }
 
 
@@ -567,7 +533,7 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
   int len;
   file_mode mode;
   file_type type;
-  char *line;
+  const char *line;
 
   errno = 0;
 
@@ -1508,9 +1474,10 @@ bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
   Var fhandle = arglist.v.list[1];
   int len;
   file_mode mode;
-  char *line;
+  const char *line = NULL;
   int line_num = 0;
   int match_all = 0;
+  int arg_length = 0;
   Var ret, tmp, tmp_name, tmp_num;
 
   if (!file_verify_caller(progr))
@@ -1523,6 +1490,7 @@ bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
   {
     tmp_name.type = TYPE_STR;
     tmp_num.type = TYPE_INT;
+    arg_length = memo_strlen(arglist.v.list[2].v.str);
     ret = new_list(0);
 
     if (arglist.v.list[0].v.num >= 3 && is_true(arglist.v.list[3]))
@@ -1533,14 +1501,17 @@ bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
     while ((line = file_get_line(fhandle, &len)) != NULL)
     {
       line_num++;
-      if (strindex(line, memo_strlen(line), arglist.v.list[2].v.str, memo_strlen(arglist.v.list[2].v.str), 0))
+      if (len > 0 && strindex(line, len, arglist.v.list[2].v.str, arg_length, 0))
       {
         tmp = new_list(0);
         // Have to get rid of the newline, woops
 //        line[strcspn(line, "\r\n")] = 0;
         // strcspn is more elegant but slower
-        line[strlen(line) - 1] = '\0';
-        tmp_name.v.str = str_dup(line);
+        // Dirty hack: C++isms won't let me modify a const char (for uh, good reason)
+        // BUT I KNOW BETTER. famous last words
+        char *dirty_hack = (char*)line;
+        dirty_hack[strlen(dirty_hack) - 1] = '\0';
+        tmp_name.v.str = str_dup(dirty_hack);
         tmp = listappend(tmp, tmp_name);
         tmp_num.v.num = line_num;
         tmp = listappend(tmp, tmp_num);
