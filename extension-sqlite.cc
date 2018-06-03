@@ -104,14 +104,9 @@ bf_sqlite_handles(Var arglist, Byte next, void *vdata, Objid progr)
 
     Var r = new_list(sqlite_connections.size());
 
-    std::map <int, sqlite_conn>::iterator it;
     int count = 0;
-    for (it = sqlite_connections.begin(); it != sqlite_connections.end(); it++)
-    {
-        count++;
-        r.v.list[count].type = TYPE_INT;
-        r.v.list[count].v.num = it->first;
-    }
+    for (auto& it : sqlite_connections)
+        r.v.list[++count] = Var::new_int(it.first);
 
     return make_var_pack(r);
 }
@@ -322,7 +317,7 @@ bf_sqlite_last_insert_row_id(Var arglist, Byte next, void *vdata, Objid progr)
 /* Return true if a handle is valid and active. */
 bool valid_handle(int handle)
 {
-    if (handle < 0 || handle >= next_sqlite_handle)
+    if (handle < 0 || handle >= next_sqlite_handle || sqlite_connections.find(handle) == sqlite_connections.end())
         return false;
 
     return true;
