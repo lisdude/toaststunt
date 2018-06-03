@@ -498,7 +498,7 @@ register_extensions()
     register_function("usage", 0, 0, bf_usage);
     register_function("ftime", 0, 1, bf_ftime, TYPE_INT);
     register_function("panic", 0, 1, bf_panic, TYPE_STR);
-    register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR);
+    register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
     register_function("explode", 1, 2, bf_explode, TYPE_STR, TYPE_STR);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
     // ======== ANSI ===========
