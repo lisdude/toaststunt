@@ -130,7 +130,7 @@ int32 file_allocate_next_handle(void) {
 Var file_handle_new(const char *name, file_type type, file_mode mode) {
     int32 handle = file_allocate_next_handle();
 
-    if (handle > server_int_option("file_io_max_files", FILE_IO_MAX_FILES))
+    if (file_table.size() >= server_int_option("file_io_max_files", FILE_IO_MAX_FILES))
         handle = -1;
 
     Var r;
