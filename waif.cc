@@ -588,13 +588,7 @@ bf_waif_stats(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     Var r = new_map();
-    Var count;
-    count.type = TYPE_INT;
-    count.v.num = waif_count;
-    Var key;
-    key.type = TYPE_STR;
-    key.v.str = str_dup("total");
-    r = mapinsert(r, key, count);
+    r = mapinsert(r, str_dup_to_var("total"), Var::new_int(waif_count));
 
     return make_var_pack(r);
 }
