@@ -427,6 +427,11 @@
 */
 #define WAIF_DICT
 
+/******************************************************************************
+ * Enable the obsolete in-server ownership quota management.
+ */
+/* #define OWNERSHIP_QUOTA */
+
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/

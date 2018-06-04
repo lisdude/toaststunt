@@ -25,6 +25,7 @@ static const char *quota_name = "ownership_quota";
 int
 decr_quota(Objid player)
 {
+#ifdef OWNERSHIP_QUOTA
     db_prop_handle h;
     Var v;
 
@@ -43,12 +44,14 @@ decr_quota(Objid player)
 
     v.v.num--;
     db_set_property_value(h, v);
+#endif /* OWNERSHIP_QUOTA */
     return 1;
 }
 
 void
 incr_quota(Objid player)
 {
+#ifdef OWNERSHIP_QUOTA
     db_prop_handle h;
     Var v;
 
@@ -64,4 +67,5 @@ incr_quota(Objid player)
 
     v.v.num++;
     db_set_property_value(h, v);
+#endif /* OWNERSHIP_QUOTA */
 }
