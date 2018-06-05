@@ -1451,17 +1451,14 @@ static package bf_file_handles(Var arglist, Byte next, void *vdata, Objid progr)
   if (!is_wizard(progr))
     return make_error_pack(E_PERM);
 
-  Var r = new_list(file_table.size());
+  // We can't use file_table.size() here because it will create space for
+  // invalid file handles. Easier just to listappend, I guess.
+  Var r = new_list(0);
   std::map <int32, file_handle>::iterator it;
-  int count = 0;
   for (it = file_table.begin(); it != file_table.end(); it++)
   {
       if (it->second.valid == 1)
-      {
-          count++;
-          r.v.list[count].type = TYPE_INT;
-          r.v.list[count].v.num = it->first;
-      }
+          r = listappend(r, Var::new_int(it->first));
   }
 
   return make_var_pack(r);
