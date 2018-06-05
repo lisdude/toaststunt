@@ -92,6 +92,8 @@ char file_handle_valid(Var fhandle) {
 	 return 0;
   if ((i < 0) || (i >= next_handle))
 	 return 0;
+  if (file_table.find(i) == file_table.end())
+      return 0;
   return file_table[i].valid;
 }
 
@@ -124,6 +126,9 @@ void file_handle_destroy(Var fhandle) {
 }
 
 int32 file_allocate_next_handle(void) {
+    while (file_table.find(next_handle) != file_table.end())
+        next_handle++;
+
     return next_handle;
 }
 
