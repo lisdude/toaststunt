@@ -703,12 +703,11 @@ Var db_ancestors(Var obj, bool full) {
         ancestors = db_find_ancestors(obj, 0);
         ancestor_cache[o->id] = var_dup(ancestors);
     } else {
-        // TODO: Replace with var_ref since it's persistent in the cache?
-        ancestors = var_dup(ancestor_cache[o->id]);
+        ancestors = var_ref(ancestor_cache[o->id]);
     }
 
     if (full)
-        ancestors = listinsert(ancestors, obj, 1);
+        ancestors = listinsert(ancestors, var_ref(obj), 1);
 
     return ancestors;
 }
@@ -962,6 +961,10 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
 #ifdef USE_ANCESTOR_CACHE
     /* Invalidate the ancestor cache since one has changed. In the future it would
      * probably make sense to only invalidate descendants, but for now this works. */
+   
+    for (auto& x : ancestor_cache)
+        free_var(x.second);
+
     ancestor_cache.clear();
 #endif /* USE_ANCESTOR_CACHE */
 
