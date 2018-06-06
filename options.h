@@ -429,8 +429,17 @@
 
 /******************************************************************************
  * Enable the obsolete in-server ownership quota management.
- */
+ ******************************************************************************
+*/
 /* #define OWNERSHIP_QUOTA */
+
+/******************************************************************************
+ * Cache ancestor lists until a parent changes. This is a quick and dirty solution
+ * that will allow loops performing property lookups to happen much faster. Its
+ * use in other applications is minimal, as the cache is invalidated often.
+ ******************************************************************************
+*/
+#define USE_ANCESTOR_CACHE
 
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********

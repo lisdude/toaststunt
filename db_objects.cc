@@ -33,6 +33,8 @@
 #include "utils.h"
 #include "xtrapbits.h"
 #include "map.h"
+#include <map>
+#include "options.h"
 
 static Object **objects;
 static int num_objects = 0;
@@ -42,10 +44,13 @@ static unsigned int nonce = 0;
 
 static Var all_users;
 
+#ifdef USE_ANCESTOR_CACHE
+static std::map <int, Var> ancestor_cache;
+#endif /* USE_ANCESTOR_CACHE */
+
 /* used in graph traversals */
 static unsigned char *bit_array;
 static size_t array_size = 0;
-
 
 /*********** Objects qua objects ***********/
 
@@ -677,15 +682,41 @@ db_##name(Var obj, bool full)						\
     return list;							\
 }
 
-DEFUNC(ancestors, parents);
 DEFUNC(descendants, children);
 
 /* the following two could be replace by better/more specific implementations */
 DEFUNC(all_locations, location);
 DEFUNC(all_contents, contents);
 
+#ifdef USE_ANCESTOR_CACHE
+DEFUNC(find_ancestors, parents);
+
+Var db_ancestors(Var obj, bool full) {
+    Object *o = dbpriv_dereference(obj);
+
+    if (obj.type != TYPE_OBJ || !is_valid(obj) || o->parents.v.obj == NOTHING)
+        return db_find_ancestors(obj, full);
+
+    Var ancestors;
+
+    if (ancestor_cache.find(o->id) == ancestor_cache.end()) {
+        ancestors = db_find_ancestors(obj, 0);
+        ancestor_cache[o->id] = var_dup(ancestors);
+    } else {
+        // TODO: Replace with var_ref since it's persistent in the cache?
+        ancestors = var_dup(ancestor_cache[o->id]);
+    }
+
+    if (full)
+        ancestors = listinsert(ancestors, obj, 1);
+
+    return ancestors;
+}
+#else
+DEFUNC(ancestors, parents);
+#endif /* USE_ANCESTOR_CACHE */
+
 #undef DEFUNC
-
 
 /*********** Object attributes ***********/
 
@@ -927,6 +958,12 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
      * because `o' is currently invalid (the nonce is out of date and
      * the aforementioned call will fix that).
      */
+
+#ifdef USE_ANCESTOR_CACHE
+    /* Invalidate the ancestor cache since one has changed. In the future it would
+     * probably make sense to only invalidate descendants, but for now this works. */
+    ancestor_cache.clear();
+#endif /* USE_ANCESTOR_CACHE */
 
     Var new_ancestors = db_ancestors(obj, true);
 
