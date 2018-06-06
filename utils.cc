@@ -452,6 +452,8 @@ compare(Var lhs, Var rhs, int case_matters)
 		return 0;
 	    else
 		return *(lhs.v.fnum) - *(rhs.v.fnum);
+    case TYPE_WAIF:
+        return lhs.v.waif == rhs.v.waif ? 0 : 1;
 	default:
 	    panic("COMPARE: Invalid value type");
 	}
