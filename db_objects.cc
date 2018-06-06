@@ -959,13 +959,20 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
      */
 
 #ifdef USE_ANCESTOR_CACHE
-    /* Invalidate the ancestor cache since one has changed. In the future it would
-     * probably make sense to only invalidate descendants, but for now this works. */
-   
-    for (auto& x : ancestor_cache)
-        free_var(x.second);
+    /* Invalidate the cache for all descendants of the object that is changing parents. */
+  
+    Var desc;
+    int i, c;
 
-    ancestor_cache.clear();
+    Var descendants = db_descendants(obj, true);
+    FOR_EACH(desc, descendants, i, c) {
+        if (ancestor_cache.find(desc.v.obj) != ancestor_cache.end()) {
+            free_var(ancestor_cache[desc.v.obj]);
+            ancestor_cache.erase(desc.v.obj);
+        }
+    }
+
+    free_var(descendants);
 #endif /* USE_ANCESTOR_CACHE */
 
     Var new_ancestors = db_ancestors(obj, true);
