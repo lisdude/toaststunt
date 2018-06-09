@@ -270,6 +270,10 @@ complex_free_var(Var v)
 	if (delref(v.v.trav) == 0)
 	    destroy_iter(v);
 	break;
+	case TYPE_WAIF:
+	if (delref(v.v.waif) == 0)
+		free_waif(v.v.waif);
+	break;
     case TYPE_ANON:
 	if (v.v.anon && delref(v.v.anon) == 0) {
 	    if (db_object_has_flag2(v, FLAG_RECYCLED)) {
