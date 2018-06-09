@@ -35,6 +35,7 @@
 #include "map.h"
 #include <map>
 #include "options.h"
+#include "log.h"
 
 static Object **objects;
 static int num_objects = 0;
@@ -697,19 +698,21 @@ Var db_ancestors(Var obj, bool full) {
     if (obj.type != TYPE_OBJ || !is_valid(obj) || o->parents.v.obj == NOTHING)
         return db_find_ancestors(obj, full);
 
-    Var ancestors;
+    if (ancestor_cache.find(o->id) == ancestor_cache.end())
+        ancestor_cache[o->id] = db_find_ancestors(obj, false);
 
-    if (ancestor_cache.find(o->id) == ancestor_cache.end()) {
-        ancestors = db_find_ancestors(obj, 0);
-        ancestor_cache[o->id] = var_dup(ancestors);
-    } else {
-        ancestors = var_ref(ancestor_cache[o->id]);
-    }
+    Var ancestors = var_ref(ancestor_cache[o->id]);
 
+
+    /* The 'full' refcount only needs to be 1 because listinsert will be creating a new list and consuming
+     * the second reference to the cached copy (which we just created directly above this). This leaves us
+     * with a refcount of 1, which is the new list that we WANT to get destroyed.
+     * The non-full list should have a refcount of 2 so that when it gets consumed, the copy in the cache
+     * won't be freed. */
     if (full)
-        ancestors = listinsert(ancestors, var_ref(obj), 1);
-
-    return ancestors;
+        return listinsert(ancestors, var_ref(obj), 1); /* listdelete consumes the list */
+    else
+        return ancestors;
 }
 #else
 DEFUNC(ancestors, parents);
@@ -960,18 +963,18 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
 
 #ifdef USE_ANCESTOR_CACHE
     /* Invalidate the cache for all descendants of the object that is changing parents. */
-  
     Var desc;
     int i, c;
 
     Var descendants = db_descendants(obj, true);
     FOR_EACH(desc, descendants, i, c) {
         if (ancestor_cache.find(desc.v.obj) != ancestor_cache.end()) {
+            if (var_refcount(ancestor_cache[desc.v.obj]) > 1)
+                applog(LOG_ERROR, "Refcount too high for ancestor cache invalidation of #%i. Refcount = %i\n", desc.v.obj, var_refcount(ancestor_cache[desc.v.obj]));
             free_var(ancestor_cache[desc.v.obj]);
             ancestor_cache.erase(desc.v.obj);
         }
     }
-
     free_var(descendants);
 #endif /* USE_ANCESTOR_CACHE */
 
