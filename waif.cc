@@ -33,8 +33,10 @@
 #include "db.h" 		// valid
 #include "log.h"        // errlog
 #include "map.h"
+#include <map>
 
 static unsigned long waif_count = 0;
+static std::map<Objid, unsigned int> waif_class_count;
 
 #define PROP_MAPPED(Mmap, Mbit)	((Mmap)[(Mbit) / 32] & (1 << ((Mbit) % 32)))
 #define MAP_PROP(Mmap, Mbit) (Mmap)[(Mbit) / 32] |= 1 << ((Mbit) % 32)
@@ -273,6 +275,7 @@ new_waif(Objid _class, Objid owner)
 		res.v.waif->map[i] = 0;
 	res.v.waif->propvals = alloc_waif_propvals(res.v.waif, 1);
 	++waif_count;
+    waif_class_count[_class]++;
 
 	return res;
 }
@@ -549,6 +552,7 @@ free_waif(Waif *waif)
 {
 	int i, cnt;
 
+    waif_class_count[waif->_class]--;
 	/* assert(refcount(waif) == 0) */
 	cnt = count_waif_propvals(waif);
 	free_waif_propdefs(waif->propdefs);
@@ -558,6 +562,7 @@ free_waif(Waif *waif)
 		myfree(waif->propvals, M_WAIF_XTRA);
 	myfree(waif, M_WAIF);
 	--waif_count;
+
 }
 
 /* Called from complex_var_dup().  Callers of var_dup() generally already
@@ -589,6 +594,11 @@ bf_waif_stats(Var arglist, Byte next, void *vdata, Objid progr)
 
     Var r = new_map();
     r = mapinsert(r, str_dup_to_var("total"), Var::new_int(waif_count));
+
+    for (auto& x : waif_class_count) {
+        if (is_valid(x.second))
+            r = mapinsert(r, Var::new_obj(x.first), Var::new_int(x.second));
+    }
 
     return make_var_pack(r);
 }
@@ -955,6 +965,7 @@ read_waif()
 	for (i = 0; i < WAIF_MAPSZ; ++i)
 		res.v.waif->map[i] = 0;
 	propdefs_length = dbio_read_num();
+    waif_class_count[res.v.waif->_class]++;
 
 	/* Read propvals into the `packable' array until we run out of
 	 * mappable props, then allocate the finished value array and
