@@ -64,6 +64,7 @@ typedef struct task_waiting_on_exec {
     const char *cmd;
     const char **args;
     const char *in;
+    const char **env;
     int len;
     pid_t pid;
     task_waiting_status status;
@@ -82,6 +83,8 @@ volatile static sig_atomic_t sigchild_interrupt = 0;
 
 static sigset_t block_sigchld;
 
+static Stream *logmsg = new_stream(30);
+
 #define BLOCK_SIGCHLD sigprocmask(SIG_BLOCK, &block_sigchld, NULL)
 #define UNBLOCK_SIGCHLD sigprocmask(SIG_UNBLOCK, &block_sigchld, NULL)
 
@@ -93,6 +96,7 @@ malloc_task_waiting_on_exec()
     tw->cmd = NULL;
     tw->args = NULL;
     tw->in = NULL;
+    tw->env = NULL;
     tw->status = TWS_CONTINUE;
     tw->code = 0;
     tw->sout = new_stream(1000);
@@ -111,6 +115,11 @@ free_task_waiting_on_exec(task_waiting_on_exec * tw)
 	for (i = 0; tw->args[i]; i++)
 	    free_str(tw->args[i]);
 	myfree(tw->args, M_ARRAY);
+    }
+    if (tw->env) {
+	for (i = 0; tw->env[i]; i++)
+	    free_str(tw->env[i]);
+	myfree(tw->env, M_ARRAY);
     }
     if (tw->in)
 	free_str(tw->in);
@@ -296,14 +305,17 @@ exec_waiter_suspender(vm the_vm, void *data)
 	goto free_task_waiting_on_exec;
     }
 
-    static const char *env[] = { "PATH=/bin:/usr/bin", NULL };
-
-    if ((tw->pid = fork_and_exec(tw->cmd, tw->args, env, &tw->fin, &tw->fout, &tw->ferr)) == 0) {
+    if ((tw->pid = fork_and_exec(tw->cmd, tw->args, tw->env, &tw->fin, &tw->fout, &tw->ferr)) == 0) {
 	error = E_EXEC;
 	goto clear_process_slot;
     }
 
-    oklog("EXEC: %s (%d)...\n", tw->cmd, tw->pid);
+    stream_printf(logmsg, "EXEC: %s (%d)", tw->cmd, tw->pid);
+    for (int x = 0; tw->env[x]; ++x) {
+        stream_printf(logmsg, " [%s]", tw->env[x]);
+    }
+
+    oklog("%s\n", reset_stream(logmsg));
 
     set_nonblocking(tw->fin);
     set_nonblocking(tw->fout);
@@ -348,6 +360,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 
     const char *cmd = 0;
     const char **args = 0;
+    const char **env = 0;
     task_waiting_on_exec *tw = 0;
     const char *in = 0;
     int len;
@@ -427,11 +440,23 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 	args[i - 1] = str_dup(v.v.str);
     args[i - 1] = NULL;
 
+
+    env = (const char **)mymalloc(sizeof(const char *) * ((arglist.v.list[0].v.num >= 3 ? arglist.v.list[3].v.num : 0) + 1), M_ARRAY);
+    env[0] = str_dup("PATH=/bin:/usr/bin");
+    if (arglist.v.list[0].v.num >= 3) {
+        FOR_EACH(v, arglist.v.list[3], i, c)
+            env[i] = str_dup(v.v.str);
+        env[i] = NULL;
+    } else {
+        env[1] = NULL;
+    }
+
     tw = malloc_task_waiting_on_exec();
     tw->cmd = cmd;
     tw->args = args;
     tw->in = in;
     tw->len = len;
+    tw->env = env;
 
     free_var(arglist);
 
@@ -533,5 +558,5 @@ register_exec(void)
     sigaddset(&block_sigchld, SIGCHLD);
 
     register_task_queue(exec_waiter_enumerator);
-    register_function("exec", 1, 2, bf_exec, TYPE_LIST, TYPE_STR);
+    register_function("exec", 1, 3, bf_exec, TYPE_LIST, TYPE_STR, TYPE_LIST);
 }
