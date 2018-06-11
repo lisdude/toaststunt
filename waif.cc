@@ -596,8 +596,7 @@ bf_waif_stats(Var arglist, Byte next, void *vdata, Objid progr)
     r = mapinsert(r, str_dup_to_var("total"), Var::new_int(waif_count));
 
     for (auto& x : waif_class_count) {
-        if (is_valid(x.second))
-            r = mapinsert(r, Var::new_obj(x.first), Var::new_int(x.second));
+        r = mapinsert(r, Var::new_obj(x.first), Var::new_int(x.second));
     }
 
     return make_var_pack(r);
@@ -1035,3 +1034,4 @@ waif_after_loading()
 	}
 	myfree(saved_waifs, M_WAIF_XTRA);
 }
+
