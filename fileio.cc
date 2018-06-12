@@ -1538,6 +1538,7 @@ bf_file_count_lines(Var arglist, Byte next, void *vdata, Objid progr)
 {
   package r;
   Var fhandle = arglist.v.list[1];
+  free_var(arglist);
   file_mode mode;
   Var rv;
 
