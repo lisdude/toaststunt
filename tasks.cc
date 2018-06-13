@@ -938,9 +938,9 @@ do_login_task(tqueue * tq, char *command)
         }
     }
 
-    args = parse_into_wordlist(clear_command ? '\0' : command);
+    args = parse_into_wordlist(clear_command ? "\0" : command);
     run_server_task_setting_id(tq->player, Var::new_obj(tq->handler),
-			       "do_login_command", args, clear_command ? '\0' : command,
+			       "do_login_command", args, clear_command ? "\0" : command,
 			        &result, &(tq->last_input_task_id));
     /* The connected player (tq->player) may be non-negative if
      * `do_login_command' already called the `switch_player' built-in
