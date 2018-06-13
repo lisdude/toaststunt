@@ -116,6 +116,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     int offset = 0, rc = 0, i = 0;
     int subject_length = memo_strlen(subject);
     unsigned int loops = 0;
+    const char *matched_substring;
 
     // Check for the existence of the pcre_match_max_iterations server option to determine
     // how many iterations of the match loop we'll attempt before giving up.
@@ -152,16 +153,14 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         } else {
             // Store the matched substrings.
             for (i = 0; i < rc; i++) {
+                pcre_get_substring(subject, ovector, rc, i, &(matched_substring));
                 // Store the offsets if tmp is a list or the string if it's not.
                 if (tmp.type == TYPE_LIST)
                 {
                     tmp.v.list[1].v.num = ovector[2*i] + 1;
                     tmp.v.list[2].v.num = ovector[2*i+1];
                 } else {
-                    int substring_length = ovector[2*i+1] - ovector[2*i];
-                    char buf[substring_length];
-                    sprintf(buf, "%.*s", substring_length, (subject + ovector[2*i]));
-                    tmp.v.str = str_dup(buf);
+                    tmp.v.str = str_dup(matched_substring);
                 }
 
                 /* Store the resulting substrings either as a group or into the main return var.
@@ -179,6 +178,8 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
                     free_str(tmp.v.str);
                     tmp.v.str = NULL;
                 }
+
+                pcre_free_substring(matched_substring);
 
                 // Begin at the end of the previous match on the next iteration of the loop.
                 offset = ovector[1];
