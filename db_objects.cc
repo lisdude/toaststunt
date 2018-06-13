@@ -698,11 +698,10 @@ Var db_ancestors(Var obj, bool full) {
     if (obj.type != TYPE_OBJ || !is_valid(obj) || o->parents.v.obj == NOTHING)
         return db_find_ancestors(obj, full);
 
-    if (ancestor_cache.find(o->id) == ancestor_cache.end())
+    if (ancestor_cache.count(o->id) == 0)
         ancestor_cache[o->id] = db_find_ancestors(obj, false);
 
     Var ancestors = var_ref(ancestor_cache[o->id]);
-
 
     /* The 'full' refcount only needs to be 1 because listinsert will be creating a new list and consuming
      * the second reference to the cached copy (which we just created directly above this). This leaves us
@@ -968,7 +967,7 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
 
     Var descendants = db_descendants(obj, true);
     FOR_EACH(desc, descendants, i, c) {
-        if (ancestor_cache.find(desc.v.obj) != ancestor_cache.end()) {
+        if (ancestor_cache.count(desc.v.obj) > 0) {
             if (var_refcount(ancestor_cache[desc.v.obj]) > 1)
                 applog(LOG_ERROR, "Refcount too high for ancestor cache invalidation of #%i. Refcount = %i\n", desc.v.obj, var_refcount(ancestor_cache[desc.v.obj]));
             free_var(ancestor_cache[desc.v.obj]);

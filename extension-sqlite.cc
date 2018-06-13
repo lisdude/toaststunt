@@ -309,7 +309,7 @@ bf_sqlite_last_insert_row_id(Var arglist, Byte next, void *vdata, Objid progr)
 /* Return true if a handle is valid and active. */
 bool valid_handle(int handle)
 {
-    if (handle < 0 || handle >= next_sqlite_handle || sqlite_connections.find(handle) == sqlite_connections.end())
+    if (handle < 0 || handle >= next_sqlite_handle || sqlite_connections.count(handle) == 0)
         return false;
 
     return true;
