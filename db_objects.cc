@@ -709,7 +709,7 @@ Var db_ancestors(Var obj, bool full) {
      * The non-full list should have a refcount of 2 so that when it gets consumed, the copy in the cache
      * won't be freed. */
     if (full)
-        return listinsert(ancestors, var_ref(obj), 1); /* listdelete consumes the list */
+        return listinsert(ancestors, var_ref(obj), 1); /* listinsert consumes the list */
     else
         return ancestors;
 }
