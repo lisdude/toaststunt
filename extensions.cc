@@ -162,7 +162,6 @@ bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
 {
     // Values are returned in pages. To get KB, multiply by 4.
     free_var(arglist);
-    Var s = new_list(5);
 
     long double size, resident, share, text, lib, data, dt;
 
@@ -180,6 +179,7 @@ bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
 
     fclose(f);
 
+    Var s = new_list(5);
     s.v.list[1] = new_float(size);           // Total program size
     s.v.list[2] = new_float(resident);       // Resident set size
     s.v.list[3] = new_float(share);          // Shared pages from shared mappings
