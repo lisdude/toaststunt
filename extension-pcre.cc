@@ -1,7 +1,7 @@
 /******************************************************************************
  * Perl-compatible Regular Expressions for LambdaMOO.
  *
- * Albori "lisdude" Sninvel <albori@toastsoft.net>
+ * lisdude <lisdude@lisdude.com>
  ******************************************************************************/
 
 #include <pcre.h>
@@ -16,11 +16,11 @@
 #include "pcrs.h"
 #include "server.h"
 
-#define EXT_PCRE_VERSION "2.2"
-#define DEFAULT_LOOPS 1000
-#define RETURN_INDEXES  2
-#define RETURN_GROUPS   4
-#define FIND_ALL        8
+#define EXT_PCRE_VERSION    "2.2"
+#define DEFAULT_LOOPS       1000
+#define RETURN_INDEXES      2
+#define RETURN_GROUPS       4
+#define FIND_ALL            8
 
 struct pcre_cache_entry {
     char *error;
@@ -35,7 +35,7 @@ void free_entry(pcre_cache_entry *);
 static struct pcre_cache_entry *
 get_pcre(const char *string, unsigned char options) {
     const char *err;
-    int eos; // Error offset
+    int eos; /* Error offset */
     char buf[256];
 
     pcre_cache_entry *entry = (pcre_cache_entry*)malloc(sizeof(pcre_cache_entry));
@@ -62,7 +62,7 @@ get_pcre(const char *string, unsigned char options) {
 static package
 bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     const char *subject, *pattern;
-    char err[256]; // Our general-purpose error holder. Handy!
+    char err[256]; /* Our general-purpose error holder. Handy! */
     unsigned char options = 0;
     unsigned char flags = RETURN_GROUPS | FIND_ALL;
 
@@ -77,14 +77,14 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     if (arglist.v.list[0].v.num >= 6 && arglist.v.list[6].v.num == 0)
         flags ^= FIND_ALL;
 
-    // Return E_INVARG if the pattern or subject are empty.
+    /* Return E_INVARG if the pattern or subject are empty. */
     if (pattern[0] == '\0' || subject[0] == '\0')
     {
         free_var(arglist);
         return make_error_pack(E_INVARG);
     }
 
-    // Compile the pattern
+    /* Compile the pattern */
     struct pcre_cache_entry *entry = get_pcre(pattern, options);
 
     if (entry->error != NULL)
@@ -95,17 +95,17 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         return r;
     }
 
-    // Determine how many subpatterns match so we can allocate memory.
+    /* Determine how many subpatterns match so we can allocate memory. */
     int oveccount = (entry->captures + 1) * 3;
     int ovector[oveccount];
 
-    // Set up the MOO variables to store the final value and intermediaries.
+    /* Set up the MOO variables to store the final value and intermediaries. */
     Var ret, tmp, group;
     ret = new_list(0);
     group = new_list(0);
 
-    // Return indexes come in the form {start, end} so we'll need to
-    // create a list to store them temporarily as we work.
+    /* Return indexes come in the form {start, end} so we'll need to
+     * create a list to store them temporarily as we work. */
     if (flags & RETURN_INDEXES)
     {
         tmp = new_list(2);
@@ -116,49 +116,49 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         tmp.v.str = NULL;
     }
 
-    // Variables pertaining to the main execution loop
+    /* Variables pertaining to the main execution loop */
     int offset = 0, rc = 0, i = 0;
     int subject_length = memo_strlen(subject);
     unsigned int loops = 0;
     const char *matched_substring;
 
-    // Check for the existence of the pcre_match_max_iterations server option to determine
-    // how many iterations of the match loop we'll attempt before giving up.
+    /* Check for the existence of the pcre_match_max_iterations server option to determine
+     * how many iterations of the match loop we'll attempt before giving up. */
     unsigned int total_loops = server_int_option("pcre_match_max_iterations", DEFAULT_LOOPS);
     if (total_loops < 100)
         total_loops = 100;
     else if (total_loops >= 100000000)
         total_loops = 100000000;
 
-    // Execute the match.
+    /* Execute the match. */
     while (offset < subject_length)
     {
         loops++;
         rc = pcre_exec(entry->re, entry->extra, subject, subject_length, offset, 0, ovector, oveccount);
         if (rc < 0 && rc != PCRE_ERROR_NOMATCH)
         {
-            // We've encountered some funky error. Back out and let them know what it is.
+            /* We've encountered some funky error. Back out and let them know what it is. */
             free_pcre_vars(&ret, &group, &tmp, &arglist, entry);
             sprintf(err, "pcre_exec returned error: %d", rc);
             return make_raise_pack(E_INVARG, err, var_ref(zero));
         } else if (rc == 0) {
-            // We don't have enough room to store all of these substrings.
+            /* We don't have enough room to store all of these substrings. */
             free_pcre_vars(&ret, &group, &tmp, &arglist, entry);
             sprintf(err, "pcre_exec only has room for %d substrings", entry->captures);
             return make_raise_pack(E_QUOTA, err, var_ref(zero));
         } else if (rc == PCRE_ERROR_NOMATCH) {
-            // There are no more matches.
+            /* There are no more matches. */
             break;
         } else if (loops >= total_loops) {
-            // The loop has iterated beyond the maximum limit, probably locking the server. Kill it.
+            /* The loop has iterated beyond the maximum limit, probably locking the server. Kill it. */
             free_pcre_vars(&ret, &group, &tmp, &arglist, entry);
             sprintf(err, "Too many iterations of matching loop: %d", loops);
             return make_raise_pack(E_MAXREC, err, var_ref(zero));
         } else {
-            // Store the matched substrings.
+            /* Store the matched substrings. */
             for (i = 0; i < rc; i++) {
                 pcre_get_substring(subject, ovector, rc, i, &(matched_substring));
-                // Store the offsets if tmp is a list or the string if it's not.
+                /* Store the offsets if tmp is a list or the string if it's not. */
                 if (tmp.type == TYPE_LIST)
                 {
                     tmp.v.list[1].v.num = ovector[2*i] + 1;
@@ -176,11 +176,11 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
 
                 pcre_free_substring(matched_substring);
 
-                // Begin at the end of the previous match on the next iteration of the loop.
+                /* Begin at the end of the previous match on the next iteration of the loop. */
                 offset = ovector[1];
             }
 
-            // Store all of our groups (if applicable) into the main return var.
+            /* Store all of our groups (if applicable) into the main return var. */
             if ((flags & RETURN_GROUPS) && group.v.list[0].v.num > 0)
             {
                 ret = listappend(ret, group);
@@ -188,7 +188,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             }
         }
 
-        // Only loop a single time without /g
+        /* Only loop a single time without /g */
         if (!(flags & FIND_ALL) && loops == 1)
             break;
     }
