@@ -16,7 +16,7 @@
 #include "pcrs.h"
 #include "server.h"
 
-#define EXT_PCRE_VERSION "2.1"
+#define EXT_PCRE_VERSION "2.2"
 #define DEFAULT_LOOPS 1000
 #define RETURN_INDEXES  2
 #define RETURN_GROUPS   4
@@ -25,7 +25,7 @@
 struct pcre_cache_entry {
     char *error;
     pcre *re;
-    //pcre_extra *extra;
+    pcre_extra *extra;
     int captures;
 };
 
@@ -48,8 +48,12 @@ get_pcre(const char *string, unsigned char options) {
         sprintf(buf, "PCRE compile error at offset %d: %s", eos, err);
         entry->error = str_dup(buf);
     } else {
-        //entry->extra = pcre_study(entry->re, 0, NULL);
-        (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
+        const char *error = NULL;
+        entry->extra = pcre_study(entry->re, 0, &error);
+        if (error != NULL)
+            entry->error = str_dup(error);
+        else
+            (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
     }
 
     return entry;
@@ -130,7 +134,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     while (offset < subject_length)
     {
         loops++;
-        rc = pcre_exec(entry->re, NULL, subject, subject_length, offset, 0, ovector, oveccount);
+        rc = pcre_exec(entry->re, entry->extra, subject, subject_length, offset, 0, ovector, oveccount);
         if (rc < 0 && rc != PCRE_ERROR_NOMATCH)
         {
             // We've encountered some funky error. Back out and let them know what it is.
@@ -166,18 +170,9 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
                 /* Store the resulting substrings either as a group or into the main return var.
                  * group used to use setadd but we were losing results, this now we don't! */
                 if (flags & RETURN_GROUPS)
-                    group = listappend(group, var_dup(tmp));
+                    group = listappend(group, var_ref(tmp));
                 else
-                    ret = listappend(ret, var_dup(tmp));
-
-                /* We duped the string above so we need to free it before replacing it.
-                 * We also replace it with NULL to make 100% sure we don't free it when
-                 * it's still referencing memory we just freed. */
-                if (tmp.type == TYPE_STR)
-                {
-                    free_str(tmp.v.str);
-                    tmp.v.str = NULL;
-                }
+                    ret = listappend(ret, var_ref(tmp));
 
                 pcre_free_substring(matched_substring);
 
@@ -188,8 +183,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             // Store all of our groups (if applicable) into the main return var.
             if ((flags & RETURN_GROUPS) && group.v.list[0].v.num > 0)
             {
-                ret = listappend(ret, var_dup(group));
-                free_var(group);
+                ret = listappend(ret, group);
                 group = new_list(0);
             }
         }
@@ -212,12 +206,11 @@ void free_pcre_vars(Var *ret, Var *group, Var *tmp, Var *arglist, pcre_cache_ent
 {
     if (arglist != NULL)
         free_var(*arglist);
+
     if (ret != NULL)
         free_var(*ret);
 
-    if (tmp != NULL && tmp->type == TYPE_LIST)
-        free_var(*tmp);
-    else if (tmp != NULL && tmp->type == TYPE_STR && tmp->v.str != NULL)
+    if (tmp != NULL)
         free_var(*tmp);
 
     if (group != NULL && group->type == TYPE_LIST)
@@ -233,6 +226,14 @@ void free_entry(pcre_cache_entry *entry)
 
     if (entry->error != NULL)
         free_str(entry->error);
+
+    if(entry->extra != NULL) {
+#ifdef PCRE_CONFIG_JIT
+        pcre_free_study(entry->extra);
+#else
+        pcre_free(entry->extra);
+#endif
+    }
 
     free(entry);
 }
