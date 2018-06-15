@@ -59,8 +59,6 @@ disable_stream_exceptions()
 static void
 grow(Stream * s, int newlen, int need)
 {
-    char *newbuf;
-
     if (allow_stream_exceptions > 0) {
 	if (newlen > stream_alloc_maximum) {
 	    if (s->current + need < stream_alloc_maximum)
@@ -69,10 +67,7 @@ grow(Stream * s, int newlen, int need)
 		throw stream_too_big();
 	}
     }
-    newbuf = (char *)mymalloc(newlen, M_STREAM);
-    memcpy(newbuf, s->buffer, s->current);
-    myfree(s->buffer, M_STREAM);
-    s->buffer = newbuf;
+    s->buffer = (char *)myrealloc(s->buffer, newlen, M_STREAM);
     s->buflen = newlen;
 }
 
