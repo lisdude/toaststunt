@@ -15,6 +15,9 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#ifndef EXT_LIST_H
+#define EXT_LIST_H 1
+
 #include "structures.h"
 #include "streams.h"
 
@@ -44,6 +47,8 @@ extern Var strget(Var str, int i);
 
 extern const char *value2str(Var);
 extern void unparse_value(Stream *, Var);
+
+extern Var emptylist; /* Bandaid: See list.cc */
 
 /*
  * Returns the length of the given list `l'.  Does *not* check to
@@ -96,3 +101,4 @@ for (idx = 1, cnt = lst.v.list[0].v.num;			\
 #define POP_TOP(tp, stck)					\
 tp = var_ref(stck.v.list[1]);					\
 stck = listdelete(stck, 1);
+#endif

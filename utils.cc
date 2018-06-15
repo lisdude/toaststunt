@@ -185,7 +185,7 @@ complex_free_var(Var v)
 	    myfree(v.v.fnum, M_FLOAT);
 	break;
     case TYPE_LIST:
-	if (delref(v.v.list) == 0) {
+	if (v.v.list != emptylist.v.list && delref(v.v.list) == 0) {
 	    destroy_list(v);
 	    gc_set_color(v.v.list, GC_BLACK);
 	    if (!gc_is_buffered(v.v.list))
@@ -259,7 +259,7 @@ complex_free_var(Var v)
 	    myfree(v.v.fnum, M_FLOAT);
 	break;
     case TYPE_LIST:
-	if (delref(v.v.list) == 0)
+	if (v.v.list != emptylist.v.list && delref(v.v.list) == 0)
 	    destroy_list(v);
 	break;
     case TYPE_MAP:
