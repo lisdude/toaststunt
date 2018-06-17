@@ -441,6 +441,15 @@
 */
 #define USE_ANCESTOR_CACHE
 
+/******************************************************************************
+ * Typically, FIO will drop any character that doesn't have a graphical representation.
+ * This process, however, is very slow. If you're positive that your text files are all
+ * safe, you can disable this option to speed up text file reads at the expense of
+ * theoretical safety. Newlines are still stripped from the ends of lines.
+ ******************************************************************************
+*/
+#define UNSAFE_FIO
+
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/

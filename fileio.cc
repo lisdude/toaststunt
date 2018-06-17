@@ -75,7 +75,7 @@ struct line_buffer {
  ***************************************************************/
 
 char file_package_name[]    = "FIO";
-char file_package_version[] = "1.6";
+char file_package_version[] = "1.7";
 
 
 /***************************************************************
@@ -554,7 +554,14 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
 		r = file_raise_errno("readline");
 	 else {
 		rv.type = TYPE_STR;
+#ifndef UNSAFE_FIO
 		rv.v.str = str_dup((type->in_filter)(line, len));
+#else
+        /* For good reason, you can't modify a const char. But shh, we're doing it anyway. */
+        char *dirty_hack = (char*)line;
+        dirty_hack[len - 1] = '\0';
+        rv.v.str = str_dup(dirty_hack);
+#endif
 		r = make_var_pack(rv);
 	 }
   }
@@ -640,7 +647,14 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 
 		while ((current_line != end)
 				&& ((line = file_get_line(fhandle, &len)) != NULL)) {
+#ifndef UNSAFE_FIO
 		  linebuf_cur->next = new_line_buffer(str_dup((type->in_filter)(line, len)));
+#else
+        /* For good reason, you can't modify a const char. But shh, we're doing it anyway. */
+        char *dirty_hack = (char*)line;
+        dirty_hack[len - 1] = '\0';
+        linebuf_cur->next = new_line_buffer(str_dup(dirty_hack));
+#endif
 		  linebuf_cur = linebuf_cur->next;
 
 		  current_line++;
@@ -1509,8 +1523,7 @@ bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
         // Have to get rid of the newline, woops
 //        line[strcspn(line, "\r\n")] = 0;
         // strcspn is more elegant but slower
-        // Dirty hack: C++isms won't let me modify a const char (for uh, good reason)
-        // BUT I KNOW BETTER. famous last words
+        /* For good reason, you can't modify a const char. But shh, we're doing it anyway. */
         char *dirty_hack = (char*)line;
         dirty_hack[strlen(dirty_hack) - 1] = '\0';
         tmp_name.v.str = str_dup(dirty_hack);
