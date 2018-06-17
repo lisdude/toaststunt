@@ -229,7 +229,7 @@ rename_waif_prop_recursively(Var root, const char *old, const char *_new)
     int i, c = 0;
 
     FOR_EACH(descendant, descendants, i, c) {
-		rename_waif_prop_recursively(Var::new_obj(descendants.v.obj), old, _new);
+		rename_waif_prop_recursively(Var::new_obj(descendant.v.obj), old, _new);
     }
 
     free_var(descendants);
