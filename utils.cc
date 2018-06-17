@@ -669,7 +669,7 @@ raw_bytes_to_clean(const char *buffer, int buflen)
     static Stream *s = 0;
 
     if (!s)
-	s = new_stream(100);
+	s = new_stream(buflen+1);
 
     stream_add_raw_bytes_to_clean(s, buffer, buflen);
 
