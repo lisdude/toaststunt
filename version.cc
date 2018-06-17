@@ -54,10 +54,10 @@
 #ifndef VERSION_MAJOR
 #  define VERSION_MAJOR 2
 #  define VERSION_MINOR 3
-#  define VERSION_RELEASE 10
+#  define VERSION_RELEASE 13
 #endif
 #ifndef VERSION_EXT
-#  define VERSION_EXT "_bandaid.1"
+#  define VERSION_EXT ""
 #endif
 #ifndef VERSION_STRING
 #  define _V(MAJ,MIN,REL) #MAJ "." #MIN "." #REL
