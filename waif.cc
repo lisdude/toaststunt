@@ -37,6 +37,7 @@
 
 static unsigned long waif_count = 0;
 static std::map<Objid, unsigned int> waif_class_count;
+std::vector<Waif*> recycled_waifs;
 
 #define PROP_MAPPED(Mmap, Mbit)	((Mmap)[(Mbit) / 32] & (1 << ((Mbit) % 32)))
 #define MAP_PROP(Mmap, Mbit) (Mmap)[(Mbit) / 32] |= 1 << ((Mbit) % 32)

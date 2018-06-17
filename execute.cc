@@ -2946,6 +2946,19 @@ do_server_program_task(Var _this, const char *verb, Var args, Var vloc,
 {
     Var *env;
 
+    Objid receiver;
+    switch (_this.type) {
+        case TYPE_OBJ:
+            receiver = _this.v.obj;
+            break;
+        case TYPE_WAIF:
+            receiver = _this.v.waif->_class;
+            break;
+        default:
+            receiver = NOTHING;
+            break;
+    }
+
     check_activ_stack_size(current_max_stack_size());
     top_activ_stack = 0;
 
@@ -2953,7 +2966,7 @@ do_server_program_task(Var _this, const char *verb, Var args, Var vloc,
     RUN_ACTIV._this = var_ref(_this);
     RUN_ACTIV.player = player;
     RUN_ACTIV.progr = progr;
-    RUN_ACTIV.recv = (TYPE_OBJ == _this.type) ? _this.v.obj : NOTHING;
+    RUN_ACTIV.recv = receiver;
     RUN_ACTIV.vloc = var_ref(vloc);
     RUN_ACTIV.verb = str_dup(verb);
     RUN_ACTIV.verbname = str_dup(verbname);

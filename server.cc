@@ -60,6 +60,7 @@
 #include "utils.h"
 #include "version.h"
 #include "net_multi.h"  /* rewrite connection name */
+#include "waif.h" /* recycled_waifs */
 
 extern "C" {
 #include "linenoise.h"
@@ -559,6 +560,16 @@ recycle_anonymous_objects(void)
     }
 }
 
+    static void
+recycle_waifs(void)
+{
+    for (auto& x : recycled_waifs) {
+        run_server_task(-1, var_ref(Var::new_waif(x)), ":recycle", new_list(0), "", 0);
+        free_waif(x);
+    }
+    recycled_waifs.clear();
+}
+
 /* When the server checkpoints, all of the objects pending recycling
  * are written to the database.  It is not safe to simply forget about
  * these objects because recycling them will call their `recycle()'
@@ -680,6 +691,7 @@ main_loop(void)
 #endif
 
 	recycle_anonymous_objects();
+    recycle_waifs();
 
 	res = network_process_io(useconds_left);
 

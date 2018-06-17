@@ -1879,7 +1879,7 @@ run_server_task_setting_id(Objid player, Var what, const char *verb,
     if (task_id)
 	*task_id = current_task_id;
 
-    h = db_find_callable_verb(what, verb);
+    h = db_find_callable_verb(what.type == TYPE_WAIF ? Var::new_obj(what.v.waif->_class) : what, verb);
     if (h.ptr)
 	return do_server_verb_task(what, verb, args, h, player, argstr,
 				   result, 1/*traceback*/);

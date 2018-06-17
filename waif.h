@@ -22,8 +22,12 @@
 #ifndef WAIF_h
 #define WAIF_h
 
+#include <vector>
+
 #define WAIF_PROP_PREFIX	':'
 #define WAIF_VERB_PREFIX	':'
+
+extern std::vector<Waif*> recycled_waifs;
 
 #ifdef WAIF_DICT
 #define WAIF_INDEX_VERB ":_index"

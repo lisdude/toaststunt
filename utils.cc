@@ -210,7 +210,7 @@ complex_free_var(Var v)
 	break;
 	case TYPE_WAIF:
 	if (delref(v.v.waif) == 0)
-		free_waif(v.v.waif);
+        recycled_waifs.push_back(v.v.waif);
 	break;
     case TYPE_ANON:
 	/* The first time an anonymous object's reference count drops
@@ -272,7 +272,7 @@ complex_free_var(Var v)
 	break;
 	case TYPE_WAIF:
 	if (delref(v.v.waif) == 0)
-		free_waif(v.v.waif);
+        recycled_waifs.push_back(v.v.waif);
 	break;
     case TYPE_ANON:
 	if (v.v.anon && delref(v.v.anon) == 0) {

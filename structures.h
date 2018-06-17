@@ -185,7 +185,7 @@ struct Var {
 
     bool
     is_object() {
-	return TYPE_OBJ == type || TYPE_ANON == type;
+	return TYPE_OBJ == type || TYPE_ANON == type || TYPE_WAIF == type;
     }
 
     bool
@@ -217,6 +217,14 @@ struct Var {
     bool
     is_str() {
 	return TYPE_STR == type;
+    }
+
+    static Var
+    new_waif(Waif *waif) {
+    Var v;
+    v.type = TYPE_WAIF;
+    v.v.waif = waif;
+    return v;
     }
 };
 
