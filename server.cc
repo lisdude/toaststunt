@@ -554,6 +554,7 @@ recycle_anonymous_objects(void)
 
 	incr_quota(db_object_owner2(v));
 
+    oklog("Freeing anon NOW. Refcount: %i\n", var_refcount(v));
 	db_destroy_anonymous_object(v.v.anon);
 
 	free_var(v);
@@ -564,10 +565,19 @@ recycle_anonymous_objects(void)
 recycle_waifs(void)
 {
     for (auto& x : recycled_waifs) {
-        run_server_task(-1, var_ref(Var::new_waif(x)), ":recycle", new_list(0), "", 0);
-        free_waif(x);
+        oklog("Information refcount: %i\n", refcount(x.first));
+        if (recycled_waifs[x.first] == false) {
+        run_server_task(-1, Var::new_waif(x.first), ":recycle", new_list(0), "", 0);
+        oklog("Recycle verb called. Refcount now: %i\n", refcount(x.first));
+        recycled_waifs[x.first] = true;
+        /* Flag it as recycled. Now we just wait for the refcount to hit zero so we can free it. */
+        }
+        if (refcount(x.first) == 0) {
+        oklog("Freeing waif NOW. Refcount of waif: %i\n", refcount(x.first));
+        free_waif(x.first);
+        recycled_waifs.erase(x.first);
+        }
     }
-    recycled_waifs.clear();
 }
 
 /* When the server checkpoints, all of the objects pending recycling
