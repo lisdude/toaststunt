@@ -595,6 +595,7 @@ bf_waif_stats(Var arglist, Byte next, void *vdata, Objid progr)
 
     Var r = new_map();
     r = mapinsert(r, str_dup_to_var("total"), Var::new_int(waif_count));
+    r = mapinsert(r, str_dup_to_var("pending_recycle"), Var::new_int(recycled_waifs.size()));
 
     for (auto& x : waif_class_count) {
         r = mapinsert(r, Var::new_obj(x.first), Var::new_int(x.second));

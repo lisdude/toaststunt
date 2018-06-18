@@ -208,14 +208,12 @@ complex_free_var(Var v)
 	if (delref(v.v.trav) == 0)
 	    destroy_iter(v);
 	break;
-	case TYPE_WAIF:
-	if (delref(v.v.waif) == 0) {
-        if (recycled_waifs.count(v.v.waif) == 0) {
-        oklog("Pushing waif with refcount %i\n", refcount(v.v.waif)); 
-        recycled_waifs[v.v.waif] = false;
-    } 
+    case TYPE_WAIF:
+    if (delref(v.v.waif) == 0) {
+        if (recycled_waifs.count(v.v.waif) == 0)
+            recycled_waifs[v.v.waif] = false;
     }
-	break;
+    break;
     case TYPE_ANON:
 	/* The first time an anonymous object's reference count drops
 	 * to zero, it isn't immediately destroyed/freed.  Instead, it

@@ -561,7 +561,7 @@ recycle_anonymous_objects(void)
     }
 }
 
-    static void
+static void
 recycle_waifs(void)
 {
     /* This seems like a lot of work to go through just to get a recycle verb name.
@@ -574,16 +574,12 @@ recycle_waifs(void)
     }
 
     for (auto& x : recycled_waifs) {
-        oklog("Information refcount: %i\n", refcount(x.first));
         if (recycled_waifs[x.first] == false) {
-            oklog("Calling verb %s\n", waif_recycle_verb);
             run_server_task(-1, Var::new_waif(x.first), waif_recycle_verb, new_list(0), "", 0);
-            oklog("Recycle verb called. Refcount now: %i\n", refcount(x.first));
             recycled_waifs[x.first] = true;
             /* Flag it as recycled. Now we just wait for the refcount to hit zero so we can free it. */
         }
         if (refcount(x.first) == 0) {
-            oklog("Freeing waif NOW. Refcount of waif: %i\n", refcount(x.first));
             free_waif(x.first);
             recycled_waifs.erase(x.first);
         }
