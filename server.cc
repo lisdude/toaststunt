@@ -564,18 +564,28 @@ recycle_anonymous_objects(void)
     static void
 recycle_waifs(void)
 {
+    /* This seems like a lot of work to go through just to get a recycle verb name.
+     * Maybe it should just be a #define in waif.h? Ah well.*/
+    static char *waif_recycle_verb = NULL;
+    if (!waif_recycle_verb) {
+        waif_recycle_verb = (char *)mymalloc(9, M_STRING);
+        waif_recycle_verb[0] = WAIF_VERB_PREFIX;
+        strcpy(waif_recycle_verb + 1, "recycle");
+    }
+
     for (auto& x : recycled_waifs) {
         oklog("Information refcount: %i\n", refcount(x.first));
         if (recycled_waifs[x.first] == false) {
-        run_server_task(-1, Var::new_waif(x.first), ":recycle", new_list(0), "", 0);
-        oklog("Recycle verb called. Refcount now: %i\n", refcount(x.first));
-        recycled_waifs[x.first] = true;
-        /* Flag it as recycled. Now we just wait for the refcount to hit zero so we can free it. */
+            oklog("Calling verb %s\n", waif_recycle_verb);
+            run_server_task(-1, Var::new_waif(x.first), waif_recycle_verb, new_list(0), "", 0);
+            oklog("Recycle verb called. Refcount now: %i\n", refcount(x.first));
+            recycled_waifs[x.first] = true;
+            /* Flag it as recycled. Now we just wait for the refcount to hit zero so we can free it. */
         }
         if (refcount(x.first) == 0) {
-        oklog("Freeing waif NOW. Refcount of waif: %i\n", refcount(x.first));
-        free_waif(x.first);
-        recycled_waifs.erase(x.first);
+            oklog("Freeing waif NOW. Refcount of waif: %i\n", refcount(x.first));
+            free_waif(x.first);
+            recycled_waifs.erase(x.first);
         }
     }
 }
