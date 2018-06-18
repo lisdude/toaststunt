@@ -54,7 +54,7 @@
 #ifndef VERSION_MAJOR
 #  define VERSION_MAJOR 2
 #  define VERSION_MINOR 3
-#  define VERSION_RELEASE 13
+#  define VERSION_RELEASE 14
 #endif
 #ifndef VERSION_EXT
 #  define VERSION_EXT ""
