@@ -5,18 +5,16 @@
  ******************************************************************************/
 
 #include <pcre.h>
-#include "my-string.h"
-#include "structures.h"
 #include "functions.h"
-#include "storage.h"
 #include "list.h"
 #include "utils.h"
-#include "ast.h"
 #include "log.h"
 #include "pcrs.h"
-#include "server.h"
+#include "server.h" /* server_int_option */
+#include "map.h"
+#include "xtrapbits.h" /* bit array */
 
-#define EXT_PCRE_VERSION    "2.2"
+#define EXT_PCRE_VERSION    "3.0"
 #define DEFAULT_LOOPS       1000
 #define RETURN_INDEXES      2
 #define RETURN_GROUPS       4
@@ -29,8 +27,9 @@ struct pcre_cache_entry {
     int captures;
 };
 
-void free_pcre_vars(Var *, Var *, Var *, Var *, pcre_cache_entry *);
+void free_pcre_vars(pcre_cache_entry *);
 void free_entry(pcre_cache_entry *);
+Var result_indices(int ovector[], int n);
 
 static struct pcre_cache_entry *
 get_pcre(const char *string, unsigned char options) {
@@ -52,8 +51,9 @@ get_pcre(const char *string, unsigned char options) {
         entry->extra = pcre_study(entry->re, 0, &error);
         if (error != NULL)
             entry->error = str_dup(error);
-        else
+        else {
             (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
+        }
     }
 
     return entry;
@@ -61,28 +61,36 @@ get_pcre(const char *string, unsigned char options) {
 
 static package
 bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
+    /* Some useful constants. */
+    static Var match = nothing;
+    if (match.v.obj == NOTHING) {
+        match.type = TYPE_STR;
+        match.v.str = str_dup("match");
+    }
+    static Var position = nothing;
+    if (position.v.obj == NOTHING) {
+        position.type = TYPE_STR;
+        position.v.str = str_dup("position");
+    }
+    /**************************/
+
     const char *subject, *pattern;
     char err[256]; /* Our general-purpose error holder. Handy! */
     unsigned char options = 0;
-    unsigned char flags = RETURN_GROUPS | FIND_ALL;
+    unsigned char flags = FIND_ALL;
 
-    subject = arglist.v.list[1].v.str;
-    pattern = arglist.v.list[2].v.str;
+    subject = str_ref(arglist.v.list[1].v.str);
+    pattern = str_ref(arglist.v.list[2].v.str);
     options = (arglist.v.list[0].v.num >= 3 && is_true(arglist.v.list[3])) ? 0 : PCRE_CASELESS;
 
     if (arglist.v.list[0].v.num >= 4 && arglist.v.list[4].v.num == 0)
-        flags ^= RETURN_GROUPS;
-    if (arglist.v.list[0].v.num >= 5 && arglist.v.list[5].v.num == 1)
-        flags |= RETURN_INDEXES;
-    if (arglist.v.list[0].v.num >= 6 && arglist.v.list[6].v.num == 0)
         flags ^= FIND_ALL;
+
+    free_var(arglist);
 
     /* Return E_INVARG if the pattern or subject are empty. */
     if (pattern[0] == '\0' || subject[0] == '\0')
-    {
-        free_var(arglist);
         return make_error_pack(E_INVARG);
-    }
 
     /* Compile the pattern */
     struct pcre_cache_entry *entry = get_pcre(pattern, options);
@@ -90,7 +98,6 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     if (entry->error != NULL)
     {
         package r = make_raise_pack(E_INVARG, entry->error, var_ref(zero));
-        free_var(arglist);
         free_entry(entry);
         return r;
     }
@@ -100,24 +107,11 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     int ovector[oveccount];
 
     /* Set up the MOO variables to store the final value and intermediaries. */
-    Var ret, tmp, group;
-    ret = new_list(0);
-    group = new_list(0);
-
-    /* Return indexes come in the form {start, end} so we'll need to
-     * create a list to store them temporarily as we work. */
-    if (flags & RETURN_INDEXES)
-    {
-        tmp = new_list(2);
-        tmp.v.list[1].type = TYPE_INT;
-        tmp.v.list[2].type = TYPE_INT;
-    } else {
-        tmp.type = TYPE_STR;
-        tmp.v.str = NULL;
-    }
+    Var named_groups = new_map();
+    Var ret = new_list(0);
 
     /* Variables pertaining to the main execution loop */
-    int offset = 0, rc = 0, i = 0;
+    int offset = 0, rc = 0, i = 0, named_substrings;
     int subject_length = memo_strlen(subject);
     unsigned int loops = 0;
     const char *matched_substring;
@@ -138,12 +132,12 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         if (rc < 0 && rc != PCRE_ERROR_NOMATCH)
         {
             /* We've encountered some funky error. Back out and let them know what it is. */
-            free_pcre_vars(&ret, &group, &tmp, &arglist, entry);
+            free_pcre_vars(entry);
             sprintf(err, "pcre_exec returned error: %d", rc);
             return make_raise_pack(E_INVARG, err, var_ref(zero));
         } else if (rc == 0) {
             /* We don't have enough room to store all of these substrings. */
-            free_pcre_vars(&ret, &group, &tmp, &arglist, entry);
+            free_pcre_vars(entry);
             sprintf(err, "pcre_exec only has room for %d substrings", entry->captures);
             return make_raise_pack(E_QUOTA, err, var_ref(zero));
         } else if (rc == PCRE_ERROR_NOMATCH) {
@@ -151,50 +145,84 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             break;
         } else if (loops >= total_loops) {
             /* The loop has iterated beyond the maximum limit, probably locking the server. Kill it. */
-            free_pcre_vars(&ret, &group, &tmp, &arglist, entry);
+            free_pcre_vars(entry);
             sprintf(err, "Too many iterations of matching loop: %d", loops);
             return make_raise_pack(E_MAXREC, err, var_ref(zero));
         } else {
-            /* Store the matched substrings. */
-            for (i = 0; i < rc; i++) {
-                pcre_get_substring(subject, ovector, rc, i, &(matched_substring));
-                /* Store the offsets if tmp is a list or the string if it's not. */
-                if (tmp.type == TYPE_LIST)
+            /* We'll use a bit array to indicate which index matches are superfluous. e.g. which results
+             * have a NAMED result instead of a numbered result. */
+            static unsigned char *bit_array;
+            bit_array = (unsigned char *)mymalloc(rc * sizeof(unsigned char), M_ARRAY);
+            memset(bit_array, 0, rc);
+
+            if (named_substrings > 0)
+            {
+                unsigned char *name_table, *tabptr;
+                int name_entry_size;
+
+                (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMECOUNT, &named_substrings);
+                (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMETABLE, &name_table);
+                (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size);
+
+                tabptr = name_table;
+                for (int i = 0; i < named_substrings; i++)
                 {
-                    tmp.v.list[1].v.num = ovector[2*i] + 1;
-                    tmp.v.list[2].v.num = ovector[2*i+1];
-                } else {
-                    tmp.v.str = str_dup(matched_substring);
+                    /* Determine which result number corresponds to the named capture group */
+                    int n = (tabptr[0] << 8) | tabptr[1];
+                    /* Create a list of indices for the substring */
+                    Var pos = result_indices(ovector, n);
+                    Var result = new_map();
+                    int substring_size = ovector[2*n+1] - ovector[2*n];
+                    result = mapinsert(result, var_ref(position), pos);
+
+                    /* Extract the substring itself with obnoxious printf magic */
+                    char *substring = (char *)mymalloc(substring_size + 1, M_STRING);
+                    sprintf(substring, "%.*s", substring_size, subject + ovector[2*n]);
+                    result = mapinsert(result, var_ref(match), str_dup_to_var(substring));
+                    myfree(substring, M_STRING);
+
+                    named_groups = mapinsert(named_groups, str_dup_to_var((const char*)(tabptr + 2)), result);
+                    bit_true(bit_array, n);
+                    tabptr += name_entry_size;
                 }
+            }
 
-                /* Store the resulting substrings either as a group or into the main return var.
-                 * group used to use setadd but we were losing results, this now we don't! */
-                if (flags & RETURN_GROUPS)
-                    group = listappend(group, var_ref(tmp));
-                else
-                    ret = listappend(ret, var_ref(tmp));
+            /* Store any numbered substrings that didn't match a named capture group. */
+            for (i = 0; i < rc; i++) {
+                /* First check if we have a named match for this number. If so, skip it. */
+                if (bit_is_true(bit_array, i))
+                    continue;
 
+                pcre_get_substring(subject, ovector, rc, i, &(matched_substring));
+                Var pos = result_indices(ovector, i);
+
+                Var result = new_map();
+                result = mapinsert(result, var_ref(position), pos);
+                result = mapinsert(result, var_ref(match), str_dup_to_var(matched_substring));
                 pcre_free_substring(matched_substring);
 
-                /* Begin at the end of the previous match on the next iteration of the loop. */
-                offset = ovector[1];
+                /* Convert the numbered group to a string. */
+                char tmp_buffer[100];
+                sprintf(tmp_buffer, "%i", i);
+
+                named_groups = mapinsert(named_groups, str_dup_to_var(tmp_buffer), result);
             }
 
-            /* Store all of our groups (if applicable) into the main return var. */
-            if ((flags & RETURN_GROUPS) && group.v.list[0].v.num > 0)
-            {
-                ret = listappend(ret, group);
-                group = new_list(0);
-            }
+            /* Begin at the end of the previous match on the next iteration of the loop. */
+            offset = ovector[1];
+
+            myfree(bit_array, M_ARRAY);
         }
+
+        ret = listappend(ret, named_groups);
+        named_groups = new_map();
 
         /* Only loop a single time without /g */
         if (!(flags & FIND_ALL) && loops == 1)
             break;
     }
 
-    free_pcre_vars(NULL, &group, &tmp, &arglist, entry);
-
+    free_pcre_vars(entry);
     return make_var_pack(ret);
 }
 
@@ -202,20 +230,8 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
  * We give extra checks to the lists to make sure they actually
  * have memory to give up. Also some vars can be null because,
  * well, I'm lazy and it's easier to keep it all together like this. */
-void free_pcre_vars(Var *ret, Var *group, Var *tmp, Var *arglist, pcre_cache_entry *entry)
+void free_pcre_vars(pcre_cache_entry *entry)
 {
-    if (arglist != NULL)
-        free_var(*arglist);
-
-    if (ret != NULL)
-        free_var(*ret);
-
-    if (tmp != NULL)
-        free_var(*tmp);
-
-    if (group != NULL && group->type == TYPE_LIST)
-        free_var(*group);
-
     free_entry(entry);
 }
 
@@ -236,6 +252,18 @@ void free_entry(pcre_cache_entry *entry)
     }
 
     free(entry);
+}
+
+/* Create a two element list with the substring indices. */
+Var result_indices(int ovector[], int n)
+{
+    Var pos = new_list(2);
+    pos.v.list[1].type = TYPE_INT;
+    pos.v.list[2].type = TYPE_INT;
+
+    pos.v.list[2].v.num = ovector[2*n+1];
+    pos.v.list[1].v.num = ovector[2*n] + 1;
+    return pos;
 }
 
 static package
@@ -280,8 +308,8 @@ bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr) {
 void
 register_pcre() {
     oklog("REGISTER_PCRE: v%s (PCRE Library v%s)\n", EXT_PCRE_VERSION, pcre_version());
-    //                                                   string    pattern   ?case     ?group    ?indexes  ?find_all
-    register_function("pcre_match", 2, 6, bf_pcre_match, TYPE_STR, TYPE_STR, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT);
+    //                                                   string    pattern   ?case     ?find_all
+    register_function("pcre_match", 2, 4, bf_pcre_match, TYPE_STR, TYPE_STR, TYPE_INT, TYPE_INT);
     register_function("pcre_replace", 2, 2, bf_pcre_replace, TYPE_STR, TYPE_STR);
 }
 
