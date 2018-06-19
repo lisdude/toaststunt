@@ -46,11 +46,11 @@
 
 /* the following globals are the guts of the virtual machine: */
 static activation *activ_stack = 0;
-static int max_stack_size = 0;
+static Num max_stack_size = 0;
 static unsigned top_activ_stack;	/* points to top-of-stack
 					   (last-occupied-slot),
 					   not next-empty-slot */
-static int root_activ_vector;	/* root_activ_vector == MAIN_VECTOR
+static Num root_activ_vector;	/* root_activ_vector == MAIN_VECTOR
 				   iff root activation is main
 				   vector */
 
@@ -102,7 +102,7 @@ static Var *rt_stack_quick;
 #define RT_STACK_QUICKSIZE	15
 
 static void
-alloc_rt_stack(activation * a, int size)
+alloc_rt_stack(activation * a, Num size)
 {
     Var *res;
 
@@ -142,7 +142,7 @@ print_error_backtrace(const char *msg, void (*output) (const char *))
 	    stream_printf(str, "... called from ");
 
 	if (TYPE_OBJ == activ_stack[t].vloc.type)
-	    stream_printf(str, "#%d:%s", activ_stack[t].vloc.v.obj,
+	    stream_printf(str, "#%" PRIdN ":%s", activ_stack[t].vloc.v.obj,
 		          activ_stack[t].verbname);
 	else
 	    stream_printf(str, "*anonymous*:%s",
@@ -154,7 +154,7 @@ print_error_backtrace(const char *msg, void (*output) (const char *))
 	    stream_add_string(str, ")");
 	}
 
-	stream_printf(str, ", line %d",
+	stream_printf(str, ", line %" PRIdN,
 		      find_line_number(activ_stack[t].prog,
 				       (t == 0 ? root_activ_vector
 					: MAIN_VECTOR),
@@ -1396,7 +1396,7 @@ do {								\
 		    ans.type = TYPE_INT;
 		    ans.v.num = -arg.v.num;
 		} else if (arg.type == TYPE_FLOAT)
-		    ans = new_float(-*arg.v.fnum);
+            ans.v.fnum = -arg.v.fnum;
 		else {
 		    free_var(arg);
 		    PUSH_ERROR(E_TYPE);
@@ -1796,7 +1796,7 @@ do {								\
 				 */
 				/* First make sure traceback will be accurate. */
 				STORE_STATE_VARIABLES();
-				applog(LOG_WARNING, "%sWIZARDED: #%d by programmer #%d\n",
+				applog(LOG_WARNING, "%sWIZARDED: #%" PRIdN " by programmer #%" PRIdN "\n",
 				      is_wizard(obj.v.obj) ? "DE" : "",
 				      obj.v.obj, progr);
 				print_error_backtrace(is_wizard(obj.v.obj)
@@ -1853,7 +1853,7 @@ do {								\
 		    free_var(time);
 		    RAISE_ERROR(E_TYPE);
 		}
-		when = time.type == TYPE_INT ? time.v.num : *time.v.fnum;
+		when = time.type == TYPE_INT ? time.v.num : time.v.fnum;
 		free_var(time);
 		if (when < 0) {
 		    RAISE_ERROR(E_INVARG);
@@ -3174,7 +3174,7 @@ bf_suspend(Var arglist, Byte next, void *vdata, Objid progr)
     if (nargs >= 1) {
 	seconds = arglist.v.list[1].type == TYPE_INT ?
 				arglist.v.list[1].v.num :
-				*arglist.v.list[1].v.fnum;
+				arglist.v.list[1].v.fnum;
 	secondsp = &seconds;
     } else {
 	secondsp = NULL;
@@ -3413,8 +3413,7 @@ write_activ_as_pi(activation a)
 
     dbio_write_var(a._this);
     dbio_write_var(a.vloc);
-    dbio_printf("%d %d %d %d %d %d %d %d %d\n",
-	    a.recv, -7, -8, a.player, -9, a.progr, -10, -11, a.debug);
+    dbio_printf("%" PRIdN " -7 -8 %" PRIdN " -9 %" PRIdN " %" PRIdN " -10 %d\n", a.recv, a.player, a.progr, a.vloc, a.debug);
     dbio_write_string("No");
     dbio_write_string("More");
     dbio_write_string("Parse");
@@ -3426,7 +3425,7 @@ write_activ_as_pi(activation a)
 int
 read_activ_as_pi(activation * a)
 {
-    int dummy, vloc_oid;
+    Objid dummy, vloc_oid;
     char c;
 
     free_var(dbio_read_var());
@@ -3443,7 +3442,7 @@ read_activ_as_pi(activation * a)
      * suppressed assignments are not counted in determining the returned value
      * of `scanf'...
      */
-    if (dbio_scanf("%d %d %d %d %d %d %d %d %d%c",
+    if (dbio_scanf("%" SCNdN " %" SCNdN " %" SCNdN " %" SCNdN " %" SCNdN " %" SCNdN " %" SCNdN " %" SCNdN " %d%c",
 		 &a->recv, &dummy, &dummy, &a->player, &dummy, &a->progr,
 		   &vloc_oid, &dummy, &a->debug, &c) != 10
 	|| c != '\n') {
@@ -3599,6 +3598,7 @@ int
 read_activ(activation * a, int which_vector)
 {
     DB_Version version;
+    unsigned int v;
     Var *old_rt_env;
     const char **old_names;
     int old_size, stack_in_use;
@@ -3609,10 +3609,10 @@ read_activ(activation * a, int which_vector)
 
     if (dbio_input_version < DBV_Float)
 	version = dbio_input_version;
-    else if (dbio_scanf("language version %u\n", &version) != 1) {
+    else if (dbio_scanf("language version %u\n", &v) != 1) {
 	errlog("READ_ACTIV: Malformed language version\n");
 	return 0;
-    } else if (!check_db_version(version)) {
+    } else if (version = (DB_Version)v, !check_db_version(version)) {
 	errlog("READ_ACTIV: Unrecognized language version: %d\n",
 	       version);
 	return 0;
@@ -3642,7 +3642,7 @@ read_activ(activation * a, int which_vector)
 	*(a->top_rt_stack++) = dbio_read_var();
 
     if (!read_activ_as_pi(a)) {
-	errlog("READ_ACTIV: Bad activ.\n", stack_in_use);
+	errlog("READ_ACTIV: Bad activ. stack_in_use = %d\n", stack_in_use);
 	return 0;
     }
     a->temp = dbio_read_var();

@@ -177,10 +177,10 @@ lookup(int to_intermediary, int from_intermediary)
 	    id = set_timer(req.timeout, timeout_proc, 0);
 	    e = gethostbyname(buffer);
 	    cancel_timer(id);
-	    if (e && e->h_length == sizeof(unsigned32))
+	    if (e && e->h_length == sizeof(uint32_t))
 		write(to_intermediary, e->h_addr_list[0], e->h_length);
 	    else {
-		unsigned32 addr;
+		uint32_t addr;
 
 		addr = inet_addr(buffer);
 		write(to_intermediary, &addr, sizeof(addr));
@@ -232,7 +232,7 @@ intermediary(int to_server, int from_server)
     static char *buffer = 0;
     static int buflen = 0;
     int len;
-    unsigned32 addr;
+    uint32_t addr;
 
     set_server_cmdline("(MOO name-lookup master)");
     signal(SIGPIPE, SIG_IGN);
@@ -329,7 +329,7 @@ lookup_name_from_addr(struct sockaddr_in *addr, unsigned timeout)
 		abandon_intermediary("LOOKUP_NAME: "
 				   "Data-read from intermediary failed");
 	    else {
-        unsigned32      a = ntohl(addr->sin_addr.s_addr);
+        uint32_t a = ntohl(addr->sin_addr.s_addr);
         sprintf((char *)buffer+len, " [%u.%u.%u.%u]", (unsigned) (a >> 24) & 0xff, (unsigned) (a >> 16) & 0xff, (unsigned) (a >> 8) & 0xff, (unsigned) a & 0xff);
 
 //        buffer[len] = '\0';
@@ -344,7 +344,7 @@ lookup_name_from_addr(struct sockaddr_in *addr, unsigned timeout)
 
     {
 	static char decimal[20];
-	unsigned32 a = ntohl(addr->sin_addr.s_addr);
+	uint32_t a = ntohl(addr->sin_addr.s_addr);
 
 	sprintf(decimal, "%u.%u.%u.%u",
 		(unsigned) (a >> 24) & 0xff, (unsigned) (a >> 16) & 0xff,
@@ -353,11 +353,11 @@ lookup_name_from_addr(struct sockaddr_in *addr, unsigned timeout)
     }
 }
 
-unsigned32
+uint32_t
 lookup_addr_from_name(const char *name, unsigned timeout)
 {
     struct request req;
-    unsigned32 addr = 0;
+    uint32_t addr = 0;
 
     if (dead_intermediary) {
 	/* Numeric addresses should always work... */

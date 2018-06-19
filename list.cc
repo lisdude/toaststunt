@@ -20,6 +20,7 @@
 
 #include "my-ctype.h"
 #include "my-string.h"
+#include "my-math.h"
 
 #include "bf_register.h"
 #include "collection.h"
@@ -364,10 +365,10 @@ stream_add_tostr(Stream * s, Var v)
 {
     switch (v.type) {
     case TYPE_INT:
-	stream_printf(s, "%d", v.v.num);
+	stream_printf(s, "%" PRIdN, v.v.num);
 	break;
     case TYPE_OBJ:
-	stream_printf(s, "#%d", v.v.obj);
+	stream_printf(s, "#%" PRIdN, v.v.obj);
 	break;
     case TYPE_STR:
 	stream_add_string(s, v.v.str);
@@ -376,7 +377,7 @@ stream_add_tostr(Stream * s, Var v)
 	stream_add_string(s, unparse_error(v.v.err));
 	break;
     case TYPE_FLOAT:
-	stream_printf(s, "%g", *v.v.fnum);
+	stream_printf(s,  "%.*g", DBL_DIG, v.v.fnum);
 	break;
     case TYPE_MAP:
 	stream_add_string(s, "[map]");
@@ -433,16 +434,16 @@ unparse_value(Stream * s, Var v)
 {
     switch (v.type) {
     case TYPE_INT:
-	stream_printf(s, "%d", v.v.num);
+	stream_printf(s, "%" PRIdN, v.v.num);
 	break;
     case TYPE_OBJ:
-	stream_printf(s, "#%d", v.v.obj);
+	stream_printf(s, "#%" PRIdN, v.v.obj);
 	break;
     case TYPE_ERR:
 	stream_add_string(s, error_name(v.v.err));
 	break;
     case TYPE_FLOAT:
-	stream_printf(s, "%g", *v.v.fnum);
+	stream_printf(s, "%.*g", DBL_DIG, v.v.fnum);
 	break;
     case TYPE_STR:
 	{

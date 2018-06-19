@@ -18,11 +18,11 @@
 #include "sosemanuk.h"
 #include "structures.h"
 
-extern Var new_float(double);
-extern enum error become_integer(Var, int *, int);
+extern int parse_number(const char *str, Num *result, int try_floating_point);
+extern enum error become_integer(Var, Num *, int);
 
 extern int do_equals(Var, Var);
-extern int compare_integers(int, int);
+extern int compare_integers(Num, Num);
 extern Var compare_numbers(Var, Var);
 
 extern Var do_add(Var, Var);

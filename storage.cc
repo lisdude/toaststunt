@@ -16,6 +16,7 @@
  *****************************************************************************/
 
 #include "my-stdlib.h"
+#include "my-string.h"
 
 #include "config.h"
 #include "list.h"

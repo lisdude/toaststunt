@@ -116,7 +116,7 @@ enum Opcode {
 #define PUT_n_INDEX(o)           ((o) - OP_PUT)
 
 #define IS_OPTIM_NUM_OPCODE(o)   ((o) >= (unsigned) OPTIM_NUM_START)
-#define OPCODE_TO_OPTIM_NUM(o)   ((o) - OPTIM_NUM_START + OPTIM_NUM_LOW)
+#define OPCODE_TO_OPTIM_NUM(o)   ((Num)(unsigned)(o) - OPTIM_NUM_START + OPTIM_NUM_LOW)
 
 #define OPTIM_NUM_TO_OPCODE(i)   (OPTIM_NUM_START + (i) - OPTIM_NUM_LOW)
 #define IN_OPTIM_NUM_RANGE(i)    ((i) >= OPTIM_NUM_LOW && (i) <= OPTIM_NUM_HI)

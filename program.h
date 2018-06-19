@@ -21,7 +21,7 @@
 #include "structures.h"
 #include "version.h"
 
-typedef unsigned char Byte;
+typedef uint8_t Byte;
 
 typedef struct {
     Byte numbytes_label, numbytes_literal, numbytes_fork, numbytes_var_name,

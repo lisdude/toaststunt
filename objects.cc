@@ -224,7 +224,7 @@ bf_move_write(void *vdata)
 {
     struct bf_move_data *data = (bf_move_data *)vdata;
 
-    dbio_printf("bf_move data: what = %d, where = %d\n",
+    dbio_printf("bf_move data: what = %" PRIdN ", where = %" PRIdN "\n",
 		data->what, data->where);
 }
 
@@ -233,7 +233,7 @@ bf_move_read()
 {
     struct bf_move_data *data = (bf_move_data *)alloc_data(sizeof(*data));
 
-    if (dbio_scanf("bf_move data: what = %d, where = %d\n",
+    if (dbio_scanf("bf_move data: what = %" PRIdN ", where = %" PRIdN "\n",
 		   &data->what, &data->where) == 2)
 	return data;
     else
@@ -244,7 +244,7 @@ static package
 bf_toobj(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    int i;
+    Num i;
     enum error e;
 
     r.type = TYPE_OBJ;
@@ -437,7 +437,7 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 static void
 bf_create_write(void *vdata)
 {
-    dbio_printf("bf_create data: oid = %d\n", *((Objid *) vdata));
+    dbio_printf("bf_create data: oid = %" PRIdN "\n", *((Objid *) vdata));
 }
 
 static void *
@@ -445,7 +445,7 @@ bf_create_read(void)
 {
     Objid *data = (Objid *)alloc_data(sizeof(Objid));
 
-    if (dbio_scanf("bf_create data: oid = %d\n", data) == 1)
+    if (dbio_scanf("bf_create data: oid = %" PRIdN "\n", data) == 1)
 	return data;
     else
 	return 0;
@@ -828,7 +828,7 @@ bf_recycle_read(void)
      * suppressed assignments are not counted in determining the returned value
      * of `scanf'...
      */
-    if (dbio_scanf("bf_recycle data: oid = %d, cont = %d\n",
+    if (dbio_scanf("bf_recycle data: oid = %" PRIdN ", cont = %" PRIdN "\n",
 		   data, &dummy) == 2)
 	return data;
     else

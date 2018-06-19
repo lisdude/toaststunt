@@ -83,11 +83,11 @@ char file_package_version[] = "1.7";
  ***************************************************************/
 
 
-std::map <int32, file_handle> file_table;
-int32 next_handle = 1;
+std::map <Num, file_handle> file_table;
+Num next_handle = 1;
 
 char file_handle_valid(Var fhandle) {
-  int32 i = fhandle.v.num;
+  Num i = fhandle.v.num;
   if (fhandle.type != TYPE_INT)
 	 return 0;
   if ((i < 0) || (i >= next_handle))
@@ -98,34 +98,34 @@ char file_handle_valid(Var fhandle) {
 }
 
 FILE *file_handle_file(Var fhandle) {
-  int32 i = fhandle.v.num;
+  Num i = fhandle.v.num;
   return file_table[i].file;
 }
 
 const char *file_handle_name(Var fhandle) {
-  int32 i = fhandle.v.num;
+  Num i = fhandle.v.num;
   return file_table[i].name;
 }
 
 file_type file_handle_type(Var fhandle) {
-  int32 i = fhandle.v.num;
+  Num i = fhandle.v.num;
   return file_table[i].type;
 }
 
 file_mode file_handle_mode(Var fhandle) {
-  int32 i = fhandle.v.num;
+  Num i = fhandle.v.num;
   return file_table[i].mode;
 }
 
 void file_handle_destroy(Var fhandle) {
-  int32 i = fhandle.v.num;
+  Num i = fhandle.v.num;
   free_str(file_table[i].name);
   file_table.erase(i);
   if (file_table.size() == 0)
       next_handle = 1;
 }
 
-int32 file_allocate_next_handle(void) {
+Num file_allocate_next_handle(void) {
     while (file_table.count(next_handle) != 0)
         next_handle++;
 
@@ -133,7 +133,7 @@ int32 file_allocate_next_handle(void) {
 }
 
 Var file_handle_new(const char *name, file_type type, file_mode mode) {
-    int32 handle = file_allocate_next_handle();
+    Num handle = file_allocate_next_handle();
 
     if (file_table.size() >= server_int_option("file_io_max_files", FILE_IO_MAX_FILES))
         handle = -1;
@@ -156,7 +156,7 @@ Var file_handle_new(const char *name, file_type type, file_mode mode) {
 }
 
 void file_handle_set_file(Var fhandle, FILE *f) {
-  int32 i = fhandle.v.num;
+  Num i = fhandle.v.num;
   file_table[i].file = f;
 }
 
@@ -601,9 +601,9 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 {
   package r;
   Var fhandle = arglist.v.list[1];
-  int32 begin = arglist.v.list[2].v.num;
-  int32 end   = arglist.v.list[3].v.num;
-  int32 begin_loc = 0, linecount = 0;
+  Num begin = arglist.v.list[2].v.num;
+  Num end   = arglist.v.list[3].v.num;
+  Num begin_loc = 0, linecount = 0;
   file_type type;
   file_mode mode;
   Var rv;
@@ -742,8 +742,8 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
   Var fhandle = arglist.v.list[1];
   file_mode mode;
   file_type type;
-  int32 record_length = arglist.v.list[2].v.num;
-  int32 read_length;
+  Num record_length = arglist.v.list[2].v.num;
+  Num read_length;
 
   char buffer[FILE_IO_BUFFER_LENGTH];
 
@@ -891,7 +891,7 @@ bf_file_seek(Var arglist, Byte next, void *vdata, Objid progr)
 {
   package r;
   Var fhandle = arglist.v.list[1];
-  int32 seek_to = arglist.v.list[2].v.num;
+  Num seek_to = arglist.v.list[2].v.num;
   const char *whence = arglist.v.list[3].v.str;
   int whnce = 0, whence_ok = 1;
   FILE *f;
@@ -1473,7 +1473,7 @@ static package bf_file_handles(Var arglist, Byte next, void *vdata, Objid progr)
   // We can't use file_table.size() here because it will create space for
   // invalid file handles. Easier just to listappend, I guess.
   Var r = new_list(0);
-  std::map <int32, file_handle>::iterator it;
+  std::map <Num, file_handle>::iterator it;
   for (it = file_table.begin(); it != file_table.end(); it++)
   {
       if (it->second.valid == 1)

@@ -235,7 +235,8 @@ handle_number(void *ctx, const char *numberVal, unsigned int numberLen, yajl_tok
     d = strtod(numberVal, NULL);
 
     if (0 == errno) {
-	v = new_float(d);
+        v.type = TYPE_FLOAT;
+        v.v.fnum = d;
 	PUSH(pctx->top, v);
 	return 1;
     }
@@ -274,7 +275,8 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 	case TYPE_FLOAT:
 	    {
 		char *p;
-		v = new_float(strtod(val, &p));
+        v.type = TYPE_FLOAT;
+		v.v.fnum = strtod(val, &p);
 		break;
 	    }
 	case TYPE_ERR:
@@ -439,7 +441,7 @@ generate(yajl_gen g, Var v, void *ctx)
     case TYPE_INT:
 	return yajl_gen_integer(g, v.v.num);
     case TYPE_FLOAT:
-	return yajl_gen_double(g, *v.v.fnum);
+	return yajl_gen_double(g, v.v.fnum);
     case TYPE_OBJ:
     case TYPE_ERR:
 	{

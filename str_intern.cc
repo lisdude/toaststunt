@@ -1,4 +1,5 @@
 #include "my-stdlib.h"
+#include "my-string.h"
 
 #include "log.h"
 #include "storage.h"

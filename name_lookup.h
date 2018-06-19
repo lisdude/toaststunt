@@ -31,7 +31,7 @@ extern int initialize_name_lookup(void);
 				 * this succeeds.
 				 */
 
-extern unsigned32 lookup_addr_from_name(const char *name,
+extern uint32_t lookup_addr_from_name(const char *name,
 					unsigned timeout);
 				/* Translate a host name to a 32-bit
 				 * internet address in host byte order.  If
