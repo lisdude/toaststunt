@@ -229,6 +229,8 @@ bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
 
+    r.v.list[1].type = TYPE_FLOAT;
+    r.v.list[2].type = TYPE_FLOAT;
     r.v.list[1].v.fnum =(double)usage.ru_utime.tv_sec + (double)usage.ru_utime.tv_usec / CLOCKS_PER_SEC;
     r.v.list[2].v.fnum = (double)usage.ru_stime.tv_sec + (double)usage.ru_stime.tv_usec / CLOCKS_PER_SEC;
     r.v.list[3].v.num = usage.ru_minflt;
