@@ -20,7 +20,9 @@
 #include "quota.h"
 #include "structures.h"
 
+#ifdef OWNERSHIP_QUOTA
 static const char *quota_name = "ownership_quota";
+#endif
 
 int
 decr_quota(Objid player)
