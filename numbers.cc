@@ -619,7 +619,8 @@ bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
     time_t c;
-    char buffer[50];
+    char buffer[128];
+    struct tm *t;
 
     if (arglist.v.list[0].v.num == 1) {
 	c = arglist.v.list[1].v.num;
@@ -627,9 +628,16 @@ bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
 	c = time(0);
     }
 
+    free_var(arglist);
+
+    t = localtime(&c);
+    if (t == 0)
+        return make_error_pack(E_INVARG);
+
     {				/* Format the time, including a timezone name */
 #if HAVE_STRFTIME
-	strftime(buffer, 50, "%a %b %d %H:%M:%S %Y %Z", localtime(&c));
+	if (strftime(buffer, sizeof buffer, "%a %b %d %H:%M:%S %Y %Z", t) == 0)
+        return make_error_pack(E_INVARG);
 #else
 #  if HAVE_TM_ZONE
 	struct tm *t = localtime(&c);
@@ -652,7 +660,6 @@ bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
     r.type = TYPE_STR;
     r.v.str = str_dup(buffer);
 
-    free_var(arglist);
     return make_var_pack(r);
 }
 
