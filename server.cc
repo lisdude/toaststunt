@@ -554,7 +554,6 @@ recycle_anonymous_objects(void)
 
 	incr_quota(db_object_owner2(v));
 
-    oklog("Freeing anon NOW. Refcount: %i\n", var_refcount(v));
 	db_destroy_anonymous_object(v.v.anon);
 
 	free_var(v);
