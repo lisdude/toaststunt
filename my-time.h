@@ -33,6 +33,8 @@
 extern time_t time(time_t *);
 #endif
 
+#include <sys/time.h>
+
 #if defined(MACH) && defined(CMU)
 /* These clowns blew the declaration of strftime() in their <time.h> */
 #undef HAVE_STRFTIME

@@ -118,7 +118,7 @@ extern enum outcome resume_from_previous_vm(vm the_vm, Var value);
 extern int task_timed_out;
 extern void abort_running_task(void);
 extern void print_error_backtrace(const char *, void (*)(const char *));
-extern Var caller();
+extern Var caller(void);
 
 extern void write_activ_as_pi(activation);
 extern int read_activ_as_pi(activation *);

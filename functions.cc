@@ -397,6 +397,31 @@ make_suspend_pack(enum error(*proc) (vm, void *), void *data)
     return p;
 }
 
+package
+make_int_pack(Num v)
+{
+    package p;
+
+    p.kind = package::BI_RETURN;
+    p.u.ret.type = TYPE_INT;
+    p.u.ret.v.num = v;
+
+    return p;
+}
+
+package
+make_float_pack(double v)
+{
+    package p;
+
+    p.kind = package::BI_RETURN;
+    p.u.ret.type = TYPE_FLOAT;
+    p.u.ret.v.fnum = v;
+
+    return p;
+}
+
+
 static Var
 function_description(int i)
 {
@@ -458,7 +483,7 @@ load_server_protect_function_flags(void)
     oklog("Loaded protect cache for %d builtin functions\n", i);
 }
 
-int32 _server_int_option_cache[SVO__CACHE_SIZE];
+Num _server_int_option_cache[SVO__CACHE_SIZE];
 
 void
 load_server_options(void)

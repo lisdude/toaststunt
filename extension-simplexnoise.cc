@@ -484,20 +484,21 @@ bf_simplex_noise(Var arglist, Byte next, void *vdata, Objid progr) {
     }
 
     Var r;
+    r.type = TYPE_FLOAT;
     // Super ghetto, yay!
     switch (arglist.v.list[1].v.list[0].v.num)
     {
         case 1:
-            r = new_float(snoise1(*arglist.v.list[1].v.list[1].v.fnum));
+            r.v.fnum = snoise1(arglist.v.list[1].v.list[1].v.fnum);
             break;
         case 2:
-            r = new_float(snoise2(*arglist.v.list[1].v.list[1].v.fnum, *arglist.v.list[1].v.list[2].v.fnum));
+            r.v.fnum = snoise2(arglist.v.list[1].v.list[1].v.fnum, arglist.v.list[1].v.list[2].v.fnum);
             break;
         case 3:
-            r = new_float(snoise3(*arglist.v.list[1].v.list[1].v.fnum, *arglist.v.list[1].v.list[2].v.fnum, *arglist.v.list[1].v.list[3].v.fnum));
+            r.v.fnum = snoise3(arglist.v.list[1].v.list[1].v.fnum, arglist.v.list[1].v.list[2].v.fnum, arglist.v.list[1].v.list[3].v.fnum);
             break;
         case 4:
-            r = new_float(snoise4(*arglist.v.list[1].v.list[1].v.fnum, *arglist.v.list[1].v.list[2].v.fnum, *arglist.v.list[1].v.list[3].v.fnum, *arglist.v.list[1].v.list[4].v.fnum));
+            r.v.fnum = snoise4(arglist.v.list[1].v.list[1].v.fnum, arglist.v.list[1].v.list[2].v.fnum, arglist.v.list[1].v.list[3].v.fnum, arglist.v.list[1].v.list[4].v.fnum);
             break;
         default: {
             r.type = TYPE_ERR;

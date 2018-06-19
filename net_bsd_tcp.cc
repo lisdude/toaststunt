@@ -120,7 +120,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
     } else
 	*canon = var_ref(desc);
 
-    stream_printf(st, "port %d", canon->v.num);
+    stream_printf(st, "port %" PRIdN, canon->v.num);
     *name = reset_stream(st);
 
     *fd = s;
@@ -157,7 +157,7 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 	}
     }
     *read_fd = *write_fd = fd;
-    stream_printf(s, "%s, port %d",
+    stream_printf(s, "%s, port %" PRIdN,
 		  lookup_name_from_addr(&address, timeout),
 		  (int) ntohs(address.sin_port));
     *name = reset_stream(s);
@@ -293,10 +293,10 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     }
     *read_fd = *write_fd = s;
 
-    stream_printf(st1, "port %d", (int) ntohs(addr.sin_port));
+    stream_printf(st1, "port %" PRIdN, (int) ntohs(addr.sin_port));
     *local_name = reset_stream(st1);
 
-    stream_printf(st2, "%s, port %d", host_name, port);
+    stream_printf(st2, "%s, port %" PRIdN, host_name, port);
     *remote_name = reset_stream(st2);
 
     return E_NONE;
