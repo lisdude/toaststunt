@@ -291,7 +291,6 @@
 #  if INT_MAX == 2147483647
      typedef int	int32_t;
      typedef unsigned	uint32_t;
-#    define INT32_MAX	INT_MAX
 #    define PRId32 "d"
 #    define PRIi32 "i"
 #    define PRIo32 "o"
@@ -306,7 +305,6 @@
 #  elif LONG_MAX == 2147483647
      typedef long int		int32_t;
      typedef unsigned long	uint32_t;
-#    define INT32_MAX		LONG_MAX
 #    define PRId32 "ld"
 #    define PRIi32 "li"
 #    define PRIo32 "lo"
@@ -327,7 +325,6 @@
 #  if LONG_MAX == 9223372036854775807
      typedef long          int64_t;
      typedef unsigned long uint64_t;
-#    define INT64_MAX      LONG_MAX
 #    define PRId64 "ld"
 #    define PRIi64 "li"
 #    define PRIo64 "lo"
@@ -342,7 +339,6 @@
 #  elif defined(HAVE_LONG_LONG) && LONG_LONG_MAX == 9223372036854775807
      typedef long long     int64;
      typedef unsigned long long unsigned64;
-#    define INT64_MAX      LONG_LONG_MAX
 #    define PRId64 "lld"
 #    define PRIi64 "lli"
 #    define PRIo64 "llo"
