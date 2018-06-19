@@ -46,7 +46,7 @@ std::map<Waif *, bool> recycled_waifs;
 static int
 count_set_bits(unsigned long x)
 {
-	register unsigned long i = x;	/* take no chances! */
+	unsigned long i = x;	/* take no chances! */
 
 	/* clever trick for adding bits together in parallel to count them */
 	i = ((i & 0xAAAAAAAA) >> 1) + (i & ~0xAAAAAAAA);

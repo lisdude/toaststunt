@@ -2032,7 +2032,7 @@ do {								\
 
 	case OP_EXTENDED:
 	    {
-		register enum Extended_Opcode eop = (Extended_Opcode)(*bv);
+		enum Extended_Opcode eop = (Extended_Opcode)(*bv);
 		bv++;
 		if (COUNT_EOP_TICK(eop))
 		    ticks_remaining--;
@@ -3557,7 +3557,7 @@ free_reordered_rt_env_values(void)
 void
 write_activ(activation a)
 {
-    register Var *v;
+    Var *v;
 
     dbio_printf("language version %u\n", a.prog->version);
     dbio_write_program(a.prog);

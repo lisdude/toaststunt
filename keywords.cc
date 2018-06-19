@@ -91,7 +91,7 @@ static unsigned char gperf_downcase[256] =
 #ifndef GPERF_CASE_STRCMP
 #define GPERF_CASE_STRCMP 1
 static int
-gperf_case_strcmp (register const char *s1, register const char *s2)
+gperf_case_strcmp (const char *s1, const char *s2)
 {
   for (;;)
     {
@@ -113,7 +113,7 @@ public:
 };
 
 inline unsigned int
-Perfect_Hash::hash (register const char *str, register unsigned int len)
+Perfect_Hash::hash (const char *str, unsigned int len)
 {
   static const unsigned char asso_values[] =
     {
@@ -144,7 +144,7 @@ Perfect_Hash::hash (register const char *str, register unsigned int len)
       89, 89, 89, 89, 89, 89, 89, 89, 89, 89,
       89, 89, 89, 89, 89, 89
     };
-  register int hval = len;
+  int hval = len;
 
   switch (hval)
     {
@@ -160,7 +160,7 @@ Perfect_Hash::hash (register const char *str, register unsigned int len)
 }
 
 const struct keyword *
-Perfect_Hash::in_word_set (register const char *str, register unsigned int len)
+Perfect_Hash::in_word_set (const char *str, unsigned int len)
 {
   static const struct keyword wordlist[] =
     {
@@ -261,11 +261,11 @@ Perfect_Hash::in_word_set (register const char *str, register unsigned int len)
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
     {
-      register int key = hash (str, len);
+      int key = hash (str, len);
 
       if (key <= MAX_HASH_VALUE && key >= 0)
         {
-          register const char *s = wordlist[key].name;
+          const char *s = wordlist[key].name;
 
           if ((((unsigned char)*str ^ (unsigned char)*s) & ~32) == 0 && !gperf_case_strcmp (str, s))
             return &wordlist[key];
