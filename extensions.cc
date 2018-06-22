@@ -355,6 +355,331 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ret);
 }
 
+int str_cut(char *str, int begin, int len)
+{
+    int l = strlen(str);
+
+    if (len < 0) len = l - begin;
+    if (begin + len > l) len = l - begin;
+    memmove(str + begin, str + begin + len, l - len + 1);
+
+    return len;
+}
+
+/*
+static package
+bf_from_list(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    const char *str = arglist.v.list[1].v.str;
+    int str_length = memo_strlen(str);
+    free_var(arglist);
+
+    if (str[0] != '{' || str[str_length-1] != '}')
+        return make_error_pack(E_INVARG);
+
+    str_length = str_cut(str, 1, str_length - 2);
+
+    Var r = new_list(0):
+
+    while (1) {
+    int ind = strindex(str, str_length, ",", 1);
+    if (ind == 0)
+        break;
+
+    const char *value =
+    }
+
+    return no_var_pack();
+}
+*/
+
+/* Direct stack access extensions, v1.0
+ * (c) 1996, Nick Ingolia
+ * Distribute or modify freely, but please retain this and the above notice.
+ * No warranty, express or implied, is made as to the performance or safety of this code.
+ *
+ * Nick Ingolia
+ * ningolia@neon.ci.lexington.ma.us
+ */
+
+/* Access to the stack frames of MOO tasks is provided by the following extension functions.
+ * A stack frame is the list of variables within a given function on the run-time stack.  For
+ * example, each non-builtin element of the callers() list and the task_stack() list is a frame
+ * on the run-time stack.  The size of the frame for a function is fixed at compile-time, so
+ * all variables are in the stack frame, whether or not they are currently defined.  It is
+ * possible to determine from the information returned whether or not they are currently defined.
+ * I have not considered security issues raised by the ability to change or undefine a variable
+ * from outside a suspending function, so these are currently wiz-only when run on any task but
+ * the currently-running task.  Permission checks for task_frames() are the same as those on
+ * task_stack().
+ */
+
+#include "my-string.h"
+
+#include "bf_register.h"
+#include "execute.h"
+#include "eval_vm.h"
+#include "eval_env.h"
+#include "functions.h"
+#include "list.h"
+#include "storage.h"
+#include "tasks.h"
+#include "utils.h"
+
+/* Part of the hack on execute.c */
+/* Simply remove the 'static' from the declaration of these two variables in execute.c */
+extern activation *activ_stack;
+extern unsigned top_activ_stack;
+
+/* Functions that perform the indicated action on an arbitrary array of activations */
+static Var MakeFrameList(activation *, unsigned);
+static enum error AlterFrame(activation *, unsigned, unsigned, Var);
+
+/* The builtin-function interfaces provided for those functions */
+static package bfTaskFrames(Var, Byte, void *, Objid);
+static package bfAlterVariable(Var, Byte, void *, Objid);
+static package bfUndefVariable(Var, Byte, void *, Objid);
+
+/* This function creates a list  of stack frames.  Each frame is a list of three-element lists,
+ * with the first element containing the name of the variable, the second element the type of the
+ * variable, and the third element is the value of the variable, turned into TYPE_INT if it was
+ * TYPE_NONE to prevent some unknown but doubtlessly hideous result
+ */
+static Var MakeFrameList(activation *theStack, unsigned theTop){
+	Var				out;
+	int				varCount, i, j, n, type;
+	activation		a;
+
+	out = new_list(theTop + 1);
+	for(j=theTop, n = 1; j>=0; j--, n++){
+		a = theStack[j];
+
+		varCount = a.prog->num_var_names;
+
+		out.v.list[n] = new_list(varCount);
+		for(i = 0; i<varCount; i++){
+			out.v.list[n].v.list[i+1] = new_list(3);
+
+			out.v.list[n].v.list[i+1].v.list[1].type = TYPE_STR;
+			out.v.list[n].v.list[i+1].v.list[1].v.str = str_dup(a.prog->var_names[i]);
+
+			out.v.list[n].v.list[i+1].v.list[2].type = TYPE_INT;
+			type = out.v.list[n].v.list[i+1].v.list[2].v.num = a.rt_env[i].type;
+
+			out.v.list[n].v.list[i+1].v.list[3] = var_dup(a.rt_env[i]);
+			if(type == TYPE_NONE)
+				out.v.list[n].v.list[i+1].v.list[3].type = TYPE_INT;	/* Avoid raising E_VARNF */
+		}
+	}
+	return out;
+}
+
+/* This function alters a variable in a frame of an array of activations, obtained either from the
+ * globals in execute.c or from a vm.  You *MUST NOT* call this function without performing
+ * range checking on the 'frame' passed to it.
+ */
+static enum error AlterFrame(activation *theActivStack, unsigned frame, unsigned address, Var value){
+	enum error	out;
+	activation	a;
+
+	a = theActivStack[frame];	/* No range checking performed! */
+	if(address < 0 || address >= a.prog->num_var_names)
+		return E_VARNF;
+
+	free_var(a.rt_env[address]);
+	a.rt_env[address] = var_dup(value);
+	return E_NONE;
+}
+
+/* Returns a list of stack frames in the MOO virtual machine, for the specified task.
+ * The list is a list ordered as task_stack() or callers() is, with all non-builtin
+ * stack frames corresponding to a list reported.  The first value in each element of
+ * the stack frame list is a string, the name of the variable.  The second is the actual type of the
+ * variable in-server, with 6 == TYPE_NONE, the type of an undefined function.  This test may be
+ * used to determine whether a given variable is defined yet.
+ */
+static package bfTaskFrames(Var arglist, Byte next, void *vdata, Objid progr){
+	vm				theVM;
+	int				taskID;
+
+	if(arglist.v.list[0].v.num == 1){	/* Another task... */
+		taskID = arglist.v.list[1].v.num;
+		free_var(arglist);
+
+		theVM = find_suspended_task(taskID);
+		if(!theVM)
+			return make_error_pack(E_INVARG);
+		if((!is_wizard(progr)) && (progr != progr_of_cur_verb(theVM)))
+			return make_error_pack(E_PERM);
+
+		return make_var_pack(MakeFrameList(theVM->activ_stack, theVM->top_activ_stack));
+	}
+	else	/* This task... */
+		return make_var_pack(MakeFrameList(activ_stack, top_activ_stack));
+}
+
+/* This function takes 4 arguments.  The first is the task ID on which it should operate.  The
+ * second is a 1-based index indicating which frame of that task it should operate on.  This is
+ * the index of the list element returned by task_heap() on which the function will act.  The third
+ * is either an integer that is a 1-based index indicating which variable is to be altered, or a
+ * string that is the variable's name.  The final argument is the value to be assigned to the
+ * variable.  If the task ID does not exist, E_INVARG is raised.  If the programmer is not a wizard,
+ * E_PERM is raised (I have not fully thought this through w.r.t. security holes).  If the specified
+ * frame does not exist, E_RANGE is raised.  If the specified integer-index variable does not exist
+ * or the string specified does not name a variable in that stack frame, E_VARNF is raised.
+ * It operates on the currently running task if the passed task ID is 0 (an ID which should never
+ * arise for an acutal task).
+ */
+static package bfAlterVariable(Var arglist, Byte next, void *vdata, Objid progr){
+	vm			theVM;
+	int			taskID, uz, address, frame, i;
+	Var			value;
+	enum error	out;
+	char		*varname = 0;
+	activation	a, *theActivStack;
+	unsigned	theTopActivStack;
+
+	taskID = arglist.v.list[1].v.num;
+	uz = arglist.v.list[2].v.num;
+
+	if(taskID != 0){
+		theVM = find_suspended_task(taskID);
+		if(!theVM){
+			free_var(arglist);
+			return make_error_pack(E_INVARG);
+		}
+		if(!is_wizard(progr)){
+			free_var(arglist);
+			return make_error_pack(E_PERM);
+		}
+		theActivStack = theVM->activ_stack;
+		theTopActivStack = theVM->top_activ_stack;
+	}
+	else{
+		theActivStack = activ_stack;
+		theTopActivStack = top_activ_stack;
+	}
+
+	frame = theTopActivStack + 1 - uz;
+	if(frame>theTopActivStack || frame < 0){
+		free_var(arglist);
+		return make_error_pack(E_RANGE);
+	}
+
+	if(arglist.v.list[3].type == TYPE_STR){
+		varname = str_dup(arglist.v.list[3].v.str);
+
+		a = theActivStack[frame];
+		for(i=0; i<a.prog->num_var_names; i++){
+			if(!strcmp(varname, a.prog->var_names[i]))
+				break;
+		}
+		free_str(varname);
+
+		if((address = i) == a.prog->num_var_names){
+			free_var(arglist);
+			return make_error_pack(E_VARNF);
+		}
+	}
+	else if(arglist.v.list[3].type == TYPE_INT)
+		address = arglist.v.list[3].v.num;
+	else{
+		free_var(arglist);
+		return make_error_pack(E_TYPE);
+	}
+
+	value = var_dup(arglist.v.list[4]);
+	out = AlterFrame(theActivStack, frame, address, value);
+	free_var(value);
+	free_var(arglist);
+
+	if(out != E_NONE)
+		return make_error_pack(out);
+	else
+		return no_var_pack();
+}
+
+/* This function takes 3 arguments.  The first is the task ID on which it should operate.  The
+ * second is a 1-based index indicating which frame of that task it should operate on.  This is
+ * the index of the list element returned by task_frames() on which the function will act.  The third
+ * is either an integer that is a 1-based index indicating which variable is to be altered, or a
+ * string that is the variable's name.  If the task ID does not exist, E_INVARG is raised.  If the
+ * programmer is not a wizard, E_PERM is raised (I have not fully thought this through w.r.t.
+ * security holes).  If the specified frame does not exist, E_RANGE is raised.  If the specified
+ * integer-index variable does not exist or the string specified does not name a variable in that
+ * stack frame, E_VARNF is raised.
+ * It operates on the currently running task if the passed task ID is 0 (an ID which should never
+ * arise for an acutal task).
+ */
+static package bfUndefVariable(Var arglist, Byte next, void *vdata, Objid progr){
+	vm			theVM;
+	int			taskID, uz, address, frame, i;
+	Var			value;
+	enum error	out;
+	char		*varname = 0;
+	activation	a, *theActivStack;
+	unsigned	theTopActivStack;
+
+	taskID = arglist.v.list[1].v.num;
+	uz = arglist.v.list[2].v.num;
+
+	if(taskID != 0){
+		theVM = find_suspended_task(taskID);
+		if(!theVM){
+			free_var(arglist);
+			return make_error_pack(E_INVARG);
+		}
+		if(!is_wizard(progr)){
+			free_var(arglist);
+			return make_error_pack(E_PERM);
+		}
+		theActivStack = theVM->activ_stack;
+		theTopActivStack = theVM->top_activ_stack;
+	}
+	else{
+		theActivStack = activ_stack;
+		theTopActivStack = top_activ_stack;
+	}
+
+	frame = theTopActivStack + 1 - uz;
+	if(frame>theTopActivStack || frame < 0){
+		free_var(arglist);
+		return make_error_pack(E_RANGE);
+	}
+
+	if(arglist.v.list[3].type == TYPE_STR){
+		varname = str_dup(arglist.v.list[3].v.str);
+
+		a = theActivStack[frame];
+		for(i=0; i<a.prog->num_var_names; i++){
+			if(!strcmp(varname, a.prog->var_names[i]))
+				break;
+		}
+		free_str(varname);
+
+		if((address = i) == a.prog->num_var_names){
+			free_var(arglist);
+			return make_error_pack(E_VARNF);
+		}
+	}
+	else if(arglist.v.list[3].type == TYPE_INT)
+		address = arglist.v.list[3].v.num;
+	else{
+		free_var(arglist);
+		return make_error_pack(E_TYPE);
+	}
+
+	value.type = TYPE_NONE;
+	out = AlterFrame(theActivStack, frame, address, value);
+	free_var(arglist);
+
+	if(out != E_NONE)
+		return make_error_pack(out);
+	else
+		return no_var_pack();
+}
+
+
 // ============= ANSI ===============
     static package
 bf_parse_ansi(Var arglist, Byte next, void *vdata, Objid progr)
@@ -501,7 +826,12 @@ register_extensions()
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
     register_function("explode", 1, 2, bf_explode, TYPE_STR, TYPE_STR);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
-    // ======== ANSI ===========
+//    register_function("from_list", 1, 1, bf_from_list, TYPE_STR);
+    /* Debugger */
+    register_function("task_frames", 0, 1, bfTaskFrames, TYPE_INT);
+	register_function("alter_variable", 4, 4, bfAlterVariable, TYPE_INT, TYPE_INT, TYPE_ANY, TYPE_ANY);
+	register_function("undef_variable", 3, 3, bfUndefVariable, TYPE_INT, TYPE_INT, TYPE_ANY);
+    /* ======== ANSI =========== */
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
 }

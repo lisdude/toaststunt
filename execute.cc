@@ -45,9 +45,9 @@
 #include "version.h"
 
 /* the following globals are the guts of the virtual machine: */
-static activation *activ_stack = 0;
-static int max_stack_size = 0;
-static unsigned top_activ_stack;	/* points to top-of-stack
+activation *activ_stack = 0;
+int max_stack_size = 0;
+unsigned top_activ_stack;	/* points to top-of-stack
 					   (last-occupied-slot),
 					   not next-empty-slot */
 static int root_activ_vector;	/* root_activ_vector == MAIN_VECTOR
