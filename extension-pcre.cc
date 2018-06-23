@@ -41,6 +41,7 @@ get_pcre(const char *string, unsigned char options) {
     entry->error = NULL;
     entry->re = NULL;
     entry->captures = 0;
+    entry->extra = NULL;
 
     entry->re = pcre_compile(string, options, &err, &eos, NULL);
     if (entry->re == NULL) {
