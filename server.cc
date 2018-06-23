@@ -1397,6 +1397,7 @@ server_resume_input(Objid connection)
 void
 player_connected_silent(Objid old_id, Objid new_id)
 {
+    const char *old_name = str_dup(object_name(old_id));
     shandle *existing_h = find_shandle(new_id);
     shandle *new_h = find_shandle(old_id);
 
@@ -1419,10 +1420,12 @@ player_connected_silent(Objid old_id, Objid new_id)
 	network_close(existing_h->nhandle);
 	free_shandle(existing_h);
     } else {
-	oklog("CONNECTED: %s on %s\n",
-	      object_name(new_h->player),
+	oklog("SWITCHED: %s is now %s on %s\n",
+	      old_name,
+          object_name(new_h->player),
 	      network_connection_name(new_h->nhandle));
     }
+    free_str(old_name);
 }
 
 char
