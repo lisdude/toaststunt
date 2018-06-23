@@ -2991,6 +2991,6 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
     register_function("set_task_local", 1, 1, bf_set_task_local, TYPE_ANY);
     register_function("task_local", 0, 0, bf_task_local);
-    register_function("switch_player", 2, 4, bf_switch_player,
-		      TYPE_OBJ, TYPE_OBJ, TYPE_ANY, TYPE_INT);
+    register_function("switch_player", 2, 2, bf_switch_player,
+		      TYPE_OBJ, TYPE_OBJ);
 }
