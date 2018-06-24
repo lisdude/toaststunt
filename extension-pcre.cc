@@ -155,13 +155,13 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             static unsigned char *bit_array;
             bit_array = (unsigned char *)mymalloc(rc * sizeof(unsigned char), M_ARRAY);
             memset(bit_array, 0, rc);
+            (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMECOUNT, &named_substrings);
 
             if (named_substrings > 0)
             {
                 unsigned char *name_table, *tabptr;
                 int name_entry_size;
 
-                (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMECOUNT, &named_substrings);
                 (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMETABLE, &name_table);
                 (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size);
 
