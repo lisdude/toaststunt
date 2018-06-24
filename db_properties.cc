@@ -30,7 +30,6 @@
 #include "storage.h"
 #include "utils.h"
 #include "waif.h"
-#include "log.h"
 
 Propdef
 dbpriv_new_propdef(const char *name)
@@ -892,25 +891,6 @@ dbpriv_check_properties_for_chparent(Var obj, Var parents, Var anon_kids)
 void
 dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancestors, Var anon_kids)
 {
-    /* If the old_ancestors and new_ancestors list are the same, assume nothing changed and skip it.
-     * This fixes a crash where the propdef.cur_length won't match the nval. This seems to happen when
-     * you have an ancestor ($thing). You create two children of the ancestor (#98, #99). You then chparent
-     * #99 to {#98, $thing}. Now create a child of #1 (#100) and add a property to it. If you try to then
-     * chparent the original ancestor ($thing) to {#1, #100}, it will die. I don't know WHY this
-     * happens, so someday this will need fixed properly. But for now this workaround seems to work. */
-    bool skip = true;
-    if (old_ancestors.v.list[0].v.num == new_ancestors.v.list[0].v.num) {
-        for (int x = 0; x < old_ancestors.v.list[0].v.num; x++) {
-            if (old_ancestors.v.list[x].v.obj != new_ancestors.v.list[x].v.obj)
-                skip = false;
-            break;
-        }
-        if (skip) {
-            errlog("Skipping dbpriv_fix_properties for #%i...\n", obj.v.obj);
-            return;
-        }
-    }
-
     Object *o;
     Var ancestor;
 
