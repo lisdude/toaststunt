@@ -1,15 +1,4 @@
-/* Copyright (c) 2016 lisdude (9118852A2974A1E3E00B2B7A38B024A72248E3ECA4CE2A6B8F595E76AAFF90C3) All rights reserved.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD
- * TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
- * ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- */
-
 #include "extension-sqlite.h"
-#include "map.h"
 
 /* Open an SQLite database.
  * Args: STR <path to database>, [INT options] */
@@ -143,7 +132,7 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
 /* Creates and executes a prepared statement.
  * Args: INT <database handle>, STR <SQL query>, LIST <values>
  * e.g. sqlite_query(0, 'INSERT INTO test VALUES (?, ?);', {5, #5})
- * TODO: Check the cache for an existing prepared statement */
+ * TODO: Cache prepared statements? */
     static package
 bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -174,8 +163,7 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
 
     /* Take args[3] and bind it into the appropriate locations for SQLite
      * (e.g. in the query values (?, ?, ?) args[3] would be {5, "oh", "hello"}) */
-    int x = 0;
-    for (x = 1; x <= arglist.v.list[3].v.list[0].v.num; x++)
+    for (int x = 1; x <= arglist.v.list[3].v.list[0].v.num; x++)
     {
         switch (arglist.v.list[3].v.list[x].type)
         {
@@ -202,8 +190,7 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
     while (rc == SQLITE_ROW)
     {
         Var row = new_list(0);
-        int x = 0;
-        for (x = 0; x < col; x++)
+        for (int x = 0; x < col; x++)
         {
             // Ideally we would know the type and use sqlite3_column<TYPE> but we don't!
             char *str = (char*)sqlite3_column_text(stmt, x);
@@ -381,8 +368,7 @@ int callback(void *index, int argc, char **argv, char **azColName)
 
     Var ret = new_list(0);
 
-    int i = 0;
-    for (i = 0; i < argc; i++)
+    for (int i = 0; i < argc; i++)
     {
         Var s;
         if (!(handle->options & SQLITE_PARSE_TYPES))

@@ -12,6 +12,7 @@
 #include "storage.h"
 #include "log.h"
 #include "server.h"
+#include "map.h"
 
 #define SQLITE_MOO_VERSION      "2.0"
 #define SQLITE_MAX_HANDLES      20  /* Maximum number of SQLite databases that can be open
@@ -29,7 +30,7 @@ typedef struct sqlite_conn
     unsigned char options;
 } sqlite_conn;
 
-// Array of open connections
+// Map of open connections
 static std::map <int, sqlite_conn> sqlite_connections;
 // Next database handle. This will get reset to 1 when all connections get closed.
 static int next_sqlite_handle = 1;
@@ -39,9 +40,9 @@ static int next_sqlite_handle = 1;
 Var last_result = new_list(0);
 
 // Forward declarations
-extern const char *file_resolve_path(const char *);             // from extension-fileio.c
-extern int parse_number(const char *, int *, int);              // from numbers.c
-extern int parse_float(const char *, double *);                 // from numbers.c
+extern const char *file_resolve_path(const char *);             // from fileio.cc
+extern int parse_number(const char *, int *, int);              // from numbers.cc
+extern int parse_float(const char *, double *);                 // from numbers.cc
 
 // Other helper functions
 bool valid_handle(int handle);
