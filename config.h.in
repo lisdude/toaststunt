@@ -277,4 +277,6 @@
 #  endif
 #endif
 
+#undef HAS_ARGON2
+
 #endif /* !Config_H */
