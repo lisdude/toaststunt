@@ -180,6 +180,8 @@ void background_test_callback(void *bw, Var *ret)
 void
 register_background()
 {
+#ifdef background_test
     register_task_queue(background_enumerator);
     register_function("background_test", 0, 2, bf_background_test, TYPE_STR, TYPE_INT);
+#endif
 }
