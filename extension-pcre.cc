@@ -49,18 +49,18 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     unsigned char options = 0;
     unsigned char flags = FIND_ALL;
 
-    subject = str_ref(arglist.v.list[1].v.str);
-    pattern = str_ref(arglist.v.list[2].v.str);
+    subject = arglist.v.list[1].v.str;
+    pattern = arglist.v.list[2].v.str;
     options = (arglist.v.list[0].v.num >= 3 && is_true(arglist.v.list[3])) ? 0 : PCRE_CASELESS;
 
     if (arglist.v.list[0].v.num >= 4 && arglist.v.list[4].v.num == 0)
         flags ^= FIND_ALL;
 
-    free_var(arglist);
-
     /* Return E_INVARG if the pattern or subject are empty. */
-    if (pattern[0] == '\0' || subject[0] == '\0')
+    if (pattern[0] == '\0' || subject[0] == '\0') {
+        free_var(arglist);
         return make_error_pack(E_INVARG);
+    }
 
     /* Compile the pattern */
     struct pcre_cache_entry *entry = get_pcre(pattern, options);
@@ -69,6 +69,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     {
         package r = make_raise_pack(E_INVARG, entry->error, var_ref(zero));
         free_entry(entry);
+        free_var(arglist);
         return r;
     }
 
@@ -103,11 +104,13 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         {
             /* We've encountered some funky error. Back out and let them know what it is. */
             free_entry(entry);
+            free_var(arglist);
             sprintf(err, "pcre_exec returned error: %d", rc);
             return make_raise_pack(E_INVARG, err, var_ref(zero));
         } else if (rc == 0) {
             /* We don't have enough room to store all of these substrings. */
             free_entry(entry);
+            free_var(arglist);
             sprintf(err, "pcre_exec only has room for %d substrings", entry->captures);
             return make_raise_pack(E_QUOTA, err, var_ref(zero));
         } else if (rc == PCRE_ERROR_NOMATCH) {
@@ -116,6 +119,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         } else if (loops >= total_loops) {
             /* The loop has iterated beyond the maximum limit, probably locking the server. Kill it. */
             free_entry(entry);
+            free_var(arglist);
             sprintf(err, "Too many iterations of matching loop: %d", loops);
             return make_raise_pack(E_MAXREC, err, var_ref(zero));
         } else {
@@ -193,6 +197,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     }
 
     free_entry(entry);
+    free_var(arglist);
     return make_var_pack(ret);
 }
 
