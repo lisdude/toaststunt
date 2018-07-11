@@ -1,35 +1,4 @@
-/******************************************************************************
- * Perl-compatible Regular Expressions for LambdaMOO.
- *
- * lisdude <lisdude@lisdude.com>
- ******************************************************************************/
-
-#include <pcre.h>
-#include "functions.h"
-#include "list.h"
-#include "utils.h"
-#include "log.h"
-#include "pcrs.h"
-#include "server.h" /* server_int_option */
-#include "map.h"
-#include "xtrapbits.h" /* bit array */
-
-#define EXT_PCRE_VERSION    "3.0"
-#define DEFAULT_LOOPS       1000
-#define RETURN_INDEXES      2
-#define RETURN_GROUPS       4
-#define FIND_ALL            8
-
-struct pcre_cache_entry {
-    char *error;
-    pcre *re;
-    pcre_extra *extra;
-    int captures;
-};
-
-void free_pcre_vars(pcre_cache_entry *);
-void free_entry(pcre_cache_entry *);
-Var result_indices(int ovector[], int n);
+#include "extension-pcre.h"
 
 static struct pcre_cache_entry *
 get_pcre(const char *string, unsigned char options) {
@@ -133,12 +102,12 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         if (rc < 0 && rc != PCRE_ERROR_NOMATCH)
         {
             /* We've encountered some funky error. Back out and let them know what it is. */
-            free_pcre_vars(entry);
+            free_entry(entry);
             sprintf(err, "pcre_exec returned error: %d", rc);
             return make_raise_pack(E_INVARG, err, var_ref(zero));
         } else if (rc == 0) {
             /* We don't have enough room to store all of these substrings. */
-            free_pcre_vars(entry);
+            free_entry(entry);
             sprintf(err, "pcre_exec only has room for %d substrings", entry->captures);
             return make_raise_pack(E_QUOTA, err, var_ref(zero));
         } else if (rc == PCRE_ERROR_NOMATCH) {
@@ -146,12 +115,12 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             break;
         } else if (loops >= total_loops) {
             /* The loop has iterated beyond the maximum limit, probably locking the server. Kill it. */
-            free_pcre_vars(entry);
+            free_entry(entry);
             sprintf(err, "Too many iterations of matching loop: %d", loops);
             return make_raise_pack(E_MAXREC, err, var_ref(zero));
         } else {
             /* We'll use a bit array to indicate which index matches are superfluous. e.g. which results
-             * have a NAMED result instead of a numbered result. */
+             * have a NAMED result instead of a numbered result. I'm definitely open to better ideas! */
             static unsigned char *bit_array;
             bit_array = (unsigned char *)mymalloc(rc * sizeof(unsigned char), M_ARRAY);
             memset(bit_array, 0, rc);
@@ -223,17 +192,8 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             break;
     }
 
-    free_pcre_vars(entry);
-    return make_var_pack(ret);
-}
-
-/* Free the billions of variables that we had to declare.
- * We give extra checks to the lists to make sure they actually
- * have memory to give up. Also some vars can be null because,
- * well, I'm lazy and it's easier to keep it all together like this. */
-void free_pcre_vars(pcre_cache_entry *entry)
-{
     free_entry(entry);
+    return make_var_pack(ret);
 }
 
 void free_entry(pcre_cache_entry *entry)
