@@ -177,7 +177,7 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
                 sqlite3_bind_double(stmt, x, *arglist.v.list[3].v.list[x].v.fnum);
                 break;
             case TYPE_OBJ:
-                sqlite3_bind_text(stmt, x, reset_stream(object_to_string(&arglist.v.list[3].v.list[x])),  -1, NULL);
+                sqlite3_bind_text(stmt, x, str_dup(reset_stream(object_to_string(&arglist.v.list[3].v.list[x]))),  -1, NULL);
                 break;
         }
     }
