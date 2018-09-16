@@ -616,6 +616,10 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 	    Var errors;
 	    Program *program = parse_list_as_program(arglist, &errors);
 
+            #ifdef LOG_EVALS
+            oklog("CODE_EVAL: %s (#%d) evaluated: %s\n", db_object_name(progr), progr, arglist.v.list[1]);
+            #endif
+
 	    free_var(arglist);
 
 	    if (program) {

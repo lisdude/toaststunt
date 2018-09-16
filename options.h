@@ -35,6 +35,13 @@
 #define LOG_CODE_CHANGES
 
 /******************************************************************************
+ * When enabled, this option will cause the eval() builtin to write
+ * input to the log file.
+ */
+
+/* #define LOG_EVALS */
+
+/******************************************************************************
  * Define ENABLE_GC to enable automatic garbage collection of cyclic data
  * structures.  This is safe but adds overhead to the reference counting
  * mechanism -- currently about a 5% penalty, even for operations that do not
