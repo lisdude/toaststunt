@@ -21,9 +21,8 @@ get_pcre(const char *string, unsigned char options) {
         entry->extra = pcre_study(entry->re, 0, &error);
         if (error != NULL)
             entry->error = str_dup(error);
-        else {
+        else 
             (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
-        }
     }
 
     return entry;

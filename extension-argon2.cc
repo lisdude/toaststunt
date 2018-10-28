@@ -115,6 +115,7 @@ void
 register_argon2(void)
 {
     oklog("REGISTER_ARGON2: Using Argon2 version %i\n", ARGON2_VERSION_NUMBER);
+    //                                           password, salt,     iterations, memory, parallelism
     register_function("argon2", 2, 5, bf_argon2, TYPE_STR, TYPE_STR, TYPE_INT, TYPE_INT, TYPE_INT);
     register_function("argon2_verify", 2, 2, bf_argon2_verify, TYPE_STR, TYPE_STR);
 }
