@@ -253,6 +253,15 @@ bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr) {
     err = pcrs_execute(job, linebuf, length, &result, &length);
     if (err >= 0)
     {
+        /* Sanitize the result so people don't introduce 'dangerous' characters into the database */
+        char *p = result;
+        while (*p)
+        {
+            if (!isprint(*p))
+                *p = ' ';
+            p++;
+        }
+
         Var ret;
         ret.type = TYPE_STR;
         ret.v.str = str_dup(result);
