@@ -81,6 +81,9 @@ db_reset_last_used_objid(void)
 {
     while (!objects[num_objects - 1])
 	num_objects--;
+#ifdef USE_ANCESTOR_CACHE
+    ancestor_cache.clear();
+#endif /* USE_ANCESTOR_CACHE */
 }
 
 void
@@ -458,6 +461,10 @@ db_renumber_object(Objid old)
 {
     Objid _new;
     Object *o;
+
+#ifdef USE_ANCESTOR_CACHE
+    ancestor_cache.clear();
+#endif /* USE_ANCESTOR_CACHE */
 
     for (_new = 0; _new < old; _new++) {
 	if (objects[_new] == NULL) {
