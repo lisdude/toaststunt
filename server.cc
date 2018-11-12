@@ -386,16 +386,13 @@ checkpoint_timer(Timer_ID id, Timer_Data data)
 static void
 set_checkpoint_timer(int first_time)
 {
-    Var v;
     int interval, now = time(0);
     static Timer_ID last_checkpoint_timer;
 
-    v = get_system_property("dump_interval");
-    if (v.type != TYPE_INT || v.v.num < 60 || now + v.v.num < now) {
-	free_var(v);
+   interval = server_int_option("dump_interval", 3600);
+    if (interval < 60 || now + interval < now) {
 	interval = 3600;	/* Once per hour */
-    } else
-	interval = v.v.num;
+    }
 
     if (!first_time)
 	cancel_timer(last_checkpoint_timer);
