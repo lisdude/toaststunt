@@ -699,7 +699,7 @@ bf_destroy(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	data = (Var *)alloc_data(sizeof(Var));
 	*data = var_ref(obj);
 	args = new_list(0);
-	e = call_verb(obj.is_obj() ? obj.v.obj : NOTHING, "recycle", obj, args, 0);
+	e = call_verb(obj.is_obj() ? obj.v.obj : NOTHING, "pre_destroy", obj, args, 0);
 	/* e != E_INVIND */
 
 	if (e == E_NONE) {
