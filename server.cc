@@ -543,7 +543,7 @@ recycle_anonymous_objects(void)
 	run_server_task(-1, v, "recycle", new_list(0), "", 0);
 
 	/* We'd like to run `db_change_parents()' to be consistent
-	 * with the pattern laid out in `bf_recycle()', but we can't
+	 * with the pattern laid out in `bf_destroy()', but we can't
 	 * because the object can be invalid at this point due to
 	 * changes in parentage.
 	 */
