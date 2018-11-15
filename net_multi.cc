@@ -533,9 +533,9 @@ network_listen(network_listener nl)
 }
 
 int
-network_send_line(network_handle nh, const char *line, int flush_ok)
+network_send_line(network_handle nh, const char *line, int flush_ok, bool send_newline)
 {
-    return enqueue_output(nh, line, strlen(line), 1, flush_ok);
+    return enqueue_output(nh, line, strlen(line), send_newline, flush_ok);
 }
 
 int

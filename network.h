@@ -94,7 +94,7 @@ extern int network_listen(network_listener nl);
 				 */
 
 extern int network_send_line(network_handle nh, const char *line,
-			     int flush_ok);
+			     int flush_ok, bool send_newline);
 				/* The given line should be queued for output
 				 * on the specified connection.  'line' does
 				 * NOT end in a newline; it is up to the
@@ -106,7 +106,9 @@ extern int network_send_line(network_handle nh, const char *line,
 				 * no output may be discarded in this way.
 				 * Returns true iff the given line was
 				 * successfully queued for output; it can only
-				 * fail if FLUSH_OK is false.
+				 * fail if FLUSH_OK is false. If send_newline
+                 * is false, the network code is compelled to
+                 * suppress the newline.
 				 */
 
 extern int network_send_bytes(network_handle nh,

@@ -79,9 +79,9 @@ network_listen(network_listener nl)
 }
 
 int
-network_send_line(network_handle nh, const char *line, int flush_ok)
+network_send_line(network_handle nh, const char *line, int flush_ok, bool send_newline)
 {
-    printf("%s\n", line);
+    printf(send_newline ? "%s\n" : "%s", line);
     fflush(stdout);
 
     return 1;

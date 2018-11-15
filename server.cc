@@ -204,7 +204,7 @@ send_shutdown_message(const char *message)
     s << "*** Shutting down: " << message << " ***";
 
     for (h = all_shandles; h; h = h->next)
-	network_send_line(h->nhandle, s.str().c_str(), 1);
+	network_send_line(h->nhandle, s.str().c_str(), 1, 1);
 }
 
 static void
@@ -454,17 +454,17 @@ send_message(Objid listener, network_handle nh, const char *msg_name,...)
     va_start(args, msg_name);
     if (get_server_option(listener, msg_name, &msg)) {
 	if (msg.type == TYPE_STR)
-	    network_send_line(nh, msg.v.str, 1);
+	    network_send_line(nh, msg.v.str, 1, 1);
 	else if (msg.type == TYPE_LIST) {
 	    int i;
 
 	    for (i = 1; i <= msg.v.list[0].v.num; i++)
 		if (msg.v.list[i].type == TYPE_STR)
-		    network_send_line(nh, msg.v.list[i].v.str, 1);
+		    network_send_line(nh, msg.v.list[i].v.str, 1, 1);
 	}
     } else			/* Use default message */
 	while ((line = va_arg(args, const char *)) != 0)
-	    network_send_line(nh, line, 1);
+	    network_send_line(nh, line, 1, 1);
 
     va_end(args);
 }
@@ -1523,7 +1523,7 @@ notify(Objid player, const char *message)
     shandle *h = find_shandle(player);
 
     if (h && !h->disconnect_me)
-	network_send_line(h->nhandle, message, 1);
+	network_send_line(h->nhandle, message, 1, 1);
     else if (in_emergency_mode)
 	emergency_notify(player, message);
 }
@@ -2043,6 +2043,9 @@ bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
     int no_flush = (arglist.v.list[0].v.num > 2
 		    ? is_true(arglist.v.list[3])
 		    : 0);
+    int no_newline = (arglist.v.list[0].v.num > 3
+            ? is_true(arglist.v.list[3]) : 0);
+
     shandle *h = find_shandle(conn);
     Var r;
 
@@ -2062,7 +2065,7 @@ bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
 	    }
 	    r.v.num = network_send_bytes(h->nhandle, line, length, !no_flush);
 	} else
-	    r.v.num = network_send_line(h->nhandle, line, !no_flush);
+	    r.v.num = network_send_line(h->nhandle, line, !no_flush, !no_newline);
     } else {
 	if (in_emergency_mode)
 	    emergency_notify(conn, line);
@@ -2279,7 +2282,7 @@ register_server(void)
 		      TYPE_OBJ);
     register_function("idle_seconds", 1, 1, bf_idle_seconds, TYPE_OBJ);
     register_function("connection_name", 1, 1, bf_connection_name, TYPE_OBJ);
-    register_function("notify", 2, 3, bf_notify, TYPE_OBJ, TYPE_STR, TYPE_ANY);
+    register_function("notify", 2, 4, bf_notify, TYPE_OBJ, TYPE_STR, TYPE_ANY, TYPE_ANY);
     register_function("boot_player", 1, 1, bf_boot_player, TYPE_OBJ);
     register_function("set_connection_option", 3, 3, bf_set_connection_option,
 		      TYPE_OBJ, TYPE_STR, TYPE_ANY);
