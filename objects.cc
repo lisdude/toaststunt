@@ -662,7 +662,7 @@ get_first(Objid oid, int (*for_all) (Objid, int (*)(void *, Objid), void *))
 }
 
 static package
-bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
+bf_destroy(Var arglist, Byte func_pc, void *vdata, Objid progr)
 {				/* (OBJ|ANON object) */
     Var *data = (Var *)vdata;
     enum error e;
@@ -699,7 +699,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	data = (Var *)alloc_data(sizeof(Var));
 	*data = var_ref(obj);
 	args = new_list(0);
-	e = call_verb(obj.is_obj() ? obj.v.obj : NOTHING, "recycle", obj, args, 0);
+	e = call_verb(obj.is_obj() ? obj.v.obj : NOTHING, "pre_destroy", obj, args, 0);
 	/* e != E_INVIND */
 
 	if (e == E_NONE) {
@@ -804,20 +804,20 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	}
     }
 
-    panic("Can't happen in BF_RECYCLE");
+    panic("Can't happen in bf_destroy");
     return no_var_pack();
 }
 
 static void
-bf_recycle_write(void *vdata)
+bf_destroy_write(void *vdata)
 {
     Objid *data = (Objid *)vdata;
 
-    dbio_printf("bf_recycle data: oid = %d, cont = 0\n", *data);
+    dbio_printf("bf_destroy data: oid = %d, cont = 0\n", *data);
 }
 
 static void *
-bf_recycle_read(void)
+bf_destroy_read(void)
 {
     Objid *data = (Objid *)alloc_data(sizeof(*data));
     int dummy;
@@ -828,7 +828,7 @@ bf_recycle_read(void)
      * suppressed assignments are not counted in determining the returned value
      * of `scanf'...
      */
-    if (dbio_scanf("bf_recycle data: oid = %d, cont = %d\n",
+    if (dbio_scanf("bf_destroy data: oid = %d, cont = %d\n",
 		   data, &dummy) == 2)
 	return data;
     else
@@ -950,8 +950,8 @@ register_objects(void)
     register_function_with_read_write("create", 1, 4, bf_create,
 				      bf_create_read, bf_create_write,
 				      TYPE_ANY, TYPE_ANY, TYPE_ANY, TYPE_ANY);
-    register_function_with_read_write("recycle", 1, 1, bf_recycle,
-				      bf_recycle_read, bf_recycle_write,
+    register_function_with_read_write("destroy", 1, 1, bf_destroy,
+				      bf_destroy_read, bf_destroy_write,
 				      TYPE_ANY);
     register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_ANY);
     register_function("valid", 1, 1, bf_valid, TYPE_ANY);
