@@ -523,9 +523,9 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
     int done = 0;
 
     if (1 < arglist.v.list[0].v.num) {
-	if (!mystrcasecmp(arglist.v.list[2].v.str, "common-subset")) {
+	if (!strcasecmp(arglist.v.list[2].v.str, "common-subset")) {
 	    pctx.mode = MODE_COMMON_SUBSET;
-	} else if (!mystrcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
+	} else if (!strcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
 	    pctx.mode = MODE_EMBEDDED_TYPES;
 	} else {
 	    free_var(arglist);
@@ -584,9 +584,9 @@ bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
     package pack;
 
     if (1 < arglist.v.list[0].v.num) {
-	if (!mystrcasecmp(arglist.v.list[2].v.str, "common-subset")) {
+	if (!strcasecmp(arglist.v.list[2].v.str, "common-subset")) {
 	    gctx.mode = MODE_COMMON_SUBSET;
-	} else if (!mystrcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
+	} else if (!strcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
 	    gctx.mode = MODE_EMBEDDED_TYPES;
 	} else {
 	    free_var(arglist);

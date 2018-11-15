@@ -317,7 +317,7 @@ extern int read_active_connections(void);
 #define _CONNECT_OPTION_GET_SINGLE(NAME, OPTION, VALUE,		\
 				   TYPE_FOO, VFOO_MEMBER,	\
 				   GETVALUE, SETVALUE)		\
-    if (!mystrcasecmp(OPTION, #NAME)) {				\
+    if (!strcasecmp(OPTION, #NAME)) {				\
 	VALUE->type  = (TYPE_FOO);				\
 	VALUE->v.VFOO_MEMBER = (GETVALUE);			\
 	return 1;						\
@@ -326,7 +326,7 @@ extern int read_active_connections(void);
 #define _CONNECT_OPTION_SET_SINGLE(NAME, OPTION, VALUE,		\
 				   TYPE_FOO, VFOO_MEMBER,	\
 				   GETVALUE, SETVALUE)		\
-    if (!mystrcasecmp(OPTION, #NAME)) {				\
+    if (!strcasecmp(OPTION, #NAME)) {				\
 	SETVALUE;						\
 	return 1;						\
     }

@@ -408,7 +408,7 @@ bf_parse_ansi(Var arglist, Byte next, void *vdata, Objid progr)
 
     char *t = reset_stream(tmp);
     while (*t) {
-        if (!mystrncasecmp(t, "[random]", 8)) {
+        if (!strncasecmp(t, "[random]", 8)) {
             stream_add_string(str, random_codes[RANDOM() % 6]);
             t += 8;
         } else

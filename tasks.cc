@@ -1198,7 +1198,7 @@ new_input_task(task_queue q, const char *input, int binary)
 {
     tqueue *tq = (tqueue *)q.ptr;
 
-    if (tq->flush_cmd && mystrcasecmp(input, tq->flush_cmd) == 0) {
+    if (tq->flush_cmd && strcasecmp(input, tq->flush_cmd) == 0) {
 	flush_input(tq, 1);
 	return;
     }

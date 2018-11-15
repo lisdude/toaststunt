@@ -1187,7 +1187,7 @@ check_loop_name(const char *name, enum loop_exit_kind kind)
     }
 
     for (entry = loop_stack; entry && !entry->is_barrier; entry = entry->next)
-	if (entry->name  &&  mystrcasecmp(entry->name, name) == 0)
+	if (entry->name  &&  strcasecmp(entry->name, name) == 0)
 	    return;
 
     if (kind == LOOP_BREAK)

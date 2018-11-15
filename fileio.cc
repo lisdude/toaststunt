@@ -898,11 +898,11 @@ bf_file_seek(Var arglist, Byte next, void *vdata, Objid progr)
 
   errno = 0;
 
-  if (!mystrcasecmp(whence, "SEEK_SET"))
+  if (!strcasecmp(whence, "SEEK_SET"))
 	 whnce = SEEK_SET;
-  else if (!mystrcasecmp(whence, "SEEK_CUR"))
+  else if (!strcasecmp(whence, "SEEK_CUR"))
 	 whnce = SEEK_CUR;
-  else if (!mystrcasecmp(whence, "SEEK_END"))
+  else if (!strcasecmp(whence, "SEEK_END"))
 	 whnce = SEEK_END;
   else
 	 whence_ok = 0;

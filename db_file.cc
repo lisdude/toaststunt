@@ -277,7 +277,7 @@ v4_read_object(void)
 	o->propdefs.max_length = i;
 	for (i = 0; i < o->propdefs.cur_length; i++) {
 	    o->propdefs.l[i] = read_propdef();
-#define CHECK_PROP_NAME(PROPERTY, property) !mystrcasecmp(o->propdefs.l[i].name, #property) ||
+#define CHECK_PROP_NAME(PROPERTY, property) !strcasecmp(o->propdefs.l[i].name, #property) ||
 	    if (BUILTIN_PROPERTIES(CHECK_PROP_NAME) 0)
 		oklog("DB_WARNING: Property #%d.%s has a reserved name\n", o->id, o->propdefs.l[i].name);
 #undef CHECK_PROP
@@ -361,7 +361,7 @@ ng_read_object(int anonymous)
 	o->propdefs.max_length = i;
 	for (i = 0; i < o->propdefs.cur_length; i++) {
 	    o->propdefs.l[i] = read_propdef();
-#define CHECK_PROP_NAME(PROPERTY, property) !mystrcasecmp(o->propdefs.l[i].name, #property) ||
+#define CHECK_PROP_NAME(PROPERTY, property) !strcasecmp(o->propdefs.l[i].name, #property) ||
 	    if (BUILTIN_PROPERTIES(CHECK_PROP_NAME) 0)
 		oklog("DB_WARNING: Property #%d.%s has a reserved name\n", o->id, o->propdefs.l[i].name);
 #undef CHECK_PROP

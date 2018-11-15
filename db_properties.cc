@@ -78,7 +78,7 @@ property_defined_at(const char *pname, int phash, Object *o)
 
     for (i = 0; i < length; i++)
 	if (props->l[i].hash == phash
-	    && !mystrcasecmp(props->l[i].name, pname))
+	    && !strcasecmp(props->l[i].name, pname))
 	    return 1;
 
     return 0;
@@ -97,7 +97,7 @@ property_defined_at_or_below(const char *pname, int phash, Object *o)
 
     for (i = 0; i < length; i++)
 	if (props->l[i].hash == phash
-	    && !mystrcasecmp(props->l[i].name, pname))
+	    && !strcasecmp(props->l[i].name, pname))
 	    return 1;
 
     Var children = o->children;
@@ -249,8 +249,8 @@ db_rename_propdef(Var obj, const char *old, const char *_new)
 	Propdef p;
 
 	p = props->l[i];
-	if (p.hash == hash && !mystrcasecmp(p.name, old)) {
-	    if (mystrcasecmp(old, _new) != 0) {	/* not changing just the case */
+	if (p.hash == hash && !strcasecmp(p.name, old)) {
+	    if (strcasecmp(old, _new) != 0) {	/* not changing just the case */
 		h = db_find_property(obj, _new, 0);
 		if (h.ptr || property_defined_at_or_below(_new, str_hash(_new), o))
 		    return 0;
@@ -339,7 +339,7 @@ db_delete_propdef(Var obj, const char *pname)
 	Propdef p;
 
 	p = props->l[i];
-	if (p.hash == hash && !mystrcasecmp(p.name, pname)) {
+	if (p.hash == hash && !strcasecmp(p.name, pname)) {
 	    if (p.name)
 		free_str(p.name);
 
@@ -509,7 +509,7 @@ db_find_property(Var obj, const char *name, Var *value)
     h.ptr = 0;
 
     for (i = 0; i < Arraysize(ptable); i++) {
-	if (ptable[i].hash == hash && !mystrcasecmp(name, ptable[i].name)) {
+	if (ptable[i].hash == hash && !strcasecmp(name, ptable[i].name)) {
 	    h.built_in = ptable[i].prop;
 	    h.ptr = o;
 	    if (value)
@@ -529,7 +529,7 @@ db_find_property(Var obj, const char *name, Var *value)
     n = 0;
 
     for (i = 0; i < length; i++, n++) {
-	if (defs[i].hash == hash && !mystrcasecmp(defs[i].name, name)) {
+	if (defs[i].hash == hash && !strcasecmp(defs[i].name, name)) {
 		h.definer = o;
 		h.ptr = o->propval + n;
 		goto done;
@@ -550,7 +550,7 @@ db_find_property(Var obj, const char *name, Var *value)
 	length = props->cur_length;
 
 	for (i = 0; i < length; i++, n++) {
-	    if (defs[i].hash == hash && !mystrcasecmp(defs[i].name, name)) {
+	    if (defs[i].hash == hash && !strcasecmp(defs[i].name, name)) {
 		h.definer = t;
 		h.ptr = o->propval + n;
 		goto done;

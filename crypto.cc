@@ -395,7 +395,7 @@ bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
     int binary = (2 < nargs) ? is_true(arglist.v.list[3]) : 0;
 
 #define CASE(op, temp)							\
-    op (!mystrcasecmp(#temp, algo)) {					\
+    op (!strcasecmp(#temp, algo)) {					\
         r.type = TYPE_STR;						\
         r.v.str = temp##_hash_bytes(str, memo_strlen(str), binary);	\
     }
@@ -433,7 +433,7 @@ bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
 	int binary = (2 < nargs) ? is_true(arglist.v.list[3]) : 0;
 
 #define CASE(op, temp)							\
-	op (!mystrcasecmp(#temp, algo)) {				\
+	op (!strcasecmp(#temp, algo)) {				\
 	    r.type = TYPE_STR;						\
 	    r.v.str = temp##_hash_bytes(bytes, length, binary);		\
 	    p = make_var_pack(r);					\
@@ -481,7 +481,7 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 	unparse_value(s, arglist.v.list[1]);
 
 #define CASE(op, temp)									\
-	op (!mystrcasecmp(#temp, algo)) {						\
+	op (!strcasecmp(#temp, algo)) {						\
 	    r.type = TYPE_STR;								\
 	    r.v.str = temp##_hash_bytes(stream_contents(s), stream_length(s), binary);	\
 	    p = make_var_pack(r);							\
@@ -540,7 +540,7 @@ bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    key = key_new;
 
 #define CASE(op, temp)										\
-	    op (!mystrcasecmp(#temp, algo)) {							\
+	    op (!strcasecmp(#temp, algo)) {							\
 		r.type = TYPE_STR;								\
 		r.v.str = hmac_##temp##_bytes(str, str_length, key, key_length, binary);	\
 		p = make_var_pack(r);								\
@@ -605,7 +605,7 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 		key = key_new;
 
 #define CASE(op, temp)											\
-		op (!mystrcasecmp(#temp, algo)) {							\
+		op (!strcasecmp(#temp, algo)) {							\
 		    r.type = TYPE_STR;									\
 		    r.v.str = hmac_##temp##_bytes(bytes, bytes_length, key, key_length, binary);	\
 		    p = make_var_pack(r);								\
@@ -665,7 +665,7 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    key = key_new;
 
 #define CASE(op, temp)										\
-	    op (!mystrcasecmp(#temp, algo)) {							\
+	    op (!strcasecmp(#temp, algo)) {							\
 		r.type = TYPE_STR;								\
 		r.v.str = hmac_##temp##_bytes(lit, lit_length, key, key_length, binary);	\
 		p = make_var_pack(r);								\

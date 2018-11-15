@@ -31,9 +31,6 @@
 
 #define Arraysize(x) (sizeof(x) / sizeof(*x))
 
-extern int mystrcasecmp(const char *, const char *);
-extern int mystrncasecmp(const char *, const char *, int);
-
 extern int verbcasecmp(const char *verb, const char *word);
 
 extern unsigned str_hash(const char *);

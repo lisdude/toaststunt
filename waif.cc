@@ -294,7 +294,7 @@ find_propval_offset(Waif *w, const char *name, int *pidx)
 	/* First find the offset into the list of possible properties
 	 */
 	for (i = 0,pd = w->propdefs->defs; i < w->propdefs->length; ++i, ++pd)
-		if (pd->hash == hash && !mystrcasecmp(pd->name, name))
+		if (pd->hash == hash && !strcasecmp(pd->name, name))
 			goto found;
 	return -2;
 
@@ -640,15 +640,15 @@ waif_get_prop(Waif *w, const char *name, Var *prop, Objid progr)
 
 	update_waif_propdefs(w);
 
-	if (!mystrcasecmp(name, "owner")) {
+	if (!strcasecmp(name, "owner")) {
 		prop->type = TYPE_OBJ;
 		prop->v.obj = w->owner;
 		return E_NONE;
-	} else if (!mystrcasecmp(name, "class")) {
+	} else if (!strcasecmp(name, "class")) {
 		prop->type = TYPE_OBJ;
 		prop->v.obj = w->_class;
 		return E_NONE;
-    } else if (!mystrcasecmp(name, "wizard")) {
+    } else if (!strcasecmp(name, "wizard")) {
         *prop = zero;
         return E_NONE;
 	} else if (!valid(w->_class))
@@ -709,7 +709,7 @@ waif_put_prop(Waif *w, const char *name, Var val, Objid progr)
 
 	update_waif_propdefs(w);
 
-	if (!mystrcasecmp(name, "owner") || !mystrcasecmp(name, "class"))
+	if (!strcasecmp(name, "owner") || !strcasecmp(name, "class"))
 		/* FYI, allowing these assignments would work, because
 		 * .owner can be anything without changing the waif, and
 		 * .class can change and the magic of update_waif_propdefs()
@@ -718,7 +718,7 @@ waif_put_prop(Waif *w, const char *name, Var val, Objid progr)
 		 * lazy in this case).
 		 */
 		return E_PERM;
-    else if (!mystrcasecmp(name, "wizard"))
+    else if (!strcasecmp(name, "wizard"))
 		return E_PERM;
 	else if (!valid(w->_class))
 		return E_INVIND;

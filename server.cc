@@ -980,8 +980,8 @@ emergency_mode()
 		continue;
 	    command = words.v.list[1].v.str;
 
-	    if ((!mystrcasecmp(command, "program")
-		 || !mystrcasecmp(command, ".program"))
+	    if ((!strcasecmp(command, "program")
+		 || !strcasecmp(command, ".program"))
 		&& nargs == 1) {
 		const char *verbref = words.v.list[2].v.str;
 		db_verb_handle h;
@@ -1020,7 +1020,7 @@ emergency_mode()
 		    free_var(code);
 		    free_var(errors);
 		}
-	    } else if (!mystrcasecmp(command, "list") && nargs == 1) {
+	    } else if (!strcasecmp(command, "list") && nargs == 1) {
 		const char *verbref = words.v.list[2].v.str;
 		db_verb_handle h;
 		const char *message, *vname;
@@ -1032,7 +1032,7 @@ emergency_mode()
 				    MAIN_VECTOR);
 		else
 		    printf("%s\n", message);
-	    } else if (!mystrcasecmp(command, "disassemble") && nargs == 1) {
+	    } else if (!strcasecmp(command, "disassemble") && nargs == 1) {
 		const char *verbref = words.v.list[2].v.str;
 		db_verb_handle h;
 		const char *message, *vname;
@@ -1043,19 +1043,19 @@ emergency_mode()
 		    disassemble_to_file(stdout, db_verb_program(h));
 		else
 		    printf("%s\n", message);
-	    } else if (!mystrcasecmp(command, "abort") && nargs == 0) {
+	    } else if (!strcasecmp(command, "abort") && nargs == 0) {
 	        printf("Bye.  (%s)\n\n", "NOT saving database");
 		exit(1);
-	    } else if (!mystrcasecmp(command, "quit") && nargs == 0) {
+	    } else if (!strcasecmp(command, "quit") && nargs == 0) {
 		start_ok = 0;
-	    } else if (!mystrcasecmp(command, "continue") && nargs == 0) {
+	    } else if (!strcasecmp(command, "continue") && nargs == 0) {
 		start_ok = 1;
-	    } else if (!mystrcasecmp(command, "debug") && nargs == 0) {
+	    } else if (!strcasecmp(command, "debug") && nargs == 0) {
 		debug = !debug;
-	    } else if (!mystrcasecmp(command, "wizard") && nargs == 1
+	    } else if (!strcasecmp(command, "wizard") && nargs == 1
 		       && sscanf(words.v.list[2].v.str, "#%d", &wizard) == 1) {
 		printf("** Switching to wizard #%d...\n", wizard);
-	    } else if (!mystrcasecmp(command, "help") || !mystrcasecmp(command, "?")) {
+	    } else if (!strcasecmp(command, "help") || !strcasecmp(command, "?")) {
 		printf(";EXPR                 "
 		       "Evaluate MOO expression, print result.\n");
 		printf(";;CODE                "

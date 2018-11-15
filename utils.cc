@@ -72,37 +72,6 @@ static const char cmap[] =
 "\360\361\362\363\364\365\366\367\370\371\372\373\374\375\376\377";
 
 int
-mystrcasecmp(const char *ss, const char *tt)
-{
-    const unsigned char *s = (const unsigned char *) ss;
-    const unsigned char *t = (const unsigned char *) tt;
-
-    if (s == t) {
-	return 0;
-    }
-    while (cmap[*s] == cmap[*t++]) {
-	if (!*s++)
-	    return 0;
-    }
-    return (cmap[*s] - cmap[*--t]);
-}
-
-int
-mystrncasecmp(const char *ss, const char *tt, int n)
-{
-    const unsigned char *s = (const unsigned char *) ss;
-    const unsigned char *t = (const unsigned char *) tt;
-
-    if (!n || ss == tt)
-	return 0;
-    while (cmap[*s] == cmap[*t++]) {
-	if (!*s++ || !--n)
-	    return 0;
-    }
-    return (cmap[*s] - cmap[*--t]);
-}
-
-int
 verbcasecmp(const char *verb, const char *word)
 {
     const unsigned char *w;
@@ -452,7 +421,7 @@ compare(Var lhs, Var rhs, int case_matters)
 	    else if (case_matters)
 		return strcmp(lhs.v.str, rhs.v.str);
 	    else
-		return mystrcasecmp(lhs.v.str, rhs.v.str);
+		return strcasecmp(lhs.v.str, rhs.v.str);
 	case TYPE_FLOAT:
 	    if (lhs.v.fnum == rhs.v.fnum)
 		return 0;
@@ -488,7 +457,7 @@ equality(Var lhs, Var rhs, int case_matters)
 	    else if (case_matters)
 		return !strcmp(lhs.v.str, rhs.v.str);
 	    else
-		return !mystrcasecmp(lhs.v.str, rhs.v.str);
+		return !strcasecmp(lhs.v.str, rhs.v.str);
 	case TYPE_FLOAT:
 	    if (lhs.v.fnum == rhs.v.fnum)
 		return 1;
@@ -516,7 +485,7 @@ stream_add_strsub(Stream *str, const char *source, const char *what, const char 
 
     while (*source) {
 	if (!(case_counts ? strncmp(source, what, lwhat)
-	      : mystrncasecmp(source, what, lwhat))) {
+	      : strncasecmp(source, what, lwhat))) {
 	    stream_add_string(str, with);
 	    source += lwhat;
 	} else
@@ -567,7 +536,7 @@ strindex(const char *source, int source_len,
 
     for (s = source, e = source + source_len - what_len; s <= e; s++) {
 	if (!(case_counts ? strncmp(s, what, what_len)
-	      : mystrncasecmp(s, what, what_len))) {
+	      : strncasecmp(s, what, what_len))) {
 	    return s - source + 1;
 	}
     }
@@ -582,7 +551,7 @@ strrindex(const char *source, int source_len,
 
     for (s = source + source_len - what_len; s >= source; s--) {
 	if (!(case_counts ? strncmp(s, what, what_len)
-	      : mystrncasecmp(s, what, what_len))) {
+	      : strncasecmp(s, what, what_len))) {
 	    return s - source + 1;
 	}
     }

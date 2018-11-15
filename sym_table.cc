@@ -122,7 +122,7 @@ find_name(Names * names, const char *str)
     unsigned i;
 
     for (i = 0; i < names->size; i++)
-	if (!mystrcasecmp(names->names[i], str))
+	if (!strcasecmp(names->names[i], str))
 	    return i;
     return -1;
 }
@@ -133,7 +133,7 @@ find_or_add_name(Names ** names, const char *str)
     unsigned i;
 
     for (i = 0; i < (*names)->size; i++)
-	if (!mystrcasecmp((*names)->names[i], str)) {	/* old name */
+	if (!strcasecmp((*names)->names[i], str)) {	/* old name */
 	    return i;
 	}
     if ((*names)->size == (*names)->max_size) {
