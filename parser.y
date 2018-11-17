@@ -402,6 +402,16 @@ expr:
 		    prop->e.var.v.str = $3;
 		    $$ = alloc_binary(EXPR_PROP, $1, prop);
 		}
+	| expr '.' ':' tID
+		{
+            /* Waif properties get turned into foo.(":bar") 
+               (we should be using  WAIF_PROP_PREFIX here...) */
+		    Expr *prop = alloc_var(TYPE_STR);
+            char *newstr = (char *)mymalloc(strlen($4) + 1, M_STRING);
+            sprintf(newstr, ":%s", $4);
+		    prop->e.var.v.str = newstr;
+		    $$ = alloc_binary(EXPR_PROP, $1, prop);
+		}
 	| expr '.' '(' expr ')'
 		{
 		    $$ = alloc_binary(EXPR_PROP, $1, $4);
