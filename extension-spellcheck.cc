@@ -35,13 +35,12 @@ bf_spellcheck(Var arglist, Byte next, void *vdata, Objid progr) {
         spell_checker = to_aspell_speller(possible_err);
     }
 
-    r = new_list(0);
-
     const char *word = arglist.v.list[1].v.str;
     int word_size = memo_strlen(arglist.v.list[1].v.str);
 
     int correct = aspell_speller_check(spell_checker, word, word_size);
     if (!correct) {
+        r = new_list(0);
         Var s;
         s.type = TYPE_STR;
         const AspellWordList *suggestions = aspell_speller_suggest(spell_checker, word, word_size);
@@ -53,6 +52,8 @@ bf_spellcheck(Var arglist, Byte next, void *vdata, Objid progr) {
             r = listappend(r, s);
         }
         delete_aspell_string_enumeration(elements);
+        } else {
+            r = Var::new_int(correct);
     }
     free_var(arglist);
     return make_var_pack(r);
