@@ -81,9 +81,7 @@ db_reset_last_used_objid(void)
 {
     while (!objects[num_objects - 1])
 	num_objects--;
-#ifdef USE_ANCESTOR_CACHE
-    ancestor_cache.clear();
-#endif /* USE_ANCESTOR_CACHE */
+	db_clear_ancestor_cache();
 }
 
 void
@@ -463,7 +461,7 @@ db_renumber_object(Objid old)
     Object *o;
 
 #ifdef USE_ANCESTOR_CACHE
-    ancestor_cache.clear();
+    db_clear_ancestor_cache();
 #endif /* USE_ANCESTOR_CACHE */
 
     for (_new = 0; _new < old; _new++) {
@@ -591,7 +589,7 @@ db_object_bytes(Var obj)
 
     return count;
 }
-
+
 
 /* Traverse the tree/graph twice.  First to count the maximal number
  * of members, and then to copy the members.  Use the bit array to
@@ -1175,4 +1173,12 @@ db_object_isa(Var object, Var parent)
     }
 
     return 0;
+}
+
+void
+db_clear_ancestor_cache(void)
+{
+#ifdef USE_ANCESTOR_CACHE /*Just in case */
+    ancestor_cache.clear();
+#endif 
 }
