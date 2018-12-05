@@ -611,7 +611,7 @@ register_waif()
 	register_function("waif_stats", 0, 0, bf_waif_stats);
 }
 
-/* Waif proprety permissions are derived from the class object's property
+/* Waif property permissions are derived from the class object's property
  * definition, except that in the case of +c properties waif.owner is
  * considered the owner of the property rather than using the owner in the
  * db_prop_handle.
