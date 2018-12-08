@@ -666,12 +666,12 @@ bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
 {    
     Objid what = arglist.v.list[1].v.obj;
 
-    Var locs = new_list(0);
-
     free_var(arglist);
 
     if (!valid(what))
         return make_error_pack(E_INVIND);
+
+    Var locs = new_list(0);
 
     Objid loc = db_object_location(what);
 
