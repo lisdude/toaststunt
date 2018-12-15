@@ -1,4 +1,5 @@
 #include "extension-sqlite.h"
+#include "extension-background.h"
 
 /* Open an SQLite database.
  * Args: STR <path to database>, [INT options] */
@@ -131,7 +132,7 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
 
 /* Creates and executes a prepared statement.
  * Args: INT <database handle>, STR <SQL query>, LIST <values>
- * e.g. sqlite_query(0, 'INSERT INTO test VALUES (?, ?);', {5, #5})
+ * e.g. sqlite_execute(0, 'INSERT INTO test VALUES (?, ?);', {5, #5})
  * TODO: Cache prepared statements? */
     static package
 bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
@@ -220,6 +221,39 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+void sqlite_query_thread_callback(void *bw, Var *r)
+{
+    background_waiter *w = (background_waiter*)bw;
+    Var *args = (Var*)w->data;
+    int index = args->v.list[1].v.num;
+
+    if (!valid_handle(index))
+    {
+        r->type = TYPE_ERR;
+        r->v.err = E_INVARG;
+        return;
+    }
+
+    const char *query = args->v.list[2].v.str;
+    char *err_msg = 0;
+
+    sqlite_conn *handle = &sqlite_connections[index];
+
+    int rc = sqlite3_exec(handle->id, query, callback, handle, &err_msg);
+
+    if (rc != SQLITE_OK)
+    {
+        r->type = TYPE_STR;
+        r->v.str = str_dup(err_msg);
+        sqlite3_free(err_msg);
+    } else {
+        *r = var_dup(handle->last_result);
+        free_var(handle->last_result);
+        handle->last_result = new_list(0);
+    }
+}
+
+
 /* Execute an SQL command.
  * Args: INT <database handle>, STR <query> */
     static package
@@ -231,38 +265,11 @@ bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    int index = arglist.v.list[1].v.num;
-
-    if (!valid_handle(index))
-    {
-        free_var(arglist);
-        return make_error_pack(E_INVARG);
-    }
-
-    const char *query = arglist.v.list[2].v.str;
-    char *err_msg = 0;
-
-    sqlite_conn *handle = &sqlite_connections[index];
-
-    int rc = sqlite3_exec(handle->id, query, callback, handle, &err_msg);
+    Var *data = (Var*)mymalloc(sizeof(arglist), M_STRUCT);
+    *data = var_dup(arglist);
     free_var(arglist);
+    return background_thread(sqlite_query_thread_callback, data);
 
-    Var r;
-
-    if (rc != SQLITE_OK)
-    {
-        r.type = TYPE_STR;
-        r.v.str = str_dup(err_msg);
-        sqlite3_free(err_msg);
-
-        return make_var_pack(r);
-    } else {
-        r = var_dup(last_result);
-        free_var(last_result);
-        last_result = new_list(0);
-
-        return make_var_pack(r);
-    }
 }
 
 /* Identifies the row ID of the last insert command.
@@ -325,6 +332,7 @@ int allocate_handle()
     sqlite_conn connection;
     connection.path = NULL;
     connection.options = SQLITE_PARSE_TYPES | SQLITE_PARSE_OBJECTS;
+    connection.last_result = new_list(0);
 
     sqlite_connections[handle] = connection;
 
@@ -360,8 +368,7 @@ int database_already_open(const char *path)
     return -1;
 }
 
-/* Callback function for execute. Shoves our result into an ugly global
- * for the MOO to soak into a Var. */
+/* The callback function that sqlite will call on each row. */
 int callback(void *index, int argc, char **argv, char **azColName)
 {
     sqlite_conn *handle = (sqlite_conn*)index;
@@ -385,7 +392,7 @@ int callback(void *index, int argc, char **argv, char **azColName)
         ret = listappend(ret, s);
     }
 
-    last_result = listappend(last_result, ret);
+    handle->last_result = listappend(handle->last_result, ret);
 
     return 0;
 }

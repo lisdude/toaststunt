@@ -28,16 +28,14 @@ typedef struct sqlite_conn
     sqlite3 *id;
     char *path;
     unsigned char options;
+    Var last_result;                /* The result of the last callback query.
+                                       Used in the builtin to construct the final Var. */
 } sqlite_conn;
 
 // Map of open connections
 static std::map <int, sqlite_conn> sqlite_connections;
 // Next database handle. This will get reset to 1 when all connections get closed.
 static int next_sqlite_handle = 1;
-
-/* The result of our last query from the callback
- * so the MOO can copy it into a Var from the builtin function. */
-Var last_result = new_list(0);
 
 // Forward declarations
 extern const char *file_resolve_path(const char *);             // from fileio.cc
