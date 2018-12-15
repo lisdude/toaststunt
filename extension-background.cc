@@ -30,7 +30,9 @@ background_enumerator(task_closure closure, void *data)
     {
         if (it->second->active)
         {
-            task_enum_action tea = (*closure) (it->second->the_vm, "waiting on thread", data);
+            char *thread_name = 0;
+            asprintf(&thread_name, "waiting on thread %d", it->first);
+            task_enum_action tea = (*closure) (it->second->the_vm, thread_name, data);
 
             if (tea == TEA_KILL) {
                 // When the task gets killed, it's responsible for cleaning up after itself by checking active.
@@ -104,10 +106,10 @@ background_suspender(vm the_vm, void *data)
     return E_NONE;
 }
 
-/* Create a new background thread, supplying a callback function and a Var of data.
+/* Create a new background thread, supplying a callback function, a Var of data, and a string of explanatory text for what the thread is.
  * You should check can_create_thread from your own functions before relying on moo_background_thread. */
 package
-background_thread(void (*callback)(void*, Var*), void* data)
+background_thread(void (*callback)(void*, Var*), void* data, const char *human_title)
 {
     if (!can_create_thread())
         return make_error_pack(E_QUOTA);
@@ -116,6 +118,7 @@ background_thread(void (*callback)(void*, Var*), void* data)
     initialize_background_waiter(w);
     w->callback = callback;
     w->data = data;
+    w->human_title = human_title;
     if (pipe(w->fd) == -1)
     {
         oklog("Failed to create pipe for background thread\n");
@@ -164,6 +167,47 @@ void deallocate_background_waiter(background_waiter *waiter)
 
 /********************************************************************************************************/
 
+static package
+bf_threads(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    if (!is_wizard(progr))
+        return make_error_pack(E_PERM);
+
+    int count = 0;
+    Var r = new_list(background_process_table.size());
+    for (auto& it : background_process_table)
+        r.v.list[++count] = Var::new_int(it.first);
+
+    return make_var_pack(r);
+}
+
+/* Returns a list of information about the thread:
+ * {human title, ?active (aka @killed)}
+ * Intended primarily for debugging, but possibly useful. */
+static package
+bf_thread_info(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    int handle = arglist.v.list[1].v.num;
+    free_var(arglist);
+
+    if (!is_wizard(progr))
+        return make_error_pack(E_INVARG);
+
+    if (background_process_table.count(handle) == 0)
+        return make_error_pack(E_INVARG);
+
+    background_waiter *w = background_process_table[handle];
+    Var ret = new_list(2);
+    ret.v.list[1] = str_dup_to_var(w->human_title);
+    ret.v.list[2] = Var::new_int(w->active);
+
+    return make_var_pack(ret);
+}
+
+/********************************************************************************************************/
+
 /* The background testing function. Accepts a string argument and a time argument. Its goal is simply
  * to spawn a helper thread, sleep, and then return the string back to you. */
 static package
@@ -173,7 +217,7 @@ bf_background_test(Var arglist, Byte next, void *vdata, Objid progr)
     *sample = var_dup(arglist);
     free_var(arglist);
 
-    return background_thread(background_test_callback, sample);
+    return background_thread(background_test_callback, sample, "sample background test function");
 }
 
 /* The actual callback function for our background_test function. This function does all of the actual work
@@ -200,6 +244,8 @@ void
 register_background()
 {
     register_task_queue(background_enumerator);
+    register_function("threads", 0, 0, bf_threads);
+    register_function("thread_info", 1, 1, bf_thread_info, TYPE_INT);
 #ifdef background_test
     register_function("background_test", 0, 2, bf_background_test, TYPE_STR, TYPE_INT);
 #endif

@@ -11,8 +11,9 @@
 #include "tasks.h"          // TEA
 #include "utils.h"          // var_dup
 #include "server.h"         // server options
+#include "list.h"           // listappend
 
-#define THREAD_MOO_VERSION      "2.0" // Version of our MOO threading library.
+#define THREAD_MOO_VERSION      "2.1" // Version of our MOO threading library.
 #define MAX_BACKGROUND_THREADS  20    /* Maximum number of background threads that can be open
                                        * at a single time. Can be overridden with an INT in
                                        * $server_options.max_background_threads */
@@ -26,13 +27,14 @@ typedef struct background_waiter {
     bool active;                        // @kill will set active to false and the callback should handle it accordingly.
     int fd[2];                          // The pipe used to resume the task immediately.
     Var return_value;                   // The final return value that gets sucked up by the network callback.
+    const char *human_title;            // A human readable explanation for the thread's existance.
 } background_waiter;
 
 static std::map <int, background_waiter*> background_process_table;
 static int next_background_handle = 1;
 
 // User-visible functions
-extern package background_thread(void (*callback)(void*, Var*), void* data);
+extern package background_thread(void (*callback)(void*, Var*), void* data, const char *human_title);
 extern bool can_create_thread();
 
 // Other helper functions
