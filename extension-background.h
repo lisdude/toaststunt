@@ -24,6 +24,8 @@ typedef struct background_waiter {
     void (*callback)(void*, Var*);      // The callback function that does the actual work.
     void* data;                         // Any data the callback function should be aware of.
     bool active;                        // @kill will set active to false and the callback should handle it accordingly.
+    int fd[2];                          // The pipe used to resume the task immediately.
+    Var return_value;                   // The final return value that gets sucked up by the network callback.
 } background_waiter;
 
 static std::map <int, background_waiter*> background_process_table;

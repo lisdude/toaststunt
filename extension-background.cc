@@ -1,4 +1,5 @@
 #include "extension-background.h"
+#include "net_multi.h"
 #include "log.h"
 
 /*
@@ -43,23 +44,32 @@ background_enumerator(task_closure closure, void *data)
     return TEA_CONTINUE;
 }
 
-/* The default thread callback function: This will first call the actual callback function
- * and then handle resuming the MOO task and cleaning up the temporary Var and background waiter. */
+/* The default thread callback function: Responsible for calling the function specified in the original
+ * background function call and then passing it off to the network callback to resume the MOO task. */
 void *run_callback(void *bw)
 {
     background_waiter *w = (background_waiter*)bw;
 
-    Var ret;
-    w->callback(bw, &ret);
+    w->callback(bw, &w->return_value);
 
-    if (w->active)
-        resume_task(w->the_vm, ret);
-    else
-        free_var(ret);
-
-    deallocate_background_waiter(w);
+    // Write to our network pipe to resume the MOO loop
+    write(w->fd[1], "1", 2);
 
     pthread_exit(NULL);
+}
+
+/* The function called by the network when data has been read. This is the final stage and
+ * is responsible for actually resuming the task and cleaning up the associated mess. */
+void network_callback(int fd, void *data)
+{
+	background_waiter *w = (background_waiter*)data;
+
+    /* Resume the MOO task if it hasn't already been killed. */
+    if (w->active)
+        resume_task(w->the_vm, var_ref(w->return_value));
+
+    network_unregister_fd(w->fd[0]);
+    deallocate_background_waiter(w);
 }
 
 /* Creates the background_waiter struct and starts the worker thread. */
@@ -70,12 +80,14 @@ background_suspender(vm the_vm, void *data)
     w->the_vm = the_vm;
     w->active = true;
 
+    // Register so we can write to the pipe and resume the main loop if the MOO is idle
+    network_register_fd(w->fd[0], network_callback, NULL, data);
+
     // Create our new worker thread as detached so that resources are immediately freed
     pthread_t new_thread;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    pthread_attr_setstacksize(&attr, 1000000);          // Stack size of 1 MB should be sufficient.
 
     int thread_error = 0;
     if ((thread_error = pthread_create(&new_thread, &attr, run_callback, data)))
@@ -104,6 +116,12 @@ background_thread(void (*callback)(void*, Var*), void* data)
     initialize_background_waiter(w);
     w->callback = callback;
     w->data = data;
+    if (pipe(w->fd) == -1)
+    {
+        oklog("Failed to create pipe for background thread\n");
+        deallocate_background_waiter(w);
+        return make_error_pack(E_QUOTA);
+    }
 
     return make_suspend_pack(background_suspender, (void*)w);
 }
@@ -133,6 +151,9 @@ void initialize_background_waiter(background_waiter *waiter)
 void deallocate_background_waiter(background_waiter *waiter)
 {
     int handle = waiter->handle;
+    close(waiter->fd[0]);
+    close(waiter->fd[1]);
+    free_var(waiter->return_value);
     myfree(waiter->data, M_STRUCT);
     myfree(waiter, M_STRUCT);
     background_process_table.erase(handle);
@@ -172,16 +193,14 @@ void background_test_callback(void *bw, Var *ret)
             ret->v.str = str_dup("Hello, world.");
         else
             ret->v.str = str_dup(args->v.list[1].v.str);
-    } else {
-        oklog("INACTIVE\n");
     }
 }
 
 void
 register_background()
 {
-#ifdef background_test
     register_task_queue(background_enumerator);
+#ifdef background_test
     register_function("background_test", 0, 2, bf_background_test, TYPE_STR, TYPE_INT);
 #endif
 }
