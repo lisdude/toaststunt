@@ -1,6 +1,4 @@
 #include "extension-background.h"
-#include "net_multi.h"
-#include "log.h"
 
 /*
   A general-purpose extension for doing work in separate threads. The entrypoint (background_thread)
@@ -35,7 +33,7 @@ background_enumerator(task_closure closure, void *data)
             task_enum_action tea = (*closure) (it->second->the_vm, thread_name, data);
 
             if (tea == TEA_KILL) {
-                // When the task gets killed, it's responsible for cleaning up after itself by checking active.
+                // When the task gets killed, it's responsible for cleaning up after itself by checking active from time to time.
                 it->second->active = false;
             }
             if (tea != TEA_CONTINUE)
@@ -55,7 +53,7 @@ void *run_callback(void *bw)
     w->callback(bw, &w->return_value);
 
     // Write to our network pipe to resume the MOO loop
-    write(w->fd[1], "1", 2);
+    write(w->fd[1], "1", 1);
 
     pthread_exit(NULL);
 }
