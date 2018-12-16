@@ -267,8 +267,10 @@ bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
 
     Var *data = (Var*)mymalloc(sizeof(arglist), M_STRUCT);
     *data = var_dup(arglist);
+    char *human_string = 0;
+    asprintf(&human_string, "sqlite_query: %s", arglist.v.list[2].v.str);
     free_var(arglist);
-    return background_thread(sqlite_query_thread_callback, data, "sqlite_query");
+    return background_thread(sqlite_query_thread_callback, data, human_string);
 
 }
 
