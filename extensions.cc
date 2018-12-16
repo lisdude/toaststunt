@@ -328,7 +328,7 @@ bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
  * With only one argument, player flag is assumed to be the only condition.
  * With two arguments, parent is the only condition.
  * With three arguments, parent is checked first and then the player flag is checked.
- * get_players(LIST objects, OBJ parent, ?INT player flag set)
+ * occupants(LIST objects, OBJ parent, ?INT player flag set)
  */
 static package
 bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
@@ -353,6 +353,32 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
     return make_var_pack(ret);
+}
+
+/* Return a list of nested locations for an object
+ * For objects in $nothing (#-1), this returns an empty list.
+ * locations(OBJ object)
+ */
+static package
+bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
+{    
+    Objid what = arglist.v.list[1].v.obj;
+
+    free_var(arglist);
+
+    if (!valid(what))
+        return make_error_pack(E_INVIND);
+
+    Var locs = new_list(0);
+
+    Objid loc = db_object_location(what);
+
+    while (valid(loc)) {
+        locs = setadd(locs, Var::new_obj(loc));
+        loc = db_object_location(loc);
+    }
+
+    return make_var_pack(locs);
 }
 
 // ============= ANSI ===============
@@ -501,6 +527,7 @@ register_extensions()
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
     register_function("explode", 1, 2, bf_explode, TYPE_STR, TYPE_STR);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
+    register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
