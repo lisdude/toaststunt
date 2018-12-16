@@ -110,7 +110,10 @@ package
 background_thread(void (*callback)(void*, Var*), void* data, const char *human_title)
 {
     if (!can_create_thread())
+    {
+        errlog("Can't create a new thread\n");
         return make_error_pack(E_QUOTA);
+    }
 
     background_waiter *w = (background_waiter*)mymalloc(sizeof(background_waiter), M_STRUCT);
     initialize_background_waiter(w);
@@ -133,7 +136,7 @@ background_thread(void (*callback)(void*, Var*), void* data, const char *human_t
 bool can_create_thread()
 {
     // Make sure we don't overrun the background thread limit.
-    if (next_background_handle > server_int_option("max_background_threads", MAX_BACKGROUND_THREADS))
+    if (background_process_table.size() > server_int_option("max_background_threads", MAX_BACKGROUND_THREADS))
         return false;
     else
         return true;
