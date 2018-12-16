@@ -42,3 +42,4 @@ extern void register_background(void);
 extern void register_waif(void);
 extern void register_simplexnoise(void);
 extern void register_argon2(void);
+extern void register_spellcheck(void);

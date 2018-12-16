@@ -98,7 +98,7 @@ extern void db_shutdown(void);
 				 */
 
 /**** objects ****/
-
+extern void db_clear_ancestor_cache();
 extern int valid(Objid);
 extern int is_valid(Var);
 
