@@ -13,7 +13,6 @@
 #include "server.h"         // server options
 #include "list.h"           // listappend
 #include "net_multi.h"      // network_fd shenanigans
-#include "log.h"            // errlog and oklog
 
 #define THREAD_MOO_VERSION      "2.1" // Version of our MOO threading library.
 #define MAX_BACKGROUND_THREADS  20    /* Maximum number of background threads that can be open

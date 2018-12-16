@@ -1,4 +1,5 @@
 #include "extension-background.h"
+#include "log.h"
 
 /*
   A general-purpose extension for doing work in separate threads. The entrypoint (background_thread)
@@ -68,7 +69,6 @@ void network_callback(int fd, void *data)
     if (w->active)
         resume_task(w->the_vm, var_ref(w->return_value));
 
-    network_unregister_fd(w->fd[0]);
     deallocate_background_waiter(w);
 }
 
@@ -119,7 +119,7 @@ background_thread(void (*callback)(void*, Var*), void* data, const char *human_t
     w->human_title = human_title;
     if (pipe(w->fd) == -1)
     {
-        oklog("Failed to create pipe for background thread\n");
+        errlog("Failed to create pipe for background thread\n");
         deallocate_background_waiter(w);
         return make_error_pack(E_QUOTA);
     }
@@ -152,6 +152,7 @@ void initialize_background_waiter(background_waiter *waiter)
 void deallocate_background_waiter(background_waiter *waiter)
 {
     int handle = waiter->handle;
+    network_unregister_fd(waiter->fd[0]);
     close(waiter->fd[0]);
     close(waiter->fd[1]);
     free_var(waiter->return_value);
