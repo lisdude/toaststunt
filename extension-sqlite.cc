@@ -378,11 +378,10 @@ void deallocate_handle(int handle)
  * If so, return its handle. Otherwise, return -1. */
 int database_already_open(const char *path)
 {
-    std::map <int, sqlite_conn>::iterator it;
-    for (it = sqlite_connections.begin(); it != sqlite_connections.end(); it++)
+    for (auto &it : sqlite_connections)
     {
-        if (it->second.path != NULL && strcmp(it->second.path, path) == 0)
-            return it->first;
+        if (it.second.path != NULL && strcmp(it.second.path, path) == 0)
+            return it.first;
     }
 
     return -1;

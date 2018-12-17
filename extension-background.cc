@@ -24,18 +24,17 @@
 static task_enum_action
 background_enumerator(task_closure closure, void *data)
 {
-    std::map<int, background_waiter*>::iterator it;
-    for (it = background_process_table.begin(); it != background_process_table.end(); it++)
+    for (auto& it : background_process_table)
     {
-        if (it->second->active)
+        if (it.second->active)
         {
             char *thread_name = 0;
-            asprintf(&thread_name, "waiting on thread %d", it->first);
-            task_enum_action tea = (*closure) (it->second->the_vm, thread_name, data);
+            asprintf(&thread_name, "waiting on thread %d", it.first);
+            task_enum_action tea = (*closure) (it.second->the_vm, thread_name, data);
 
             if (tea == TEA_KILL) {
                 // When the task gets killed, it's responsible for cleaning up after itself by checking active from time to time.
-                it->second->active = false;
+                it.second->active = false;
             }
             if (tea != TEA_CONTINUE)
                 return tea;
