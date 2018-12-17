@@ -130,27 +130,20 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ret);
 }
 
-/* Creates and executes a prepared statement.
- * Args: INT <database handle>, STR <SQL query>, LIST <values>
- * e.g. sqlite_execute(0, 'INSERT INTO test VALUES (?, ?);', {5, #5})
- * TODO: Cache prepared statements? */
-    static package
-bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
+void sqlite_execute_thread_callback(void *bw, Var *r)
 {
-    if (!is_wizard(progr))
-    {
-        free_var(arglist);
-        return make_error_pack(E_PERM);
-    }
+    background_waiter *w = (background_waiter*)bw;
+    Var *args = (Var*)w->data;
 
-    int index = arglist.v.list[1].v.num;
+    int index = args->v.list[1].v.num;
     if (!valid_handle(index))
     {
-        free_var(arglist);
-        return make_error_pack(E_INVARG);
+        r->type = TYPE_ERR;
+        r->v.err = E_INVARG;
+        return;
     }
 
-    const char *query = arglist.v.list[2].v.str;
+    const char *query = args->v.list[2].v.str;
     sqlite_conn *handle = &sqlite_connections[index];
     sqlite3_stmt *stmt;
 
@@ -158,27 +151,28 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
     if (rc != SQLITE_OK)
     {
         const char *err = sqlite3_errmsg(handle->id);
-        free_var(arglist);
-        return make_raise_pack(E_NONE, err, var_ref(zero));
+        r->type = TYPE_STR;
+        r->v.str = str_dup(err);
+        return;
     }
 
     /* Take args[3] and bind it into the appropriate locations for SQLite
      * (e.g. in the query values (?, ?, ?) args[3] would be {5, "oh", "hello"}) */
-    for (int x = 1; x <= arglist.v.list[3].v.list[0].v.num; x++)
+    for (int x = 1; x <= args->v.list[3].v.list[0].v.num; x++)
     {
-        switch (arglist.v.list[3].v.list[x].type)
+        switch (args->v.list[3].v.list[x].type)
         {
             case TYPE_STR:
-                sqlite3_bind_text(stmt, x, arglist.v.list[3].v.list[x].v.str, -1, NULL);
+                sqlite3_bind_text(stmt, x, args->v.list[3].v.list[x].v.str, -1, NULL);
                 break;
             case TYPE_INT:
-                sqlite3_bind_int(stmt, x, arglist.v.list[3].v.list[x].v.num);
+                sqlite3_bind_int(stmt, x, args->v.list[3].v.list[x].v.num);
                 break;
             case TYPE_FLOAT:
-                sqlite3_bind_double(stmt, x, *arglist.v.list[3].v.list[x].v.fnum);
+                sqlite3_bind_double(stmt, x, *args->v.list[3].v.list[x].v.fnum);
                 break;
             case TYPE_OBJ:
-                sqlite3_bind_text(stmt, x, str_dup(reset_stream(object_to_string(&arglist.v.list[3].v.list[x]))),  -1, NULL);
+                sqlite3_bind_text(stmt, x, str_dup(reset_stream(object_to_string(&args->v.list[3].v.list[x]))),  -1, NULL);
                 break;
         }
     }
@@ -186,7 +180,7 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
     rc = sqlite3_step(stmt);
     int col = sqlite3_column_count(stmt);
 
-    Var r = new_list(0);
+    *r = new_list(0);
 
     while (rc == SQLITE_ROW)
     {
@@ -209,16 +203,38 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
             }
             row = listappend(row, s);
         }
-        r = listappend(r, row);
+        *r = listappend(*r, row);
         rc = sqlite3_step(stmt);
     }
 
     /* TODO: Reset the prepared statement bindings and cache it.
      *       (Remove finalize when that happens) */
     sqlite3_finalize(stmt);
+}
+
+/* Creates and executes a prepared statement.
+ * Args: INT <database handle>, STR <SQL query>, LIST <values>
+ * e.g. sqlite_execute(0, 'INSERT INTO test VALUES (?, ?);', {5, #5})
+ * TODO: Cache prepared statements? */
+    static package
+bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (!is_wizard(progr))
+    {
+        free_var(arglist);
+        return make_error_pack(E_PERM);
+    }
+
+    Var *data = (Var*)mymalloc(sizeof(arglist), M_STRUCT);
+    *data = var_dup(arglist);
+
+    char *human_string = 0;
+    asprintf(&human_string, "sqlite_execute: %s", arglist.v.list[2].v.str);
 
     free_var(arglist);
-    return make_var_pack(r);
+
+    return background_thread(sqlite_execute_thread_callback, data, human_string);
+
 }
 
 void sqlite_query_thread_callback(void *bw, Var *r)
