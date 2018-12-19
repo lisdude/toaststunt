@@ -14,7 +14,7 @@
 #include "server.h"
 #include "map.h"
 
-#define SQLITE_MOO_VERSION      "2.0"
+#define SQLITE_MOO_VERSION      "2.1"
 #define SQLITE_MAX_HANDLES      20  /* Maximum number of SQLite databases that can be open
                                      * at a single time. Can be overridden with an INT in
                                      * $server_options.sqlite_max_handles */

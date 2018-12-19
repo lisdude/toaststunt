@@ -130,11 +130,11 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ret);
 }
 
-void sqlite_execute_thread_callback(void *bw, Var *r)
+/* The function responsible for the actual execute call.
+ * Contains functionality shared by both the threaded and
+ * unthreaded builtins. */
+void do_sqlite_execute(Var args, Var *r)
 {
-    background_waiter *w = (background_waiter*)bw;
-    Var args = w->data;
-
     int index = args.v.list[1].v.num;
     if (!valid_handle(index))
     {
@@ -212,8 +212,15 @@ void sqlite_execute_thread_callback(void *bw, Var *r)
     sqlite3_finalize(stmt);
 }
 
+void sqlite_execute_thread_callback(void *bw, Var *r)
+{
+    background_waiter *w = (background_waiter*)bw;
+
+    do_sqlite_execute(w->data, r);
+}
+
 /* Creates and executes a prepared statement.
- * Args: INT <database handle>, STR <SQL query>, LIST <values>
+ * Args: INT <database handle>, STR <SQL query>, LIST <values>, BOOL <threaded>
  * e.g. sqlite_execute(0, 'INSERT INTO test VALUES (?, ?);', {5, #5})
  * TODO: Cache prepared statements? */
     static package
@@ -225,17 +232,25 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    char *human_string = 0;
-    asprintf(&human_string, "sqlite_execute: %s", arglist.v.list[2].v.str);
+    if (arglist.v.list[0].v.num >= 4 && !is_true(arglist.v.list[4]))
+    {
+        Var r;
+        do_sqlite_execute(arglist, &r);
+        free_var(arglist);
+        return make_var_pack(r);
+    } else {
+        char *human_string = 0;
+        asprintf(&human_string, "sqlite_execute: %s", arglist.v.list[2].v.str);
 
-    return background_thread(sqlite_execute_thread_callback, &arglist, human_string);
-
+        return background_thread(sqlite_execute_thread_callback, &arglist, human_string);
+    }
 }
 
-void sqlite_query_thread_callback(void *bw, Var *r)
+/* The function responsible for the actual query call.
+ * Contains functionality shared by both the threaded and
+ * unthreaded builtins. */
+void do_sqlite_query(Var args, Var *r)
 {
-    background_waiter *w = (background_waiter*)bw;
-    Var args = w->data;
     int index = args.v.list[1].v.num;
 
     if (!valid_handle(index))
@@ -264,9 +279,15 @@ void sqlite_query_thread_callback(void *bw, Var *r)
     }
 }
 
+void sqlite_query_thread_callback(void *bw, Var *r)
+{
+    background_waiter *w = (background_waiter*)bw;
+
+    do_sqlite_query(w->data, r);
+}
 
 /* Execute an SQL command.
- * Args: INT <database handle>, STR <query> */
+ * Args: INT <database handle>, STR <query>, BOOL <threaded> */
     static package
 bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -276,10 +297,18 @@ bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    char *human_string = 0;
-    asprintf(&human_string, "sqlite_query: %s", arglist.v.list[2].v.str);
+    if (arglist.v.list[0].v.num >= 3 && !is_true(arglist.v.list[3]))
+    {
+        Var r;
+        do_sqlite_query(arglist, &r);
+        free_var(arglist);
+        return make_var_pack(r);
+    } else {
+        char *human_string = 0;
+        asprintf(&human_string, "sqlite_query: %s", arglist.v.list[2].v.str);
 
-    return background_thread(sqlite_query_thread_callback, &arglist, human_string);
+        return background_thread(sqlite_query_thread_callback, &arglist, human_string);
+    }
 }
 
 /* Identifies the row ID of the last insert command.
@@ -481,7 +510,7 @@ register_sqlite() {
     register_function("sqlite_close", 1, 1, bf_sqlite_close, TYPE_INT);
     register_function("sqlite_handles", 0, 0, bf_sqlite_handles);
     register_function("sqlite_info", 1, 1, bf_sqlite_info, TYPE_INT);
-    register_function("sqlite_query", 2, 2, bf_sqlite_query, TYPE_INT, TYPE_STR);
-    register_function("sqlite_execute", 3, 3, bf_sqlite_execute, TYPE_INT, TYPE_STR, TYPE_LIST);
+    register_function("sqlite_query", 2, 3, bf_sqlite_query, TYPE_INT, TYPE_STR, TYPE_INT);
+    register_function("sqlite_execute", 3, 4, bf_sqlite_execute, TYPE_INT, TYPE_STR, TYPE_LIST, TYPE_INT);
     register_function("sqlite_last_insert_row_id", 1, 1, bf_sqlite_last_insert_row_id, TYPE_INT);
 }
