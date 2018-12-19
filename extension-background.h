@@ -24,18 +24,18 @@ typedef struct background_waiter {
     pthread_t thread;                   // The thread data so we can pthread_cancel if the task gets killed in-MOO
     int handle;                         // Our position in the process table.
     void (*callback)(void*, Var*);      // The callback function that does the actual work.
-    void* data;                         // Any data the callback function should be aware of.
+    Var data;                         // Any data the callback function should be aware of.
     bool active;                        // @kill will set active to false and the callback should handle it accordingly.
     int fd[2];                          // The pipe used to resume the task immediately.
     Var return_value;                   // The final return value that gets sucked up by the network callback.
-    const char *human_title;            // A human readable explanation for the thread's existance.
+    char *human_title;            // A human readable explanation for the thread's existance.
 } background_waiter;
 
 static std::map <int, background_waiter*> background_process_table;
 static int next_background_handle = 1;
 
 // User-visible functions
-extern package background_thread(void (*callback)(void*, Var*), void* data, const char *human_title);
+extern package background_thread(void (*callback)(void*, Var*), Var* data, char *human_title);
 extern bool can_create_thread();
 
 // Other helper functions

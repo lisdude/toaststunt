@@ -31,6 +31,7 @@ background_enumerator(task_closure closure, void *data)
             char *thread_name = 0;
             asprintf(&thread_name, "waiting on thread %d", it.first);
             task_enum_action tea = (*closure) (it.second->the_vm, thread_name, data);
+            free(thread_name);
 
             if (tea == TEA_KILL) {
                 // When the task gets killed, it's responsible for cleaning up after itself by checking active from time to time.
@@ -106,7 +107,7 @@ background_suspender(vm the_vm, void *data)
 /* Create a new background thread, supplying a callback function, a Var of data, and a string of explanatory text for what the thread is.
  * You should check can_create_thread from your own functions before relying on moo_background_thread. */
 package
-background_thread(void (*callback)(void*, Var*), void* data, const char *human_title)
+background_thread(void (*callback)(void*, Var*), Var* data, char *human_title)
 {
     if (!can_create_thread())
     {
@@ -117,7 +118,7 @@ background_thread(void (*callback)(void*, Var*), void* data, const char *human_t
     background_waiter *w = (background_waiter*)mymalloc(sizeof(background_waiter), M_STRUCT);
     initialize_background_waiter(w);
     w->callback = callback;
-    w->data = data;
+    w->data = var_ref(*data);
     w->human_title = human_title;
     if (pipe(w->fd) == -1)
     {
@@ -158,7 +159,8 @@ void deallocate_background_waiter(background_waiter *waiter)
     close(waiter->fd[0]);
     close(waiter->fd[1]);
     free_var(waiter->return_value);
-    myfree(waiter->data, M_STRUCT);
+    free_var(waiter->data);
+    free(waiter->human_title);
     myfree(waiter, M_STRUCT);
     background_process_table.erase(handle);
 
@@ -214,11 +216,7 @@ bf_thread_info(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_background_test(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var *sample = (Var*)mymalloc(sizeof(arglist), M_STRUCT);
-    *sample = var_dup(arglist);
-    free_var(arglist);
-
-    return background_thread(background_test_callback, sample, "sample background test function");
+    return background_thread(background_test_callback, &arglist, "sample background test function");
 }
 
 /* The actual callback function for our background_test function. This function does all of the actual work
@@ -226,18 +224,18 @@ bf_background_test(Var arglist, Byte next, void *vdata, Objid progr)
 void background_test_callback(void *bw, Var *ret)
 {
     background_waiter *w = (background_waiter*)bw;
-    Var *args = (Var*)w->data;
-    int wait = (args->v.list[0].v.num >= 2 ? args->v.list[2].v.num : 5);
+    Var args = w->data;
+    int wait = (args.v.list[0].v.num >= 2 ? args.v.list[2].v.num : 5);
 
     sleep(wait);
 
     if (w->active)
     {
         ret->type = TYPE_STR;
-        if (args->v.list[0].v.num == 0)
+        if (args.v.list[0].v.num == 0)
             ret->v.str = str_dup("Hello, world.");
         else
-            ret->v.str = str_dup(args->v.list[1].v.str);
+            ret->v.str = str_dup(args.v.list[1].v.str);
     }
 }
 

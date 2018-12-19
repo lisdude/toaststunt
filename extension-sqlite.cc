@@ -133,9 +133,9 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
 void sqlite_execute_thread_callback(void *bw, Var *r)
 {
     background_waiter *w = (background_waiter*)bw;
-    Var *args = (Var*)w->data;
+    Var args = w->data;
 
-    int index = args->v.list[1].v.num;
+    int index = args.v.list[1].v.num;
     if (!valid_handle(index))
     {
         r->type = TYPE_ERR;
@@ -143,7 +143,7 @@ void sqlite_execute_thread_callback(void *bw, Var *r)
         return;
     }
 
-    const char *query = args->v.list[2].v.str;
+    const char *query = args.v.list[2].v.str;
     sqlite_conn *handle = &sqlite_connections[index];
     sqlite3_stmt *stmt;
 
@@ -158,21 +158,21 @@ void sqlite_execute_thread_callback(void *bw, Var *r)
 
     /* Take args[3] and bind it into the appropriate locations for SQLite
      * (e.g. in the query values (?, ?, ?) args[3] would be {5, "oh", "hello"}) */
-    for (int x = 1; x <= args->v.list[3].v.list[0].v.num; x++)
+    for (int x = 1; x <= args.v.list[3].v.list[0].v.num; x++)
     {
-        switch (args->v.list[3].v.list[x].type)
+        switch (args.v.list[3].v.list[x].type)
         {
             case TYPE_STR:
-                sqlite3_bind_text(stmt, x, args->v.list[3].v.list[x].v.str, -1, NULL);
+                sqlite3_bind_text(stmt, x, args.v.list[3].v.list[x].v.str, -1, NULL);
                 break;
             case TYPE_INT:
-                sqlite3_bind_int(stmt, x, args->v.list[3].v.list[x].v.num);
+                sqlite3_bind_int(stmt, x, args.v.list[3].v.list[x].v.num);
                 break;
             case TYPE_FLOAT:
-                sqlite3_bind_double(stmt, x, *args->v.list[3].v.list[x].v.fnum);
+                sqlite3_bind_double(stmt, x, *args.v.list[3].v.list[x].v.fnum);
                 break;
             case TYPE_OBJ:
-                sqlite3_bind_text(stmt, x, str_dup(reset_stream(object_to_string(&args->v.list[3].v.list[x]))),  -1, NULL);
+                sqlite3_bind_text(stmt, x, str_dup(reset_stream(object_to_string(&args.v.list[3].v.list[x]))),  -1, NULL);
                 break;
         }
     }
@@ -225,23 +225,18 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    Var *data = (Var*)mymalloc(sizeof(arglist), M_STRUCT);
-    *data = var_dup(arglist);
-
     char *human_string = 0;
     asprintf(&human_string, "sqlite_execute: %s", arglist.v.list[2].v.str);
 
-    free_var(arglist);
-
-    return background_thread(sqlite_execute_thread_callback, data, human_string);
+    return background_thread(sqlite_execute_thread_callback, &arglist, human_string);
 
 }
 
 void sqlite_query_thread_callback(void *bw, Var *r)
 {
     background_waiter *w = (background_waiter*)bw;
-    Var *args = (Var*)w->data;
-    int index = args->v.list[1].v.num;
+    Var args = w->data;
+    int index = args.v.list[1].v.num;
 
     if (!valid_handle(index))
     {
@@ -250,7 +245,7 @@ void sqlite_query_thread_callback(void *bw, Var *r)
         return;
     }
 
-    const char *query = args->v.list[2].v.str;
+    const char *query = args.v.list[2].v.str;
     char *err_msg = 0;
 
     sqlite_conn *handle = &sqlite_connections[index];
@@ -281,15 +276,10 @@ bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    Var *data = (Var*)mymalloc(sizeof(arglist), M_STRUCT);
-    *data = var_dup(arglist);
-
     char *human_string = 0;
     asprintf(&human_string, "sqlite_query: %s", arglist.v.list[2].v.str);
 
-    free_var(arglist);
-
-    return background_thread(sqlite_query_thread_callback, data, human_string);
+    return background_thread(sqlite_query_thread_callback, &arglist, human_string);
 }
 
 /* Identifies the row ID of the last insert command.
