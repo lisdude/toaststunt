@@ -14,7 +14,7 @@
 #include "list.h"           // listappend
 #include "net_multi.h"      // network_fd shenanigans
 
-#define THREAD_MOO_VERSION      "2.1" // Version of our MOO threading library.
+#define THREAD_MOO_VERSION      "2.2" // Version of our MOO threading library.
 #define MAX_BACKGROUND_THREADS  20    /* Maximum number of background threads that can be open
                                        * at a single time. Can be overridden with an INT in
                                        * $server_options.max_background_threads */
