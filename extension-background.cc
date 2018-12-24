@@ -47,7 +47,7 @@ background_enumerator(task_closure closure, void *data)
 
 /* The default thread callback function: Responsible for calling the function specified in the original
  * background function call and then passing it off to the network callback to resume the MOO task. */
-void *run_callback(void *bw)
+void run_callback(void *bw)
 {
     background_waiter *w = (background_waiter*)bw;
 
@@ -55,8 +55,6 @@ void *run_callback(void *bw)
 
     // Write to our network pipe to resume the MOO loop
     write(w->fd[1], "1", 1);
-
-    pthread_exit(NULL);
 }
 
 /* The function called by the network when data has been read. This is the final stage and
@@ -83,23 +81,7 @@ background_suspender(vm the_vm, void *data)
     // Register so we can write to the pipe and resume the main loop if the MOO is idle
     network_register_fd(w->fd[0], network_callback, NULL, data);
 
-    // Create our new worker thread as detached so that resources are immediately freed
-    pthread_t new_thread;
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-
-    int thread_error = 0;
-    if ((thread_error = pthread_create(&new_thread, &attr, run_callback, data)))
-    {
-        errlog("Failed to create a background thread for bf_background. Error code: %i\n", thread_error);
-        pthread_attr_destroy(&attr);
-        deallocate_background_waiter(w);
-        return E_QUOTA;
-    } else {
-        w->thread = new_thread;
-        pthread_attr_destroy(&attr);
-    }
+    thpool_add_work(background_pool, run_callback, data);
 
     return E_NONE;
 }
@@ -243,6 +225,7 @@ void
 register_background()
 {
     register_task_queue(background_enumerator);
+    background_pool = thpool_init(TOTAL_BACKGROUND_THREADS);
     register_function("threads", 0, 0, bf_threads);
     register_function("thread_info", 1, 1, bf_thread_info, TYPE_INT);
 #ifdef background_test
