@@ -508,6 +508,14 @@ Stream* object_to_string(Var *thing)
 void
 register_sqlite() {
     oklog("REGISTER_SQLITE: v%s (SQLite Library v%s)\n", SQLITE_MOO_VERSION, sqlite3_libversion());
+      if (sqlite3_threadsafe() > 0) {
+        int retCode = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
+        if (retCode != SQLITE_OK) {
+            errlog("SQLite couldn't be set to serialized.\n");
+        }
+    } else {
+        applog(LOG_WARNING, "SQLite is not compiled to be thread-safe. BEWARE!");
+    }
 
     register_function("sqlite_open", 1, 2, bf_sqlite_open, TYPE_STR, TYPE_INT);
     register_function("sqlite_close", 1, 1, bf_sqlite_close, TYPE_INT);
