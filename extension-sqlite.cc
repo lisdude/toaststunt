@@ -79,6 +79,10 @@ bf_sqlite_close(Var arglist, Byte next, void *vdata, Objid progr)
     if (!valid_handle(index))
         return make_raise_pack(E_INVARG, "Invalid database handle", var_ref(zero));
 
+    sqlite_conn *handle = &sqlite_connections[index];
+    if (handle->locks > 0)
+        return make_raise_pack(E_PERM, "Handle can't be closed until all worker threads are finished", var_ref(zero));
+
     deallocate_handle(index);
 
     return no_var_pack();
@@ -126,6 +130,7 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
     ret = mapinsert(ret, str_dup_to_var("parse_types"), Var::new_int(handle->options & SQLITE_PARSE_TYPES ? 1 : 0));
     ret = mapinsert(ret, str_dup_to_var("parse_objects"), Var::new_int(handle->options & SQLITE_PARSE_OBJECTS ? 1 : 0));
     ret = mapinsert(ret, str_dup_to_var("sanitize_strings"), Var::new_int(handle->options & SQLITE_SANITIZE_STRINGS ? 1 : 0));
+    ret = mapinsert(ret, str_dup_to_var("locks"), Var::new_int(handle->locks));
 
     return make_var_pack(ret);
 }
@@ -155,6 +160,8 @@ void do_sqlite_execute(Var args, Var *r)
         r->v.str = str_dup(err);
         return;
     }
+
+    handle->locks++;
 
     /* Take args[3] and bind it into the appropriate locations for SQLite
      * (e.g. in the query values (?, ?, ?) args[3] would be {5, "oh", "hello"}) */
@@ -210,6 +217,8 @@ void do_sqlite_execute(Var args, Var *r)
     /* TODO: Reset the prepared statement bindings and cache it.
      *       (Remove finalize when that happens) */
     sqlite3_finalize(stmt);
+
+    handle->locks--;
 }
 
 void sqlite_execute_thread_callback(void *bw, Var *r)
@@ -267,7 +276,11 @@ void do_sqlite_query(Var args, Var *r)
     thread_handle->connection = &sqlite_connections[index];
     thread_handle->last_result = new_list(0);
 
+    thread_handle->connection->locks++;
+
     int rc = sqlite3_exec(thread_handle->connection->id, query, callback, thread_handle, &err_msg);
+
+    thread_handle->connection->locks--;
 
     if (rc != SQLITE_OK)
     {
@@ -374,6 +387,7 @@ int allocate_handle()
     sqlite_conn connection;
     connection.path = NULL;
     connection.options = SQLITE_PARSE_TYPES | SQLITE_PARSE_OBJECTS;
+    connection.locks = 0;
 
     sqlite_connections[handle] = connection;
 

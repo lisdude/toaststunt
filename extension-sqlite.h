@@ -28,6 +28,7 @@ typedef struct sqlite_conn
     sqlite3 *id;
     char *path;
     unsigned char options;
+    int locks;
 } sqlite_conn;
 
 /* In order to ensure thread safety, the last result should be unique
