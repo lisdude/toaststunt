@@ -28,9 +28,16 @@ typedef struct sqlite_conn
     sqlite3 *id;
     char *path;
     unsigned char options;
-    Var last_result;                /* The result of the last callback query.
-                                       Used in the builtin to construct the final Var. */
 } sqlite_conn;
+
+/* In order to ensure thread safety, the last result should be unique
+ * to each running thread. So we pass this temporary struct around instead
+ * of the connection itself. */
+typedef struct sqlite_result
+{
+    sqlite_conn *connection;
+    Var last_result;
+} sqlite_result;
 
 // Map of open connections
 static std::map <int, sqlite_conn> sqlite_connections;

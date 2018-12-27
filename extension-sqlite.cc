@@ -263,9 +263,11 @@ void do_sqlite_query(Var args, Var *r)
     const char *query = args.v.list[2].v.str;
     char *err_msg = 0;
 
-    sqlite_conn *handle = &sqlite_connections[index];
+    sqlite_result *thread_handle = (sqlite_result*)mymalloc(sizeof(thread_handle), M_STRUCT);
+    thread_handle->connection = &sqlite_connections[index];
+    thread_handle->last_result = new_list(0);
 
-    int rc = sqlite3_exec(handle->id, query, callback, handle, &err_msg);
+    int rc = sqlite3_exec(thread_handle->connection->id, query, callback, thread_handle, &err_msg);
 
     if (rc != SQLITE_OK)
     {
@@ -273,10 +275,11 @@ void do_sqlite_query(Var args, Var *r)
         r->v.str = str_dup(err_msg);
         sqlite3_free(err_msg);
     } else {
-        *r = var_dup(handle->last_result);
-        free_var(handle->last_result);
-        handle->last_result = new_list(0);
+        *r = var_dup(thread_handle->last_result);
+        free_var(thread_handle->last_result);
     }
+    //sqlite3_db_release_memory(thread_handle->connection->id);
+    myfree(thread_handle, M_STRUCT);
 }
 
 void sqlite_query_thread_callback(void *bw, Var *r)
@@ -371,7 +374,6 @@ int allocate_handle()
     sqlite_conn connection;
     connection.path = NULL;
     connection.options = SQLITE_PARSE_TYPES | SQLITE_PARSE_OBJECTS;
-    connection.last_result = new_list(0);
 
     sqlite_connections[handle] = connection;
 
@@ -409,7 +411,8 @@ int database_already_open(const char *path)
 /* The callback function that sqlite will call on each row. */
 int callback(void *index, int argc, char **argv, char **azColName)
 {
-    sqlite_conn *handle = (sqlite_conn*)index;
+    sqlite_result *thread_handle = (sqlite_result*)index;
+    sqlite_conn *handle = thread_handle->connection;
 
     Var ret = new_list(0);
 
@@ -430,7 +433,7 @@ int callback(void *index, int argc, char **argv, char **azColName)
         ret = listappend(ret, s);
     }
 
-    handle->last_result = listappend(handle->last_result, ret);
+    thread_handle->last_result = listappend(thread_handle->last_result, ret);
 
     return 0;
 }
