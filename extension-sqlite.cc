@@ -263,7 +263,7 @@ void do_sqlite_query(Var args, Var *r)
     const char *query = args.v.list[2].v.str;
     char *err_msg = 0;
 
-    sqlite_result *thread_handle = (sqlite_result*)mymalloc(sizeof(thread_handle), M_STRUCT);
+    sqlite_result *thread_handle = (sqlite_result*)mymalloc(sizeof(sqlite_result), M_STRUCT);
     thread_handle->connection = &sqlite_connections[index];
     thread_handle->last_result = new_list(0);
 
