@@ -911,9 +911,10 @@ bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (object, parent) */
+{				/* (object, parent, return_object) */
     Var object = arglist.v.list[1];
     Var parent = arglist.v.list[2];
+    bool return_obj = (arglist.v.list[0].v.num > 2 && is_true(arglist.v.list[3]));
 
     if (!object.is_object() || !is_obj_or_list_of_objs(parent)) {
 	free_var(arglist);
@@ -921,17 +922,17 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
     }
     else if (!is_valid(object)) {
 	free_var(arglist);
-	return make_var_pack(Var::new_int(0));
+	return make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
     }
 
     if(parent.type == TYPE_OBJ)
         if (db_object_isa(object, parent)) {
             free_var(arglist);
-            return make_var_pack(Var::new_int(1));
+            return make_var_pack(return_obj ? Var::new_obj(parent.v.obj) : Var::new_int(1));
         }
         else {
             free_var(arglist);
-            return make_var_pack(Var::new_int(0));
+            return make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
         }
     else if (parent.type == TYPE_LIST) {
 
@@ -940,11 +941,11 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
 
         for (int x = 1; x <= parent_length; x++)
             if (db_object_isa(object, Var::new_obj(parent.v.list[x].v.obj))) {
-                return make_var_pack(Var::new_int(1));
+                return make_var_pack(return_obj ? Var::new_obj(parent.v.list[x].v.obj) : Var::new_int(1));
             }
     }
 
-return make_var_pack(Var::new_int(0));
+return make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
 }
 
 Var nothing;			/* useful constant */
@@ -988,5 +989,5 @@ register_objects(void)
     register_function_with_read_write("move", 2, 2, bf_move,
 				      bf_move_read, bf_move_write,
 				      TYPE_OBJ, TYPE_OBJ);
-    register_function("isa", 2, 2, bf_isa, TYPE_ANY, TYPE_ANY);
+    register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_INT);
 }
