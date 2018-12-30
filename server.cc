@@ -2053,7 +2053,7 @@ bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
 		    ? is_true(arglist.v.list[3])
 		    : 0);
     int no_newline = (arglist.v.list[0].v.num > 3
-            ? is_true(arglist.v.list[3]) : 0);
+            ? is_true(arglist.v.list[4]) : 0);
 
     shandle *h = find_shandle(conn);
     Var r;
