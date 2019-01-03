@@ -198,7 +198,9 @@ bf_thread_info(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_background_test(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    return background_thread(background_test_callback, &arglist, "sample background test function");
+    char *human_string = 0;
+    asprintf(&human_string, "background_test suspending for %d with string \"%s\"", arglist.v.list[2].v.num, arglist.v.list[1].v.str);
+    return background_thread(background_test_callback, &arglist, human_string);
 }
 
 /* The actual callback function for our background_test function. This function does all of the actual work
@@ -228,7 +230,7 @@ register_background()
     background_pool = thpool_init(TOTAL_BACKGROUND_THREADS);
     register_function("threads", 0, 0, bf_threads);
     register_function("thread_info", 1, 1, bf_thread_info, TYPE_INT);
-#ifdef background_test
+#ifdef BACKGROUND_TEST
     register_function("background_test", 0, 2, bf_background_test, TYPE_STR, TYPE_INT);
 #endif
 }
