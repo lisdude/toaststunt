@@ -100,7 +100,7 @@ background_thread(void (*callback)(void*, Var*), Var* data, char *human_title)
     background_waiter *w = (background_waiter*)mymalloc(sizeof(background_waiter), M_STRUCT);
     initialize_background_waiter(w);
     w->callback = callback;
-    w->data = var_ref(*data);
+    w->data = *data;
     w->human_title = human_title;
     if (pipe(w->fd) == -1)
     {
