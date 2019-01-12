@@ -151,8 +151,10 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
                     /* Extract the substring itself with obnoxious printf magic */
                     char *substring = (char *)mymalloc(substring_size + 1, M_STRING);
                     sprintf(substring, "%.*s", substring_size, subject + ovector[2*n]);
-                    result = mapinsert(result, var_ref(match), str_dup_to_var(substring));
-                    myfree(substring, M_STRING);
+                    Var substring_var;
+                    substring_var.type = TYPE_STR;
+                    substring_var.v.str = substring;
+                    result = mapinsert(result, var_ref(match), substring_var);
 
                     named_groups = mapinsert(named_groups, str_dup_to_var((const char*)(tabptr + 2)), result);
                     bit_true(bit_array, n);

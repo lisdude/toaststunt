@@ -44,7 +44,7 @@ bf_argon2(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     size_t encodedlen = argon2_encodedlen(t_cost, m_cost, parallelism, saltlen, outlen, type);
-    char *encoded = (char *)malloc(encodedlen + 1);
+    char *encoded = (char *)mymalloc(encodedlen + 1, M_STRING);
     if (!encoded) {
         free_var(arglist);
         free(out);
@@ -61,12 +61,11 @@ bf_argon2(Var arglist, Byte next, void *vdata, Objid progr)
 
     Var r;
     r.type = TYPE_STR;
-    r.v.str = str_dup(encoded);
+    r.v.str = encoded;
     free_var(arglist);
     // This is probably not necessary since we're throwing the encoded string around anyway, but whatever.
     erase_from_memory(out, outlen, outlen);
     free(out);
-    free(encoded);
 
     return make_var_pack(r);
 }
