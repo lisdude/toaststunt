@@ -1,4 +1,4 @@
-This file documents changes made to the LambdaMOO-ToastStunt server that are not backwards compatible with LambdaCore (and friends)-style databases. For detailed information, peruse 'git log'.
+This file documents changes made to the LambdaMOO-ToastStunt server that are not backwards compatible with LambdaCore (and friends)-style databases. For detailed information, peruse `README.md'.
 
 Version 2.3.17 (October 28, 2018):
 	- Complete the 30 year deprecation of tonum by removing it completely.
