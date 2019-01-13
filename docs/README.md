@@ -1,6 +1,6 @@
 See `README.stunt' for general information on Stunt.
 
-ToastStunt is the server that runs [Miriani](https://www.toastsoft.net). It has a number of features of dubious usefulness that have been tacked on over the past decade, a semi-complete list of which can be found below:
+ToastStunt is the server that runs [Miriani](https://www.toastsoft.net) and [ChatMud](https://www.chatmud.com/). It has a number of features of dubious usefulness that have been tacked on over the past decade, a semi-complete list of which can be found below:
 
 - SQLite
 - PCRE
