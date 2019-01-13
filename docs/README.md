@@ -26,6 +26,10 @@ ToastStunt is the server that runs [Miriani](https://www.toastsoft.net) and [Cha
     - file_grep (search for a string in a file (kind of FUP in FIO, don't tell))
     - file_count_lines (counts the number of lines in a file)
 
+- ANSI:
+    - Parse_ansi (parses color tags into their ANSI equivalents)
+    - remove_ansi (strips ANSI tags from strings)
+
 - Options.h configuration:
     - LOG_CODE_CHANGES (causes .program and set_verb_code to add a line to the server log indicating the object, verb, and programmer)
     - OWNERSHIP_QUOTA (disable the server's builtin quota management)
