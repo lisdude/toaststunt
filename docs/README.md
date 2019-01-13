@@ -61,5 +61,5 @@ ToastStunt is the server that runs [Miriani](https://www.toastsoft.net). It has 
     - Move #0.dump_interval to $server_options.dump_interval
     - Rename recycle() to destroy() (also call pre_destroy rather than recycle verbs)
     - New argument to notify() to suppress the newline
-    - Support lists in isa()
+    - Support object lists in isa() as well as an optional third argument to return the matching parent rather than simply true or false.
 
