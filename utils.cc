@@ -242,8 +242,10 @@ complex_free_var(Var v)
 	    destroy_iter(v);
 	break;
 	case TYPE_WAIF:
-	if (delref(v.v.waif) == 0)
-        recycled_waifs.push_back(v.v.waif);
+	if (delref(v.v.waif) == 0) {
+        if (recycled_waifs.count(v.v.waif) == 0)
+            recycled_waifs[v.v.waif] = false;
+    }
 	break;
     case TYPE_ANON:
 	if (v.v.anon && delref(v.v.anon) == 0) {
