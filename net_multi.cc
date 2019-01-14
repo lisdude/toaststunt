@@ -261,11 +261,12 @@ pull_input(nhandle * h)
     int count;
     char buffer[1024];
     char *ptr, *end;
+#define TN_IAC 255
 
     if ((count = read(h->rfd, buffer, sizeof(buffer))) > 0) {
-	if (h->binary) {
+	if (h->binary || (unsigned char)buffer[0] == TN_IAC) {
 	    stream_add_raw_bytes_to_binary(s, buffer, count);
-	    server_receive_line(h->shandle, reset_stream(s));
+	    server_receive_line(h->shandle, reset_stream(s), !h->binary);
 	    h->last_input_was_CR = 0;
 	} else {
 	    for (ptr = buffer, end = buffer + count; ptr < end; ptr++) {
@@ -278,7 +279,7 @@ pull_input(nhandle * h)
 		    stream_delete_char(s);
 #endif
 		else if (c == '\r' || (c == '\n' && !h->last_input_was_CR))
-		    server_receive_line(h->shandle, reset_stream(s));
+		    server_receive_line(h->shandle, reset_stream(s), 0);
 
 		h->last_input_was_CR = (c == '\r');
 	    }

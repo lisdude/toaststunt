@@ -1320,7 +1320,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
     h->print_messages = l ? l->print_messages : !outbound;
 
     if (l || !outbound) {
-	new_input_task(h->tasks, "", 0);
+	new_input_task(h->tasks, "", 0, 0);
 	/*
 	 * Suspend input at the network level until the above input task
 	 * is processed.  At the point when it is dequeued, tasks.c will
@@ -1354,12 +1354,12 @@ server_refuse_connection(server_listener sl, network_handle nh)
 }
 
 void
-server_receive_line(server_handle sh, const char *line)
+server_receive_line(server_handle sh, const char *line, bool is_telnet)
 {
     shandle *h = (shandle *) sh.ptr;
 
     h->last_activity_time = time(0);
-    new_input_task(h->tasks, line, h->binary);
+    new_input_task(h->tasks, line, h->binary, is_telnet);
 }
 
 void

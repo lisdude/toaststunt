@@ -1100,7 +1100,7 @@ tasks_connection_options(task_queue q, Var list)
 #undef TASK_CO_TABLE
 
 static void
-enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary)
+enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary, bool is_telnet)
 {
     static char oob_prefix[] = OUT_OF_BAND_PREFIX;
     task *t;
@@ -1108,6 +1108,8 @@ enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary)
     t = (task *)mymalloc(sizeof(task), M_TASK);
     if (binary)
 	t->kind = TASK_BINARY;
+    else if (is_telnet)
+        t->kind = TASK_OOB;
     else if (oob_quote_prefix_length > 0
 	     && strncmp(oob_quote_prefix, input, oob_quote_prefix_length) == 0)
 	t->kind = TASK_QUOTED;
@@ -1194,7 +1196,7 @@ flush_input(tqueue * tq, int show_messages)
 }
 
 void
-new_input_task(task_queue q, const char *input, int binary)
+new_input_task(task_queue q, const char *input, int binary, bool is_telnet)
 {
     tqueue *tq = (tqueue *)q.ptr;
 
@@ -1202,7 +1204,7 @@ new_input_task(task_queue q, const char *input, int binary)
 	flush_input(tq, 1);
 	return;
     }
-    enqueue_input_task(tq, input, 0/*at-rear*/, binary);
+    enqueue_input_task(tq, input, 0/*at-rear*/, binary, is_telnet);
 }
 
 static void
@@ -2861,7 +2863,7 @@ bf_force_input(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_PERM);
     }
     tq = find_tqueue(conn, 1);
-    enqueue_input_task(tq, line, at_front, 0/*non-binary*/);
+    enqueue_input_task(tq, line, at_front, 0/*non-binary*/, 0 /*non-telnet*/);
     free_var(arglist);
     return no_var_pack();
 }

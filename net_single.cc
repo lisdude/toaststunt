@@ -195,7 +195,7 @@ network_process_io(int timeout)
 		got_some = 1;
 		if (binary) {
 		    stream_add_raw_bytes_to_binary(s, buffer, count);
-		    server_receive_line(sh, reset_stream(s));
+		    server_receive_line(sh, reset_stream(s), 0);
 		} else
 		    for (ptr = buffer, end = buffer + count;
 			 ptr < end;
@@ -209,7 +209,7 @@ network_process_io(int timeout)
 			    stream_delete_char(s);
 #endif
 			else if (c == '\n')
-			    server_receive_line(sh, reset_stream(s));
+			    server_receive_line(sh, reset_stream(s), 0);
 		    }
 	    }
 
