@@ -30,6 +30,9 @@ ToastStunt is the server that runs [Miriani](https://www.toastsoft.net) and [Cha
     - Parse_ansi (parses color tags into their ANSI equivalents)
     - remove_ansi (strips ANSI tags from strings)
 
+- Telnet:
+    - Capture IAC commands and pass them to listener:do_out_of_band_command for the database to handle.
+
 - Options.h configuration:
     - LOG_CODE_CHANGES (causes .program and set_verb_code to add a line to the server log indicating the object, verb, and programmer)
     - OWNERSHIP_QUOTA (disable the server's builtin quota management)
