@@ -1354,12 +1354,12 @@ server_refuse_connection(server_listener sl, network_handle nh)
 }
 
 void
-server_receive_line(server_handle sh, const char *line, bool is_telnet)
+server_receive_line(server_handle sh, const char *line, bool out_of_band)
 {
     shandle *h = (shandle *) sh.ptr;
 
     h->last_activity_time = time(0);
-    new_input_task(h->tasks, line, h->binary, is_telnet);
+    new_input_task(h->tasks, line, h->binary, out_of_band);
 }
 
 void

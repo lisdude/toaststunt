@@ -1196,7 +1196,7 @@ flush_input(tqueue * tq, int show_messages)
 }
 
 void
-new_input_task(task_queue q, const char *input, int binary, bool is_telnet)
+new_input_task(task_queue q, const char *input, int binary, bool out_of_band)
 {
     tqueue *tq = (tqueue *)q.ptr;
 
@@ -1204,7 +1204,7 @@ new_input_task(task_queue q, const char *input, int binary, bool is_telnet)
 	flush_input(tq, 1);
 	return;
     }
-    enqueue_input_task(tq, input, 0/*at-rear*/, binary, is_telnet);
+    enqueue_input_task(tq, input, 0/*at-rear*/, binary, out_of_band);
 }
 
 static void

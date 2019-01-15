@@ -254,40 +254,73 @@ push_output(nhandle * h)
     return 1;
 }
 
-static int
+    static int
 pull_input(nhandle * h)
 {
+#define TN_IAC  255
+#define TN_DO   253
+#define TN_DONT 254
+#define TN_WILL 251
+#define TN_WONT 252
+#define TN_SE   240
+
     Stream *s = h->input;
     int count;
     char buffer[1024];
     char *ptr, *end;
-#define TN_IAC 255
 
     if ((count = read(h->rfd, buffer, sizeof(buffer))) > 0) {
-	if (h->binary || (unsigned char)buffer[0] == TN_IAC) {
-	    stream_add_raw_bytes_to_binary(s, buffer, count);
-	    server_receive_line(h->shandle, reset_stream(s), !h->binary);
-	    h->last_input_was_CR = 0;
-	} else {
-	    for (ptr = buffer, end = buffer + count; ptr < end; ptr++) {
-		unsigned char c = *ptr;
+        if (h->binary) {
+            stream_add_raw_bytes_to_binary(s, buffer, count);
+            server_receive_line(h->shandle, reset_stream(s), NULL);
+            h->last_input_was_CR = 0;
+        } else {
+            Stream *oob = new_stream(3);
+            for (ptr = buffer, end = buffer + count; ptr < end; ptr++) {
+                unsigned char c = *ptr;
 
-		if (isgraph(c) || c == ' ' || c == '\t')
-		    stream_add_char(s, c);
+                if (isgraph(c) || c == ' ' || c == '\t')
+                    stream_add_char(s, c);
 #ifdef INPUT_APPLY_BACKSPACE
-		else if (c == 0x08 || c == 0x7F)
-		    stream_delete_char(s);
+                else if (c == 0x08 || c == 0x7F)
+                    stream_delete_char(s);
 #endif
-		else if (c == '\r' || (c == '\n' && !h->last_input_was_CR))
-		    server_receive_line(h->shandle, reset_stream(s), 0);
+                else if (c == TN_IAC && ptr + 2 <= end) {
+                    // Pluck a telnet IAC sequence out of the middle of the input
+                    int telnet_counter = 1;
+                    unsigned char cmd = *(ptr + telnet_counter);
+                    if (cmd == TN_WILL || cmd == TN_WONT || cmd == TN_DO || cmd == TN_DONT) {
+                        stream_add_raw_bytes_to_binary(oob, ptr, 3);
+                        ptr += 2;
+                    } else {
+                        while (cmd != TN_SE && ptr + telnet_counter < end)
+                            cmd = *(ptr + telnet_counter++);
 
-		h->last_input_was_CR = (c == '\r');
-	    }
-	}
-	return 1;
+                            if (cmd == TN_SE) {
+                            // We got a complete option sequence.
+                            stream_add_raw_bytes_to_binary(oob, ptr, telnet_counter);
+                            ptr += --telnet_counter;
+                        } else {
+                            /* We couldn't find the end of the option sequence, so, unfortunately,
+                             * we just consider this IAC wasted. The rest of the out of band commands
+                             * will get passed to do_out_of_band_command as gibberish. */
+                        }
+                    }
+                } else if ((c == '\r' || (c == '\n' && !h->last_input_was_CR)))
+                    server_receive_line(h->shandle, reset_stream(s), 0);
+
+                h->last_input_was_CR = (c == '\r');
+            }
+
+            if (stream_length(oob) > 0)
+                server_receive_line(h->shandle, reset_stream(oob), 1);
+            else
+                free_stream(oob);
+        }
+        return 1;
     } else
-	return (count == 0 && !proto.believe_eof)
-	    || (count < 0 && (errno == eagain || errno == ewouldblock));
+        return (count == 0 && !proto.believe_eof)
+            || (count < 0 && (errno == eagain || errno == ewouldblock));
 }
 
 static nhandle *

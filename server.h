@@ -68,7 +68,7 @@ extern void server_refuse_connection(server_listener l,
 				 * after server_refuse_connection() returns.
 				 */
 
-extern void server_receive_line(server_handle h, const char *line, bool is_telnet);
+extern void server_receive_line(server_handle h, const char *line, bool out_of_band);
 				/* The given line has been received as input
 				 * on the specified connection.  'line' does
 				 * not end in a newline; any such bytes have
