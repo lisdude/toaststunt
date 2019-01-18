@@ -33,6 +33,9 @@ ToastStunt is the server that runs [Miriani](https://www.toastsoft.net) and [Cha
 - Telnet:
     - Capture IAC commands and pass them to listener:do_out_of_band_command for the database to handle.
 
+- Primitive types:
+    - Support calling verbs on an object prototype ($obj_proto). Counterintuitively, this will only work for types of OBJ that are invalid. This can come in useful for un-logged-in connections (i.e. creating a set of convenient utilities for dealing with negative connections in-MOO).
+
 - Options.h configuration:
     - LOG_CODE_CHANGES (causes .program and set_verb_code to add a line to the server log indicating the object, verb, and programmer)
     - OWNERSHIP_QUOTA (disable the server's builtin quota management)
