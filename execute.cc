@@ -1891,9 +1891,7 @@ do {								\
 			STORE_STATE_VARIABLES();
 			err = call_verb2(_class, verb.v.str, obj, args, 0);
 			LOAD_STATE_VARIABLES();
-		} else if (obj.is_object() && !is_valid(obj))
-		    err = E_INVIND;
-		else {
+		} else {
 		    Objid recv = NOTHING;
 		    db_prop_handle h;
 		    Var p;
@@ -1913,9 +1911,10 @@ do {								\
 			}
 		    if (obj.type == TYPE_ANON)
 			recv = NOTHING;
-		    else if (obj.type == TYPE_OBJ)
+		    else if (obj.is_object() && is_valid(obj))
 			recv = obj.v.obj;
 		    MATCH_TYPE(INT, int)
+MATCH_TYPE(OBJ, obj)
 		    MATCH_TYPE(FLOAT, float)
 		    MATCH_TYPE(STR, str)
 		    MATCH_TYPE(ERR, err)
