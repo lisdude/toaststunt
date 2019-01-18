@@ -59,7 +59,7 @@ ToastStunt is the server that runs [Miriani](https://www.toastsoft.net) and [Cha
 
 - Miscellaneous changes:
     - Numeric IP addresses in connection_name
-    - Detect stunnel connections and rewrite the source IP as appropriate (controllable with $server_options.proxy_rewrite)
+    - Detect connections from TCP proxies using the HAProxy Proxy protocol and rewrite the source IP as appropriate (controllable with $server_options.proxy_rewrite)
     - .last_move (a map of an object's last location and the time() it moved)
     - Sub-second fork and suspend
     - Call 'do_blank_command' on listening objects when a blank command is issued
