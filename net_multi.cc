@@ -293,7 +293,7 @@ pull_input(nhandle * h)
                         stream_add_raw_bytes_to_binary(oob, ptr, 3);
                         ptr += 2;
                     } else {
-                        while (cmd != TN_SE && ptr + telnet_counter < end)
+                        while (cmd != TN_SE && ptr + telnet_counter <= end)
                             cmd = *(ptr + telnet_counter++);
 
                             if (cmd == TN_SE) {
