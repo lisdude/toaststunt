@@ -381,6 +381,44 @@ bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(locs);
 }
 
+/* Return a symbol for the ASCII value associated. */
+static package
+bf_chr(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r;
+    char str[2];
+
+    switch (arglist.v.list[1].type) {
+        case TYPE_INT:
+            if ((arglist.v.list[1].v.num < 1) || (arglist.v.list[1].v.num == 2) || (arglist.v.list[1].v.num > 6 && arglist.v.list[1].v.num < 14)  || (arglist.v.list[1].v.num
+== 27) || (arglist.v.list[1].v.num > 255)) {
+                free_var(arglist);
+                return make_error_pack(E_INVARG);
+            } else if (!is_wizard(progr)) {
+                free_var(arglist);
+                return make_error_pack(E_PERM);
+            }
+            str[0] = (char) arglist.v.list[1].v.num;
+            str[1] = '\0';
+            r.type = TYPE_STR;
+            r.v.str = str_dup(str);
+            break;
+        case TYPE_STR:
+            if (!(r.v.num = (int) arglist.v.list[1].v.str[0])) {
+                free_var(arglist);
+                return make_error_pack(E_INVARG);
+            }
+            r.type = TYPE_INT;
+            break;
+        default:
+            free_var(arglist);
+            return make_error_pack(E_TYPE);
+    }
+
+    free_var(arglist);
+    return make_var_pack(r);
+}
+
 // ============= ANSI ===============
     static package
 bf_parse_ansi(Var arglist, Byte next, void *vdata, Objid progr)
@@ -528,6 +566,7 @@ register_extensions()
     register_function("explode", 1, 2, bf_explode, TYPE_STR, TYPE_STR);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
+    register_function("chr", 1, 1, bf_chr, TYPE_INT);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
