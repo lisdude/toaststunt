@@ -19,6 +19,7 @@
 
 #include "my-string.h"
 #include "my-time.h"
+#include "my-in.h"
 
 #include "config.h"
 #include "db.h"
@@ -45,9 +46,11 @@
 #include "utils.h"
 #include "verbs.h"
 #include "version.h"
+#include "name_lookup.h"
 
 #include <sys/time.h>
 #include <math.h>
+#include <arpa/inet.h>
 
 #define ROUND(tvp)	((tvp)->tv_sec + ((tvp)->tv_usec > 500000))
 
@@ -923,14 +926,18 @@ do_login_task(tqueue * tq, char *command)
                 split = strtok(NULL, " ");
             }
 
-            // TODO: Resolve DNS names here
-
             static Stream *new_connection_name = 0;
 
             if (!new_connection_name)
                 new_connection_name = new_stream(100);
 
-            stream_printf(new_connection_name, "port %s from %s [%s], port %s", destination_port, source, source, source_port);
+            struct sockaddr_in address;
+            address.sin_family = AF_INET;
+            address.sin_port = htons(atoi(source_port));
+            inet_pton(AF_INET, source, &address.sin_addr);
+            int timeout = server_int_option("name_lookup_timeout", 5);
+
+            stream_printf(new_connection_name, "port %s from %s, port %s", destination_port, lookup_name_from_addr(&address, timeout), source_port);
 
             proxy_connected(tq->player, new_connection_name);
             /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */
