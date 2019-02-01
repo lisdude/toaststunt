@@ -55,41 +55,34 @@ bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+/* Locate an object in the database by name more quickly than is possible in-DB. */
     static package
 bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
 {
-
-    if(!is_wizard(progr))
+    if (!is_wizard(progr))
     {
         free_var(arglist);
         return make_error_pack(E_PERM);
     }
 
-    int x = 1, case_matters = 0;
-    Var ret = new_list(0), tmp, name;
+    Var ret = new_list(0), name, object;
+    object.type = TYPE_OBJ;
 
-    tmp.type = TYPE_OBJ;
+    int case_matters = is_true(arglist.v.list[2]);
+    int string_length = memo_strlen(arglist.v.list[1].v.str);
 
-    if (arglist.v.list[0].v.num == 2)
-        case_matters = is_true(arglist.v.list[2]);
-
-
-    for (x = 1; x < db_last_used_objid(); x++)
+    for (int x = 1; x < db_last_used_objid(); x++)
     {
-        if (valid(x))
-        {
-            db_find_property(Var::new_obj(x), "name", &name);
-            if (strindex(name.v.str, memo_strlen(name.v.str), arglist.v.list[1].v.str, memo_strlen(arglist.v.list[1].v.str), case_matters))
-            {
-                tmp.v.obj = x;
-                ret = listappend(ret, tmp);
-            }
-        }
+        if (!valid(x))
+            continue;
+
+        object.v.obj = x;
+        db_find_property(object, "name", &name);
+        if (strindex(name.v.str, memo_strlen(name.v.str), arglist.v.list[1].v.str, string_length, case_matters))
+            ret = listappend(ret, object);
     }
 
-    free_var(tmp);
     free_var(arglist);
-
     return make_var_pack(ret);
 }
 
