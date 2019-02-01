@@ -128,7 +128,7 @@ db_find_prep(int argc, char *argv[], int *first, int *last)
 	    for (alias = prep_table[j]; alias; alias = alias->next) {
 		if (i + alias->nwords <= argc) {
 		    for (k = 0; k < alias->nwords; k++) {
-			if (mystrcasecmp(argv[i + k], alias->words[k]))
+			if (strcasecmp(argv[i + k], alias->words[k]))
 			    break;
 		    }
 		    if (k == alias->nwords
@@ -592,7 +592,7 @@ db_find_callable_verb(Var recv, const char *verb)
 
 	for (vc = vc_table[bucket]; vc; vc = vc->next) {
 	    if (hash == vc->hash
-		&& o == vc->object && !mystrcasecmp(verb, vc->verbname)) {
+		&& o == vc->object && !strcasecmp(verb, vc->verbname)) {
 		/* we haaave a winnaaah */
 		if (vc->h.verbdef) {
 		    verbcache_hit++;

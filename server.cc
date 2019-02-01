@@ -204,7 +204,7 @@ send_shutdown_message(const char *message)
     s << "*** Shutting down: " << message << " ***";
 
     for (h = all_shandles; h; h = h->next)
-	network_send_line(h->nhandle, s.str().c_str(), 1);
+	network_send_line(h->nhandle, s.str().c_str(), 1, 1);
 }
 
 static void
@@ -386,16 +386,13 @@ checkpoint_timer(Timer_ID id, Timer_Data data)
 static void
 set_checkpoint_timer(int first_time)
 {
-    Var v;
     int interval, now = time(0);
     static Timer_ID last_checkpoint_timer;
 
-    v = get_system_property("dump_interval");
-    if (v.type != TYPE_INT || v.v.num < 60 || now + v.v.num < now) {
-	free_var(v);
+   interval = server_int_option("dump_interval", 3600);
+    if (interval < 60 || now + interval < now) {
 	interval = 3600;	/* Once per hour */
-    } else
-	interval = v.v.num;
+    }
 
     if (!first_time)
 	cancel_timer(last_checkpoint_timer);
@@ -454,17 +451,17 @@ send_message(Objid listener, network_handle nh, const char *msg_name,...)
     va_start(args, msg_name);
     if (get_server_option(listener, msg_name, &msg)) {
 	if (msg.type == TYPE_STR)
-	    network_send_line(nh, msg.v.str, 1);
+	    network_send_line(nh, msg.v.str, 1, 1);
 	else if (msg.type == TYPE_LIST) {
 	    int i;
 
 	    for (i = 1; i <= msg.v.list[0].v.num; i++)
 		if (msg.v.list[i].type == TYPE_STR)
-		    network_send_line(nh, msg.v.list[i].v.str, 1);
+		    network_send_line(nh, msg.v.list[i].v.str, 1, 1);
 	}
     } else			/* Use default message */
 	while ((line = va_arg(args, const char *)) != 0)
-	    network_send_line(nh, line, 1);
+	    network_send_line(nh, line, 1, 1);
 
     va_end(args);
 }
@@ -546,7 +543,7 @@ recycle_anonymous_objects(void)
 	run_server_task(-1, v, "recycle", new_list(0), "", 0);
 
 	/* We'd like to run `db_change_parents()' to be consistent
-	 * with the pattern laid out in `bf_recycle()', but we can't
+	 * with the pattern laid out in `bf_destroy()', but we can't
 	 * because the object can be invalid at this point due to
 	 * changes in parentage.
 	 */
@@ -983,8 +980,8 @@ emergency_mode()
 		continue;
 	    command = words.v.list[1].v.str;
 
-	    if ((!mystrcasecmp(command, "program")
-		 || !mystrcasecmp(command, ".program"))
+	    if ((!strcasecmp(command, "program")
+		 || !strcasecmp(command, ".program"))
 		&& nargs == 1) {
 		const char *verbref = words.v.list[2].v.str;
 		db_verb_handle h;
@@ -1023,7 +1020,7 @@ emergency_mode()
 		    free_var(code);
 		    free_var(errors);
 		}
-	    } else if (!mystrcasecmp(command, "list") && nargs == 1) {
+	    } else if (!strcasecmp(command, "list") && nargs == 1) {
 		const char *verbref = words.v.list[2].v.str;
 		db_verb_handle h;
 		const char *message, *vname;
@@ -1035,7 +1032,7 @@ emergency_mode()
 				    MAIN_VECTOR);
 		else
 		    printf("%s\n", message);
-	    } else if (!mystrcasecmp(command, "disassemble") && nargs == 1) {
+	    } else if (!strcasecmp(command, "disassemble") && nargs == 1) {
 		const char *verbref = words.v.list[2].v.str;
 		db_verb_handle h;
 		const char *message, *vname;
@@ -1046,19 +1043,19 @@ emergency_mode()
 		    disassemble_to_file(stdout, db_verb_program(h));
 		else
 		    printf("%s\n", message);
-	    } else if (!mystrcasecmp(command, "abort") && nargs == 0) {
+	    } else if (!strcasecmp(command, "abort") && nargs == 0) {
 	        printf("Bye.  (%s)\n\n", "NOT saving database");
 		exit(1);
-	    } else if (!mystrcasecmp(command, "quit") && nargs == 0) {
+	    } else if (!strcasecmp(command, "quit") && nargs == 0) {
 		start_ok = 0;
-	    } else if (!mystrcasecmp(command, "continue") && nargs == 0) {
+	    } else if (!strcasecmp(command, "continue") && nargs == 0) {
 		start_ok = 1;
-	    } else if (!mystrcasecmp(command, "debug") && nargs == 0) {
+	    } else if (!strcasecmp(command, "debug") && nargs == 0) {
 		debug = !debug;
-	    } else if (!mystrcasecmp(command, "wizard") && nargs == 1
+	    } else if (!strcasecmp(command, "wizard") && nargs == 1
 		       && sscanf(words.v.list[2].v.str, "#%d", &wizard) == 1) {
-		printf("** Switching to wizard #%" PRIdN "...\n", wizard);
-	    } else if (!mystrcasecmp(command, "help") || !mystrcasecmp(command, "?")) {
+		printf("** Switching to wizard #%d...\n", wizard);
+	    } else if (!strcasecmp(command, "help") || !strcasecmp(command, "?")) {
 		printf(";EXPR                 "
 		       "Evaluate MOO expression, print result.\n");
 		printf(";;CODE                "
@@ -1323,7 +1320,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
     h->print_messages = l ? l->print_messages : !outbound;
 
     if (l || !outbound) {
-	new_input_task(h->tasks, "", 0);
+	new_input_task(h->tasks, "", 0, 0);
 	/*
 	 * Suspend input at the network level until the above input task
 	 * is processed.  At the point when it is dequeued, tasks.c will
@@ -1357,12 +1354,12 @@ server_refuse_connection(server_listener sl, network_handle nh)
 }
 
 void
-server_receive_line(server_handle sh, const char *line)
+server_receive_line(server_handle sh, const char *line, bool out_of_band)
 {
     shandle *h = (shandle *) sh.ptr;
 
     h->last_activity_time = time(0);
-    new_input_task(h->tasks, line, h->binary);
+    new_input_task(h->tasks, line, h->binary, out_of_band);
 }
 
 void
@@ -1395,8 +1392,9 @@ server_resume_input(Objid connection)
 }
 
 void
-player_connected_silent(Objid old_id, Objid new_id, int is_newly_created)
+player_connected_silent(Objid old_id, Objid new_id)
 {
+    const char *old_name = str_dup(object_name(old_id));
     shandle *existing_h = find_shandle(new_id);
     shandle *new_h = find_shandle(old_id);
 
@@ -1419,11 +1417,12 @@ player_connected_silent(Objid old_id, Objid new_id, int is_newly_created)
 	network_close(existing_h->nhandle);
 	free_shandle(existing_h);
     } else {
-	oklog("%s: %s on %s\n",
-	      is_newly_created ? "CREATED" : "CONNECTED",
-	      object_name(new_h->player),
+	oklog("SWITCHED: %s is now %s on %s\n",
+	      old_name,
+          object_name(new_h->player),
 	      network_connection_name(new_h->nhandle));
     }
+    free_str(old_name);
 }
 
 char
@@ -1521,7 +1520,7 @@ notify(Objid player, const char *message)
     shandle *h = find_shandle(player);
 
     if (h && !h->disconnect_me)
-	network_send_line(h->nhandle, message, 1);
+	network_send_line(h->nhandle, message, 1, 1);
     else if (in_emergency_mode)
 	emergency_notify(player, message);
 }
@@ -1864,6 +1863,18 @@ bf_db_disk_size(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_var_pack(v);
 }
 
+static package
+bf_clear_ancestor_cache(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    if (!is_wizard(progr))
+	return make_error_pack(E_PERM);
+
+    db_clear_ancestor_cache();
+    return no_var_pack();
+}
+
 #ifdef OUTBOUND_NETWORK
 static slistener *
 find_slistener_by_oid(Objid obj)
@@ -2041,6 +2052,9 @@ bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
     int no_flush = (arglist.v.list[0].v.num > 2
 		    ? is_true(arglist.v.list[3])
 		    : 0);
+    int no_newline = (arglist.v.list[0].v.num > 3
+            ? is_true(arglist.v.list[4]) : 0);
+
     shandle *h = find_shandle(conn);
     Var r;
 
@@ -2060,7 +2074,7 @@ bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
 	    }
 	    r.v.num = network_send_bytes(h->nhandle, line, length, !no_flush);
 	} else
-	    r.v.num = network_send_line(h->nhandle, line, !no_flush);
+	    r.v.num = network_send_line(h->nhandle, line, !no_flush, !no_newline);
     } else {
 	if (in_emergency_mode)
 	    emergency_notify(conn, line);
@@ -2277,7 +2291,7 @@ register_server(void)
 		      TYPE_OBJ);
     register_function("idle_seconds", 1, 1, bf_idle_seconds, TYPE_OBJ);
     register_function("connection_name", 1, 1, bf_connection_name, TYPE_OBJ);
-    register_function("notify", 2, 3, bf_notify, TYPE_OBJ, TYPE_STR, TYPE_ANY);
+    register_function("notify", 2, 4, bf_notify, TYPE_OBJ, TYPE_STR, TYPE_ANY, TYPE_ANY);
     register_function("boot_player", 1, 1, bf_boot_player, TYPE_OBJ);
     register_function("set_connection_option", 3, 3, bf_set_connection_option,
 		      TYPE_OBJ, TYPE_STR, TYPE_ANY);
@@ -2290,4 +2304,7 @@ register_server(void)
     register_function("listeners", 0, 0, bf_listeners);
     register_function("buffered_output_length", 0, 1,
 		      bf_buffered_output_length, TYPE_OBJ);
+#ifdef USE_ANCESTOR_CACHE
+    register_function("clear_ancestor_cache", 0, 0, bf_clear_ancestor_cache);
+#endif
 }

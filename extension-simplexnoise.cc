@@ -476,7 +476,7 @@ double snoise4(double x, double y, double z, double w) {
 
 static package
 bf_simplex_noise(Var arglist, Byte next, void *vdata, Objid progr) {
-    for (int x = 1; x < arglist.v.list[1].v.list[0].v.num; x++) {
+    for (int x = 1; x <= arglist.v.list[1].v.list[0].v.num; x++) {
         if (arglist.v.list[1].v.list[x].type != TYPE_FLOAT) {
             free_var(arglist);
             return make_error_pack(E_TYPE);

@@ -68,7 +68,7 @@ extern void server_refuse_connection(server_listener l,
 				 * after server_refuse_connection() returns.
 				 */
 
-extern void server_receive_line(server_handle h, const char *line);
+extern void server_receive_line(server_handle h, const char *line, bool out_of_band);
 				/* The given line has been received as input
 				 * on the specified connection.  'line' does
 				 * not end in a newline; any such bytes have
@@ -253,8 +253,7 @@ enum Fork_Result {
 };
 extern enum Fork_Result fork_server(const char *subtask_name);
 
-extern void player_connected_silent(Objid old_id, Objid new_id,
-				    int is_newly_created);
+extern void player_connected_silent(Objid old_id, Objid new_id);
 extern void player_connected(Objid old_id, Objid new_id,
 			     int is_newly_created);
 extern int is_player_connected(Objid player);
@@ -318,7 +317,7 @@ extern int read_active_connections(void);
 #define _CONNECT_OPTION_GET_SINGLE(NAME, OPTION, VALUE,		\
 				   TYPE_FOO, VFOO_MEMBER,	\
 				   GETVALUE, SETVALUE)		\
-    if (!mystrcasecmp(OPTION, #NAME)) {				\
+    if (!strcasecmp(OPTION, #NAME)) {				\
 	VALUE->type  = (TYPE_FOO);				\
 	VALUE->v.VFOO_MEMBER = (GETVALUE);			\
 	return 1;						\
@@ -327,7 +326,7 @@ extern int read_active_connections(void);
 #define _CONNECT_OPTION_SET_SINGLE(NAME, OPTION, VALUE,		\
 				   TYPE_FOO, VFOO_MEMBER,	\
 				   GETVALUE, SETVALUE)		\
-    if (!mystrcasecmp(OPTION, #NAME)) {				\
+    if (!strcasecmp(OPTION, #NAME)) {				\
 	SETVALUE;						\
 	return 1;						\
     }

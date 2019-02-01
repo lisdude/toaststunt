@@ -247,7 +247,25 @@ dnl ***************************************************************************
         LIBS+=" -lpthread"
     fi
 
-dnl ***************************************************************************
+ dnl ***************************************************************************
+    AC_CHECK_HEADER([argon2.h], [found_argon2=yes], [found_argon2=no])
+    if test "$found_argon2" != "yes" ; then
+        AC_MSG_ERROR([Argon2 could not be found.])
+    else
+        AC_DEFINE(HAS_ARGON2)
+        LIBS+=" -largon2"
+    fi
+
+ dnl ***************************************************************************
+    AC_CHECK_HEADER([aspell.h], [found_aspell=yes], [found_aspell=no])
+    if test "$found_aspell" != "yes" ; then
+        AC_MSG_ERROR([Aspell could not be found.])
+    else
+        AC_DEFINE(HAS_ASPELL)
+        LIBS+=" -laspell"
+    fi
+
+ dnl ***************************************************************************
 	AC_CHECK_PROG([PCRE_CONFIG], [pcre-config], [pcre-config], [:])
 	if test "x$PCRE_CONFIG" = "x:"; then
 			AC_MSG_ERROR([PCRE could not be found.])

@@ -160,6 +160,7 @@ lookup(int to_intermediary, int from_intermediary)
     static int buflen = 0;
     Timer_ID id;
     struct hostent *e;
+    char hbuf[NI_MAXHOST];
 
     set_server_cmdline("(MOO name-lookup slave)");
     /* Read requests and do them.  Before each, we set a timer.  If it
@@ -189,11 +190,11 @@ lookup(int to_intermediary, int from_intermediary)
 	    const char *host_name;
 	    int length;
 	    id = set_timer(req.timeout, timeout_proc, 0);
-	    e = gethostbyaddr(&req.u.address.sin_addr,
-			      sizeof(req.u.address.sin_addr),
-			      AF_INET);
+	    if (getnameinfo((struct sockaddr *)&req.u.address, sizeof(req.u.address), hbuf, sizeof(hbuf), NULL, 0, 0) == 0)
+            host_name = hbuf;
+        else
+            host_name = "";
 	    cancel_timer(id);
-	    host_name = e ? e->h_name : "";
 	    length = strlen(host_name);
 	    write(to_intermediary, &length, sizeof(length));
 	    write(to_intermediary, host_name, length);

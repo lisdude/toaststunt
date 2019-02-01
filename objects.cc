@@ -662,7 +662,7 @@ get_first(Objid oid, int (*for_all) (Objid, int (*)(void *, Objid), void *))
 }
 
 static package
-bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
+bf_destroy(Var arglist, Byte func_pc, void *vdata, Objid progr)
 {				/* (OBJ|ANON object) */
     Var *data = (Var *)vdata;
     enum error e;
@@ -699,7 +699,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	data = (Var *)alloc_data(sizeof(Var));
 	*data = var_ref(obj);
 	args = new_list(0);
-	e = call_verb(obj.is_obj() ? obj.v.obj : NOTHING, "recycle", obj, args, 0);
+	e = call_verb(obj.is_obj() ? obj.v.obj : NOTHING, "pre_destroy", obj, args, 0);
 	/* e != E_INVIND */
 
 	if (e == E_NONE) {
@@ -804,20 +804,20 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	}
     }
 
-    panic("Can't happen in BF_RECYCLE");
+    panic("Can't happen in bf_destroy");
     return no_var_pack();
 }
 
 static void
-bf_recycle_write(void *vdata)
+bf_destroy_write(void *vdata)
 {
     Objid *data = (Objid *)vdata;
 
-    dbio_printf("bf_recycle data: oid = %d, cont = 0\n", *data);
+    dbio_printf("bf_destroy data: oid = %d, cont = 0\n", *data);
 }
 
 static void *
-bf_recycle_read(void)
+bf_destroy_read(void)
 {
     Objid *data = (Objid *)alloc_data(sizeof(*data));
     int dummy;
@@ -828,7 +828,7 @@ bf_recycle_read(void)
      * suppressed assignments are not counted in determining the returned value
      * of `scanf'...
      */
-    if (dbio_scanf("bf_recycle data: oid = %" PRIdN ", cont = %" PRIdN "\n",
+    if (dbio_scanf("bf_destroy data: oid = %d, cont = %d\n",
 		   data, &dummy) == 2)
 	return data;
     else
@@ -911,26 +911,41 @@ bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (object, parent) */
+{				/* (object, parent, return_object) */
     Var object = arglist.v.list[1];
     Var parent = arglist.v.list[2];
+    bool return_obj = (arglist.v.list[0].v.num > 2 && is_true(arglist.v.list[3]));
 
-    if (!object.is_object() || !parent.is_object()) {
+    if (!object.is_object() || !is_obj_or_list_of_objs(parent)) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     }
     else if (!is_valid(object)) {
 	free_var(arglist);
-	return make_var_pack(Var::new_int(0));
+	return make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
     }
-    else if (db_object_isa(object, parent)) {
-	free_var(arglist);
-	return make_var_pack(Var::new_int(1));
+
+    if(parent.type == TYPE_OBJ)
+        if (db_object_isa(object, parent)) {
+            free_var(arglist);
+            return make_var_pack(return_obj ? Var::new_obj(parent.v.obj) : Var::new_int(1));
+        }
+        else {
+            free_var(arglist);
+            return make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
+        }
+    else if (parent.type == TYPE_LIST) {
+
+        int parent_length = parent.v.list[0].v.num;
+                free_var(arglist);
+
+        for (int x = 1; x <= parent_length; x++)
+            if (db_object_isa(object, Var::new_obj(parent.v.list[x].v.obj))) {
+                return make_var_pack(return_obj ? Var::new_obj(parent.v.list[x].v.obj) : Var::new_int(1));
+            }
     }
-    else {
-	free_var(arglist);
-	return make_var_pack(Var::new_int(0));
-    }
+
+return make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
 }
 
 Var nothing;			/* useful constant */
@@ -950,8 +965,8 @@ register_objects(void)
     register_function_with_read_write("create", 1, 4, bf_create,
 				      bf_create_read, bf_create_write,
 				      TYPE_ANY, TYPE_ANY, TYPE_ANY, TYPE_ANY);
-    register_function_with_read_write("recycle", 1, 1, bf_recycle,
-				      bf_recycle_read, bf_recycle_write,
+    register_function_with_read_write("destroy", 1, 1, bf_destroy,
+				      bf_destroy_read, bf_destroy_write,
 				      TYPE_ANY);
     register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_ANY);
     register_function("valid", 1, 1, bf_valid, TYPE_ANY);
@@ -974,5 +989,5 @@ register_objects(void)
     register_function_with_read_write("move", 2, 2, bf_move,
 				      bf_move_read, bf_move_write,
 				      TYPE_OBJ, TYPE_OBJ);
-    register_function("isa", 2, 2, bf_isa, TYPE_ANY, TYPE_ANY);
+    register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_INT);
 }

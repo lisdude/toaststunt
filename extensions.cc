@@ -346,7 +346,7 @@ bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
  * With only one argument, player flag is assumed to be the only condition.
  * With two arguments, parent is the only condition.
  * With three arguments, parent is checked first and then the player flag is checked.
- * get_players(LIST objects, OBJ parent, ?INT player flag set)
+ * occupants(LIST objects, OBJ parent, ?INT player flag set)
  */
 static package
 bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
@@ -371,6 +371,70 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
     return make_var_pack(ret);
+}
+
+/* Return a list of nested locations for an object
+ * For objects in $nothing (#-1), this returns an empty list.
+ * locations(OBJ object)
+ */
+static package
+bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
+{    
+    Objid what = arglist.v.list[1].v.obj;
+
+    free_var(arglist);
+
+    if (!valid(what))
+        return make_error_pack(E_INVIND);
+
+    Var locs = new_list(0);
+
+    Objid loc = db_object_location(what);
+
+    while (valid(loc)) {
+        locs = setadd(locs, Var::new_obj(loc));
+        loc = db_object_location(loc);
+    }
+
+    return make_var_pack(locs);
+}
+
+/* Return a symbol for the ASCII value associated. */
+static package
+bf_chr(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r;
+    char str[2];
+
+    switch (arglist.v.list[1].type) {
+        case TYPE_INT:
+            if ((arglist.v.list[1].v.num < 1) || (arglist.v.list[1].v.num == 2) || (arglist.v.list[1].v.num > 6 && arglist.v.list[1].v.num < 14)  || (arglist.v.list[1].v.num
+== 27) || (arglist.v.list[1].v.num > 255)) {
+                free_var(arglist);
+                return make_error_pack(E_INVARG);
+            } else if (!is_wizard(progr)) {
+                free_var(arglist);
+                return make_error_pack(E_PERM);
+            }
+            str[0] = (char) arglist.v.list[1].v.num;
+            str[1] = '\0';
+            r.type = TYPE_STR;
+            r.v.str = str_dup(str);
+            break;
+        case TYPE_STR:
+            if (!(r.v.num = (int) arglist.v.list[1].v.str[0])) {
+                free_var(arglist);
+                return make_error_pack(E_INVARG);
+            }
+            r.type = TYPE_INT;
+            break;
+        default:
+            free_var(arglist);
+            return make_error_pack(E_TYPE);
+    }
+
+    free_var(arglist);
+    return make_var_pack(r);
 }
 
 // ============= ANSI ===============
@@ -426,7 +490,7 @@ bf_parse_ansi(Var arglist, Byte next, void *vdata, Objid progr)
 
     char *t = reset_stream(tmp);
     while (*t) {
-        if (!mystrncasecmp(t, "[random]", 8)) {
+        if (!strncasecmp(t, "[random]", 8)) {
             stream_add_string(str, random_codes[RANDOM() % 6]);
             t += 8;
         } else
@@ -519,6 +583,8 @@ register_extensions()
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
     register_function("explode", 1, 2, bf_explode, TYPE_STR, TYPE_STR);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
+    register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
+    register_function("chr", 1, 1, bf_chr, TYPE_INT);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);

@@ -1219,7 +1219,7 @@ do {								\
 			comparison = ((int) lhs.v.err) - ((int) rhs.v.err);
 			break;
 		    case TYPE_STR:
-			comparison = mystrcasecmp(lhs.v.str, rhs.v.str);
+			comparison = strcasecmp(lhs.v.str, rhs.v.str);
 			break;
 		    default:
 			errlog("RUN: Impossible type in comparison: %d\n",
@@ -1891,9 +1891,7 @@ do {								\
 			STORE_STATE_VARIABLES();
 			err = call_verb2(_class, verb.v.str, obj, args, 0);
 			LOAD_STATE_VARIABLES();
-		} else if (obj.is_object() && !is_valid(obj))
-		    err = E_INVIND;
-		else {
+		} else {
 		    Objid recv = NOTHING;
 		    db_prop_handle h;
 		    Var p;
@@ -1913,9 +1911,10 @@ do {								\
 			}
 		    if (obj.type == TYPE_ANON)
 			recv = NOTHING;
-		    else if (obj.type == TYPE_OBJ)
+		    else if (obj.is_object() && is_valid(obj))
 			recv = obj.v.obj;
 		    MATCH_TYPE(INT, int)
+MATCH_TYPE(OBJ, obj)
 		    MATCH_TYPE(FLOAT, float)
 		    MATCH_TYPE(STR, str)
 		    MATCH_TYPE(ERR, err)
@@ -3233,9 +3232,9 @@ bf_read_http(Var arglist, Byte next, void *vdata, Objid progr)
     static Objid connection;
     int request;
 
-    if (!mystrcasecmp(arglist.v.list[1].v.str, "request"))
+    if (!strcasecmp(arglist.v.list[1].v.str, "request"))
 	request = 1;
-    else if (!mystrcasecmp(arglist.v.list[1].v.str, "response"))
+    else if (!strcasecmp(arglist.v.list[1].v.str, "response"))
 	request = 0;
     else {
 	free_var(arglist);
@@ -3527,7 +3526,7 @@ reorder_rt_env(Var * old_rt_env, const char **old_names,
 	int slot;
 
 	for (slot = 0; slot < old_size; slot++) {
-	    if (mystrcasecmp(old_names[slot], prog->var_names[i]) == 0)
+	    if (strcasecmp(old_names[slot], prog->var_names[i]) == 0)
 		break;
 	}
 

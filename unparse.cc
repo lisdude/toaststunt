@@ -135,43 +135,43 @@ error_name(enum error e)
 int
 parse_error(const char *e)
 {
-    if (!mystrcasecmp("E_NONE", e))
+    if (!strcasecmp("E_NONE", e))
 	return E_NONE;
-    if (!mystrcasecmp("E_TYPE", e))
+    if (!strcasecmp("E_TYPE", e))
 	return E_TYPE;
-    if (!mystrcasecmp("E_DIV", e))
+    if (!strcasecmp("E_DIV", e))
 	return E_DIV;
-    if (!mystrcasecmp("E_PERM", e))
+    if (!strcasecmp("E_PERM", e))
 	return E_PERM;
-    if (!mystrcasecmp("E_PROPNF", e))
+    if (!strcasecmp("E_PROPNF", e))
 	return E_PROPNF;
-    if (!mystrcasecmp("E_VERBNF", e))
+    if (!strcasecmp("E_VERBNF", e))
 	return E_VERBNF;
-    if (!mystrcasecmp("E_VARNF", e))
+    if (!strcasecmp("E_VARNF", e))
 	return E_VARNF;
-    if (!mystrcasecmp("E_INVIND", e))
+    if (!strcasecmp("E_INVIND", e))
 	return E_INVIND;
-    if (!mystrcasecmp("E_RECMOVE", e))
+    if (!strcasecmp("E_RECMOVE", e))
 	return E_RECMOVE;
-    if (!mystrcasecmp("E_MAXREC", e))
+    if (!strcasecmp("E_MAXREC", e))
 	return E_MAXREC;
-    if (!mystrcasecmp("E_RANGE", e))
+    if (!strcasecmp("E_RANGE", e))
 	return E_RANGE;
-    if (!mystrcasecmp("E_ARGS", e))
+    if (!strcasecmp("E_ARGS", e))
 	return E_ARGS;
-    if (!mystrcasecmp("E_NACC", e))
+    if (!strcasecmp("E_NACC", e))
 	return E_NACC;
-    if (!mystrcasecmp("E_INVARG", e))
+    if (!strcasecmp("E_INVARG", e))
 	return E_INVARG;
-    if (!mystrcasecmp("E_QUOTA", e))
+    if (!strcasecmp("E_QUOTA", e))
 	return E_QUOTA;
-    if (!mystrcasecmp("E_FLOAT", e))
+    if (!strcasecmp("E_FLOAT", e))
 	return E_FLOAT;
-    if (!mystrcasecmp("E_FILE", e))
+    if (!strcasecmp("E_FILE", e))
 	return E_FILE;
-    if (!mystrcasecmp("E_EXEC", e))
+    if (!strcasecmp("E_EXEC", e))
 	return E_EXEC;
-    if (!mystrcasecmp("E_INTRPT", e))
+    if (!strcasecmp("E_INTRPT", e))
 	return E_INTRPT;
 
     return -1;

@@ -35,7 +35,7 @@ extern Var tasks_connection_options(task_queue, Var);
 extern int tasks_set_connection_option(task_queue, const char *,
 				       Var);
 
-extern void new_input_task(task_queue, const char *, int);
+extern void new_input_task(task_queue, const char *, int, bool);
 extern void task_suspend_input(task_queue);
 extern enum error enqueue_forked_task2(activation a, int f_index,
 			       double after_seconds, int vid);

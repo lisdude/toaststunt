@@ -1,15 +1,5 @@
-/* Copyright (c) 2016 lisdude (9118852A2974A1E3E00B2B7A38B024A72248E3ECA4CE2A6B8F595E76AAFF90C3) All rights reserved.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD
- * TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
- * ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- */
-
 #include "extension-sqlite.h"
-#include "map.h"
+#include "extension-background.h"
 
 /* Open an SQLite database.
  * Args: STR <path to database>, [INT options] */
@@ -89,6 +79,10 @@ bf_sqlite_close(Var arglist, Byte next, void *vdata, Objid progr)
     if (!valid_handle(index))
         return make_raise_pack(E_INVARG, "Invalid database handle", var_ref(zero));
 
+    sqlite_conn *handle = &sqlite_connections[index];
+    if (handle->locks > 0)
+        return make_raise_pack(E_PERM, "Handle can't be closed until all worker threads are finished", var_ref(zero));
+
     deallocate_handle(index);
 
     return no_var_pack();
@@ -136,31 +130,25 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
     ret = mapinsert(ret, str_dup_to_var("parse_types"), Var::new_int(handle->options & SQLITE_PARSE_TYPES ? 1 : 0));
     ret = mapinsert(ret, str_dup_to_var("parse_objects"), Var::new_int(handle->options & SQLITE_PARSE_OBJECTS ? 1 : 0));
     ret = mapinsert(ret, str_dup_to_var("sanitize_strings"), Var::new_int(handle->options & SQLITE_SANITIZE_STRINGS ? 1 : 0));
+    ret = mapinsert(ret, str_dup_to_var("locks"), Var::new_int(handle->locks));
 
     return make_var_pack(ret);
 }
 
-/* Creates and executes a prepared statement.
- * Args: INT <database handle>, STR <SQL query>, LIST <values>
- * e.g. sqlite_query(0, 'INSERT INTO test VALUES (?, ?);', {5, #5})
- * TODO: Check the cache for an existing prepared statement */
-    static package
-bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
+/* The function responsible for the actual execute call.
+ * Contains functionality shared by both the threaded and
+ * unthreaded builtins. */
+void do_sqlite_execute(Var args, Var *r)
 {
-    if (!is_wizard(progr))
-    {
-        free_var(arglist);
-        return make_error_pack(E_PERM);
-    }
-
-    int index = arglist.v.list[1].v.num;
+    int index = args.v.list[1].v.num;
     if (!valid_handle(index))
     {
-        free_var(arglist);
-        return make_error_pack(E_INVARG);
+        r->type = TYPE_ERR;
+        r->v.err = E_INVARG;
+        return;
     }
 
-    const char *query = arglist.v.list[2].v.str;
+    const char *query = args.v.list[2].v.str;
     sqlite_conn *handle = &sqlite_connections[index];
     sqlite3_stmt *stmt;
 
@@ -168,28 +156,30 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
     if (rc != SQLITE_OK)
     {
         const char *err = sqlite3_errmsg(handle->id);
-        free_var(arglist);
-        return make_raise_pack(E_NONE, err, var_ref(zero));
+        r->type = TYPE_STR;
+        r->v.str = str_dup(err);
+        return;
     }
+
+    handle->locks++;
 
     /* Take args[3] and bind it into the appropriate locations for SQLite
      * (e.g. in the query values (?, ?, ?) args[3] would be {5, "oh", "hello"}) */
-    int x = 0;
-    for (x = 1; x <= arglist.v.list[3].v.list[0].v.num; x++)
+    for (int x = 1; x <= args.v.list[3].v.list[0].v.num; x++)
     {
-        switch (arglist.v.list[3].v.list[x].type)
+        switch (args.v.list[3].v.list[x].type)
         {
             case TYPE_STR:
-                sqlite3_bind_text(stmt, x, arglist.v.list[3].v.list[x].v.str, -1, NULL);
+                sqlite3_bind_text(stmt, x, args.v.list[3].v.list[x].v.str, -1, NULL);
                 break;
             case TYPE_INT:
-                sqlite3_bind_int(stmt, x, arglist.v.list[3].v.list[x].v.num);
+                sqlite3_bind_int(stmt, x, args.v.list[3].v.list[x].v.num);
                 break;
             case TYPE_FLOAT:
-                sqlite3_bind_double(stmt, x, arglist.v.list[3].v.list[x].v.fnum);
+                sqlite3_bind_double(stmt, x, args.v.list[3].v.list[x].v.fnum);
                 break;
             case TYPE_OBJ:
-                sqlite3_bind_text(stmt, x, reset_stream(object_to_string(&arglist.v.list[3].v.list[x])),  -1, NULL);
+                sqlite3_bind_text(stmt, x, str_dup(reset_stream(object_to_string(&args.v.list[3].v.list[x]))),  -1, NULL);
                 break;
         }
     }
@@ -197,13 +187,12 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
     rc = sqlite3_step(stmt);
     int col = sqlite3_column_count(stmt);
 
-    Var r = new_list(0);
+    *r = new_list(0);
 
     while (rc == SQLITE_ROW)
     {
         Var row = new_list(0);
-        int x = 0;
-        for (x = 0; x < col; x++)
+        for (int x = 0; x < col; x++)
         {
             // Ideally we would know the type and use sqlite3_column<TYPE> but we don't!
             char *str = (char*)sqlite3_column_text(stmt, x);
@@ -221,7 +210,7 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
             }
             row = listappend(row, s);
         }
-        r = listappend(r, row);
+        *r = listappend(*r, row);
         rc = sqlite3_step(stmt);
     }
 
@@ -229,12 +218,92 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
      *       (Remove finalize when that happens) */
     sqlite3_finalize(stmt);
 
-    free_var(arglist);
-    return make_var_pack(r);
+    handle->locks--;
+}
+
+void sqlite_execute_thread_callback(void *bw, Var *r)
+{
+    background_waiter *w = (background_waiter*)bw;
+
+    do_sqlite_execute(w->data, r);
+}
+
+/* Creates and executes a prepared statement.
+ * Args: INT <database handle>, STR <SQL query>, LIST <values>, BOOL <threaded>
+ * e.g. sqlite_execute(0, 'INSERT INTO test VALUES (?, ?);', {5, #5})
+ * TODO: Cache prepared statements? */
+    static package
+bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (!is_wizard(progr))
+    {
+        free_var(arglist);
+        return make_error_pack(E_PERM);
+    }
+
+    if (arglist.v.list[0].v.num >= 4 && !is_true(arglist.v.list[4]))
+    {
+        Var r;
+        do_sqlite_execute(arglist, &r);
+        free_var(arglist);
+        return make_var_pack(r);
+    } else {
+        char *human_string = 0;
+        asprintf(&human_string, "sqlite_execute: %s", arglist.v.list[2].v.str);
+
+        return background_thread(sqlite_execute_thread_callback, &arglist, human_string);
+    }
+}
+
+/* The function responsible for the actual query call.
+ * Contains functionality shared by both the threaded and
+ * unthreaded builtins. */
+void do_sqlite_query(Var args, Var *r)
+{
+    int index = args.v.list[1].v.num;
+
+    if (!valid_handle(index))
+    {
+        r->type = TYPE_ERR;
+        r->v.err = E_INVARG;
+        return;
+    }
+
+    const char *query = args.v.list[2].v.str;
+    char *err_msg = 0;
+
+    sqlite_result *thread_handle = (sqlite_result*)mymalloc(sizeof(sqlite_result), M_STRUCT);
+    thread_handle->connection = &sqlite_connections[index];
+    thread_handle->last_result = new_list(0);
+
+    thread_handle->connection->locks++;
+
+    int rc = sqlite3_exec(thread_handle->connection->id, query, callback, thread_handle, &err_msg);
+
+    thread_handle->connection->locks--;
+
+    if (rc != SQLITE_OK)
+    {
+        r->type = TYPE_STR;
+        r->v.str = str_dup(err_msg);
+        sqlite3_free(err_msg);
+    } else {
+        *r = var_dup(thread_handle->last_result);
+        free_var(thread_handle->last_result);
+    }
+    //sqlite3_db_release_memory(thread_handle->connection->id);
+    myfree(thread_handle, M_STRUCT);
+}
+
+void sqlite_query_thread_callback(void *bw, Var *r)
+{
+    background_waiter *w = (background_waiter*)bw;
+
+    do_sqlite_query(w->data, r);
 }
 
 /* Execute an SQL command.
- * Args: INT <database handle>, STR <query> */
+ * Args: INT <database handle>, STR <query>, BOOL <threaded> */
     static package
 bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -244,37 +313,17 @@ bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    int index = arglist.v.list[1].v.num;
-
-    if (!valid_handle(index))
+    if (arglist.v.list[0].v.num >= 3 && !is_true(arglist.v.list[3]))
     {
+        Var r;
+        do_sqlite_query(arglist, &r);
         free_var(arglist);
-        return make_error_pack(E_INVARG);
-    }
-
-    const char *query = arglist.v.list[2].v.str;
-    char *err_msg = 0;
-
-    sqlite_conn *handle = &sqlite_connections[index];
-
-    int rc = sqlite3_exec(handle->id, query, callback, handle, &err_msg);
-    free_var(arglist);
-
-    Var r;
-
-    if (rc != SQLITE_OK)
-    {
-        r.type = TYPE_STR;
-        r.v.str = str_dup(err_msg);
-        sqlite3_free(err_msg);
-
         return make_var_pack(r);
     } else {
-        r = var_dup(last_result);
-        free_var(last_result);
-        last_result = new_list(0);
+        char *human_string = 0;
+        asprintf(&human_string, "sqlite_query: %s", arglist.v.list[2].v.str);
 
-        return make_var_pack(r);
+        return background_thread(sqlite_query_thread_callback, &arglist, human_string);
     }
 }
 
@@ -338,6 +387,7 @@ int allocate_handle()
     sqlite_conn connection;
     connection.path = NULL;
     connection.options = SQLITE_PARSE_TYPES | SQLITE_PARSE_OBJECTS;
+    connection.locks = 0;
 
     sqlite_connections[handle] = connection;
 
@@ -363,26 +413,24 @@ void deallocate_handle(int handle)
  * If so, return its handle. Otherwise, return -1. */
 int database_already_open(const char *path)
 {
-    std::map <int, sqlite_conn>::iterator it;
-    for (it = sqlite_connections.begin(); it != sqlite_connections.end(); it++)
+    for (auto &it : sqlite_connections)
     {
-        if (it->second.path != NULL && strcmp(it->second.path, path) == 0)
-            return it->first;
+        if (it.second.path != NULL && strcmp(it.second.path, path) == 0)
+            return it.first;
     }
 
     return -1;
 }
 
-/* Callback function for execute. Shoves our result into an ugly global
- * for the MOO to soak into a Var. */
+/* The callback function that sqlite will call on each row. */
 int callback(void *index, int argc, char **argv, char **azColName)
 {
-    sqlite_conn *handle = (sqlite_conn*)index;
+    sqlite_result *thread_handle = (sqlite_result*)index;
+    sqlite_conn *handle = thread_handle->connection;
 
     Var ret = new_list(0);
 
-    int i = 0;
-    for (i = 0; i < argc; i++)
+    for (int i = 0; i < argc; i++)
     {
         Var s;
         if (!(handle->options & SQLITE_PARSE_TYPES))
@@ -399,7 +447,7 @@ int callback(void *index, int argc, char **argv, char **azColName)
         ret = listappend(ret, s);
     }
 
-    last_result = listappend(last_result, ret);
+    thread_handle->last_result = listappend(thread_handle->last_result, ret);
 
     return 0;
 }
@@ -475,12 +523,20 @@ Stream* object_to_string(Var *thing)
 void
 register_sqlite() {
     oklog("REGISTER_SQLITE: v%s (SQLite Library v%s)\n", SQLITE_MOO_VERSION, sqlite3_libversion());
+      if (sqlite3_threadsafe() > 0) {
+        int retCode = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
+        if (retCode != SQLITE_OK) {
+            errlog("SQLite couldn't be set to serialized.\n");
+        }
+    } else {
+        applog(LOG_WARNING, "SQLite is not compiled to be thread-safe. BEWARE!");
+    }
 
     register_function("sqlite_open", 1, 2, bf_sqlite_open, TYPE_STR, TYPE_INT);
     register_function("sqlite_close", 1, 1, bf_sqlite_close, TYPE_INT);
     register_function("sqlite_handles", 0, 0, bf_sqlite_handles);
     register_function("sqlite_info", 1, 1, bf_sqlite_info, TYPE_INT);
-    register_function("sqlite_query", 2, 2, bf_sqlite_query, TYPE_INT, TYPE_STR);
-    register_function("sqlite_execute", 3, 3, bf_sqlite_execute, TYPE_INT, TYPE_STR, TYPE_LIST);
+    register_function("sqlite_query", 2, 3, bf_sqlite_query, TYPE_INT, TYPE_STR, TYPE_INT);
+    register_function("sqlite_execute", 3, 4, bf_sqlite_execute, TYPE_INT, TYPE_STR, TYPE_LIST, TYPE_INT);
     register_function("sqlite_last_insert_row_id", 1, 1, bf_sqlite_last_insert_row_id, TYPE_INT);
 }

@@ -19,6 +19,7 @@
 
 #include "my-string.h"
 #include "my-time.h"
+#include "my-in.h"
 
 #include "config.h"
 #include "db.h"
@@ -45,9 +46,11 @@
 #include "utils.h"
 #include "verbs.h"
 #include "version.h"
+#include "name_lookup.h"
 
 #include <sys/time.h>
 #include <math.h>
+#include <arpa/inet.h>
 
 #define ROUND(tvp)	((tvp)->tv_sec + ((tvp)->tv_usec > 500000))
 
@@ -923,14 +926,18 @@ do_login_task(tqueue * tq, char *command)
                 split = strtok(NULL, " ");
             }
 
-            // TODO: Resolve DNS names here
-
             static Stream *new_connection_name = 0;
 
             if (!new_connection_name)
                 new_connection_name = new_stream(100);
 
-            stream_printf(new_connection_name, "port %s from %s [%s], port %s", destination_port, source, source, source_port);
+            struct sockaddr_in address;
+            address.sin_family = AF_INET;
+            address.sin_port = htons(atoi(source_port));
+            inet_pton(AF_INET, source, &address.sin_addr);
+            int timeout = server_int_option("name_lookup_timeout", 5);
+
+            stream_printf(new_connection_name, "port %s from %s, port %s", destination_port, lookup_name_from_addr(&address, timeout), source_port);
 
             proxy_connected(tq->player, new_connection_name);
             /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */
@@ -1100,7 +1107,7 @@ tasks_connection_options(task_queue q, Var list)
 #undef TASK_CO_TABLE
 
 static void
-enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary)
+enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary, bool is_telnet)
 {
     static char oob_prefix[] = OUT_OF_BAND_PREFIX;
     task *t;
@@ -1108,6 +1115,8 @@ enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary)
     t = (task *)mymalloc(sizeof(task), M_TASK);
     if (binary)
 	t->kind = TASK_BINARY;
+    else if (is_telnet)
+        t->kind = TASK_OOB;
     else if (oob_quote_prefix_length > 0
 	     && strncmp(oob_quote_prefix, input, oob_quote_prefix_length) == 0)
 	t->kind = TASK_QUOTED;
@@ -1194,15 +1203,15 @@ flush_input(tqueue * tq, int show_messages)
 }
 
 void
-new_input_task(task_queue q, const char *input, int binary)
+new_input_task(task_queue q, const char *input, int binary, bool out_of_band)
 {
     tqueue *tq = (tqueue *)q.ptr;
 
-    if (tq->flush_cmd && mystrcasecmp(input, tq->flush_cmd) == 0) {
+    if (tq->flush_cmd && strcasecmp(input, tq->flush_cmd) == 0) {
 	flush_input(tq, 1);
 	return;
     }
-    enqueue_input_task(tq, input, 0/*at-rear*/, binary);
+    enqueue_input_task(tq, input, 0/*at-rear*/, binary, out_of_band);
 }
 
 static void
@@ -2861,7 +2870,7 @@ bf_force_input(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_PERM);
     }
     tq = find_tqueue(conn, 1);
-    enqueue_input_task(tq, line, at_front, 0/*non-binary*/);
+    enqueue_input_task(tq, line, at_front, 0/*non-binary*/, 0 /*non-telnet*/);
     free_var(arglist);
     return no_var_pack();
 }
@@ -2922,10 +2931,6 @@ bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Objid old_player = arglist.v.list[1].v.obj;
     Objid new_player = arglist.v.list[2].v.obj;
-    int _new = 0;
-
-    if (listlength(arglist) > 2)
-	_new = is_true(arglist.v.list[3]);
 
     free_var(arglist);
 
@@ -2973,7 +2978,8 @@ bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
 	dead_tq->num_bg_tasks = 0;
     }
 
-    player_connected_silent(old_player, new_player, _new);
+    player_connected_silent(old_player, new_player);
+
     boot_player(old_player);
 
     return no_var_pack();
@@ -2994,6 +3000,6 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
     register_function("set_task_local", 1, 1, bf_set_task_local, TYPE_ANY);
     register_function("task_local", 0, 0, bf_task_local);
-    register_function("switch_player", 2, 3, bf_switch_player,
-		      TYPE_OBJ, TYPE_OBJ, TYPE_ANY);
+    register_function("switch_player", 2, 2, bf_switch_player,
+		      TYPE_OBJ, TYPE_OBJ);
 }

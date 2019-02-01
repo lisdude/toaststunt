@@ -1,4 +1,4 @@
-/* C++ code produced by gperf version 3.0.3 */
+/* C++ code produced by gperf version 3.1 */
 /* Command-line: gperf --language=C++ --ignore-case --readonly-tables --struct-type --omit-struct-type --key-positions='1,3,$' keywords.gperf  */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
@@ -25,7 +25,7 @@
       && ('w' == 119) && ('x' == 120) && ('y' == 121) && ('z' == 122) \
       && ('{' == 123) && ('|' == 124) && ('}' == 125) && ('~' == 126))
 /* The character set is not based on ISO-646.  */
-#error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gnu-gperf@gnu.org>."
+#error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gperf@gnu.org>."
 #endif
 
 #line 1 "keywords.gperf"
@@ -107,13 +107,13 @@ gperf_case_strcmp (const char *s1, const char *s2)
 class Perfect_Hash
 {
 private:
-  static inline unsigned int hash (const char *str, unsigned int len);
+  static inline unsigned int hash (const char *str, size_t len);
 public:
-  static const struct keyword *in_word_set (const char *str, unsigned int len);
+  static const struct keyword *in_word_set (const char *str, size_t len);
 };
 
 inline unsigned int
-Perfect_Hash::hash (const char *str, unsigned int len)
+Perfect_Hash::hash (const char *str, size_t len)
 {
   static const unsigned char asso_values[] =
     {
@@ -144,23 +144,23 @@ Perfect_Hash::hash (const char *str, unsigned int len)
       89, 89, 89, 89, 89, 89, 89, 89, 89, 89,
       89, 89, 89, 89, 89, 89
     };
-  int hval = len;
+  unsigned int hval = len;
 
   switch (hval)
     {
       default:
-        hval += asso_values[(unsigned char)str[2]];
+        hval += asso_values[static_cast<unsigned char>(str[2])];
       /*FALLTHROUGH*/
       case 2:
       case 1:
-        hval += asso_values[(unsigned char)str[0]];
+        hval += asso_values[static_cast<unsigned char>(str[0])];
         break;
     }
-  return hval + asso_values[(unsigned char)str[len - 1]];
+  return hval + asso_values[static_cast<unsigned char>(str[len - 1])];
 }
 
 const struct keyword *
-Perfect_Hash::in_word_set (const char *str, unsigned int len)
+Perfect_Hash::in_word_set (const char *str, size_t len)
 {
   static const struct keyword wordlist[] =
     {
@@ -261,9 +261,9 @@ Perfect_Hash::in_word_set (const char *str, unsigned int len)
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
     {
-      int key = hash (str, len);
+      unsigned int key = hash (str, len);
 
-      if (key <= MAX_HASH_VALUE && key >= 0)
+      if (key <= MAX_HASH_VALUE)
         {
           const char *s = wordlist[key].name;
 

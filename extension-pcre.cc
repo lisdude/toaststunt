@@ -1,35 +1,4 @@
-/******************************************************************************
- * Perl-compatible Regular Expressions for LambdaMOO.
- *
- * lisdude <lisdude@lisdude.com>
- ******************************************************************************/
-
-#include <pcre.h>
-#include "functions.h"
-#include "list.h"
-#include "utils.h"
-#include "log.h"
-#include "pcrs.h"
-#include "server.h" /* server_int_option */
-#include "map.h"
-#include "xtrapbits.h" /* bit array */
-
-#define EXT_PCRE_VERSION    "3.0"
-#define DEFAULT_LOOPS       1000
-#define RETURN_INDEXES      2
-#define RETURN_GROUPS       4
-#define FIND_ALL            8
-
-struct pcre_cache_entry {
-    char *error;
-    pcre *re;
-    pcre_extra *extra;
-    int captures;
-};
-
-void free_pcre_vars(pcre_cache_entry *);
-void free_entry(pcre_cache_entry *);
-Var result_indices(int ovector[], int n);
+#include "extension-pcre.h"
 
 static struct pcre_cache_entry *
 get_pcre(const char *string, unsigned char options) {
@@ -41,6 +10,7 @@ get_pcre(const char *string, unsigned char options) {
     entry->error = NULL;
     entry->re = NULL;
     entry->captures = 0;
+    entry->extra = NULL;
 
     entry->re = pcre_compile(string, options, &err, &eos, NULL);
     if (entry->re == NULL) {
@@ -51,9 +21,8 @@ get_pcre(const char *string, unsigned char options) {
         entry->extra = pcre_study(entry->re, 0, &error);
         if (error != NULL)
             entry->error = str_dup(error);
-        else {
+        else 
             (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
-        }
     }
 
     return entry;
@@ -79,18 +48,18 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     unsigned char options = 0;
     unsigned char flags = FIND_ALL;
 
-    subject = str_ref(arglist.v.list[1].v.str);
-    pattern = str_ref(arglist.v.list[2].v.str);
+    subject = arglist.v.list[1].v.str;
+    pattern = arglist.v.list[2].v.str;
     options = (arglist.v.list[0].v.num >= 3 && is_true(arglist.v.list[3])) ? 0 : PCRE_CASELESS;
 
     if (arglist.v.list[0].v.num >= 4 && arglist.v.list[4].v.num == 0)
         flags ^= FIND_ALL;
 
-    free_var(arglist);
-
     /* Return E_INVARG if the pattern or subject are empty. */
-    if (pattern[0] == '\0' || subject[0] == '\0')
+    if (pattern[0] == '\0' || subject[0] == '\0') {
+        free_var(arglist);
         return make_error_pack(E_INVARG);
+    }
 
     /* Compile the pattern */
     struct pcre_cache_entry *entry = get_pcre(pattern, options);
@@ -99,6 +68,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     {
         package r = make_raise_pack(E_INVARG, entry->error, var_ref(zero));
         free_entry(entry);
+        free_var(arglist);
         return r;
     }
 
@@ -132,12 +102,14 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         if (rc < 0 && rc != PCRE_ERROR_NOMATCH)
         {
             /* We've encountered some funky error. Back out and let them know what it is. */
-            free_pcre_vars(entry);
+            free_entry(entry);
+            free_var(arglist);
             sprintf(err, "pcre_exec returned error: %d", rc);
             return make_raise_pack(E_INVARG, err, var_ref(zero));
         } else if (rc == 0) {
             /* We don't have enough room to store all of these substrings. */
-            free_pcre_vars(entry);
+            free_entry(entry);
+            free_var(arglist);
             sprintf(err, "pcre_exec only has room for %d substrings", entry->captures);
             return make_raise_pack(E_QUOTA, err, var_ref(zero));
         } else if (rc == PCRE_ERROR_NOMATCH) {
@@ -145,22 +117,23 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             break;
         } else if (loops >= total_loops) {
             /* The loop has iterated beyond the maximum limit, probably locking the server. Kill it. */
-            free_pcre_vars(entry);
+            free_entry(entry);
+            free_var(arglist);
             sprintf(err, "Too many iterations of matching loop: %d", loops);
             return make_raise_pack(E_MAXREC, err, var_ref(zero));
         } else {
             /* We'll use a bit array to indicate which index matches are superfluous. e.g. which results
-             * have a NAMED result instead of a numbered result. */
+             * have a NAMED result instead of a numbered result. I'm definitely open to better ideas! */
             static unsigned char *bit_array;
             bit_array = (unsigned char *)mymalloc(rc * sizeof(unsigned char), M_ARRAY);
             memset(bit_array, 0, rc);
+            (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMECOUNT, &named_substrings);
 
             if (named_substrings > 0)
             {
                 unsigned char *name_table, *tabptr;
                 int name_entry_size;
 
-                (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMECOUNT, &named_substrings);
                 (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMETABLE, &name_table);
                 (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size);
 
@@ -178,8 +151,10 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
                     /* Extract the substring itself with obnoxious printf magic */
                     char *substring = (char *)mymalloc(substring_size + 1, M_STRING);
                     sprintf(substring, "%.*s", substring_size, subject + ovector[2*n]);
-                    result = mapinsert(result, var_ref(match), str_dup_to_var(substring));
-                    myfree(substring, M_STRING);
+                    Var substring_var;
+                    substring_var.type = TYPE_STR;
+                    substring_var.v.str = substring;
+                    result = mapinsert(result, var_ref(match), substring_var);
 
                     named_groups = mapinsert(named_groups, str_dup_to_var((const char*)(tabptr + 2)), result);
                     bit_true(bit_array, n);
@@ -222,17 +197,9 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             break;
     }
 
-    free_pcre_vars(entry);
-    return make_var_pack(ret);
-}
-
-/* Free the billions of variables that we had to declare.
- * We give extra checks to the lists to make sure they actually
- * have memory to give up. Also some vars can be null because,
- * well, I'm lazy and it's easier to keep it all together like this. */
-void free_pcre_vars(pcre_cache_entry *entry)
-{
     free_entry(entry);
+    free_var(arglist);
+    return make_var_pack(ret);
 }
 
 void free_entry(pcre_cache_entry *entry)
@@ -288,6 +255,15 @@ bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr) {
     err = pcrs_execute(job, linebuf, length, &result, &length);
     if (err >= 0)
     {
+        /* Sanitize the result so people don't introduce 'dangerous' characters into the database */
+        char *p = result;
+        while (*p)
+        {
+            if (!isprint(*p))
+                *p = ' ';
+            p++;
+        }
+
         Var ret;
         ret.type = TYPE_STR;
         ret.v.str = str_dup(result);

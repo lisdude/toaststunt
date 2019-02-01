@@ -71,7 +71,9 @@ static registry bi_function_registries[] =
     register_pcre,
     register_background,
     register_waif,
-    register_simplexnoise
+    register_simplexnoise,
+    register_argon2,
+    register_spellcheck
 };
 
 void
@@ -186,7 +188,7 @@ number_func_by_name(const char *name)
     unsigned i;
 
     for (i = 0; i < top_bf_table; i++)
-	if (!mystrcasecmp(name, bf_table[i].name))
+	if (!strcasecmp(name, bf_table[i].name))
 	    return i;
 
     return FUNC_NOT_FOUND;

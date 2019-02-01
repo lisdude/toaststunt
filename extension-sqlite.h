@@ -12,8 +12,9 @@
 #include "storage.h"
 #include "log.h"
 #include "server.h"
+#include "map.h"
 
-#define SQLITE_MOO_VERSION      "2.0"
+#define SQLITE_MOO_VERSION      "2.1"
 #define SQLITE_MAX_HANDLES      20  /* Maximum number of SQLite databases that can be open
                                      * at a single time. Can be overridden with an INT in
                                      * $server_options.sqlite_max_handles */
@@ -27,21 +28,27 @@ typedef struct sqlite_conn
     sqlite3 *id;
     char *path;
     unsigned char options;
+    int locks;
 } sqlite_conn;
 
-// Array of open connections
+/* In order to ensure thread safety, the last result should be unique
+ * to each running thread. So we pass this temporary struct around instead
+ * of the connection itself. */
+typedef struct sqlite_result
+{
+    sqlite_conn *connection;
+    Var last_result;
+} sqlite_result;
+
+// Map of open connections
 static std::map <int, sqlite_conn> sqlite_connections;
 // Next database handle. This will get reset to 1 when all connections get closed.
 static int next_sqlite_handle = 1;
 
-/* The result of our last query from the callback
- * so the MOO can copy it into a Var from the builtin function. */
-Var last_result = new_list(0);
-
 // Forward declarations
-extern const char *file_resolve_path(const char *);             // from extension-fileio.c
-extern int parse_number(const char *, int *, int);              // from numbers.c
-extern int parse_float(const char *, double *);                 // from numbers.c
+extern const char *file_resolve_path(const char *);             // from fileio.cc
+extern int parse_number(const char *, int *, int);              // from numbers.cc
+extern int parse_float(const char *, double *);                 // from numbers.cc
 
 // Other helper functions
 bool valid_handle(int handle);

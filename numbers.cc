@@ -98,14 +98,14 @@ parse_float(const char *str, double *result)
 }
 
 enum error
-become_integer(Var in, Num *ret, int called_from_tonum)
+become_integer(Var in, Num *ret, int called_from_toint)
 {
     switch (in.type) {
     case TYPE_INT:
 	*ret = in.v.num;
 	break;
     case TYPE_STR:
-	if (!(called_from_tonum
+	if (!(called_from_toint
 	      ? parse_number(in.v.str, ret, 1)
 	      : parse_object(in.v.str, ret)))
 	    *ret = 0;
@@ -997,7 +997,6 @@ register_numbers(void)
     zero.v.num = 0;
 
     register_function("toint", 1, 1, bf_toint, TYPE_ANY);
-    register_function("tonum", 1, 1, bf_toint, TYPE_ANY);
     register_function("tofloat", 1, 1, bf_tofloat, TYPE_ANY);
     register_function("min", 1, -1, bf_min, TYPE_NUMERIC);
     register_function("max", 1, -1, bf_max, TYPE_NUMERIC);
