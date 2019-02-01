@@ -53,8 +53,8 @@
 #include "version_src.h"
 #ifndef VERSION_MAJOR
 #  define VERSION_MAJOR 2
-#  define VERSION_MINOR 4
-#  define VERSION_RELEASE 6
+#  define VERSION_MINOR 5
+#  define VERSION_RELEASE 0
 #endif
 #ifndef VERSION_EXT
 #  define VERSION_EXT ""
