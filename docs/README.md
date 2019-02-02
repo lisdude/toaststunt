@@ -57,6 +57,7 @@ ToastStunt is the server that runs [Miriani](https://www.toastsoft.net) and [Cha
     - locations (recursive location function)
     - clear_ancestor_cache (clears the ancestor cache manually)
     - chr (return extended ASCII characters; characters that can corrupt your database are considered invalid)
+    - levenshtein_distance (calculate the Levenshtein distance between two strings)
 
 - Miscellaneous changes:
     - Numeric IP addresses in connection_name
