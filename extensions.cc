@@ -1,5 +1,3 @@
-#include <algorithm> //min
-#include <memory> //unique_ptr
 #include <set>
 #include <math.h>           // sqrt, atan, round, etc
 #include "functions.h"      // register builtins
@@ -568,37 +566,6 @@ bf_remove_ansi(Var arglist, Byte next, void *vdata, Objid progr)
 }
 //==============================================================
 
-static int levenshtein(const char *const s1, const char *const s2, const int s1len, const int s2len)
-{
-    if (s1 == nullptr || s2 == nullptr)
-        return 0;
-    if (s1len == 0 && s2len == 0)
-        return 0;
-
-    unique_ptr<int[]> column(new int[s1len+1]);
-    for (int y = 1; y <= s1len; y++)
-        column[y] = y;
-    for (int x = 1; x <= s2len; x++)
-        {
-            column[0] = x;
-            for (int y = 1, lastdiag = x-1; y <= s1len; y++)
-                {
-                    int olddiag = column[y];
-                    column[y] = min(min(column[y] + 1, column[y-1] + 1), lastdiag + (s1[y-1] == s2[x-1] ? 0 : 1));
-                    lastdiag = olddiag;
-                }
-        }
-    return(column[s1len]);
-}
-
-static package
-bf_levenshtein(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    const int distance = levenshtein(arglist.v.list[1].v.str, arglist.v.list[2].v.str, memo_strlen(arglist.v.list[1].v.str), memo_strlen(arglist.v.list[2].v.str));
-    free_var(arglist);
-    return make_var_pack(Var::new_int(distance));
-}
-
 static void do_deep_contents(set<Objid> &objids, Var &branch, Var& parent, bool perform_isa=false)
 {
     if (branch.type != TYPE_OBJ)
@@ -698,7 +665,6 @@ register_extensions()
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
     register_function("chr", 1, 1, bf_chr, TYPE_INT);
-    register_function("levenshtein_distance", 2, 2, bf_levenshtein, TYPE_STR, TYPE_STR);
     register_function("deep_contents", 1, 2, bf_deep_contents, TYPE_OBJ, TYPE_OBJ);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
