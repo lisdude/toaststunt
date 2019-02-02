@@ -15,9 +15,11 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <sys/types.h> //for u_int64_t
 #include <limits.h>
 #include <errno.h>
 #include <float.h>
+#include <random>
 #include "my-math.h"
 #include "my-stdlib.h"
 #include "my-string.h"
@@ -34,8 +36,17 @@
 #include "structures.h"
 #include "utils.h"
 
+using namespace std;
+
 sosemanuk_key_context key_context;
 sosemanuk_run_context run_context;
+
+/**
+* I don't particularly like these being global, but we don't want to reseed
+* each and every time we generate a random number.
+*/
+static random_device rand_dev;
+static mt19937 random_generator(rand_dev());
 
 int
 parse_number(const char *str, int *result, int try_floating_point)
@@ -194,43 +205,6 @@ to_float(Var v, double *dp)
 }
 #endif
 
-#if defined(HAVE_MATHERR) && defined(DOMAIN) && defined(SING) && defined(OVERFLOW) && defined(UNDERFLOW)
-
-/* note: for some odd reason compiling with g++ chokes on the
-   matherr() function, as "struct exception" was not defined
-   anywhere. It seems it's part of a precursor to POSIX (the mentioned
-   SVID3 below). To that end, I found the definition of "struct
-   exception" and paste it in here just to get things to compile. */
-
-// borrowed from:
-// http://docs.sun.com/app/docs/doc/805-3175/6j31emoh8?l=Ja&a=view
-struct exception {
-	int type;
-	char *name;
-	double arg1, arg2, retval;
-};
-
-/* Required in order to properly handle FP exceptions on SVID3 systems */
-int
-matherr(struct exception *x)
-{
-    switch (x->type) {
-    case DOMAIN:
-    case SING:
-	errno = EDOM;
-	/* fall thru to... */
-    case OVERFLOW:
-	x->retval = HUGE_VAL;
-	return 1;
-    case UNDERFLOW:
-	x->retval = 0.0;
-	return 1;
-    default:
-	return 0;		/* Take default action */
-    }
-}
-#endif
-
 
 /**** opcode implementations ****/
 
@@ -825,80 +799,14 @@ bf_random(Var arglist, Byte next, void *vdata, Objid progr)
 {
     int nargs = arglist.v.list[0].v.num;
     int num = (nargs >= 1 ? arglist.v.list[1].v.num : INTNUM_MAX);
-    Var r;
-    int e;
-    int rnd;
-
     free_var(arglist);
 
     if (num <= 0)
-	return make_error_pack(E_INVARG);
+        	return make_error_pack(E_INVARG);
 
-    const int range_l =
-	((INTNUM_MAX > RAND_MAX ? RAND_MAX : (RAND_MAX - num)) + 1) % num;
-
-    r.type = TYPE_INT;
-
-#if ((RAND_MAX <= 0) || 0!=(RAND_MAX & (RAND_MAX+1)))
-#   error RAND_MAX+1 is not a positive power of 2 ??
-#endif
-
-#if (INTNUM_MAX > RAND_MAX)
-    /* num >= RAND_MAX possible; launch general algorithm */
-
-#   define RANGE       (RAND_MAX+1)
-#   define OR_ZERO(n)  (n)
-
-    rnd = 0;
-    e = 1;
-#else
-    /* num >= RAND_MAX not possible; unroll first loop iteration */
-
-#   define OR_ZERO(n)  0
-
-    rnd = RANDOM();
-    e = range_l;
-
-    if (rnd >= e) {
-	r.v.num = 1 + rnd % num;
-	return make_var_pack(r);
-    }
-#endif
-
-    for (;;) {
-	/* INVARIANT: rnd uniform over [0..e-1] */
-	int rnd_next = RANDOM();
-
-#if RAND_MAX < INTNUM_MAX
-	/* compiler should turn [/%*]RANGE into bitwise ops */
-	while (e < (num/RANGE) ||
-	       ((e == num/RANGE) && (num%RANGE != 0))) {
-	    rnd = rnd*RANGE + rnd_next;
-	    e *= RANGE;
-	    rnd_next = RANDOM();
-	}
-#endif
-	/* INVARIANTS:
-	 *   e*RANGE >= num
-	 *   rnd uniform over [0..e-1]
-	 *   rnd*RANGE + rnd_next uniform over [0..e*RANGE-1]
-	 */
-	if (rnd > OR_ZERO(num/RANGE)) {
-	    /* rnd*RANGE > num */
-	    r.v.num = 1 + muladdmod(rnd, range_l, rnd_next, num);
-	    break;
-	}
-	rnd = OR_ZERO(rnd*RANGE) + rnd_next;
-	e = muladdmod(e, range_l, 0, num);
-
-	if (rnd >= e) {
-	    r.v.num = 1 + rnd % num;
-	    break;
-	}
-    }
+    uniform_int_distribution<> distribution(1, num);
+    auto r = Var::new_int(distribution(random_generator));
     return make_var_pack(r);
-#undef RANGE
-#undef OR_ZERO
 }
 
 #define TRY_STREAM enable_stream_exceptions()

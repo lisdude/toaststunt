@@ -21,6 +21,7 @@
 
 #include "my-string.h"
 
+#include <ctime>
 #include "config.h"
 #include "db.h"
 #include "db_io.h"

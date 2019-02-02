@@ -15,6 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <sys/socket.h>
 #include <stdlib.h>
 
 #include "my-string.h"

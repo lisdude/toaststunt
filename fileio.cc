@@ -3,6 +3,7 @@
  */
 
 #define FILE_IO 1
+#define _WITH_GETLINE 1
 
 #include <stdio.h>
 #include <stdlib.h>
