@@ -1,3 +1,5 @@
+#include <algorithm> //min
+#include <memory> //unique_ptr
 #include <math.h>           // sqrt, atan, round, etc
 #include "functions.h"      // register builtins
 #include "log.h"            // oklog()
@@ -16,6 +18,8 @@
 #ifdef __MACH__
 #include <mach/clock.h>     // Millisecond time for OS X
 #endif
+
+using namespace std;
 
 /**
 * On FreeBSD, CLOCK_MONOTONIC_RAW is simply CLOCK_MONOTONIC
