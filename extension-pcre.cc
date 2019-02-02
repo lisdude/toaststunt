@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "extension-pcre.h"
 
 static struct pcre_cache_entry *

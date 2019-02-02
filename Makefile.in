@@ -16,12 +16,14 @@
 CC = @CC@
 CXX = @CXX@
 CCAS = @CCAS@
+LDFLAGS=@LDFLAGS@
 LIBRARIES = @LIBS@
+ELIBS=@ELIBS@
 YACC = @YACC@
 
-CFLAGS = -Wall -march=native -O3 -flto -Wno-sign-compare -Wno-switch
+CFLAGS = -Wall -march=native -O3 -Wno-sign-compare -Wno-switch @CFLAGS@
 #CFLAGS = -g -Wall -march=native -O3 -ggdb
-CXXFLAGS = $(CFLAGS)
+CXXFLAGS = $(CFLAGS) @CXXFLAGS@
 # If you're using GCC, you may prefer:
 # CFLAGS = -O2 -finline-functions
 #
@@ -126,7 +128,7 @@ YOBJS = $(YSRCS:.y=.o)
 OBJS = $(COBJS) $(CXXOBJS) $(YOBJS) crypt/x86.o
 
 moo:	$(OBJS)
-	$(CXX) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
+	$(CXX) $(CFLAGS) $(OBJS) $(LDFLAGS) $(LIBRARIES) $(ELIBS) -o $@
 
 crypt/x86.o: crypt/x86.S
 	$(CCAS) $(ASFLAGS) $< -o $@

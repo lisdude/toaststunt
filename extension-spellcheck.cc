@@ -61,6 +61,12 @@ bf_spellcheck(Var arglist, Byte next, void *vdata, Objid progr) {
 
 void register_spellcheck(void)
 {
+    //FreeBSD's aspell doesn't include version string for some reason.
+    #ifndef __FreeBSD__
     oklog("REGISTER_SPELLCHECK: v%s (Aspell Library v%s)\n", EXT_SPELLCHECK_VERSION, aspell_version_string());
+    #else
+    oklog("REGISTER_SPELLCHECK: v%s\n", EXT_SPELLCHECK_VERSION);
+#endif    
+
     register_function("spellcheck", 1, 1, bf_spellcheck, TYPE_STR);
 }

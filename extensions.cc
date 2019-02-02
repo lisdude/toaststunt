@@ -9,10 +9,26 @@
 #include "server.h"         // panic()
 #include <sys/time.h>       // getrusage
 #include <sys/resource.h>   // getrusage
-#include <sys/sysinfo.h>    // CPU usage
+#ifndef __FreeBSD__
+    #include <sys/sysinfo.h>    // CPU usage
+#endif
 #include "extension-background.h"   // Threads
 #ifdef __MACH__
 #include <mach/clock.h>     // Millisecond time for OS X
+#endif
+
+/**
+* On FreeBSD, CLOCK_MONOTONIC_RAW is simply CLOCK_MONOTONIC
+*/
+#ifdef __FreeBSD__
+    #define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
+#endif
+/**
+* BSD doesn't support sysinfo.
+* There are probably other ways to get CPU info, but for the sake of compilation we'll just return all 0 for CPU usage on BSD for now.
+*/
+#ifdef __FreeBSD__
+    #define _MOO_NO_CPU_USAGE
 #endif
 
 /* Returns a float of the time (including milliseconds)
@@ -201,15 +217,17 @@ bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
         r.v.list[x].type = TYPE_INT;
 
     for (x = 1; x <= 3; x++)
-        cpu.v.list[x].type = TYPE_INT;
+        cpu.v.list[x] = Var::new_int(0); //initialize to all 0
 
+    #ifndef _MOO_NO_CPU_USAGE
     /*** Begin CPU load averages ***/
-    struct sysinfo sys_info;
-    int info_ret = sysinfo(&sys_info);
+        struct sysinfo sys_info;
+        int info_ret = sysinfo(&sys_info);
 
-    for (x = 0; x < 3; x++)
-        cpu.v.list[x+1].v.num = (info_ret != 0 ? 0 : sys_info.loads[x]);
-
+        for (x = 0; x < 3; x++)
+            cpu.v.list[x+1].v.num = (info_ret != 0 ? 0 : sys_info.loads[x]);
+    #endif
+    
     /*** Now rusage ***/
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
