@@ -606,7 +606,7 @@ static void do_deep_contents(set<Objid> &objids, Var &branch, Var& parent, bool 
 * will retrieve all players nested in that object.
 * A few notes:
 * We use std::set to make sure that we are performing set operations.
-* This probably isn't needed; if you've got an object appearing in two different contents chances are shit's fucked up, but better safe than sorry.
+* This probably isn't needed; if you've got an object appearing in two different contents chances are something went wrong, but better safe than sorry.
 * This set also serves the duel purpose of constructing a set without having to call setadd multiple times on a MOO list.
 * This is much quicker because we can keep adding to this and then get the final count of elements as the size of the list, which requires less reallocation of the list itself.
 */
