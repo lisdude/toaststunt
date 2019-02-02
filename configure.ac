@@ -22,8 +22,8 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_LANG([C])
 
-${CFLAGS=}
-${CXXFLAGS=}
+: ${CFLAGS=}
+: ${CXXFLAGS=}
 
 dnl ***************************************************************************
 dnl Start of actual configuration tests
