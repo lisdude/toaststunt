@@ -176,7 +176,7 @@ void do_sqlite_execute(Var args, Var *r)
                 sqlite3_bind_int(stmt, x, args.v.list[3].v.list[x].v.num);
                 break;
             case TYPE_FLOAT:
-                sqlite3_bind_double(stmt, x, arglist.v.list[3].v.list[x].v.fnum);
+                sqlite3_bind_double(stmt, x, args.v.list[3].v.list[x].v.fnum);
                 break;
             case TYPE_OBJ:
                 sqlite3_bind_text(stmt, x, str_dup(reset_stream(object_to_string(&args.v.list[3].v.list[x]))),  -1, NULL);
