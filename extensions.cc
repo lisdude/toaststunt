@@ -1,7 +1,9 @@
 #include <algorithm> //min
 #include <memory> //unique_ptr
+#include <set>
 #include <math.h>           // sqrt, atan, round, etc
 #include "functions.h"      // register builtins
+#include "db_private.h"
 #include "log.h"            // oklog()
 #include "utils.h"          // streams
 #include "numbers.h"        // new_float()
@@ -597,6 +599,89 @@ bf_levenshtein(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(Var::new_int(distance));
 }
 
+static void do_deep_contents(set<Objid> &objids, Var &branch, Var& parent, bool perform_isa=false)
+{
+    if (branch.type != TYPE_OBJ)
+        return;
+
+    auto objid = branch.v.obj;
+    if (!valid(objid))
+        return;
+    auto branch_obj = dbpriv_find_object(objid);
+    if (!branch_obj)
+        return;
+
+    if (perform_isa)
+        {
+            if (db_object_isa(branch, parent))
+                {
+                    objids.insert(branch.v.obj);
+                }
+        }
+    else
+        {
+            objids.insert(branch.v.obj);
+        }
+
+    for (int i = 1; i <= branch_obj->contents.v.list[0].v.num; ++i)
+        {
+            do_deep_contents(objids, branch_obj->contents.v.list[i], parent, perform_isa);
+        }
+
+    return;
+}
+
+/**
+* Deep_contents
+* This function retrieves recursively the contents of all objects and merges them into one set.
+* Pass as a second argument an object if you want an isa to be used.
+* For example, deep_contents(#1234, $player)
+* will retrieve all players nested in that object.
+* A few notes:
+* We use std::set to make sure that we are performing set operations.
+* This probably isn't needed; if you've got an object appearing in two different contents chances are shit's fucked up, but better safe than sorry.
+* This set also serves the duel purpose of constructing a set without having to call setadd multiple times on a MOO list.
+* This is much quicker because we can keep adding to this and then get the final count of elements as the size of the list, which requires less reallocation of the list itself.
+*/
+static package
+bf_deep_contents(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    bool perform_isa=false;
+    Objid what = arglist.v.list[1].v.obj;
+    if (!valid(what))
+        {
+            free_var(arglist);
+            return make_error_pack(E_INVIND);
+        }
+
+    Var parent;
+    if (arglist.v.list[0].v.num == 2)
+        {
+            parent = var_dup(arglist.v.list[2]);
+            perform_isa = true;
+        }
+    else
+        {
+            parent = var_ref(nothing);
+        }
+
+    set<Objid> objids;
+    do_deep_contents(objids, arglist.v.list[1], parent, perform_isa);
+    objids.erase(what);
+    auto set_size = objids.size();
+    Var array = new_list(set_size);
+    int index = 1;
+    for (auto it: objids)
+        {
+            array = listset(array, Var::new_obj(it), index);
+            ++index;
+        }
+
+    free_var(arglist);
+    free_var(parent);
+    return make_var_pack(array);
+}
+
     void
 register_extensions()
 {
@@ -614,6 +699,7 @@ register_extensions()
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
     register_function("chr", 1, 1, bf_chr, TYPE_INT);
     register_function("levenshtein_distance", 2, 2, bf_levenshtein, TYPE_STR, TYPE_STR);
+    register_function("deep_contents", 1, 2, bf_deep_contents, TYPE_OBJ, TYPE_OBJ);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);

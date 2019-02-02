@@ -58,6 +58,7 @@ ToastStunt is the server that runs [Miriani](https://www.toastsoft.net) and [Cha
     - clear_ancestor_cache (clears the ancestor cache manually)
     - chr (return extended ASCII characters; characters that can corrupt your database are considered invalid)
     - levenshtein_distance (calculate the Levenshtein distance between two strings)
+    - deep_contents (get all nested contents of an object. Provide as a second argument a parent if you want only descendants of that parent returned)
 
 - Miscellaneous changes:
     - Numeric IP addresses in connection_name
