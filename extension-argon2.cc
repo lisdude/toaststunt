@@ -52,7 +52,7 @@ bf_argon2(Var arglist, Byte next, void *vdata, Objid progr)
     if (result != ARGON2_OK) {
         free_var(arglist);
         free(out);
-        free(encoded);
+        myfree(encoded, M_STRING);
         return make_raise_pack(E_INVIND, argon2_error_message(result), var_ref(zero));
     }
 
