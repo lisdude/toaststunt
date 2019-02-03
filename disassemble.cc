@@ -375,6 +375,10 @@ disassemble(Program * prog, Printer p, void *data)
 			case TYPE_INT:
 			    stream_printf(insn, " %d", v.v.num);
 			    break;
+            case TYPE_FLOAT:
+                stream_add_char(insn, ' ');
+                unparse_value(insn, v);
+                break;
 			case TYPE_STR:
 			    stream_add_string(insn, " \"");
 			    for (ptr = v.v.str; *ptr; ptr++) {
