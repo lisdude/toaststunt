@@ -33,11 +33,11 @@
 #include "db.h" 		// valid
 #include "log.h"        // errlog
 #include "map.h"
-#include <map>
+#include <unordered_map>
 
 static unsigned long waif_count = 0;
-static std::map<Objid, unsigned int> waif_class_count;
-std::map<Waif *, bool> recycled_waifs;
+static std::unordered_map<Objid, unsigned int> waif_class_count;
+std::unordered_map<Waif *, bool> recycled_waifs;
 
 #define PROP_MAPPED(Mmap, Mbit)	((Mmap)[(Mbit) / 32] & (1 << ((Mbit) % 32)))
 #define MAP_PROP(Mmap, Mbit) (Mmap)[(Mbit) / 32] |= 1 << ((Mbit) % 32)

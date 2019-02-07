@@ -23,6 +23,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <vector>
 
 #include "my-types.h"		/* must be first on some systems */
 #include "my-signal.h"
@@ -569,16 +570,20 @@ recycle_waifs(void)
         strcpy(waif_recycle_verb + 1, "recycle");
     }
 
-    for (auto& x : recycled_waifs) {
+    std::vector<Waif*> removals;
+    for (auto &x: recycled_waifs) {
         if (recycled_waifs[x.first] == false) {
             run_server_task(-1, Var::new_waif(x.first), waif_recycle_verb, new_list(0), "", 0);
             recycled_waifs[x.first] = true;
             /* Flag it as recycled. Now we just wait for the refcount to hit zero so we can free it. */
         }
         if (refcount(x.first) == 0) {
-            free_waif(x.first);
-            recycled_waifs.erase(x.first);
+            removals.push_back(x.first);
         }
+      }  
+      for (auto x:removals) {
+        free_waif(x);
+        recycled_waifs.erase(x);
     }
 }
 
