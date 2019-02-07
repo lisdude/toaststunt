@@ -27,17 +27,32 @@
 
 #include "storage.h"
 
+#ifdef ONLY_32_BITS
+#define MAXINT	((Num) 2147483647L)
+#define MININT	((Num) -2147483648L)
+#else
 #define MAXINT	((Num) 9223372036854775807LL)
 #define MININT	((Num) -9223372036854775807LL)
-#define MAXINT	((Num) 9223372036854775807LL)
+#endif
 #define MAXOBJ	((Objid) MAXINT)
 #define MAXOBJ	((Objid) MAXINT)
 #define MINOBJ	((Objid) MININT)
 
+#ifdef ONLY_32_BITS
+typedef int32_t Num;
+typedef uint32_t UNum;
+#define PRIdN	PRId32
+#define SCNdN	SCNd32
+#define INTNUM_MAX INT32_MAX
+#define SERVER_BITS 32
+#else
 typedef int64_t Num;
 typedef uint64_t UNum;
 #define PRIdN	PRId64
 #define SCNdN	SCNd64
+#define INTNUM_MAX INT64_MAX
+#define SERVER_BITS 64
+#endif
 typedef Num Objid;
 
 /*
@@ -198,7 +213,7 @@ struct Var {
     }
 
     static Var
-    new_int(int64_t num) {
+    new_int(Num num) {
 	Var v;
 	v.type = TYPE_INT;
 	v.v.num = num;
@@ -276,8 +291,8 @@ extern Var none;		/* see objects.c */
  * user-constructed maps, lists and strings should generally be
  * smaller (see options.h)
  */
-#define MAX_STRING	(INT32_MAX - MIN_STRING_CONCAT_LIMIT)
-#define MAX_LIST_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
-#define MAX_MAP_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
+#define MAX_STRING	(INTNUM_MAX - MIN_STRING_CONCAT_LIMIT)
+#define MAX_LIST_VALUE_BYTES_LIMIT	(INTNUM_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
+#define MAX_MAP_VALUE_BYTES_LIMIT	(INTNUM_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
 
 #endif				/* !Structures_h */

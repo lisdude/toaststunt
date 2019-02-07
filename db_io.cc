@@ -74,7 +74,7 @@ dbio_scanf(const char *format,...)
     return count;
 }
 
-int64_t
+Num
 dbio_read_num(void)
 {
     char s[22];
@@ -303,7 +303,7 @@ dbio_printf(const char *format,...)
 }
 
 void
-dbio_write_num(int64_t n)
+dbio_write_num(Num n)
 {
     dbio_printf("%" PRId64 "\n", n);
 }

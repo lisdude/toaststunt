@@ -286,6 +286,7 @@
 # include <stdint.h>
 #endif
 
+#include "options.h" /* grab only_32_bits option */
 #include <limits.h>
 #ifndef HAVE_INT32_T
 #  if INT_MAX == 2147483647
@@ -321,6 +322,35 @@
 #  endif
 #endif
 
+#ifdef ONLY_32_BITS
+#  if INT_MAX == 2147483647
+#    define PRId64 "d"
+#    define PRIi64 "i"
+#    define PRIo64 "o"
+#    define PRIu64 "u"
+#    define PRIx64 "x"
+#    define PRIX64 "X"
+#    define SCNd64 "d"
+#    define SCNi64 "i"
+#    define SCNo64 "o"
+#    define SCNu64 "u"
+#    define SCNx64 "x"
+#  elif LONG_MAX == 2147483647
+#    define PRId64 "ld"
+#    define PRIi64 "li"
+#    define PRIo64 "lo"
+#    define PRIu64 "lu"
+#    define PRIx64 "lx"
+#    define PRIX64 "lX"
+#    define SCNd64 "ld"
+#    define SCNi64 "li"
+#    define SCNo64 "lo"
+#    define SCNu64 "lu"
+#    define SCNx64 "lx"
+#   endif
+
+#else /* 32_bits */
+
 #ifndef HAVE_INT64_T
 #  if LONG_MAX == 9223372036854775807
      typedef long          int64_t;
@@ -353,6 +383,7 @@
 #  else
 #    error I cannot figure out how to express a 64-bit integer on your machine.
 #  endif
+#endif
 #endif
 
 #ifndef HAVE_STRTOIMAX

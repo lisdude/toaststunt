@@ -1315,7 +1315,7 @@ db_flush(enum db_flush_type type)
     return success;
 }
 
-int64_t
+Num
 db_disk_size(void)
 {
     struct stat st;
