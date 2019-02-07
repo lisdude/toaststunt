@@ -221,10 +221,6 @@ complex_free_var(Var v)
 	if (v.v.str)
 	    free_str(v.v.str);
 	break;
-    case TYPE_FLOAT:
-	if (delref(v.v.fnum) == 0)
-	    myfree(v.v.fnum, M_FLOAT);
-	break;
     case TYPE_LIST:
 	if (v.v.list != emptylist.v.list && delref(v.v.list) == 0)
 	    destroy_list(v);

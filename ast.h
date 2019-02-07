@@ -219,7 +219,6 @@ extern Arg_List *alloc_arg_list(enum Arg_Kind, Expr *);
 extern Except_Arm *alloc_except(int, Arg_List *, Stmt *);
 extern Scatter *alloc_scatter(enum Scatter_Kind, int, Expr *);
 extern char *alloc_string(const char *);
-extern double *alloc_float(double);
 
 extern void dealloc_node(void *);
 extern void dealloc_string(char *);
