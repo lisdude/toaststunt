@@ -896,7 +896,7 @@ emergency_mode()
 		db_set_object_flag(wizard, FLAG_WIZARD);
 		printf("** No wizards in database; wizzed #%" PRIdN ".\n", wizard);
 	    }
-	    printf("** Now running emergency commands as #%d ...\n\n", wizard);
+	    printf("** Now running emergency commands as #%" PRIdN " ...\n\n", wizard);
 	}
         char prompt[100];
         sprintf(prompt, "(#%" PRIdN ")%s: ", wizard, debug ? "" : "[!d]");
@@ -1053,7 +1053,7 @@ emergency_mode()
 	    } else if (!strcasecmp(command, "debug") && nargs == 0) {
 		debug = !debug;
 	    } else if (!strcasecmp(command, "wizard") && nargs == 1
-		       && sscanf(words.v.list[2].v.str, "#%d", &wizard) == 1) {
+		       && sscanf(words.v.list[2].v.str, "#%" PRIdN, &wizard) == 1) {
 		printf("** Switching to wizard #%" PRIdN "...\n", wizard);
 	    } else if (!strcasecmp(command, "help") || !strcasecmp(command, "?")) {
 		printf(";EXPR                 "
