@@ -346,4 +346,6 @@ extern int read_active_connections(void);
 /* Called when a fatal error occurs. */
 extern void panic(const char *message);
 
+void set_system_object_integer_limits();
+
 #endif				/* Server_H */
