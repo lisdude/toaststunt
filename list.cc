@@ -443,11 +443,10 @@ unparse_value(Stream * s, Var v)
 	stream_add_string(s, error_name(v.v.err));
 	break;
     case TYPE_FLOAT:
-    if (roundf(v.v.fnum) == v.v.fnum)
-        stream_printf(s, "%g.0", v.v.fnum);
-    else
-        stream_printf(s, "%.*g", DBL_DIG, v.v.fnum);
-	break;
+    stream_printf(s, "%.*g", DBL_DIG, v.v.fnum);
+    if (!strchr(s->buffer, '.') && !strchr(s->buffer, 'e'))
+        stream_add_string(s, ".0");
+    break;
     case TYPE_STR:
 	{
 	    const char *str = v.v.str;
