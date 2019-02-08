@@ -972,7 +972,7 @@ do {								\
 		key = POP(); /* any except list or map */
 		value = POP(); /* any */
 		map = POP(); /* should be map */
-		if (map.type != TYPE_MAP || key.is_collection()) {
+		if (map.type != TYPE_MAP || (key.is_collection() && TYPE_ANON != key.type)) {
 		    free_var(key);
 		    free_var(value);
 		    free_var(map);
@@ -1091,7 +1091,7 @@ do {								\
 		     list.type != TYPE_MAP)
 		    || ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
 			index.type != TYPE_INT)
-		    || (list.type == TYPE_MAP && index.is_collection())
+		    || (list.type == TYPE_MAP && (index.is_collection() && TYPE_ANON != index.type))
 		    || (list.type == TYPE_STR && value.type != TYPE_STR)) {
 		    free_var(value);
 		    free_var(index);
@@ -1449,7 +1449,7 @@ do {								\
 		     list.type != TYPE_MAP) ||
 		    ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
 		     index.type != TYPE_INT) ||
-		    (list.type == TYPE_MAP && index.is_collection())) {
+		    (list.type == TYPE_MAP && (index.is_collection() && TYPE_ANON != index.type))) {
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_TYPE);
@@ -1519,7 +1519,7 @@ do {								\
 		if (list.type == TYPE_MAP) {
 		    Var value;
 		    const rbnode *node;
-		    if (index.is_collection()) {
+		    if (index.is_collection() && TYPE_ANON != index.type) {
 			PUSH_ERROR(E_TYPE);
 		    } else if (!(node = maplookup(list, index, &value, 0))) {
 			PUSH_ERROR(E_RANGE);
@@ -1558,7 +1558,7 @@ do {								\
 		    free_var(base);
 		    PUSH_ERROR(E_TYPE);
 		} else if (base.type == TYPE_MAP
-			   && (to.is_collection() || from.is_collection())) {
+			   && ((to.is_collection() && TYPE_ANON != to.type) || (from.is_collection() && TYPE_ANON != from.type))) {
 		    free_var(to);
 		    free_var(from);
 		    free_var(base);
@@ -2054,7 +2054,7 @@ MATCH_TYPE(OBJ, obj)
 			    free_var(value);
 			    PUSH_ERROR(E_TYPE);
 			} else if (base.type == TYPE_MAP
-				   && (to.is_collection() || from.is_collection())) {
+				   && ((to.is_collection() && TYPE_ANON != to.type) || (from.is_collection() && TYPE_ANON != from.type))) {
 			    free_var(to);
 			    free_var(from);
 			    free_var(base);
