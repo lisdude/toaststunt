@@ -15,7 +15,7 @@
 #include "thpool.h"         // thread pool
 
 #define THREAD_MOO_VERSION      "2.4"   // Version of our MOO threading library.
-#define TOTAL_BACKGROUND_THREADS 4      // The total number of background threads running in the pool.
+#define TOTAL_BACKGROUND_THREADS 2      // The total number of background threads running in the pool.
 #define MAX_BACKGROUND_THREADS  20      /* The total number threads allowed to be run from within the MOO.
                                            Can be overridden with $server_options.max_background_threads */
 
