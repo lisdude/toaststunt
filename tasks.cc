@@ -654,7 +654,7 @@ start_programming(tqueue * tq, char *argstr)
 	tq->program_object = db_verb_definer(h).v.obj;
 	tq->program_verb = str_dup(vname);
 #ifdef LOG_CODE_CHANGES
-    oklog("CODE_CHANGE: %s (#%d) set verb #%d:%s via .PROGRAM\n", db_object_name(tq->player), tq->player, tq->program_object, tq->program_verb);
+    oklog("CODE_CHANGE: %s (#%" PRIdN ") set verb #%" PRIdN ":%s via .PROGRAM\n", db_object_name(tq->player), tq->player, tq->program_object, tq->program_verb);
 #endif
     }
 }

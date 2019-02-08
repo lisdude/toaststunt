@@ -183,7 +183,7 @@ add_command_to_history(Objid player, const char *command)
     char *nowstr = ctime(&now);
 
     nowstr[19] = '\0';		/* kill the year and newline at the end */
-    stream_printf(command_history, "%s: #%d: %s\n",
+    stream_printf(command_history, "%s: #%" PRIdN ": %s\n",
 		  nowstr + 4,	/* skip day of week */
 		  player, command);
 #endif				/* LOG_COMMANDS */
