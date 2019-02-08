@@ -291,8 +291,8 @@ extern Var none;		/* see objects.c */
  * user-constructed maps, lists and strings should generally be
  * smaller (see options.h)
  */
-#define MAX_STRING	(INTNUM_MAX - MIN_STRING_CONCAT_LIMIT)
-#define MAX_LIST_VALUE_BYTES_LIMIT	(INTNUM_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
-#define MAX_MAP_VALUE_BYTES_LIMIT	(INTNUM_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
+#define MAX_STRING	(INT32_MAX - MIN_STRING_CONCAT_LIMIT)
+#define MAX_LIST_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
+#define MAX_MAP_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
 
 #endif				/* !Structures_h */
