@@ -219,14 +219,14 @@ dbio_read_var(void)
     return r;
 }
 
-struct state {
+struct db_state {
     char prev_char;
     const char *(*fmtr) (void *);
     void *data;
 };
 
 static const char *
-program_name(struct state *s)
+program_name(struct db_state *s)
 {
     if (!s->fmtr)
 	return (const char *)s->data;
@@ -237,21 +237,21 @@ program_name(struct state *s)
 static void
 my_error(void *data, const char *msg)
 {
-    errlog("PARSER: Error in %s:\n", program_name((state *)data));
+    errlog("PARSER: Error in %s:\n", program_name((db_state *)data));
     errlog("           %s\n", msg);
 }
 
 static void
 my_warning(void *data, const char *msg)
 {
-    oklog("PARSER: Warning in %s:\n", program_name((state *)data));
+    oklog("PARSER: Warning in %s:\n", program_name((db_state *)data));
     oklog("           %s\n", msg);
 }
 
 static int
 my_getc(void *data)
 {
-    struct state *s = (state *)data;
+    struct db_state *s = (db_state *)data;
     int c;
 
     c = fgetc(input);
@@ -272,7 +272,7 @@ static Parser_Client parser_client =
 Program *
 dbio_read_program(DB_Version version, const char *(*fmtr) (void *), void *data)
 {
-    struct state s;
+    struct db_state s;
 
     s.prev_char = '\n';
     s.fmtr = fmtr;

@@ -659,7 +659,7 @@ start_programming(tqueue * tq, char *argstr)
     }
 }
 
-struct state {
+struct task_state {
     Objid player;
     int nerrors;
     char *input;
@@ -668,7 +668,7 @@ struct state {
 static void
 my_error(void *data, const char *msg)
 {
-    struct state *s = (state *)data;
+    struct task_state *s = (task_state *)data;
 
     notify(s->player, msg);
     s->nerrors++;
@@ -677,7 +677,7 @@ my_error(void *data, const char *msg)
 static int
 my_getc(void *data)
 {
-    struct state *s = (state *)data;
+    struct task_state *s = (task_state *)data;
 
     if (*(s->input) != '\0')
 	return *(s->input++);
@@ -706,7 +706,7 @@ end_programming(tqueue * tq)
 	if (!h.ptr)
 	    notify(player, "That verb appears to have disappeared ...");
 	else {
-	    struct state s;
+	    struct task_state s;
 	    Program *program;
 	    char buf[30];
 
