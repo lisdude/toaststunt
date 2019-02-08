@@ -832,7 +832,7 @@ write_waif(Var v)
 {
 	Waif *w = v.v.waif;
 	int index;
-	int i, len;
+	Num i, len;
 	unsigned long map[WAIF_MAPSZ];
 	Var *val;
 

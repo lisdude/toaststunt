@@ -768,7 +768,7 @@ mapempty(Var map)
     return map.v.tree->size == 0;
 }
 
-int32
+Num
 maplength(Var map)
 {
     return map.v.tree->size;

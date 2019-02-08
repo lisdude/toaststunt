@@ -370,10 +370,10 @@ disassemble(Program * prog, Printer p, void *data)
 			v = literals[ADD_BYTES(bc.numbytes_literal)];
 			switch (v.type) {
 			case TYPE_OBJ:
-			    stream_printf(insn, " #%d", v.v.obj);
+			    stream_printf(insn, " #%" PRIdN, v.v.obj);
 			    break;
 			case TYPE_INT:
-			    stream_printf(insn, " %d", v.v.num);
+			    stream_printf(insn, " %" PRIdN, v.v.num);
 			    break;
             case TYPE_FLOAT:
                 stream_add_char(insn, ' ');

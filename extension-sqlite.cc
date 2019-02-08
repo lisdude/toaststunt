@@ -176,7 +176,7 @@ void do_sqlite_execute(Var args, Var *r)
                 sqlite3_bind_int(stmt, x, args.v.list[3].v.list[x].v.num);
                 break;
             case TYPE_FLOAT:
-                sqlite3_bind_double(stmt, x, *args.v.list[3].v.list[x].v.fnum);
+                sqlite3_bind_double(stmt, x, args.v.list[3].v.list[x].v.fnum);
                 break;
             case TYPE_OBJ:
                 sqlite3_bind_text(stmt, x, str_dup(reset_stream(object_to_string(&args.v.list[3].v.list[x]))),  -1, NULL);
@@ -483,7 +483,7 @@ Var string_to_moo_type(char* str, bool parse_objects, bool sanitize_string)
     }
 
     double double_test = 0.0;
-    int int_test = 0;
+    Num int_test = 0;
 
     if (str[0] == '#' && parse_objects && parse_number(str + 1, &int_test, 0) == 1)
     {
@@ -495,7 +495,8 @@ Var string_to_moo_type(char* str, bool parse_objects, bool sanitize_string)
         s.v.num = int_test;
     } else if (parse_float(str, &double_test) == 1)
     {
-        s = new_float(double_test);
+        s.type = TYPE_FLOAT;
+        s.v.fnum = double_test;
     } else {
         if (sanitize_string)
             sanitize_string_for_moo(str);

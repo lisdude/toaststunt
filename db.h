@@ -83,7 +83,7 @@ extern int db_flush(enum db_flush_type);
 				 * argument.  Returns true on success.
 				 */
 
-extern int32 db_disk_size(void);
+extern Num db_disk_size(void);
 				/* Return the total size, in bytes, of the most
 				 * recent full representation of the database
 				 * as one or more disk files.  Returns -1 if,
@@ -602,7 +602,7 @@ extern db_verb_handle db_find_defined_verb(Var obj, const char *verb,
 				 * leave the handle intact.
 				 */
 
-extern db_verb_handle db_find_indexed_verb(Var obj, unsigned index);
+extern db_verb_handle db_find_indexed_verb(Var obj, unsigned idx);
 				/* Returns a handle on the 1-based INDEX'th
 				 * verb defined on OBJ.  The `ptr' in the
 				 * result is null iff there is no such verb.

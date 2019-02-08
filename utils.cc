@@ -144,14 +144,10 @@ aux_free(Var v)
 void
 complex_free_var(Var v)
 {
-    switch ((int) v.type) {
+    switch (v.type) {
     case TYPE_STR:
 	if (v.v.str)
 	    free_str(v.v.str);
-	break;
-    case TYPE_FLOAT:
-	if (delref(v.v.fnum) == 0)
-	    myfree(v.v.fnum, M_FLOAT);
 	break;
     case TYPE_LIST:
 	if (v.v.list != emptylist.v.list && delref(v.v.list) == 0) {
@@ -225,10 +221,6 @@ complex_free_var(Var v)
 	if (v.v.str)
 	    free_str(v.v.str);
 	break;
-    case TYPE_FLOAT:
-	if (delref(v.v.fnum) == 0)
-	    myfree(v.v.fnum, M_FLOAT);
-	break;
     case TYPE_LIST:
 	if (v.v.list != emptylist.v.list && delref(v.v.list) == 0)
 	    destroy_list(v);
@@ -271,12 +263,9 @@ complex_free_var(Var v)
 Var
 complex_var_ref(Var v)
 {
-    switch ((int) v.type) {
+    switch (v.type) {
     case TYPE_STR:
 	addref(v.v.str);
-	break;
-    case TYPE_FLOAT:
-	addref(v.v.fnum);
 	break;
     case TYPE_LIST:
 	addref(v.v.list);
@@ -304,12 +293,9 @@ complex_var_ref(Var v)
 Var
 complex_var_ref(Var v)
 {
-    switch ((int) v.type) {
+    switch (v.type) {
     case TYPE_STR:
 	addref(v.v.str);
-	break;
-    case TYPE_FLOAT:
-	addref(v.v.fnum);
 	break;
     case TYPE_LIST:
 	addref(v.v.list);
@@ -335,12 +321,9 @@ complex_var_ref(Var v)
 Var
 complex_var_dup(Var v)
 {
-    switch ((int) v.type) {
+    switch (v.type) {
     case TYPE_STR:
 	v.v.str = str_dup(v.v.str);
-	break;
-    case TYPE_FLOAT:
-	v = new_float(*v.v.fnum);
 	break;
     case TYPE_LIST:
 	v = list_dup(v);
@@ -367,7 +350,7 @@ complex_var_dup(Var v)
 int
 var_refcount(Var v)
 {
-    switch ((int) v.type) {
+    switch (v.type) {
     case TYPE_STR:
 	return refcount(v.v.str);
 	break;
@@ -379,9 +362,6 @@ var_refcount(Var v)
 	break;
     case TYPE_ITER:
 	return refcount(v.v.trav);
-	break;
-    case TYPE_FLOAT:
-	return refcount(v.v.fnum);
 	break;
     case TYPE_ANON:
 	if (v.v.anon)
@@ -395,7 +375,7 @@ int
 is_true(Var v)
 {
     return ((v.type == TYPE_INT && v.v.num != 0)
-	    || (v.type == TYPE_FLOAT && *v.v.fnum != 0.0)
+	    || (v.type == TYPE_FLOAT && v.v.fnum != 0.0)
 	    || (v.type == TYPE_STR && v.v.str && *v.v.str != '\0')
 	    || (v.type == TYPE_LIST && v.v.list[0].v.num != 0)
 	    || (v.type == TYPE_MAP && !mapempty(v)));
@@ -428,7 +408,7 @@ compare(Var lhs, Var rhs, int case_matters)
 	    if (lhs.v.fnum == rhs.v.fnum)
 		return 0;
 	    else
-		return *(lhs.v.fnum) - *(rhs.v.fnum);
+		return (lhs.v.fnum) - (rhs.v.fnum);
     case TYPE_WAIF:
         return lhs.v.waif == rhs.v.waif ? 0 : 1;
     case TYPE_ANON:
@@ -466,7 +446,7 @@ equality(Var lhs, Var rhs, int case_matters)
 	    if (lhs.v.fnum == rhs.v.fnum)
 		return 1;
 	    else
-		return *(lhs.v.fnum) == *(rhs.v.fnum);
+		return (lhs.v.fnum) == (rhs.v.fnum);
 	case TYPE_LIST:
 	    return listequal(lhs, rhs, case_matters);
 	case TYPE_MAP:

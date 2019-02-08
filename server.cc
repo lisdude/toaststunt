@@ -172,7 +172,7 @@ static int
 start_listener(slistener * l)
 {
     if (network_listen(l->nlistener)) {
-	oklog("LISTEN: #%d now listening on %s\n", l->oid, l->name);
+	oklog("LISTEN: #%" PRIdN " now listening on %s\n", l->oid, l->name);
 	return 1;
     } else {
 	errlog("LISTEN: Can't start #%d listening on %s!\n", l->oid, l->name);
@@ -184,7 +184,7 @@ static void
 free_slistener(slistener * l)
 {
     network_close_listener(l->nlistener);
-    oklog("UNLISTEN: #%d no longer listening on %s\n", l->oid, l->name);
+    oklog("UNLISTEN: #%" PRIdN " no longer listening on %s\n", l->oid, l->name);
 
     *(l->prev) = l->next;
     if (l->next)
@@ -409,9 +409,9 @@ object_name(Objid oid)
 	s = new_stream(30);
 
     if (valid(oid))
-	stream_printf(s, "%s (#%d)", db_object_name(oid), oid);
+	stream_printf(s, "%s (#%" PRIdN ")", db_object_name(oid), oid);
     else
-	stream_printf(s, "#%d", oid);
+	stream_printf(s, "#%" PRIdN "", oid);
 
     return reset_stream(s);
 }
@@ -580,7 +580,7 @@ recycle_waifs(void)
         if (refcount(x.first) == 0) {
             removals.push_back(x.first);
         }
-      }  
+      }
       for (auto x:removals) {
         free_waif(x);
         recycled_waifs.erase(x);
@@ -597,7 +597,7 @@ recycle_waifs(void)
 void
 write_values_pending_finalization(void)
 {
-    dbio_printf("%d values pending finalization\n", pending_count);
+    dbio_printf("%" PRIdN " values pending finalization\n", pending_count);
 
     struct pending_recycle *head = pending_head;
 
@@ -732,7 +732,7 @@ main_loop(void)
 			: (now - h->last_activity_time
 			   > DEFAULT_CONNECT_TIMEOUT))) {
 		    call_notifier(h->player, h->listener, "user_disconnected");
-		    oklog("TIMEOUT: #%d on %s\n",
+		    oklog("TIMEOUT: #%" PRIdN " on %s\n",
 			  h->player,
 			  network_connection_name(h->nhandle));
 		    if (h->print_messages)
@@ -742,7 +742,7 @@ main_loop(void)
 		    network_close(h->nhandle);
 		    free_shandle(h);
 		} else if (h->connection_time != 0 && !valid(h->player)) {
-		    oklog("RECYCLED: #%d on %s\n",
+		    oklog("RECYCLED: #%" PRIdN " on %s\n",
 			  h->player,
 			  network_connection_name(h->nhandle));
 		    if (h->print_messages)
@@ -853,7 +853,7 @@ read_stdin_line(const char *prompt)
 static void
 emergency_notify(Objid player, const char *line)
 {
-    printf("#%d <- %s\n", player, line);
+    printf("#%" PRIdN " <- %s\n", player, line);
 }
 
 static int
@@ -882,7 +882,7 @@ emergency_mode()
 	    Objid first_valid = -1;
 
 	    if (wizard >= 0)
-		printf("** Object #%d is not a wizard...\n", wizard);
+		printf("** Object #%" PRIdN " is not a wizard...\n", wizard);
 
 	    for (wizard = 0; wizard <= db_last_used_objid(); wizard++)
 		if (is_wizard(wizard))
@@ -894,17 +894,17 @@ emergency_mode()
 		if (first_valid < 0) {
 		    first_valid = db_create_object();
 		    db_change_parents(Var::new_obj(first_valid), new_list(0), none);
-		    printf("** No objects in database; created #%d.\n",
+		    printf("** No objects in database; created #%" PRIdN ".\n",
 			   first_valid);
 		}
 		wizard = first_valid;
 		db_set_object_flag(wizard, FLAG_WIZARD);
-		printf("** No wizards in database; wizzed #%d.\n", wizard);
+		printf("** No wizards in database; wizzed #%" PRIdN ".\n", wizard);
 	    }
-	    printf("** Now running emergency commands as #%d ...\n\n", wizard);
+	    printf("** Now running emergency commands as #%" PRIdN " ...\n\n", wizard);
 	}
         char prompt[100];
-        sprintf(prompt, "(#%d)%s: ", wizard, debug ? "" : "[!d]");
+        sprintf(prompt, "(#%" PRIdN ")%s: ", wizard, debug ? "" : "[!d]");
 	line = read_stdin_line(prompt);
 
 	if (!line)
@@ -972,7 +972,7 @@ emergency_mode()
 	    } else {
 		int i;
 
-		printf("** %d errors during parsing:\n",
+		printf("** %" PRIdN " errors during parsing:\n",
 		       errors.v.list[0].v.num);
 		for (i = 1; i <= errors.v.list[0].v.num; i++)
 		    printf("  %s\n", errors.v.list[i].v.str);
@@ -1015,7 +1015,7 @@ emergency_mode()
 		    } else {
 			int i;
 
-			printf("** %d errors during parsing:\n",
+			printf("** %" PRIdN " errors during parsing:\n",
 			       errors.v.list[0].v.num);
 			for (i = 1; i <= errors.v.list[0].v.num; i++)
 			    printf("  %s\n", errors.v.list[i].v.str);
@@ -1058,8 +1058,8 @@ emergency_mode()
 	    } else if (!strcasecmp(command, "debug") && nargs == 0) {
 		debug = !debug;
 	    } else if (!strcasecmp(command, "wizard") && nargs == 1
-		       && sscanf(words.v.list[2].v.str, "#%d", &wizard) == 1) {
-		printf("** Switching to wizard #%d...\n", wizard);
+		       && sscanf(words.v.list[2].v.str, "#%" PRIdN, &wizard) == 1) {
+		printf("** Switching to wizard #%" PRIdN "...\n", wizard);
 	    } else if (!strcasecmp(command, "help") || !strcasecmp(command, "?")) {
 		printf(";EXPR                 "
 		       "Evaluate MOO expression, print result.\n");
@@ -1335,7 +1335,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
 	task_suspend_input(h->tasks);
     }
 
-    oklog("%s: #%d on %s\n",
+    oklog("%s: #%" PRIdN " on %s\n",
 	  outbound ? "CONNECT" : "ACCEPT",
 	  h->player, network_connection_name(nh));
 
@@ -1548,10 +1548,10 @@ write_active_connections(void)
     for (h = all_shandles; h; h = h->next)
 	count++;
 
-    dbio_printf("%d active connections with listeners\n", count);
+    dbio_printf("%" PRIdN " active connections with listeners\n", count);
 
     for (h = all_shandles; h; h = h->next)
-	dbio_printf("%d %d\n", h->player, h->listener);
+	dbio_printf("%" PRIdN " %" PRIdN "\n", h->player, h->listener);
 }
 
 int
@@ -1714,11 +1714,11 @@ main(int argc, char **argv)
 
     parent_pid = getpid();
 
-    applog(LOG_INFO1, "STARTING: Version %s of the Stunt/LambdaMOO server\n", server_version);
+    applog(LOG_INFO1, "STARTING: Version %s (%" PRIdN "-bit) of the Stunt/LambdaMOO server\n", server_version, SERVER_BITS);
     oklog("          (Using %s protocol)\n", network_protocol_name());
     oklog("          (Task timeouts measured in %s seconds.)\n",
 	  virtual_timer_available()? "server CPU" : "wall-clock");
-    oklog("          (Process id %d)\n", parent_pid);
+    oklog("          (Process id %" PRIdN ")\n", parent_pid);
     if (waif_conversion_type != _TYPE_WAIF)
         applog(LOG_WARNING, "(Using type '%i' for waifs; will convert to '%i' at next checkpoint)\n", waif_conversion_type, _TYPE_WAIF);
 
@@ -1737,6 +1737,7 @@ main(int argc, char **argv)
     free_reordered_rt_env_values();
 
     load_server_options();
+    set_system_object_integer_limits();
 
     init_random();
 
@@ -2276,6 +2277,25 @@ bf_process_id(Var arglist, Byte next, void *vdata, Objid progr)
     taskid.v.num = getpid();
 
     return make_var_pack(taskid);
+}
+
+void
+set_system_object_integer_limits()
+{
+    if (!valid(SYSTEM_OBJECT))
+        return;
+
+    Var value;
+    db_prop_handle h;
+
+    h = db_find_property(Var::new_obj(SYSTEM_OBJECT), "maxint", &value);
+    if (h.ptr)
+        db_set_property_value(h, Var::new_int(MAXINT));
+
+    h = db_find_property(Var::new_obj(SYSTEM_OBJECT), "minint", &value);
+    if (h.ptr)
+        db_set_property_value(h, Var::new_int(MININT));
+
 }
 
 void

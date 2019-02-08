@@ -51,7 +51,7 @@ typedef struct {
     } u;
 } package;
 
-void register_bi_functions();
+void register_bi_functions(void);
 
 enum abort_reason {
     ABORT_KILL    = -1, 	/* kill_task(task_id()) */
@@ -67,6 +67,8 @@ package no_var_pack(void);
 package make_call_pack(Byte pc, void *data);
 package tail_call_pack(void);
 package make_suspend_pack(enum error (*)(vm, void *), void *);
+package make_int_pack(Num v);
+package make_float_pack(double v);
 
 typedef package(*bf_type) (Var, Byte, void *, Objid);
 typedef void (*bf_write_type) (void *vdata);

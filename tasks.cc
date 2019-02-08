@@ -1338,7 +1338,7 @@ enqueue_suspended_task(vm the_vm, void *data)
 
 	when = double_to_start_tv(after_seconds);
     } else {
-	when.tv_sec = INT32_MAX;
+	when.tv_sec = INTNUM_MAX;
 	when.tv_usec = 0;
     }
 

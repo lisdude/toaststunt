@@ -457,6 +457,15 @@
 */
 #define UNSAFE_FIO
 
+/******************************************************************************
+ * The server supports 64-bit integers. If you don't want the added memory usage
+ * and don't need the larger integers, you can disable that here. NOTE: Disabling
+ * this option and loading a database that has saved 64-bit integers will probably
+ * not end well.
+ ******************************************************************************
+*/
+/* #define ONLY_32_BITS */
+
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/

@@ -6,6 +6,7 @@ ToastStunt is the server that runs [Miriani](https://www.toastsoft.net) and [Cha
 - Perl Compatible Regular Expressions (PCRE) [functions: pcre_match(), pcre_replace]
 - Simplex noise (implemented but never actually tested / used)
 - [Argon2id hashing](https://github.com/P-H-C/phc-winner-argon2) [functions: argon2(), argon2_verify()]
+- 32-bit and 64-bit versions
 
 - Waifs
     - Call :recycle on waifs when they're destroyed
@@ -42,6 +43,7 @@ ToastStunt is the server that runs [Miriani](https://www.toastsoft.net) and [Cha
     - USE_ANCESTOR_CACHE (enable a cache of an object's ancestors to speed up property lookups)
     - UNSAFE_FIO (skip character by character line verification, trading off potential safety for speed)
     - LOG_EVALS (add an entry to the server log any time eval is called)
+    - ONLY_32_BITS (switch from 64-bit integers back to 32-bit)
 
 - Additional builtins:
     - frandom (random floats)

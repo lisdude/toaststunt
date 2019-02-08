@@ -157,6 +157,15 @@
 #  define signed __signed__
 #endif
 
+/* Let the C compiler warn us if we do something silly with printf or
+ * scanf, even if they are our own variants...
+ */
+#if defined(__GNUC__) && __GNUC__ >= 3
+#  define FORMAT(x,y,z) __attribute__((format (x,y,z)))
+#else
+#  define FORMAT(x,y,z)
+#endif
+
 /* Certain functions used by the server are `optional', in the sense that the
  * server can provide its own definition if necessary.  In some cases, there
  * are a number of common ways to do the same thing, differing by system type
@@ -257,24 +266,141 @@
 
 #undef POSIX_NONBLOCKING_WORKS
 
-/* The following code figures out how to express a 32-bit integer type on your
- * machine.
+/* The following code figures out how to express  32-bit and 64-bit integer
+ * types on your machine.
  */
 
-#include <limits.h>
+#undef HAVE_LONG_LONG
+#undef HAVE_INT32_T
+#undef HAVE_INT64_T
 
-#if INT_MAX == 2147483647
-   typedef int		int32;
-   typedef unsigned	unsigned32;
-#  define INT32_MAX	INT_MAX
-#else
-#  if LONG_MAX == 2147483647
-     typedef long int		int32;
-     typedef unsigned long	unsigned32;
-#    define INT32_MAX		LONG_MAX
+#undef HAVE_STRTOIMAX
+
+#undef NEED_STDINT_H
+#undef NEED_INTTYPES_H
+
+#ifdef NEED_INTTYPES_H
+# include <inttypes.h>
+#endif
+#ifdef NEED_STDINT_H
+# include <stdint.h>
+#endif
+
+#include "options.h" /* grab only_32_bits option */
+#include <limits.h>
+#ifndef HAVE_INT32_T
+#  if INT_MAX == 2147483647
+     typedef int	int32_t;
+     typedef unsigned	uint32_t;
+#    define PRId32 "d"
+#    define PRIi32 "i"
+#    define PRIo32 "o"
+#    define PRIu32 "u"
+#    define PRIx32 "x"
+#    define PRIX32 "X"
+#    define SCNd32 "d"
+#    define SCNi32 "i"
+#    define SCNo32 "o"
+#    define SCNu32 "u"
+#    define SCNx32 "x"
+#  elif LONG_MAX == 2147483647
+     typedef long int		int32_t;
+     typedef unsigned long	uint32_t;
+#    define PRId32 "ld"
+#    define PRIi32 "li"
+#    define PRIo32 "lo"
+#    define PRIu32 "lu"
+#    define PRIx32 "lx"
+#    define PRIX32 "lX"
+#    define SCNd32 "ld"
+#    define SCNi32 "li"
+#    define SCNo32 "lo"
+#    define SCNu32 "lu"
+#    define SCNx32 "lx"
 #  else
 #    error I cannot figure out how to express a 32-bit integer on your machine.
 #  endif
+#endif
+
+#ifdef ONLY_32_BITS
+#  if INT_MAX == 2147483647
+#    define PRId64 "d"
+#    define PRIi64 "i"
+#    define PRIo64 "o"
+#    define PRIu64 "u"
+#    define PRIx64 "x"
+#    define PRIX64 "X"
+#    define SCNd64 "d"
+#    define SCNi64 "i"
+#    define SCNo64 "o"
+#    define SCNu64 "u"
+#    define SCNx64 "x"
+#  elif LONG_MAX == 2147483647
+#    define PRId64 "ld"
+#    define PRIi64 "li"
+#    define PRIo64 "lo"
+#    define PRIu64 "lu"
+#    define PRIx64 "lx"
+#    define PRIX64 "lX"
+#    define SCNd64 "ld"
+#    define SCNi64 "li"
+#    define SCNo64 "lo"
+#    define SCNu64 "lu"
+#    define SCNx64 "lx"
+#   endif
+
+#else /* 32_bits */
+
+#ifndef HAVE_INT64_T
+#  if LONG_MAX == 9223372036854775807
+     typedef long          int64_t;
+     typedef unsigned long uint64_t;
+#    define PRId64 "ld"
+#    define PRIi64 "li"
+#    define PRIo64 "lo"
+#    define PRIu64 "lu"
+#    define PRIx64 "lx"
+#    define PRIX64 "lX"
+#    define SCNd64 "ld"
+#    define SCNi64 "li"
+#    define SCNo64 "lo"
+#    define SCNu64 "lu"
+#    define SCNx64 "lx"
+#  elif defined(HAVE_LONG_LONG) && LONG_LONG_MAX == 9223372036854775807
+     typedef long long     int64;
+     typedef unsigned long long unsigned64;
+#    define PRId64 "lld"
+#    define PRIi64 "lli"
+#    define PRIo64 "llo"
+#    define PRIu64 "llu"
+#    define PRIx64 "llx"
+#    define PRIX64 "llX"
+#    define SCNd64 "lld"
+#    define SCNi64 "lli"
+#    define SCNo64 "llo"
+#    define SCNu64 "llu"
+#    define SCNx64 "llx"
+#  else
+#    error I cannot figure out how to express a 64-bit integer on your machine.
+#  endif
+#endif
+#endif
+
+#ifndef HAVE_STRTOIMAX
+# ifdef HAVE_LONG_LONG
+#  define strtoimax strtoll
+#  define strtoumax strtoull
+# else
+#  define strtoimax strtol
+#  define strtoumax strtoul
+# endif
+#endif
+
+/* 8-bit bytes */
+#undef HAVE_UINT8_T
+
+#ifndef HAVE_UINT8_T
+typedef unsigned char uint8_t;
 #endif
 
 #undef HAS_ARGON2

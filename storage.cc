@@ -16,6 +16,7 @@
  *****************************************************************************/
 
 #include "my-stdlib.h"
+#include "my-string.h"
 
 #include "config.h"
 #include "list.h"
@@ -36,8 +37,6 @@ refcount_overhead(Memory_Type type)
      */
     switch (type) {
     /* deal with systems with picky alignment issues */
-    case M_FLOAT:
-	return MAX(sizeof(int), sizeof(double *));
     case M_LIST:
 #ifdef MEMO_VALUE_BYTES
 	return MAX(sizeof(int), sizeof(Var *)) * 2;

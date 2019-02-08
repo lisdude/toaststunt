@@ -107,15 +107,6 @@ dealloc_string(char *str)
     deallocate(str);
 }
 
-double *
-alloc_float(double value)
-{
-    double *d = (double *)allocate(sizeof(double), M_FLOAT);
-
-    *d = value;
-    return d;
-}
-
 void
 dealloc_node(void *node)
 {

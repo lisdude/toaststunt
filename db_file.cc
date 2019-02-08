@@ -193,7 +193,7 @@ write_verbdef(Verbdef * v)
 }
 
 static Propdef
-read_propdef()
+read_propdef(void)
 {
     const char *name = dbio_read_string_intern();
     return dbpriv_new_propdef(name);
@@ -234,7 +234,7 @@ v4_read_object(void)
     Verbdef *v, **prevv;
     int nprops;
 
-    if (dbio_scanf("#%d", &oid) != 1 || oid != dbv4_last_used_objid() + 1)
+    if (dbio_scanf("#%" SCNdN, &oid) != 1 || oid != dbv4_last_used_objid() + 1)
 	return 0;
     dbio_read_line(s, sizeof(s));
 
@@ -279,7 +279,7 @@ v4_read_object(void)
 	    o->propdefs.l[i] = read_propdef();
 #define CHECK_PROP_NAME(PROPERTY, property) !strcasecmp(o->propdefs.l[i].name, #property) ||
 	    if (BUILTIN_PROPERTIES(CHECK_PROP_NAME) 0)
-		oklog("DB_WARNING: Property #%d.%s has a reserved name\n", o->id, o->propdefs.l[i].name);
+		oklog("DB_WARNING: Property #%" PRIdN ".%s has a reserved name\n", o->id, o->propdefs.l[i].name);
 #undef CHECK_PROP
 	}
     }
@@ -307,7 +307,7 @@ ng_read_object(int anonymous)
     Verbdef *v, **prevv;
     int nprops;
 
-    if (dbio_scanf("#%d", &oid) != 1)
+    if (dbio_scanf("#%" SCNdN, &oid) != 1)
 	return 0;
     dbio_read_line(s, sizeof(s));
 
@@ -363,7 +363,7 @@ ng_read_object(int anonymous)
 	    o->propdefs.l[i] = read_propdef();
 #define CHECK_PROP_NAME(PROPERTY, property) !strcasecmp(o->propdefs.l[i].name, #property) ||
 	    if (BUILTIN_PROPERTIES(CHECK_PROP_NAME) 0)
-		oklog("DB_WARNING: Property #%d.%s has a reserved name\n", o->id, o->propdefs.l[i].name);
+		oklog("DB_WARNING: Property #%" PRIdN ".%s has a reserved name\n", o->id, o->propdefs.l[i].name);
 #undef CHECK_PROP
 	}
     }
@@ -390,12 +390,12 @@ v4_write_object(Objid oid)
     int nverbdefs, nprops;
 
     if (!dbv4_valid(oid)) {
-	dbio_printf("#%d recycled\n", oid);
+	dbio_printf("#%" PRIdN " recycled\n", oid);
 	return;
     }
     o = dbv4_find_object(oid);
 
-    dbio_printf("#%d\n", oid);
+    dbio_printf("#%" PRIdN "\n", oid);
     dbio_write_string(o->name);
     dbio_write_string("");	/* placeholder for old handles string */
     dbio_write_num(o->flags);
@@ -437,12 +437,12 @@ ng_write_object(Objid oid)
     int nverbdefs, nprops;
 
     if (!valid(oid)) {
-	dbio_printf("#%d recycled\n", oid);
+	dbio_printf("#% " PRIdN " recycled\n", oid);
 	return;
     }
     o = dbpriv_find_object(oid);
 
-    dbio_printf("#%d\n", oid);
+    dbio_printf("#%" PRIdN "\n", oid);
     dbio_write_string(o->name);
     dbio_write_num(o->flags);
 
@@ -476,7 +476,7 @@ ng_write_object(Objid oid)
 /*********** File-level Input ***********/
 
 static int
-v4_validate_hierarchies()
+v4_validate_hierarchies(void)
 {
     Objid oid, log_oid;
     Objid size = dbv4_last_used_objid() + 1;
@@ -490,7 +490,7 @@ v4_validate_hierarchies()
     {								\
 	if (oid == log_oid) {					\
 	    log_oid += PROGRESS_INTERVAL;			\
-	    oklog("VALIDATE: Done through #%d ...\n", oid);	\
+	    oklog("VALIDATE: Done through #%" PRIdN " ...\n", oid);	\
 	}							\
     }
 
@@ -508,7 +508,7 @@ v4_validate_hierarchies()
 	    {								\
 	        if (o->field != NOTHING					\
 		    && !dbv4_find_object(o->field)) {			\
-		    errlog("VALIDATE: #%d.%s = #%d <invalid> ... fixed.\n", \
+		    errlog("VALIDATE: #%" PRIdN ".%s = #%" PRIdN " <invalid> ... fixed.\n", \
 			   oid, name, o->field);			\
 		    o->field = NOTHING;				  	\
 		}							\
@@ -526,7 +526,7 @@ v4_validate_hierarchies()
     }
 
     if (fixed_nexts != 0)
-	errlog("VALIDATE: Fixed %d should-be-null next pointer(s) ...\n",
+	errlog("VALIDATE: Fixed %" PRIdN " should-be-null next pointer(s) ...\n",
 	       fixed_nexts);
 
     oklog("VALIDATE: Phase 2: Check for cycles ...\n");
@@ -542,7 +542,7 @@ v4_validate_hierarchies()
 		for (; oid2 != NOTHING					\
 		     ; oid2 = dbv4_find_object(oid2)->field) {		\
 		    if (++count > size)	{				\
-			errlog("VALIDATE: Cycle in `%s' chain of #%d\n",\
+			errlog("VALIDATE: Cycle in `%s' chain of #%" PRIdN "\n",\
 			       name, oid);				\
 			broken = 1;					\
 			break;						\
@@ -582,7 +582,7 @@ v4_validate_hierarchies()
 			    break;					\
 		    }							\
 		    if (oid2 == NOTHING) { /* didn't find it */		\
-			errlog("VALIDATE: #%d not in %s (#%d)'s %s list.\n", \
+			errlog("VALIDATE: #%" PRIdN " not in %s (#%" PRIdN ")'s %s list.\n", \
 			       oid, up_name, up, down_name);	        \
 			broken = 1;					\
 		    }							\
@@ -603,7 +603,7 @@ v4_validate_hierarchies()
 		     oid2 = dbv4_find_object(oid2)->across) {		\
 		    if (dbv4_find_object(oid2)->up != oid) {		\
 			errlog(						\
-			    "VALIDATE: #%d erroneously on #%d's %s list.\n", \
+			    "VALIDATE: #%" PRIdN " erroneously on #%" PRIdN "'s %s list.\n", \
 			    oid2, oid, down_name);			\
 			broken = 1;					\
 		    }							\
@@ -639,7 +639,7 @@ ng_validate_hierarchies()
     {								\
         if (oid == log_oid) {					\
 	    log_oid += PROGRESS_INTERVAL;			\
-	    oklog("VALIDATE: Done through #%d ...\n", oid);	\
+	    oklog("VALIDATE: Done through #%" PRIdN " ...\n", oid);	\
 	}							\
     }
 
@@ -649,22 +649,22 @@ ng_validate_hierarchies()
 	MAYBE_LOG_PROGRESS;
 	if (o) {
 	    if (!is_obj_or_list_of_objs(o->parents)) {
-		errlog("VALIDATE: #%d.parents is not an object or list of objects.\n",
+		errlog("VALIDATE: #%" PRIdN ".parents is not an object or list of objects.\n",
 		       oid);
 		broken = 1;
 	    }
 	    if (!is_list_of_objs(o->children)) {
-		errlog("VALIDATE: #%d.children is not a list of objects.\n",
+		errlog("VALIDATE: #%" PRIdN ".children is not a list of objects.\n",
 		       oid);
 		broken = 1;
 	    }
 	    if (!o->location.is_obj()) {
-		errlog("VALIDATE: #%d.location is not an object.\n",
+		errlog("VALIDATE: #%" PRIdN ".location is not an object.\n",
 		       oid);
 		broken = 1;
 	    }
 	    if (!is_list_of_objs(o->contents)) {
-		errlog("VALIDATE: #%d.contents is not a list of objects.\n",
+		errlog("VALIDATE: #%" PRIdN ".contents is not a list of objects.\n",
 		       oid);
 		broken = 1;
 	    }
@@ -675,7 +675,7 @@ ng_validate_hierarchies()
 		    FOR_EACH(tmp, o->field, i, c) {			\
 			if (tmp.v.obj != NOTHING			\
 			    && !dbpriv_find_object(tmp.v.obj)) {	\
-			    errlog("VALIDATE: #%d.%s = #%d <invalid> ... removed.\n", \
+			    errlog("VALIDATE: #%" PRIdN ".%s = #%" PRIdN " <invalid> ... removed.\n", \
 			           oid, name, tmp);			\
 			    o->field = setremove(o->field, tmp);	\
 			}						\
@@ -684,7 +684,7 @@ ng_validate_hierarchies()
 		else {							\
 		    if (o->field.v.obj != NOTHING			\
 		        && !dbpriv_find_object(o->field.v.obj)) {	\
-			errlog("VALIDATE: #%d.%s = #%d <invalid> ... fixed.\n", \
+			errlog("VALIDATE: #%" PRIdN ".%s = #%" PRIdN " <invalid> ... fixed.\n", \
 			       oid, name, o->field.v.obj);		\
 			o->field.v.obj = NOTHING;			\
 		    }							\
@@ -714,7 +714,7 @@ ng_validate_hierarchies()
 	    {								\
 		Var all = func(start, false);				\
 		if (ismember(start, all, 1)) {				\
-			errlog("VALIDATE: Cycle in %s chain of #%d.\n",	\
+			errlog("VALIDATE: Cycle in %s chain of #%" PRIdN ".\n",	\
 			       name, oid);				\
 			broken = 1;					\
 		}							\
@@ -751,7 +751,7 @@ ng_validate_hierarchies()
 			    continue;					\
 			}						\
 			else {						\
-			    errlog("VALIDATE: #%d not in it's %s's (#%d) %s.\n", \
+			    errlog("VALIDATE: #%" PRIdN " not in it's %s's (#%" PRIdN ") %s.\n", \
 			           oid, up_name, otmp->id, down_name); \
 			    free_var(t2);				\
 			    broken = 1;					\
@@ -791,7 +791,7 @@ v4_upgrade_objects()
     {								\
         if (oid == log_oid) {					\
 	    log_oid += PROGRESS_INTERVAL;			\
-	    oklog("UPGRADE: Done through #%d ...\n", oid);	\
+	    oklog("UPGRADE: Done through #%" PRIdN " ...\n", oid);	\
 	}							\
     }
 
@@ -872,9 +872,8 @@ static int
 read_db_file(void)
 {
     Objid oid;
-    int nobjs, nprogs, nusers;
     Var user_list;
-    int i, vnum, dummy;
+    Num i, nobjs, nprogs, nusers, vnum, dummy;
     db_verb_handle h;
     Program *program;
 
@@ -884,7 +883,7 @@ read_db_file(void)
 	dbio_input_version = DBV_Prehistory;
 
     if (!check_db_version(dbio_input_version)) {
-	errlog("READ_DB_FILE: Unknown DB version number: %d\n",
+	errlog("READ_DB_FILE: Unknown DB version number: %" PRIdN "\n",
 	       dbio_input_version);
 	return 0;
     }
@@ -896,14 +895,14 @@ read_db_file(void)
      * the returned value of `scanf'...
      */
     if (DBV_Anon > dbio_input_version) {
-	if (dbio_scanf("%d\n%d\n%d\n%d\n",
+	if (dbio_scanf("%" SCNdN "\n%" SCNdN "\n%" SCNdN "\n%" SCNdN "\n",
 		       &nobjs, &nprogs, &dummy, &nusers) != 4) {
 	    errlog("READ_DB_FILE: Bad header\n");
 	    return 0;
 	}
     }
     else {
-	if (dbio_scanf("%d\n", &nusers) != 1) {
+	if (dbio_scanf("%" SCNdN "\n", &nusers) != 1) {
 	    errlog("READ_DB_FILE: Bad number of users\n");
 	    return 0;
 	}
@@ -942,46 +941,46 @@ read_db_file(void)
      * iterations of anonymous objects.
      */
     if (DBV_Anon <= dbio_input_version) {
-	if (dbio_scanf("%d\n", &nobjs) != 1) {
+	if (dbio_scanf("%" SCNdN "\n", &nobjs) != 1) {
 	    errlog("READ_DB_FILE: Bad object count\n");
 	    return 0;
 	}
     }
 
-    oklog("LOADING: Reading %d objects ...\n", nobjs);
+    oklog("LOADING: Reading %" PRIdN " objects ...\n", nobjs);
     for (i = 1; i <= nobjs; i++) {
 	if (DBV_NextGen > dbio_input_version) {
 	    if (!v4_read_object()) {
-		errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
+		errlog("READ_DB_FILE: Bad object #%" PRIdN ".\n", i - 1);
 		return 0;
 	    }
 	}
 	else {
 	    if (!ng_read_object(0)) {
-		errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
+		errlog("READ_DB_FILE: Bad object #%" PRIdN ".\n", i - 1);
 		return 0;
 	    }
 	}
 	if (i % 10000 == 0 || i == nobjs)
-	    oklog("LOADING: Done reading %d objects ...\n", i);
+	    oklog("LOADING: Done reading %" PRIdN " objects ...\n", i);
     }
 
     if (DBV_Anon <= dbio_input_version) {
 	while (1) {
-	    if (dbio_scanf("%d\n", &nobjs) != 1) {
+	    if (dbio_scanf("%" SCNdN "\n", &nobjs) != 1) {
 		errlog("READ_DB_FILE: Bad object count header\n");
 		return 0;
 	    }
 	    if (!nobjs)
 		break;
-	    oklog("LOADING: Reading %d objects ...\n", nobjs);
+	    oklog("LOADING: Reading %" PRIdN " objects ...\n", nobjs);
 	    for (i = 1; i <= nobjs; i++) {
 		if (!ng_read_object(1)) {
-		    errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
+		    errlog("READ_DB_FILE: Bad object #%" PRIdN ".\n", i - 1);
 		    return 0;
 		}
 		if (i % 10000 == 0 || i == nobjs)
-		    oklog("LOADING: Done reading %d objects ...\n", i);
+		    oklog("LOADING: Done reading %" PRIdN " objects ...\n", i);
 	    }
 	}
     }
@@ -1007,35 +1006,35 @@ read_db_file(void)
     }
 
     if (DBV_Anon <= dbio_input_version) {
-	if (dbio_scanf("%d\n", &nprogs) != 1) {
+	if (dbio_scanf("%" SCNdN "\n", &nprogs) != 1) {
 	    errlog("READ_DB_FILE: Bad verb count header\n");
 	    return 0;
 	}
     }
 
-    oklog("LOADING: Reading %d MOO verb programs ...\n", nprogs);
+    oklog("LOADING: Reading %" PRIdN " MOO verb programs ...\n", nprogs);
     for (i = 1; i <= nprogs; i++) {
-	if (dbio_scanf("#%d:%d\n", &oid, &vnum) != 2) {
-	    errlog("READ_DB_FILE: Bad program header, i = %d.\n", i);
+	if (dbio_scanf("#%" SCNdN ":%" SCNdN "\n", &oid, &vnum) != 2) {
+	    errlog("READ_DB_FILE: Bad program header, i = %" PRIdN ".\n", i);
 	    return 0;
 	}
 	if (!valid(oid)) {
-	    errlog("READ_DB_FILE: Verb for non-existant object: #%d:%d.\n", oid, vnum);
+	    errlog("READ_DB_FILE: Verb for non-existant object: #%" PRIdN ":%" PRIdN ".\n", oid, vnum);
 	    return 0;
 	}
 	h = db_find_indexed_verb(Var::new_obj(oid), vnum + 1);	/* DB file is 0-based. */
 	if (!h.ptr) {
-	    errlog("READ_DB_FILE: Unknown verb index: #%d:%d.\n", oid, vnum);
+	    errlog("READ_DB_FILE: Unknown verb index: #%" PRIdN ":%" PRIdN ".\n", oid, vnum);
 	    return 0;
 	}
 	program = dbio_read_program(dbio_input_version, fmt_verb_name, &h);
 	if (!program) {
-	    errlog("READ_DB_FILE: Unparsable program #%d:%d.\n", oid, vnum);
+	    errlog("READ_DB_FILE: Unparsable program #%" PRIdN ":%" PRIdN ".\n", oid, vnum);
 	    return 0;
 	}
 	db_set_verb_program(h, program);
 	if (i % 5000 == 0 || i == nprogs)
-	    oklog("LOADING: Done reading %d verb programs ...\n", i);
+	    oklog("LOADING: Done reading %" PRIdN " verb programs ...\n", i);
     }
 
     if (DBV_Anon > dbio_input_version) {
@@ -1079,7 +1078,7 @@ write_db_file(const char *reason)
 
 	user_list = db_all_users();
 
-	dbio_printf("%d\n", listlength(user_list));
+	dbio_printf("%" PRIdN "\n", listlength(user_list));
 
 	for (i = 1; i <= user_list.v.list[0].v.num; i++)
 	    dbio_write_objid(user_list.v.list[i].v.obj);
@@ -1094,19 +1093,19 @@ write_db_file(const char *reason)
 	write_active_connections();
 
 	while (last_oid > max_oid) {
-	    dbio_printf("%d\n", last_oid - max_oid);
+	    dbio_printf("%" PRIdN "\n", last_oid - max_oid);
 
-	    oklog("%s: Writing %d objects ...\n", reason, last_oid - max_oid);
+	    oklog("%s: Writing %" PRIdN " objects ...\n", reason, last_oid - max_oid);
 	    for (oid = max_oid + 1; oid <= last_oid; oid++) {
 		ng_write_object(oid);
 		if ((oid + 1) % 10000 == 0 || oid == last_oid)
-		    oklog("%s: Done writing %d objects ...\n", reason, oid + 1);
+		    oklog("%s: Done writing %" PRIdN " objects ...\n", reason, oid + 1);
 	    }
 	    max_oid = last_oid;
 	    last_oid = db_last_used_objid();
 	}
 
-	dbio_printf("%d\n", 0);
+	dbio_printf("%" PRIdN "\n", 0);
 
 	for (oid = 0; oid <= max_oid; oid++) {
 	    if (valid(oid))
@@ -1115,18 +1114,18 @@ write_db_file(const char *reason)
 			nprogs++;
 	}
 
-	dbio_printf("%d\n", nprogs);
+	dbio_printf("%" PRIdN "\n", nprogs);
 
-	oklog("%s: Writing %d MOO verb programs ...\n", reason, nprogs);
+	oklog("%s: Writing %" PRIdN " MOO verb programs ...\n", reason, nprogs);
 	for (i = 0, oid = 0; oid <= max_oid; oid++) {
 	    if (valid(oid)) {
 		int vcount = 0;
 		for (v = dbpriv_find_object(oid)->verbdefs; v; v = v->next) {
 		    if (v->program) {
-			dbio_printf("#%d:%d\n", oid, vcount);
+			dbio_printf("#%" PRIdN ":%" PRIdN "\n", oid, vcount);
 			dbio_write_program(v->program);
 			if (++i % 5000 == 0 || i == nprogs)
-			    oklog("%s: Done writing %d verb programs ...\n",
+			    oklog("%s: Done writing %" PRIdN " verb programs ...\n",
 			          reason, i);
 		    }
 		    vcount++;
@@ -1158,14 +1157,14 @@ dump_database(Dump_Reason reason)
 
   retryDumping:
 
-    stream_printf(s, "%s.#%d#", dump_db_name, dump_generation);
+    stream_printf(s, "%s.#%" PRIdN "#", dump_db_name, dump_generation);
     remove(reset_stream(s));	/* Remove previous checkpoint */
 
     if (reason == DUMP_PANIC)
 	stream_printf(s, "%s.PANIC", dump_db_name);
     else {
 	dump_generation++;
-	stream_printf(s, "%s.#%d#", dump_db_name, dump_generation);
+	stream_printf(s, "%s.#%" PRIdN "#", dump_db_name, dump_generation);
     }
     temp_name = reset_stream(s);
 
@@ -1203,7 +1202,7 @@ dump_database(Dump_Reason reason)
 	    } else {
 		int retry_interval = 60;
 
-		errlog("Waiting %d seconds and retrying dump ...\n",
+		errlog("Waiting %" PRIdN " seconds and retrying dump ...\n",
 		       retry_interval);
 		timer_sleep(retry_interval);
 		goto retryDumping;
@@ -1316,7 +1315,7 @@ db_flush(enum db_flush_type type)
     return success;
 }
 
-int32
+Num
 db_disk_size(void)
 {
     struct stat st;

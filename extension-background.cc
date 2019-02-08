@@ -199,7 +199,7 @@ static package
 bf_background_test(Var arglist, Byte next, void *vdata, Objid progr)
 {
     char *human_string = 0;
-    asprintf(&human_string, "background_test suspending for %d with string \"%s\"", arglist.v.list[2].v.num, arglist.v.list[1].v.str);
+    asprintf(&human_string, "background_test suspending for %" PRIdN " with string \"%s\"", arglist.v.list[2].v.num, arglist.v.list[1].v.str);
     return background_thread(background_test_callback, &arglist, human_string);
 }
 

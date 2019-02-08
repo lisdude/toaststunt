@@ -65,7 +65,9 @@ bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
     clock_gettime(clock_type, &ts);
 #endif
 
-    Var r = new_float((double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0);
+    Var r;
+    r.type = TYPE_FLOAT;
+    r.v.fnum = (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
 
     free_var(arglist);
     return make_var_pack(r);
@@ -118,7 +120,7 @@ bf_distance(Var arglist, Byte next, void *vdata, Objid progr)
         }
         else
         {
-            tmp = (arglist.v.list[2].v.list[count].type == TYPE_INT ? (double)arglist.v.list[2].v.list[count].v.num : *arglist.v.list[2].v.list[count].v.fnum) - (arglist.v.list[1].v.list[count].type == TYPE_INT ? (double)arglist.v.list[1].v.list[count].v.num : *arglist.v.list[1].v.list[count].v.fnum);
+            tmp = (arglist.v.list[2].v.list[count].type == TYPE_INT ? (double)arglist.v.list[2].v.list[count].v.num : arglist.v.list[2].v.list[count].v.fnum) - (arglist.v.list[1].v.list[count].type == TYPE_INT ? (double)arglist.v.list[1].v.list[count].v.num : arglist.v.list[1].v.list[count].v.fnum);
             ret = ret + (tmp * tmp);
         }
     }
@@ -126,7 +128,8 @@ bf_distance(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     Var s;
-    s = new_float(sqrt(ret));
+    s.type = TYPE_FLOAT;
+    s.v.fnum = sqrt(ret);
 
     return make_var_pack(s);
 }
@@ -140,9 +143,9 @@ bf_relative_heading(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_TYPE);
     }
 
-    double dx = *arglist.v.list[2].v.list[1].v.fnum - *arglist.v.list[1].v.list[1].v.fnum;
-    double dy = *arglist.v.list[2].v.list[2].v.fnum - *arglist.v.list[1].v.list[2].v.fnum;
-    double dz = *arglist.v.list[2].v.list[3].v.fnum - *arglist.v.list[1].v.list[3].v.fnum;
+    double dx = arglist.v.list[2].v.list[1].v.fnum - arglist.v.list[1].v.list[1].v.fnum;
+    double dy = arglist.v.list[2].v.list[2].v.fnum - arglist.v.list[1].v.list[2].v.fnum;
+    double dz = arglist.v.list[2].v.list[3].v.fnum - arglist.v.list[1].v.list[3].v.fnum;
 
     double xy = 0.0;
     double z = 0.0;
@@ -189,11 +192,16 @@ bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
     fclose(f);
 
     Var s = new_list(5);
-    s.v.list[1] = new_float(size);           // Total program size
-    s.v.list[2] = new_float(resident);       // Resident set size
-    s.v.list[3] = new_float(share);          // Shared pages from shared mappings
-    s.v.list[4] = new_float(text);           // Text (code)
-    s.v.list[5] = new_float(data);           // Data + stack
+    s.v.list[1].type = TYPE_FLOAT;
+    s.v.list[2].type = TYPE_FLOAT;
+    s.v.list[3].type = TYPE_FLOAT;
+    s.v.list[4].type = TYPE_FLOAT;
+    s.v.list[5].type = TYPE_FLOAT;
+    s.v.list[1].v.fnum = size;           // Total program size
+    s.v.list[2].v.fnum = resident;       // Resident set size
+    s.v.list[3].v.fnum = share;          // Shared pages from shared mappings
+    s.v.list[4].v.fnum = text;           // Text (code)
+    s.v.list[5].v.fnum = data;           // Data + stack
 
     return make_var_pack(s);
 }
@@ -232,8 +240,10 @@ bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
 
-    r.v.list[1] = new_float((double)usage.ru_utime.tv_sec + (double)usage.ru_utime.tv_usec / CLOCKS_PER_SEC);
-    r.v.list[2] = new_float((double)usage.ru_stime.tv_sec + (double)usage.ru_stime.tv_usec / CLOCKS_PER_SEC);
+    r.v.list[1].type = TYPE_FLOAT;
+    r.v.list[2].type = TYPE_FLOAT;
+    r.v.list[1].v.fnum =(double)usage.ru_utime.tv_sec + (double)usage.ru_utime.tv_usec / CLOCKS_PER_SEC;
+    r.v.list[2].v.fnum = (double)usage.ru_stime.tv_sec + (double)usage.ru_stime.tv_usec / CLOCKS_PER_SEC;
     r.v.list[3].v.num = usage.ru_minflt;
     r.v.list[4].v.num = usage.ru_majflt;
     r.v.list[5].v.num = usage.ru_inblock;
@@ -274,15 +284,19 @@ bf_panic(Var arglist, Byte next, void *vdata, Objid progr)
     static package
 bf_frandom(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    double fmin = (arglist.v.list[0].v.num > 1 ? *arglist.v.list[1].v.fnum : 0.0);
-    double fmax = (arglist.v.list[0].v.num > 1 ? *arglist.v.list[2].v.fnum : *arglist.v.list[1].v.fnum);
+    double fmin = (arglist.v.list[0].v.num > 1 ? arglist.v.list[1].v.fnum : 0.0);
+    double fmax = (arglist.v.list[0].v.num > 1 ? arglist.v.list[2].v.fnum : arglist.v.list[1].v.fnum);
 
     free_var(arglist);
 
     double f = (double)rand() / RAND_MAX;
     f = fmin + f * (fmax - fmin);
 
-    return make_var_pack(new_float(f));
+    Var ret;
+    ret.type = TYPE_FLOAT;
+    ret.v.fnum = f;
+
+    return make_var_pack(ret);
 
 }
 
@@ -290,11 +304,15 @@ bf_frandom(Var arglist, Byte next, void *vdata, Objid progr)
     static package
 bf_round(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    double r = round((double)*arglist.v.list[1].v.fnum);
+    double r = round((double)arglist.v.list[1].v.fnum);
 
     free_var(arglist);
 
-    return make_var_pack(new_float(r));
+    Var ret;
+    ret.type = TYPE_FLOAT;
+    ret.v.fnum = r;
+
+    return make_var_pack(ret);
 }
 
 /* Return a list of substrings of an argument separated by a break. */

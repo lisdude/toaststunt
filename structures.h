@@ -27,13 +27,32 @@
 
 #include "storage.h"
 
-#define MAXINT	((int32) 2147483647L)
-#define MININT	((int32) -2147483648L)
+#ifdef ONLY_32_BITS
+#define MAXINT	((Num) 2147483647L)
+#define MININT	((Num) -2147483648L)
+#else
+#define MAXINT	((Num) 9223372036854775807LL)
+#define MININT	((Num) -9223372036854775807LL)
+#endif
+#define MAXOBJ	((Objid) MAXINT)
 #define MAXOBJ	((Objid) MAXINT)
 #define MINOBJ	((Objid) MININT)
 
+#ifdef ONLY_32_BITS
 typedef int32_t Num;
 typedef uint32_t UNum;
+#define PRIdN	PRId32
+#define SCNdN	SCNd32
+#define INTNUM_MAX INT32_MAX
+#define SERVER_BITS 32
+#else
+typedef int64_t Num;
+typedef uint64_t UNum;
+#define PRIdN	PRId64
+#define SCNdN	SCNd64
+#define INTNUM_MAX INT64_MAX
+#define SERVER_BITS 64
+#endif
 typedef Num Objid;
 
 /*
@@ -86,7 +105,7 @@ typedef enum {
     _TYPE_WAIF,         /* lightweight object; user-visible */
     /* THE END - complex aliases come next */
     TYPE_STR = (_TYPE_STR | TYPE_COMPLEX_FLAG),
-    TYPE_FLOAT = (_TYPE_FLOAT | TYPE_COMPLEX_FLAG),
+    TYPE_FLOAT = (_TYPE_FLOAT),
     TYPE_LIST = (_TYPE_LIST | TYPE_COMPLEX_FLAG),
     TYPE_MAP = (_TYPE_MAP | TYPE_COMPLEX_FLAG),
     TYPE_ITER = (_TYPE_ITER | TYPE_COMPLEX_FLAG),
@@ -153,13 +172,13 @@ typedef struct Waif {
 struct Var {
     union {
 	const char *str;	/* STR */
-	int32 num;		/* NUM, CATCH, FINALLY */
+	Num num;		/* NUM, CATCH, FINALLY */
 	Objid obj;		/* OBJ */
 	enum error err;		/* ERR */
 	Var *list;		/* LIST */
 	rbtree *tree;		/* MAP */
 	rbtrav *trav;		/* ITER */
-	double *fnum;		/* FLOAT */
+	double fnum;		/* FLOAT */
 	Object *anon;		/* ANON */
     Waif *waif;         /* WAIF */
     } v;
@@ -194,7 +213,7 @@ struct Var {
     }
 
     static Var
-    new_int(int32 num) {
+    new_int(Num num) {
 	Var v;
 	v.type = TYPE_INT;
 	v.v.num = num;
@@ -272,8 +291,8 @@ extern Var none;		/* see objects.c */
  * user-constructed maps, lists and strings should generally be
  * smaller (see options.h)
  */
-#define MAX_STRING	(INT32_MAX - MIN_STRING_CONCAT_LIMIT)
-#define MAX_LIST_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
-#define MAX_MAP_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
+#define MAX_STRING	(INTNUM_MAX - MIN_STRING_CONCAT_LIMIT)
+#define MAX_LIST_VALUE_BYTES_LIMIT	(INTNUM_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
+#define MAX_MAP_VALUE_BYTES_LIMIT	(INTNUM_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
 
 #endif				/* !Structures_h */
