@@ -647,13 +647,13 @@ static package
 bf_random(Var arglist, Byte next, void *vdata, Objid progr)
 {
     int nargs = arglist.v.list[0].v.num;
-    int num = (nargs >= 1 ? arglist.v.list[1].v.num : INTNUM_MAX);
+    Num num = (nargs >= 1 ? arglist.v.list[1].v.num : INTNUM_MAX);
     free_var(arglist);
 
     if (num <= 0)
         	return make_error_pack(E_INVARG);
 
-    uniform_int_distribution<> distribution(1, num);
+    uniform_int_distribution<Num> distribution(1, num);
     auto r = Var::new_int(distribution(random_generator));
     return make_var_pack(r);
 }
