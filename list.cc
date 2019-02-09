@@ -432,7 +432,6 @@ print_map_to_stream(Var key, Var value, void *sptr, int first)
 void
 unparse_value(Stream * s, Var v)
 {
-    char *new_float = 0;
     switch (v.type) {
     case TYPE_INT:
 	stream_printf(s, "%" PRIdN, v.v.num);
@@ -444,10 +443,11 @@ unparse_value(Stream * s, Var v)
 	stream_add_string(s, error_name(v.v.err));
 	break;
     case TYPE_FLOAT:
-    asprintf(&new_float, "%.*g", DBL_DIG, v.v.fnum);
-    if (!strchr(new_float, '.') && !strchr(new_float, 'e'))
-        asprintf(&new_float, "%s.0", new_float);
-    stream_add_string(s, new_float);
+    char buffer[40];
+    snprintf(buffer, 40, "%.*g", DBL_DIG, v.v.fnum);
+    if (!strchr(buffer, '.') && !strchr(buffer, 'e'))
+        strncat(buffer, ".0", 40);
+    stream_add_string(s, buffer);
     break;
     case TYPE_STR:
 	{
