@@ -253,7 +253,7 @@ dnl ***************************************************************************
  dnl ***************************************************************************
     AC_CHECK_HEADER([argon2.h], [found_argon2=yes], [found_argon2=no])
     if test "$found_argon2" != "yes" ; then
-        AC_MSG_ERROR([Argon2 could not be found.])
+        AC_MSG_WARN([Argon2 could not be found.])
     else
         AC_DEFINE(HAS_ARGON2)
         ELIBS="${ELIBS} -largon2"
@@ -262,7 +262,7 @@ dnl ***************************************************************************
  dnl ***************************************************************************
     AC_CHECK_HEADER([aspell.h], [found_aspell=yes], [found_aspell=no])
     if test "$found_aspell" != "yes" ; then
-        AC_MSG_ERROR([Aspell could not be found.])
+        AC_MSG_WARN([Aspell could not be found.])
     else
         AC_DEFINE(HAS_ASPELL)
         ELIBS="${ELIBS} -laspell"
