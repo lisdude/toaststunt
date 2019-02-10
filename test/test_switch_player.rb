@@ -4,7 +4,7 @@ class TestSwitchPlayer < Test::Unit::TestCase
 
   def test_that_switch_player_does_not_work_for_non_wizards
     run_test_as('programmer') do
-      assert_equal E_PERM, switch_player(player, player, 0)
+      assert_equal E_PERM, switch_player(player, player)
     end
   end
 
@@ -12,7 +12,7 @@ class TestSwitchPlayer < Test::Unit::TestCase
     run_test_as('wizard') do
       old_player = player
       new_player = make_new_player
-      switch_player(player, new_player, 1)
+      switch_player(player, new_player)
       assert_not_equal old_player, simplify(command %Q|;return player;|)
       assert_equal new_player, simplify(command %Q|;return player;|)
     end
@@ -22,13 +22,13 @@ class TestSwitchPlayer < Test::Unit::TestCase
     run_test_as('wizard') do
       old_player = player
       new_player = make_new_player
-      switch_player(player, new_player, 1)
+      switch_player(player, new_player)
       assert_not_equal old_player, simplify(command %Q|;return player;|)
       assert_equal new_player, simplify(command %Q|;return player;|)
-      switch_player(new_player, player, 0)
+      switch_player(new_player, player)
       assert_equal old_player, simplify(command %Q|;return player;|)
       assert_not_equal new_player, simplify(command %Q|;return player;|)
-      switch_player(player, new_player, 0)
+      switch_player(player, new_player)
       assert_not_equal old_player, simplify(command %Q|;return player;|)
       assert_equal new_player, simplify(command %Q|;return player;|)
     end
