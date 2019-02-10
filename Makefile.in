@@ -45,19 +45,9 @@ COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
 CSRCS = http_parser.c regexpr.c thpool.c \
  yajl/yajl.c yajl/yajl_alloc.c yajl/yajl_buf.c \
  yajl/yajl_encode.c yajl/yajl_gen.c yajl/yajl_lex.c \
- yajl/yajl_parser.c yajl/yajl_version.c 	nettle/hmac.c \
- nettle/hmac-md5.c nettle/hmac-ripemd160.c nettle/hmac-sha1.c \
-nettle/hmac-sha224.c nettle/hmac-sha256.c \
-	nettle/hmac-sha384.c nettle/hmac-sha512.c nettle/md5.c \
-	nettle/md5-compress.c nettle/md5-meta.c nettle/memxor.c \
-	nettle/ripemd160.c nettle/ripemd160-compress.c nettle/ripemd160-meta.c \
- nettle/sha1.c nettle/sha1-compress.c nettle/sha1-meta.c \
- nettle/sha224-meta.c nettle/sha256.c	nettle/sha256-compress.c \
- nettle/sha256-meta.c	nettle/sha384-meta.c nettle/sha512.c \
- nettle/sha512-compress.c nettle/sha512-meta.c nettle/write-be32.c \
- nettle/write-le32.c nettle/write-le64.c crypt/crypt_blowfish.c \
-	crypt/crypt_gensalt.c sosemanuk.c linenoise.c \
-pcrs.c
+ yajl/yajl_parser.c yajl/yajl_version.c \
+ crypt/crypt_blowfish.c crypt/crypt_gensalt.c \
+ sosemanuk.c linenoise.c pcrs.c
 
 CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
 	db_file.cc db_io.cc db_objects.cc db_properties.cc \
@@ -95,11 +85,8 @@ HDRS = ast.h base64.h bf_register.h code_gen.h collection.h crypto.h \
 	yajl/yajl_alloc.h yajl/yajl_buf.h yajl/yajl_bytestack.h \
 	yajl/yajl_common.h yajl/yajl_encode.h yajl/yajl_gen.h \
 	yajl/yajl_lex.h yajl/yajl_parse.h yajl/yajl_parser.h \
-	yajl/yajl_version.h fileio.h system.h nettle/hmac.h \
-	nettle/macros.h nettle/md5.h nettle/memxor.h \
-	nettle/nettle-meta.h nettle/nettle-types.h \
-	nettle/nettle-write.h nettle/ripemd160.h nettle/sha1.h \
-	nettle/sha2.h sosemanuk.h linenoise.h \
+	yajl/yajl_version.h fileio.h system.h \
+	sosemanuk.h linenoise.h \
 	extension-sqlite.h extension-background.h waif.h \
 	extension-simplexnoise.h
 
@@ -289,8 +276,9 @@ $(OPT_NET_OBJS):
 
 # DO NOT DELETE THIS LINE -- 'make depend' replaces everything below it.
 http_parser.o: http_parser.c http_parser.h
-regexpr.o: regexpr.c my-stdio.h config.h regexpr.h my-stdlib.h \
+regexpr.o: regexpr.c my-stdio.h config.h options.h regexpr.h my-stdlib.h \
  my-string.h
+thpool.o: thpool.c thpool.h
 yajl.o: yajl/yajl.c yajl/yajl_lex.h yajl/yajl_common.h yajl/yajl_parse.h \
  yajl/yajl_parser.h yajl/yajl_bytestack.h yajl/yajl_buf.h \
  yajl/yajl_alloc.h
@@ -308,286 +296,263 @@ yajl_parser.o: yajl/yajl_parser.c yajl/yajl_lex.h yajl/yajl_common.h \
  yajl/yajl_alloc.h yajl/yajl_parse.h yajl/yajl_encode.h yajl/yajl_gen.h
 yajl_version.o: yajl/yajl_version.c yajl/yajl_version.h \
  yajl/yajl_common.h
-hmac.o: nettle/hmac.c nettle/hmac.h nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
- nettle/sha2.h nettle/memxor.h
-hmac-md5.o: nettle/hmac-md5.c nettle/hmac.h nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
- nettle/sha2.h
-hmac-ripemd160.o: nettle/hmac-ripemd160.c nettle/hmac.h \
- nettle/nettle-meta.h nettle/nettle-types.h nettle/md5.h \
- nettle/ripemd160.h nettle/sha1.h nettle/sha2.h
-hmac-sha1.o: nettle/hmac-sha1.c nettle/hmac.h nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
- nettle/sha2.h
-hmac-sha224.o: nettle/hmac-sha224.c nettle/hmac.h nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
- nettle/sha2.h
-hmac-sha256.o: nettle/hmac-sha256.c nettle/hmac.h nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
- nettle/sha2.h
-hmac-sha384.o: nettle/hmac-sha384.c nettle/hmac.h nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
- nettle/sha2.h
-hmac-sha512.o: nettle/hmac-sha512.c nettle/hmac.h nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
- nettle/sha2.h
-md5.o: nettle/md5.c nettle/md5.h nettle/nettle-types.h nettle/macros.h \
- nettle/nettle-write.h
-md5-compress.o: nettle/md5-compress.c nettle/md5.h nettle/nettle-types.h \
- nettle/macros.h
-md5-meta.o: nettle/md5-meta.c nettle/nettle-meta.h nettle/nettle-types.h \
- nettle/md5.h
-memxor.o: nettle/memxor.c nettle/memxor.h nettle/nettle-types.h
-ripemd160.o: nettle/ripemd160.c nettle/ripemd160.h nettle/nettle-types.h \
- nettle/macros.h nettle/nettle-write.h
-ripemd160-compress.o: nettle/ripemd160-compress.c nettle/ripemd160.h \
- nettle/nettle-types.h nettle/macros.h
-ripemd160-meta.o: nettle/ripemd160-meta.c nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/ripemd160.h
-sha1.o: nettle/sha1.c nettle/sha1.h nettle/nettle-types.h nettle/macros.h \
- nettle/nettle-write.h
-sha1-compress.o: nettle/sha1-compress.c nettle/sha1.h \
- nettle/nettle-types.h nettle/macros.h
-sha1-meta.o: nettle/sha1-meta.c nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/sha1.h
-sha224-meta.o: nettle/sha224-meta.c nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/sha2.h
-sha256.o: nettle/sha256.c nettle/sha2.h nettle/nettle-types.h \
- nettle/macros.h nettle/nettle-write.h
-sha256-compress.o: nettle/sha256-compress.c nettle/sha2.h \
- nettle/nettle-types.h nettle/macros.h
-sha256-meta.o: nettle/sha256-meta.c nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/sha2.h
-sha384-meta.o: nettle/sha384-meta.c nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/sha2.h
-sha512.o: nettle/sha512.c nettle/sha2.h nettle/nettle-types.h \
- nettle/macros.h
-sha512-compress.o: nettle/sha512-compress.c nettle/sha2.h \
- nettle/nettle-types.h nettle/macros.h
-sha512-meta.o: nettle/sha512-meta.c nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/sha2.h
-write-be32.o: nettle/write-be32.c nettle/nettle-write.h nettle/macros.h
-write-le32.o: nettle/write-le32.c nettle/nettle-write.h nettle/macros.h
-write-le64.o: nettle/write-le64.c nettle/nettle-write.h nettle/macros.h
 crypt_blowfish.o: crypt/crypt_blowfish.c crypt/crypt_blowfish.h
 crypt_gensalt.o: crypt/crypt_gensalt.c crypt/crypt_gensalt.h
 sosemanuk.o: sosemanuk.c sosemanuk.h
 linenoise.o: linenoise.c linenoise.h
-ast.o: ast.cc my-string.h config.h ast.h parser.h program.h structures.h \
- my-stdio.h version.h sym_table.h list.h streams.h log.h storage.h \
- utils.h execute.h db.h opcode.h options.h parse_cmd.h
-base64.o: base64.cc base64.h functions.h my-stdio.h config.h execute.h \
- db.h program.h structures.h version.h opcode.h options.h parse_cmd.h \
- log.h storage.h my-string.h streams.h utils.h server.h network.h
-code_gen.o: code_gen.cc ast.h config.h parser.h program.h structures.h \
- my-stdio.h version.h sym_table.h opcode.h options.h server.h network.h \
- db.h storage.h my-string.h str_intern.h utils.h execute.h parse_cmd.h \
- streams.h my-stdlib.h
+pcrs.o: pcrs.c my-ctype.h config.h options.h pcrs.h
+ast.o: ast.cc my-string.h config.h options.h ast.h parser.h program.h \
+ structures.h my-stdio.h storage.h version.h sym_table.h list.h streams.h \
+ log.h utils.h execute.h db.h opcode.h parse_cmd.h
+base64.o: base64.cc base64.h functions.h my-stdio.h config.h options.h \
+ execute.h db.h program.h structures.h storage.h my-string.h version.h \
+ opcode.h parse_cmd.h log.h utils.h streams.h server.h network.h
+code_gen.o: code_gen.cc ast.h config.h options.h parser.h program.h \
+ structures.h my-stdio.h storage.h my-string.h version.h sym_table.h \
+ opcode.h server.h network.h streams.h db.h str_intern.h utils.h \
+ execute.h parse_cmd.h my-stdlib.h
 collection.o: collection.cc bf_register.h collection.h structures.h \
- my-stdio.h config.h functions.h execute.h db.h program.h version.h \
- opcode.h options.h parse_cmd.h list.h streams.h map.h utils.h
-crypto.o: crypto.cc functions.h my-stdio.h config.h execute.h db.h \
- program.h structures.h version.h opcode.h options.h parse_cmd.h \
- crypto.h list.h streams.h nettle/hmac.h nettle/nettle-meta.h \
- nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
- nettle/sha2.h random.h server.h network.h storage.h my-string.h \
+ my-stdio.h config.h options.h storage.h my-string.h functions.h \
+ execute.h db.h program.h version.h opcode.h parse_cmd.h list.h streams.h \
+ map.h utils.h
+crypto.o: crypto.cc functions.h my-stdio.h config.h options.h execute.h \
+ db.h program.h structures.h storage.h my-string.h version.h opcode.h \
+ parse_cmd.h crypto.h list.h streams.h random.h server.h network.h \
  utils.h
-db_file.o: db_file.cc my-stat.h config.h my-unistd.h my-stdio.h \
- my-stdlib.h collection.h structures.h db.h program.h version.h db_io.h \
- db_private.h list.h streams.h log.h options.h server.h network.h \
- storage.h my-string.h str_intern.h tasks.h execute.h opcode.h \
- parse_cmd.h timers.h my-time.h utils.h
-db_io.o: db_io.cc my-ctype.h config.h my-stdarg.h my-stdio.h my-stdlib.h \
- db.h program.h structures.h version.h db_io.h db_private.h list.h \
- streams.h log.h map.h numbers.h sosemanuk.h parser.h server.h \
- network.h options.h storage.h my-string.h str_intern.h unparse.h
-db_objects.o: db_objects.cc my-string.h config.h db.h program.h \
- structures.h my-stdio.h version.h db_io.h db_private.h collection.h \
- list.h streams.h server.h network.h options.h storage.h utils.h \
- execute.h opcode.h parse_cmd.h xtrapbits.h
+db_file.o: db_file.cc my-stat.h config.h options.h my-unistd.h my-stdio.h \
+ my-stdlib.h collection.h structures.h storage.h my-string.h db.h \
+ program.h version.h db_io.h db_private.h list.h streams.h log.h server.h \
+ network.h str_intern.h tasks.h execute.h opcode.h parse_cmd.h timers.h \
+ my-time.h utils.h waif.h map.h
+db_io.o: db_io.cc config.h options.h my-ctype.h my-stdarg.h my-stdio.h \
+ my-stdlib.h db.h program.h structures.h storage.h my-string.h version.h \
+ db_io.h db_private.h list.h streams.h log.h map.h numbers.h sosemanuk.h \
+ parser.h server.h network.h str_intern.h unparse.h waif.h
+db_objects.o: db_objects.cc my-string.h config.h options.h db.h program.h \
+ structures.h my-stdio.h storage.h version.h db_io.h db_private.h \
+ collection.h list.h streams.h server.h network.h utils.h execute.h \
+ opcode.h parse_cmd.h xtrapbits.h map.h log.h
 db_properties.o: db_properties.cc collection.h structures.h my-stdio.h \
- config.h db.h program.h version.h db_private.h list.h streams.h \
- server.h network.h options.h storage.h my-string.h utils.h execute.h \
- opcode.h parse_cmd.h
-db_verbs.o: db_verbs.cc my-stdlib.h config.h my-string.h db.h program.h \
- structures.h my-stdio.h version.h db_private.h db_tune.h list.h \
- streams.h log.h parse_cmd.h server.h network.h options.h storage.h \
- utils.h execute.h opcode.h
-decompile.o: decompile.cc ast.h config.h parser.h program.h structures.h \
- my-stdio.h version.h sym_table.h decompile.h opcode.h options.h \
- server.h network.h db.h storage.h my-string.h utils.h execute.h \
- parse_cmd.h streams.h
-disassemble.o: disassemble.cc my-stdio.h config.h bf_register.h db.h \
- program.h structures.h version.h functions.h execute.h opcode.h \
- options.h parse_cmd.h list.h streams.h storage.h my-string.h unparse.h \
- utils.h verbs.h
-eval_env.o: eval_env.cc config.h eval_env.h structures.h my-stdio.h \
- version.h storage.h my-string.h sym_table.h utils.h execute.h db.h \
- program.h opcode.h options.h parse_cmd.h streams.h
-eval_vm.o: eval_vm.cc config.h db_io.h program.h structures.h my-stdio.h \
- version.h decompile.h ast.h parser.h sym_table.h eval_vm.h execute.h \
- db.h opcode.h options.h parse_cmd.h log.h map.h storage.h my-string.h \
+ config.h options.h storage.h my-string.h db.h program.h version.h \
+ db_private.h list.h streams.h server.h network.h utils.h execute.h \
+ opcode.h parse_cmd.h waif.h
+db_verbs.o: db_verbs.cc my-stdlib.h config.h options.h my-string.h db.h \
+ program.h structures.h my-stdio.h storage.h version.h db_private.h \
+ db_tune.h list.h streams.h log.h parse_cmd.h server.h network.h utils.h \
+ execute.h opcode.h
+decompile.o: decompile.cc ast.h config.h options.h parser.h program.h \
+ structures.h my-stdio.h storage.h my-string.h version.h sym_table.h \
+ decompile.h opcode.h server.h network.h streams.h db.h utils.h execute.h \
+ parse_cmd.h
+disassemble.o: disassemble.cc my-stdio.h config.h options.h bf_register.h \
+ db.h program.h structures.h storage.h my-string.h version.h functions.h \
+ execute.h opcode.h parse_cmd.h list.h streams.h unparse.h utils.h \
+ verbs.h
+eval_env.o: eval_env.cc config.h options.h eval_env.h structures.h \
+ my-stdio.h storage.h my-string.h version.h sym_table.h utils.h execute.h \
+ db.h program.h opcode.h parse_cmd.h streams.h
+eval_vm.o: eval_vm.cc config.h options.h db_io.h program.h structures.h \
+ my-stdio.h storage.h my-string.h version.h decompile.h ast.h parser.h \
+ sym_table.h eval_vm.h execute.h db.h opcode.h parse_cmd.h log.h map.h \
  tasks.h utils.h streams.h
-exec.o: exec.cc my-fcntl.h config.h my-signal.h my-stdlib.h my-string.h \
- my-unistd.h net_multi.h exec.h functions.h my-stdio.h execute.h db.h \
- program.h structures.h version.h opcode.h options.h parse_cmd.h list.h \
- streams.h log.h storage.h tasks.h utils.h
-execute.o: execute.cc my-string.h config.h collection.h structures.h \
- my-stdio.h db.h program.h version.h db_io.h decompile.h ast.h parser.h \
- sym_table.h eval_env.h eval_vm.h execute.h opcode.h options.h \
- parse_cmd.h functions.h list.h streams.h log.h map.h numbers.h \
- sosemanuk.h server.h network.h storage.h tasks.h timers.h my-time.h \
+exec.o: exec.cc my-fcntl.h config.h options.h my-signal.h my-stdlib.h \
+ my-string.h my-unistd.h net_multi.h streams.h network.h structures.h \
+ my-stdio.h storage.h server.h db.h program.h version.h exec.h \
+ functions.h execute.h opcode.h parse_cmd.h list.h log.h tasks.h utils.h
+execute.o: execute.cc my-string.h config.h options.h collection.h \
+ structures.h my-stdio.h storage.h db.h program.h version.h db_io.h \
+ decompile.h ast.h parser.h sym_table.h eval_env.h eval_vm.h execute.h \
+ opcode.h parse_cmd.h functions.h list.h streams.h log.h map.h numbers.h \
+ sosemanuk.h server.h network.h tasks.h timers.h my-time.h utils.h waif.h \
+ db_private.h
+extensions.o: extensions.cc functions.h my-stdio.h config.h options.h \
+ execute.h db.h program.h structures.h storage.h my-string.h version.h \
+ opcode.h parse_cmd.h log.h utils.h streams.h numbers.h sosemanuk.h \
+ list.h my-stdlib.h random.h server.h network.h extension-background.h \
+ bf_register.h my-unistd.h tasks.h net_multi.h thpool.h
+fileio.o: fileio.cc my-stat.h config.h options.h my-unistd.h my-ctype.h \
+ my-string.h structures.h my-stdio.h storage.h bf_register.h functions.h \
+ execute.h db.h program.h version.h opcode.h parse_cmd.h list.h streams.h \
+ utils.h server.h network.h tasks.h log.h fileio.h
+functions.o: functions.cc my-stdarg.h config.h options.h bf_register.h \
+ db_io.h program.h structures.h my-stdio.h storage.h my-string.h \
+ version.h functions.h execute.h db.h opcode.h parse_cmd.h list.h \
+ streams.h log.h map.h server.h network.h unparse.h utils.h
+garbage.o: garbage.cc functions.h my-stdio.h config.h options.h execute.h \
+ db.h program.h structures.h storage.h my-string.h version.h opcode.h \
+ parse_cmd.h garbage.h list.h streams.h log.h map.h server.h network.h \
  utils.h
-extensions.o: extensions.cc bf_register.h functions.h my-stdio.h config.h \
- execute.h db.h program.h structures.h version.h opcode.h options.h \
- parse_cmd.h db_tune.h utils.h streams.h
-fileio.o: fileio.cc my-stat.h config.h my-unistd.h my-ctype.h my-string.h \
- structures.h my-stdio.h bf_register.h functions.h execute.h db.h \
- program.h version.h opcode.h options.h parse_cmd.h list.h streams.h \
- storage.h utils.h server.h network.h tasks.h log.h fileio.h
-functions.o: functions.cc my-stdarg.h config.h bf_register.h db_io.h \
- program.h structures.h my-stdio.h version.h functions.h execute.h db.h \
- opcode.h options.h parse_cmd.h list.h streams.h log.h map.h server.h \
- network.h storage.h my-string.h unparse.h utils.h
-garbage.o: garbage.cc functions.h my-stdio.h config.h execute.h db.h \
- program.h structures.h version.h opcode.h options.h parse_cmd.h \
- garbage.h list.h streams.h log.h map.h server.h network.h storage.h \
- my-string.h utils.h
-json.o: json.cc my-string.h config.h my-stdlib.h functions.h my-stdio.h \
- execute.h db.h program.h structures.h version.h opcode.h options.h \
- parse_cmd.h json.h list.h streams.h map.h numbers.h sosemanuk.h \
- server.h network.h storage.h unparse.h utils.h yajl/yajl_gen.h \
- yajl/yajl_common.h yajl/yajl_lex.h yajl/yajl_parse.h
-keywords.o: keywords.cc my-string.h config.h keywords.h structures.h \
- my-stdio.h version.h tokens.h ast.h parser.h program.h sym_table.h \
- y.tab.h utils.h execute.h db.h opcode.h options.h parse_cmd.h \
- streams.h
-list.o: list.cc my-ctype.h config.h my-string.h bf_register.h \
- collection.h structures.h my-stdio.h functions.h execute.h db.h \
- program.h version.h opcode.h options.h parse_cmd.h list.h streams.h \
- log.h map.h pattern.h storage.h unparse.h utils.h server.h network.h
-log.o: log.cc my-stdarg.h config.h my-stdio.h my-string.h my-time.h \
- my-unistd.h bf_register.h functions.h execute.h db.h program.h \
- structures.h version.h opcode.h options.h parse_cmd.h log.h storage.h \
- streams.h utils.h
-map.o: map.cc my-string.h config.h functions.h my-stdio.h execute.h db.h \
- program.h structures.h version.h opcode.h options.h parse_cmd.h list.h \
- streams.h log.h map.h server.h network.h storage.h utils.h
-match.o: match.cc my-stdlib.h config.h my-string.h db.h program.h \
- structures.h my-stdio.h version.h match.h parse_cmd.h storage.h \
- unparse.h utils.h execute.h opcode.h options.h streams.h
+json.o: json.cc my-string.h config.h options.h my-stdlib.h functions.h \
+ my-stdio.h execute.h db.h program.h structures.h storage.h version.h \
+ opcode.h parse_cmd.h json.h list.h streams.h map.h numbers.h sosemanuk.h \
+ server.h network.h unparse.h utils.h yajl/yajl_gen.h yajl/yajl_common.h \
+ yajl/yajl_lex.h yajl/yajl_parse.h
+keywords.o: keywords.cc my-string.h config.h options.h keywords.h \
+ structures.h my-stdio.h storage.h version.h tokens.h ast.h parser.h \
+ program.h sym_table.h y.tab.h utils.h execute.h db.h opcode.h \
+ parse_cmd.h streams.h
+list.o: list.cc my-ctype.h config.h options.h my-string.h my-math.h \
+ bf_register.h collection.h structures.h my-stdio.h storage.h functions.h \
+ execute.h db.h program.h version.h opcode.h parse_cmd.h list.h streams.h \
+ log.h map.h pattern.h unparse.h utils.h server.h network.h
+log.o: log.cc my-stdarg.h config.h options.h my-stdio.h my-string.h \
+ my-time.h my-unistd.h bf_register.h functions.h execute.h db.h program.h \
+ structures.h storage.h version.h opcode.h parse_cmd.h log.h streams.h \
+ utils.h
+map.o: map.cc my-string.h config.h options.h functions.h my-stdio.h \
+ execute.h db.h program.h structures.h storage.h version.h opcode.h \
+ parse_cmd.h list.h streams.h log.h map.h server.h network.h utils.h
+match.o: match.cc my-stdlib.h config.h options.h my-string.h db.h \
+ program.h structures.h my-stdio.h storage.h version.h match.h \
+ parse_cmd.h unparse.h utils.h execute.h opcode.h streams.h
 name_lookup.o: name_lookup.cc options.h config.h my-signal.h my-stdlib.h \
  my-unistd.h my-inet.h my-in.h my-types.h my-socket.h my-wait.h \
- my-string.h log.h my-stdio.h structures.h server.h network.h db.h \
- program.h version.h storage.h timers.h my-time.h
+ my-string.h log.h my-stdio.h structures.h storage.h server.h network.h \
+ streams.h db.h program.h version.h timers.h my-time.h
 network.o: network.cc options.h config.h net_multi.cc my-ctype.h \
  my-fcntl.h my-ioctl.h my-signal.h my-stdio.h my-stdlib.h my-string.h \
- my-unistd.h list.h structures.h streams.h log.h net_mplex.h \
- net_multi.h net_proto.h network.h server.h db.h program.h version.h \
- storage.h timers.h my-time.h utils.h execute.h opcode.h parse_cmd.h
+ my-unistd.h list.h structures.h storage.h streams.h log.h net_mplex.h \
+ net_multi.h network.h server.h db.h program.h version.h net_proto.h \
+ timers.h my-time.h utils.h execute.h opcode.h parse_cmd.h
 net_mplex.o: net_mplex.cc options.h config.h net_mp_selct.cc my-string.h \
- my-sys-time.h my-types.h log.h my-stdio.h structures.h net_mplex.h
+ my-sys-time.h my-types.h log.h my-stdio.h structures.h storage.h \
+ net_mplex.h
 net_proto.o: net_proto.cc options.h config.h net_bsd_tcp.cc my-inet.h \
  my-in.h my-types.h my-socket.h my-stdlib.h my-string.h my-unistd.h \
- list.h structures.h my-stdio.h streams.h log.h name_lookup.h \
+ list.h structures.h my-stdio.h storage.h streams.h log.h name_lookup.h \
  net_proto.h server.h network.h db.h program.h version.h timers.h \
  my-time.h utils.h execute.h opcode.h parse_cmd.h net_tcp.cc
-numbers.o: numbers.cc my-math.h my-stdlib.h config.h my-string.h \
- my-time.h functions.h my-stdio.h execute.h db.h program.h structures.h \
- version.h opcode.h options.h parse_cmd.h log.h random.h server.h \
- network.h sosemanuk.h storage.h streams.h utils.h
-objects.o: objects.cc collection.h structures.h my-stdio.h config.h db.h \
- program.h version.h db_io.h execute.h opcode.h options.h parse_cmd.h \
- functions.h list.h streams.h numbers.h sosemanuk.h quota.h server.h \
- network.h storage.h my-string.h utils.h
-parse_cmd.o: parse_cmd.cc my-ctype.h config.h my-stdio.h my-stdlib.h \
- my-string.h my-time.h db.h program.h structures.h version.h list.h \
- streams.h match.h parse_cmd.h storage.h utils.h execute.h opcode.h \
- options.h
-pattern.o: pattern.cc my-ctype.h config.h my-stdlib.h my-string.h \
- pattern.h storage.h structures.h my-stdio.h streams.h regexpr.h
-program.o: program.cc ast.h config.h parser.h program.h structures.h \
- my-stdio.h version.h sym_table.h list.h streams.h server.h network.h \
- options.h db.h storage.h my-string.h utils.h execute.h opcode.h \
+numbers.o: numbers.cc my-math.h my-stdlib.h config.h options.h \
+ my-string.h my-time.h functions.h my-stdio.h execute.h db.h program.h \
+ structures.h storage.h version.h opcode.h parse_cmd.h log.h random.h \
+ server.h network.h streams.h sosemanuk.h utils.h
+objects.o: objects.cc collection.h structures.h my-stdio.h config.h \
+ options.h storage.h my-string.h db.h program.h version.h db_io.h \
+ execute.h opcode.h parse_cmd.h functions.h list.h streams.h numbers.h \
+ sosemanuk.h quota.h server.h network.h utils.h
+parse_cmd.o: parse_cmd.cc my-ctype.h config.h options.h my-stdio.h \
+ my-stdlib.h my-string.h my-time.h db.h program.h structures.h storage.h \
+ version.h list.h streams.h match.h parse_cmd.h utils.h execute.h \
+ opcode.h
+pattern.o: pattern.cc my-ctype.h config.h options.h my-stdlib.h \
+ my-string.h pattern.h storage.h streams.h regexpr.h
+program.o: program.cc ast.h config.h options.h parser.h program.h \
+ structures.h my-stdio.h storage.h my-string.h version.h sym_table.h \
+ list.h streams.h server.h network.h db.h utils.h execute.h opcode.h \
  parse_cmd.h
-property.o: property.cc db.h config.h program.h structures.h my-stdio.h \
- version.h functions.h execute.h opcode.h options.h parse_cmd.h list.h \
- streams.h storage.h my-string.h utils.h
-quota.o: quota.cc config.h db.h program.h structures.h my-stdio.h \
- version.h quota.h
-server.o: server.cc my-types.h config.h my-signal.h my-stdarg.h \
- my-stdio.h my-stdlib.h my-string.h my-unistd.h my-wait.h db.h \
- program.h structures.h version.h db_io.h disassemble.h exec.h \
- execute.h opcode.h options.h parse_cmd.h functions.h garbage.h list.h \
- streams.h log.h nettle/sha2.h nettle/nettle-types.h network.h server.h \
- numbers.h sosemanuk.h parser.h quota.h random.h storage.h tasks.h \
- timers.h my-time.h unparse.h utils.h linenoise.h
-storage.o: storage.cc my-stdlib.h config.h list.h structures.h my-stdio.h \
- streams.h options.h server.h network.h db.h program.h version.h \
- storage.h my-string.h utils.h execute.h opcode.h parse_cmd.h
-streams.o: streams.cc my-stdarg.h config.h my-string.h my-stdio.h log.h \
- structures.h storage.h streams.h
-str_intern.o: str_intern.cc my-stdlib.h config.h log.h my-stdio.h \
- structures.h storage.h my-string.h str_intern.h utils.h execute.h db.h \
- program.h version.h opcode.h options.h parse_cmd.h streams.h
-sym_table.o: sym_table.cc my-stdio.h config.h ast.h parser.h program.h \
- structures.h version.h sym_table.h log.h storage.h my-string.h utils.h \
- execute.h db.h opcode.h options.h parse_cmd.h streams.h
-system.o: system.cc my-stdlib.h config.h my-string.h functions.h \
- my-stdio.h execute.h db.h program.h structures.h version.h opcode.h \
- options.h parse_cmd.h storage.h streams.h utils.h system.h
-tasks.o: tasks.cc my-string.h config.h my-time.h db.h program.h \
- structures.h my-stdio.h version.h db_io.h decompile.h ast.h parser.h \
- sym_table.h eval_env.h eval_vm.h execute.h opcode.h options.h \
- parse_cmd.h functions.h http_parser.h list.h streams.h log.h map.h \
- match.h random.h server.h network.h storage.h tasks.h utils.h verbs.h
-timers.o: timers.cc my-signal.h config.h my-stdlib.h my-sys-time.h \
- options.h my-types.h my-time.h my-unistd.h timers.h
-unparse.o: unparse.cc my-ctype.h config.h my-stdio.h ast.h parser.h \
- program.h structures.h version.h sym_table.h decompile.h functions.h \
- execute.h db.h opcode.h options.h parse_cmd.h keywords.h list.h \
- streams.h log.h unparse.h storage.h my-string.h utils.h
-utils.o: utils.cc my-ctype.h config.h my-stdio.h my-string.h db.h \
- program.h structures.h version.h db_io.h garbage.h list.h streams.h \
- log.h map.h match.h numbers.h sosemanuk.h quota.h server.h network.h \
- options.h storage.h utils.h execute.h opcode.h parse_cmd.h
-verbs.o: verbs.cc my-string.h config.h db.h program.h structures.h \
- my-stdio.h version.h execute.h opcode.h options.h parse_cmd.h \
- functions.h list.h streams.h log.h match.h parser.h server.h network.h \
- storage.h unparse.h utils.h verbs.h
-version.o: version.cc config.h version.h structures.h my-stdio.h list.h \
- streams.h storage.h my-string.h utils.h execute.h db.h program.h \
- opcode.h options.h parse_cmd.h server.h network.h version_src.h \
+property.o: property.cc db.h config.h options.h program.h structures.h \
+ my-stdio.h storage.h my-string.h version.h functions.h execute.h \
+ opcode.h parse_cmd.h list.h streams.h utils.h
+quota.o: quota.cc config.h options.h db.h program.h structures.h \
+ my-stdio.h storage.h my-string.h version.h quota.h
+server.o: server.cc my-types.h config.h options.h my-signal.h my-stdarg.h \
+ my-stdio.h my-stdlib.h my-string.h my-unistd.h my-wait.h db.h program.h \
+ structures.h storage.h version.h db_io.h disassemble.h exec.h execute.h \
+ opcode.h parse_cmd.h functions.h garbage.h list.h streams.h log.h \
+ network.h server.h numbers.h sosemanuk.h parser.h quota.h random.h \
+ tasks.h timers.h my-time.h unparse.h utils.h net_multi.h waif.h \
+ db_private.h linenoise.h
+storage.o: storage.cc my-stdlib.h config.h options.h my-string.h list.h \
+ structures.h my-stdio.h storage.h streams.h server.h network.h db.h \
+ program.h version.h utils.h execute.h opcode.h parse_cmd.h
+streams.o: streams.cc my-stdarg.h config.h options.h my-string.h \
+ my-stdio.h log.h structures.h storage.h streams.h
+str_intern.o: str_intern.cc my-stdlib.h config.h options.h my-string.h \
+ log.h my-stdio.h structures.h storage.h str_intern.h utils.h execute.h \
+ db.h program.h version.h opcode.h parse_cmd.h streams.h
+sym_table.o: sym_table.cc my-stdio.h config.h options.h ast.h parser.h \
+ program.h structures.h storage.h my-string.h version.h sym_table.h log.h \
+ utils.h execute.h db.h opcode.h parse_cmd.h streams.h
+system.o: system.cc my-stdlib.h config.h options.h my-string.h \
+ functions.h my-stdio.h execute.h db.h program.h structures.h storage.h \
+ version.h opcode.h parse_cmd.h streams.h utils.h system.h
+tasks.o: tasks.cc my-string.h config.h options.h my-time.h my-in.h \
+ my-types.h db.h program.h structures.h my-stdio.h storage.h version.h \
+ db_io.h decompile.h ast.h parser.h sym_table.h eval_env.h eval_vm.h \
+ execute.h opcode.h parse_cmd.h functions.h http_parser.h list.h \
+ streams.h log.h map.h match.h random.h server.h network.h tasks.h \
+ utils.h verbs.h name_lookup.h
+timers.o: timers.cc my-signal.h config.h options.h my-stdlib.h \
+ my-sys-time.h my-types.h my-time.h my-unistd.h timers.h
+unparse.o: unparse.cc my-ctype.h config.h options.h my-stdio.h ast.h \
+ parser.h program.h structures.h storage.h my-string.h version.h \
+ sym_table.h decompile.h functions.h execute.h db.h opcode.h parse_cmd.h \
+ keywords.h list.h streams.h log.h unparse.h utils.h
+utils.o: utils.cc my-ctype.h config.h options.h my-stdio.h my-string.h \
+ db.h program.h structures.h storage.h version.h db_io.h garbage.h list.h \
+ streams.h log.h map.h match.h numbers.h sosemanuk.h quota.h server.h \
+ network.h waif.h db_private.h utils.h execute.h opcode.h parse_cmd.h
+verbs.o: verbs.cc my-string.h config.h options.h db.h program.h \
+ structures.h my-stdio.h storage.h version.h execute.h opcode.h \
+ parse_cmd.h functions.h list.h streams.h log.h match.h parser.h server.h \
+ network.h unparse.h utils.h verbs.h
+version.o: version.cc config.h options.h version.h structures.h \
+ my-stdio.h storage.h my-string.h list.h streams.h utils.h execute.h db.h \
+ program.h opcode.h parse_cmd.h server.h network.h version_src.h \
  version_options.h
-net_single.o: net_single.cc my-ctype.h config.h my-fcntl.h my-stdio.h \
- my-unistd.h log.h structures.h network.h options.h server.h db.h \
- program.h version.h streams.h utils.h execute.h opcode.h parse_cmd.h
-net_multi.o: net_multi.cc my-ctype.h config.h my-fcntl.h my-ioctl.h \
- my-signal.h my-stdio.h my-stdlib.h my-string.h my-unistd.h list.h \
- structures.h streams.h log.h net_mplex.h net_multi.h net_proto.h \
- options.h network.h server.h db.h program.h version.h storage.h \
- timers.h my-time.h utils.h execute.h opcode.h parse_cmd.h
-net_mp_selct.o: net_mp_selct.cc my-string.h config.h my-sys-time.h \
- options.h my-types.h log.h my-stdio.h structures.h net_mplex.h
-net_mp_poll.o: net_mp_poll.cc my-poll.h config.h log.h my-stdio.h \
- structures.h net_mplex.h storage.h my-string.h
-net_mp_fake.o: net_mp_fake.cc my-types.h config.h my-stat.h my-unistd.h \
- net_mplex.h options.h storage.h my-string.h structures.h my-stdio.h
+extension-sqlite.o: extension-sqlite.cc extension-sqlite.h functions.h \
+ my-stdio.h config.h options.h execute.h db.h program.h structures.h \
+ storage.h my-string.h version.h opcode.h parse_cmd.h numbers.h \
+ sosemanuk.h utils.h streams.h list.h log.h server.h network.h map.h \
+ extension-background.h bf_register.h my-unistd.h tasks.h net_multi.h \
+ thpool.h
+extension-pcre.o: extension-pcre.cc extension-pcre.h functions.h \
+ my-stdio.h config.h options.h execute.h db.h program.h structures.h \
+ storage.h my-string.h version.h opcode.h parse_cmd.h list.h streams.h \
+ utils.h log.h pcrs.h server.h network.h map.h xtrapbits.h
+extension-background.o: extension-background.cc extension-background.h \
+ bf_register.h functions.h my-stdio.h config.h options.h execute.h db.h \
+ program.h structures.h storage.h my-string.h version.h opcode.h \
+ parse_cmd.h my-unistd.h tasks.h utils.h streams.h server.h network.h \
+ list.h net_multi.h thpool.h log.h
+waif.o: waif.cc structures.h my-stdio.h config.h options.h storage.h \
+ my-string.h bf_register.h functions.h execute.h db.h program.h version.h \
+ opcode.h parse_cmd.h streams.h utils.h db_private.h db_io.h waif.h \
+ list.h server.h network.h log.h map.h
+extension-simplexnoise.o: extension-simplexnoise.cc bf_register.h \
+ functions.h my-stdio.h config.h options.h execute.h db.h program.h \
+ structures.h storage.h my-string.h version.h opcode.h parse_cmd.h \
+ utils.h streams.h numbers.h sosemanuk.h log.h extension-simplexnoise.h
+extension-argon2.o: extension-argon2.cc options.h config.h functions.h \
+ my-stdio.h execute.h db.h program.h structures.h storage.h my-string.h \
+ version.h opcode.h parse_cmd.h utils.h streams.h log.h
+extension-spellcheck.o: extension-spellcheck.cc bf_register.h functions.h \
+ my-stdio.h config.h options.h execute.h db.h program.h structures.h \
+ storage.h my-string.h version.h opcode.h parse_cmd.h log.h utils.h \
+ streams.h list.h
+net_single.o: net_single.cc my-ctype.h config.h options.h my-fcntl.h \
+ my-stdio.h my-unistd.h log.h structures.h storage.h my-string.h \
+ network.h server.h streams.h db.h program.h version.h utils.h execute.h \
+ opcode.h parse_cmd.h
+net_multi.o: net_multi.cc my-ctype.h config.h options.h my-fcntl.h \
+ my-ioctl.h my-signal.h my-stdio.h my-stdlib.h my-string.h my-unistd.h \
+ list.h structures.h storage.h streams.h log.h net_mplex.h net_multi.h \
+ network.h server.h db.h program.h version.h net_proto.h timers.h \
+ my-time.h utils.h execute.h opcode.h parse_cmd.h
+net_mp_selct.o: net_mp_selct.cc my-string.h config.h options.h \
+ my-sys-time.h my-types.h log.h my-stdio.h structures.h storage.h \
+ net_mplex.h
+net_mp_poll.o: net_mp_poll.cc my-poll.h config.h options.h log.h \
+ my-stdio.h structures.h storage.h my-string.h net_mplex.h
 net_tcp.o: net_tcp.cc
-net_bsd_tcp.o: net_bsd_tcp.cc my-inet.h config.h my-in.h my-types.h \
- my-socket.h my-stdlib.h my-string.h my-unistd.h list.h structures.h \
- my-stdio.h streams.h log.h name_lookup.h net_proto.h options.h \
- server.h network.h db.h program.h version.h timers.h my-time.h utils.h \
- execute.h opcode.h parse_cmd.h net_tcp.cc
-net_bsd_lcl.o: net_bsd_lcl.cc my-socket.h config.h my-stdio.h my-string.h \
- my-unistd.h log.h structures.h net_proto.h options.h storage.h utils.h \
+net_bsd_tcp.o: net_bsd_tcp.cc my-inet.h config.h options.h my-in.h \
+ my-types.h my-socket.h my-stdlib.h my-string.h my-unistd.h list.h \
+ structures.h my-stdio.h storage.h streams.h log.h name_lookup.h \
+ net_proto.h server.h network.h db.h program.h version.h timers.h \
+ my-time.h utils.h execute.h opcode.h parse_cmd.h net_tcp.cc
+net_bsd_lcl.o: net_bsd_lcl.cc my-socket.h config.h options.h my-stdio.h \
+ my-string.h my-unistd.h log.h structures.h storage.h net_proto.h utils.h \
  execute.h db.h program.h version.h opcode.h parse_cmd.h streams.h
-net_sysv_lcl.o: net_sysv_lcl.cc my-fcntl.h config.h my-stat.h my-stdio.h \
- my-stdlib.h my-unistd.h list.h structures.h streams.h log.h \
- net_multi.h net_proto.h options.h storage.h my-string.h utils.h \
- execute.h db.h program.h version.h opcode.h parse_cmd.h
-client_bsd.o: client_bsd.c my-socket.h config.h my-stdio.h my-stdlib.h \
- my-string.h my-sys-time.h options.h my-types.h my-unistd.h
-client_sysv.o: client_sysv.c my-fcntl.h config.h my-signal.h my-stdio.h \
- my-stdlib.h my-string.h my-types.h my-stat.h my-unistd.h options.h
+net_sysv_tcp.o: net_sysv_tcp.cc my-inet.h config.h options.h my-fcntl.h \
+ my-in.h my-types.h my-ioctl.h my-socket.h my-stdlib.h my-string.h \
+ my-stropts.h my-tiuser.h my-unistd.h log.h my-stdio.h structures.h \
+ storage.h name_lookup.h net_proto.h server.h network.h streams.h db.h \
+ program.h version.h timers.h my-time.h net_tcp.cc
+net_sysv_lcl.o: net_sysv_lcl.cc my-fcntl.h config.h options.h my-stat.h \
+ my-stdio.h my-stdlib.h my-unistd.h list.h structures.h storage.h \
+ my-string.h streams.h log.h net_multi.h network.h server.h db.h \
+ program.h version.h net_proto.h utils.h execute.h opcode.h parse_cmd.h
+client_bsd.o: client_bsd.c my-socket.h config.h options.h my-stdio.h \
+ my-stdlib.h my-string.h my-sys-time.h my-types.h my-unistd.h
+client_sysv.o: client_sysv.c my-fcntl.h config.h options.h my-signal.h \
+ my-stdio.h my-stdlib.h my-string.h my-types.h my-stat.h my-unistd.h

@@ -44,7 +44,7 @@
 #include "garbage.h"
 #include "list.h"
 #include "log.h"
-#include "nettle/sha2.h"
+#include <nettle/sha2.h>
 #include "network.h"
 #include "numbers.h"
 #include "options.h"

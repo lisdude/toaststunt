@@ -35,11 +35,11 @@
 #include "functions.h"
 #include "crypto.h"
 #include "list.h"
-#include "nettle/hmac.h"
-#include "nettle/md5.h"
-#include "nettle/ripemd160.h"
-#include "nettle/sha1.h"
-#include "nettle/sha2.h"
+#include <nettle/hmac.h>
+#include <nettle/md5.h>
+#include <nettle/ripemd160.h>
+#include <nettle/sha1.h>
+#include <nettle/sha2.h>
 #include "random.h"
 #include "server.h"
 #include "storage.h"

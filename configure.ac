@@ -277,6 +277,15 @@ dnl ***************************************************************************
 		CFLAGS+=" `$PCRE_CONFIG --cflags`"
 	fi
 
+ dnl ***************************************************************************
+    AC_CHECK_HEADER([nettle/md5.h], [found_nettle=yes], [found_nettle=no])
+    if test "$found_nettle" != "yes" ; then
+        AC_MSG_ERROR([Nettle could not be found.])
+    else
+        AC_DEFINE(HAS_NETTLE)
+        ELIBS="${ELIBS} -lhogweed -lnettle -lgmp"
+    fi
+
 dnl ***************************************************************************
 echo checking which MOO networking configurations are likely to work...
 define(MOO_ADD_NET_CONFIG,[
