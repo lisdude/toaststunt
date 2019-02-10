@@ -112,21 +112,21 @@ class TestJson < Test::Unit::TestCase
   def test_that_generating_json_works_for_complex_values_in_default_mode
     run_test_as('wizard') do
       assert_equal '[1,1.1,"1.2","#13","E_ARGS",[2,2.2,"#-1","foo"],{"E_PERM":"E_PERM"}]', generate_json([1, 1.1, "1.2", MooObj.new(13), E_ARGS, [2, 2.2, :nothing, "foo"], {E_PERM => E_PERM}])
-      assert_equal '{"11":11,"#13":[1,2,3,"E_QUOTA"],"foo":"bar","33.3":33.3}', generate_json({11 => 11, 33.3 => 33.3, MooObj.new(13) => [1, 2, 3, E_QUOTA], "foo" => "bar"})
+      assert_equal '{"11":11,"#13":[1,2,3,"E_QUOTA"],"33.3":33.3,"foo":"bar"}', generate_json({11 => 11, 33.3 => 33.3, MooObj.new(13) => [1, 2, 3, E_QUOTA], "foo" => "bar"})
     end
   end
 
   def test_that_generating_json_works_for_complex_values_in_common_subset_mode
     run_test_as('wizard') do
       assert_equal '[1,1.1,"1.2","#13","E_ARGS",[2,2.2,"#-1","foo"],{"E_PERM":"E_PERM"}]', generate_json([1, 1.1, "1.2", MooObj.new(13), E_ARGS, [2, 2.2, :nothing, "foo"], {E_PERM => E_PERM}], 'common-subset')
-      assert_equal '{"11":11,"#13":[1,2,3,"E_QUOTA"],"foo":"bar","33.3":33.3}', generate_json({11 => 11, 33.3 => 33.3, MooObj.new(13) => [1, 2, 3, E_QUOTA], "foo" => "bar"}, 'common-subset')
+      assert_equal '{"11":11,"#13":[1,2,3,"E_QUOTA"],"33.3":33.3,"foo":"bar"}', generate_json({11 => 11, 33.3 => 33.3, MooObj.new(13) => [1, 2, 3, E_QUOTA], "foo" => "bar"}, 'common-subset')
     end
   end
 
   def test_that_generating_json_works_for_complex_values_in_embedded_types_mode
     run_test_as('wizard') do
       assert_equal '[1,1.1,"1.2","#13|obj","E_ARGS|err",[2,2.2,"#-1|obj","foo"],{"E_PERM|err":"E_PERM|err"}]', generate_json([1, 1.1, "1.2", MooObj.new(13), E_ARGS, [2, 2.2, :nothing, "foo"], {E_PERM => E_PERM}], 'embedded-types')
-      assert_equal '{"11|int":11,"#13|obj":[1,2,3,"E_QUOTA|err"],"foo":"bar","33.3|float":33.3}', generate_json({11 => 11, 33.3 => 33.3, MooObj.new(13) => [1, 2, 3, E_QUOTA], "foo" => "bar"}, 'embedded-types')
+      assert_equal '{"11|int":11,"#13|obj":[1,2,3,"E_QUOTA|err"],"33.3|float":33.3,"foo":"bar"}', generate_json({11 => 11, MooObj.new(13) => [1, 2, 3, E_QUOTA], "foo" => "bar", 33.3 => 33.3}, 'embedded-types')
     end
   end
 
@@ -358,9 +358,9 @@ class TestJson < Test::Unit::TestCase
       assert_equal E_INVARG, simplify(command(%q|; return generate_json(["one" -> create($nothing, 1)]); |))
       assert_equal E_INVARG, simplify(command(%q|; return generate_json(["one" -> create($nothing, 1)], "common-subset"); |))
       assert_equal E_INVARG, simplify(command(%q|; return generate_json(["one" -> create($nothing, 1)], "embedded-types"); |))
-      assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"]); |))
-      assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"], "common-subset"); |))
-      assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"], "embedded-types"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"]); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"], "common-subset"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"], "embedded-types"); |))
     end
   end
 
