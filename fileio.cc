@@ -653,7 +653,7 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 #else
         /* For good reason, you can't modify a const char. But shh, we're doing it anyway. */
         char *dirty_hack = (char*)line;
-        dirty_hack[len - 1] = '\0';
+        dirty_hack[len] = '\0';
         linebuf_cur->next = new_line_buffer(str_dup(dirty_hack));
 #endif
 		  linebuf_cur = linebuf_cur->next;
