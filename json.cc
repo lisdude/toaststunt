@@ -389,6 +389,9 @@ generate_key(yajl_gen g, Var v, void *ctx)
 		    tmp = append_type(tmp, v.type);
 	    return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
 	}
+    case TYPE_ANON:
+    case TYPE_WAIF:
+    break;
     default:
 	panic("Unsupported type in generate_key()");
     }
