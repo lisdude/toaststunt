@@ -129,12 +129,6 @@ dbv4_find_object(Objid oid)
 	return objects[oid];
 }
 
-static int
-dbv4_valid(Objid oid)
-{
-    return dbv4_find_object(oid) != 0;
-}
-
 static Objid
 dbv4_last_used_objid(void)
 {
@@ -379,53 +373,6 @@ ng_read_object(int anonymous)
     }
 
     return 1;
-}
-
-static void
-v4_write_object(Objid oid)
-{
-    Object4 *o;
-    Verbdef *v;
-    int i;
-    int nverbdefs, nprops;
-
-    if (!dbv4_valid(oid)) {
-	dbio_printf("#%" PRIdN " recycled\n", oid);
-	return;
-    }
-    o = dbv4_find_object(oid);
-
-    dbio_printf("#%" PRIdN "\n", oid);
-    dbio_write_string(o->name);
-    dbio_write_string("");	/* placeholder for old handles string */
-    dbio_write_num(o->flags);
-
-    dbio_write_objid(o->owner);
-
-    dbio_write_objid(o->location);
-    dbio_write_objid(o->contents);
-    dbio_write_objid(o->next);
-
-    dbio_write_objid(o->parent);
-    dbio_write_objid(o->child);
-    dbio_write_objid(o->sibling);
-
-    for (v = o->verbdefs, nverbdefs = 0; v; v = v->next)
-	nverbdefs++;
-
-    dbio_write_num(nverbdefs);
-    for (v = o->verbdefs; v; v = v->next)
-	write_verbdef(v);
-
-    dbio_write_num(o->propdefs.cur_length);
-    for (i = 0; i < o->propdefs.cur_length; i++)
-	write_propdef(&o->propdefs.l[i]);
-
-    nprops = dbv4_count_properties(oid);
-
-    dbio_write_num(nprops);
-    for (i = 0; i < nprops; i++)
-	write_propval(o->propval + i);
 }
 
 static void

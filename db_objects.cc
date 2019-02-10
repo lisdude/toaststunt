@@ -81,8 +81,8 @@ void
 db_reset_last_used_objid(void)
 {
     while (!objects[num_objects - 1])
-	num_objects--;
-	db_clear_ancestor_cache();
+        num_objects--;
+    db_clear_ancestor_cache();
 }
 
 void

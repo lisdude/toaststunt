@@ -65,7 +65,6 @@ dbio_scanf(const char *format,...)
 {
     va_list args;
     int count;
-    const char *ptr;
 
     va_start(args, format);
     count = vfscanf(input, format, args);
