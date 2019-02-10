@@ -101,7 +101,7 @@ class TestMap < Test::Unit::TestCase
     run_test_as('programmer') do
       x = simplify(command(%Q|; return [#{NOTHING} -> #{NOTHING}, "2" -> [], "1" -> {}, 5 -> 5, 3.14 -> 3.14];|))
       assert_equal '[map]', tostr(x)
-      assert_equal '[5 -> 5, #-1 -> #-1, "1" -> {}, "2" -> [], 3.14 -> 3.14]', toliteral(x)
+      assert_equal '[5 -> 5, #-1 -> #-1, 3.14 -> 3.14, "1" -> {}, "2" -> []]', toliteral(x)
     end
   end
 
@@ -160,8 +160,6 @@ class TestMap < Test::Unit::TestCase
 
   def test_that_anonymous_objects_cannot_be_keys
     run_test_as('programmer') do
-      assert_equal E_TYPE, simplify(command(%Q(; [create($anonymous, 1) -> 1];)))
-      assert_equal E_TYPE, simplify(command(%Q(; x = []; x[create($anonymous, 1)] = 1;)))
       assert_equal E_TYPE, simplify(command(%Q(; mapdelete([1 -> 2, 3 -> 4], create($anonymous, 1));)))
     end
   end
