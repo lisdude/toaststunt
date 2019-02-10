@@ -37,7 +37,7 @@
 
 static unsigned long waif_count = 0;
 static std::unordered_map<Objid, unsigned int> waif_class_count;
-std::unordered_map<Waif *, bool> recycled_waifs;
+std::unordered_map<Waif *, bool> destroyed_waifs;
 
 #define PROP_MAPPED(Mmap, Mbit)	((Mmap)[(Mbit) / 32] & (1 << ((Mbit) % 32)))
 #define MAP_PROP(Mmap, Mbit) (Mmap)[(Mbit) / 32] |= 1 << ((Mbit) % 32)
@@ -598,7 +598,7 @@ bf_waif_stats(Var arglist, Byte next, void *vdata, Objid progr)
 
     Var r = new_map();
     r = mapinsert(r, str_dup_to_var("total"), Var::new_int(waif_count));
-    r = mapinsert(r, str_dup_to_var("pending_recycle"), Var::new_int(recycled_waifs.size()));
+    r = mapinsert(r, str_dup_to_var("pending_destroy"), Var::new_int(destroyed_waifs.size()));
 
     for (auto& x : waif_class_count) {
         r = mapinsert(r, Var::new_obj(x.first), Var::new_int(x.second));

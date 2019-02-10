@@ -27,7 +27,7 @@
 #define WAIF_PROP_PREFIX	':'
 #define WAIF_VERB_PREFIX	':'
 
-extern std::unordered_map<Waif *, bool> recycled_waifs;
+extern std::unordered_map<Waif *, bool> destroyed_waifs;
 
 #ifdef WAIF_DICT
 #define WAIF_INDEX_VERB ":_index"
