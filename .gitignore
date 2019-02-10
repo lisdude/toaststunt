@@ -10,7 +10,6 @@ version_src*.h
 keywords.c
 *.o
 moo
-*.db
 \#*\#
 .\#*
 backups
