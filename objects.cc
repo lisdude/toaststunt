@@ -916,7 +916,7 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
     Var parent = arglist.v.list[2];
     bool return_obj = (arglist.v.list[0].v.num > 2 && is_true(arglist.v.list[3]));
 
-    if (!object.is_object() || !is_obj_or_list_of_objs(parent)) {
+    if (!object.is_object() || (!is_obj_or_list_of_objs(parent) && parent.type != TYPE_ANON)) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     }
@@ -925,7 +925,7 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
     }
 
-    if(parent.type == TYPE_OBJ)
+    if (parent.type != TYPE_LIST)
         if (db_object_isa(object, parent)) {
             free_var(arglist);
             return make_var_pack(return_obj ? Var::new_obj(parent.v.obj) : Var::new_int(1));
@@ -934,8 +934,7 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
             free_var(arglist);
             return make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
         }
-    else if (parent.type == TYPE_LIST) {
-
+    else {
         int parent_length = parent.v.list[0].v.num;
                 free_var(arglist);
 
