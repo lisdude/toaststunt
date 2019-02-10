@@ -541,7 +541,7 @@ recycle_anonymous_objects(void)
 	db_set_object_flag2(v, FLAG_RECYCLED);
 
         /* the best approximation I could think of */
-	run_server_task(-1, v, "recycle", new_list(0), "", 0);
+	run_server_task(-1, v, "pre_destroy", new_list(0), "", 0);
 
 	/* We'd like to run `db_change_parents()' to be consistent
 	 * with the pattern laid out in `bf_destroy()', but we can't
