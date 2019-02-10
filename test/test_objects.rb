@@ -470,7 +470,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal [], get(m, 'contents')
       assert_equal [], get(n, 'contents')
 
-      recycle(b)
+      destroy(b)
 
       assert_equal NOTHING, parent(e)
       assert_equal E_INVARG, parent(b)
@@ -534,7 +534,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal [], get(m, 'contents')
       assert_equal [], get(n, 'contents')
 
-      recycle(b)
+      destroy(b)
 
       assert_equal NOTHING, parent(x)
       assert_equal NOTHING, parent(y)
@@ -584,7 +584,7 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal [a, b, c], parents(m)
 
-      recycle(b)
+      destroy(b)
 
       assert_equal [a, c], parents(m)
     end
@@ -605,15 +605,15 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal [a, b, c, m], parents(x)
 
-      recycle(b)
+      destroy(b)
 
       assert_equal [a, c, m], parents(x)
 
-      recycle(m)
+      destroy(m)
 
       assert_equal [a, c, d, e], parents(x)
 
-      recycle(e)
+      destroy(e)
 
       assert_equal [a, c, d], parents(x)
     end
@@ -621,7 +621,7 @@ class TestObject < Test::Unit::TestCase
 
   def test_renumber
     run_test_as('wizard') do
-      recycle(create(:nothing)) # create a hole
+      destroy(create(:nothing)) # create a hole
 
       l = eval(%|for o in [#0..max_object()]; if (!valid(o)); return o; endif; endfor; return $nothing;|)
 
@@ -670,7 +670,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal [c], get(l, 'contents')
       assert_equal [], get(c, 'contents')
 
-      recycle(create(:nothing)) # create a hole
+      destroy(create(:nothing)) # create a hole
 
       l = eval(%|for o in [#0..max_object()]; if (!valid(o)); return o; endif; endfor; return $nothing;|)
 
@@ -1735,7 +1735,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal [e, a, b, c], descendants(d)
       assert_equal [a, b, c], descendants(e)
 
-      recycle(a)
+      destroy(a)
 
       assert_equal E_INVARG, parent(a)
       assert_equal e, parent(b)
@@ -1827,7 +1827,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal b, parent(n)
 
       x = kahuna(NOTHING, NOTHING, 'x')
-      recycle(x)
+      destroy(x)
 
       assert_equal E_INVARG, create(x)
       assert_equal E_INVARG, create([x])
@@ -1875,7 +1875,7 @@ class TestObject < Test::Unit::TestCase
         x = create(NOTHING)
         add_verb(x, [player, 'xd', 'x'], ['this', 'none', 'this'])
         set_verb_code(x, 'x') do |vc|
-          vc << %|recycle(create($nothing));|
+          vc << %|destroy(create($nothing));|
             vc << %|a = verb_cache_stats();|
             vc << %|#{a}:s();|
             vc << %|b = verb_cache_stats();|

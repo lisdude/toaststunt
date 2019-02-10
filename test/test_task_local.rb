@@ -138,7 +138,7 @@ class TestTaskLocal < Test::Unit::TestCase
         code << %Q|notify(player, "> " + toliteral(task_local()));|
       end
 
-      send_string %Q|; set_task_local({1, {2, {3}}}); recycle(#{x});|
+      send_string %Q|; set_task_local({1, {2, {3}}}); destroy(#{x});|
 
       line = nil
       while (true)

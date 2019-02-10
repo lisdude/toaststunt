@@ -126,7 +126,7 @@ class TestGarbageCollection < Test::Unit::TestCase
       d = create([])
       m = create([a, b, c], 1)
       assert_equal [_(a), _(b), _(c)], parents(m)
-      recycle(a)
+      destroy(a)
       valid(m)
     end
   end
@@ -231,7 +231,7 @@ class TestGarbageCollection < Test::Unit::TestCase
             endif
           endfor;
           add_property(r, "next", o, {player, ""});
-          recycle(#{a});
+          destroy(#{a});
         EOF
         lines.split("\n").each do |line|
           vc << line
@@ -319,7 +319,7 @@ class TestGarbageCollection < Test::Unit::TestCase
               o = [1 -> o, 2 -> o];
             endif
           endfor;
-          recycle(#{a});
+          destroy(#{a});
         EOF
         lines.split("\n").each do |line|
           vc << line
@@ -340,13 +340,13 @@ class TestGarbageCollection < Test::Unit::TestCase
       simplify(command(%Q|; o = create(#{x}, 1); o.next = o; run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; o = create(#{x}, 1); o.next = o; recycle(o); run_gc();|))
+      simplify(command(%Q|; o = create(#{x}, 1); o.next = o; destroy(o); run_gc();|))
     end
     run_test_as('wizard') do
       simplify(command(%Q|; o = create($nothing, 1); add_property(o, "next", o, {player, ""}); run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; o = create($nothing, 1); add_property(o, "next", o, {player, ""}); recycle(o); run_gc();|))
+      simplify(command(%Q|; o = create($nothing, 1); add_property(o, "next", o, {player, ""}); destroy(o); run_gc();|))
     end
   end
 
@@ -361,13 +361,13 @@ class TestGarbageCollection < Test::Unit::TestCase
       simplify(command(%Q|; o = create(#{a}, 1); o.x = o; o.y = o; run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; o = create(#{a}, 1); o.x = o; o.y = o; recycle(o); run_gc();|))
+      simplify(command(%Q|; o = create(#{a}, 1); o.x = o; o.y = o; destroy(o); run_gc();|))
     end
     run_test_as('wizard') do
       simplify(command(%Q|; o = create($nothing, 1); add_property(o, "x", o, {player, ""}); add_property(o, "y", o, {player, ""}); run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; o = create($nothing, 1); add_property(o, "x", o, {player, ""}); add_property(o, "y", o, {player, ""}); recycle(o); run_gc();|))
+      simplify(command(%Q|; o = create($nothing, 1); add_property(o, "x", o, {player, ""}); add_property(o, "y", o, {player, ""}); destroy(o); run_gc();|))
     end
   end
 
@@ -377,13 +377,13 @@ class TestGarbageCollection < Test::Unit::TestCase
       simplify(command(%Q|; x = {o = create($nothing, 1), o, o}; add_property(o, "next", x, {player, ""}); run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; x = {o = create($nothing, 1), o, o}; add_property(o, "next", x, {player, ""}); recycle(o); run_gc();|))
+      simplify(command(%Q|; x = {o = create($nothing, 1), o, o}; add_property(o, "next", x, {player, ""}); destroy(o); run_gc();|))
     end
     run_test_as('wizard') do
       simplify(command(%Q|; x = [1 -> o = create($nothing, 1), 2 -> o, 3 -> o]; add_property(o, "next", x, {player, ""}); run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; x = [1 -> o = create($nothing, 1), 2 -> o, 3 -> o]; add_property(o, "next", x, {player, ""}); recycle(o); run_gc();|))
+      simplify(command(%Q|; x = [1 -> o = create($nothing, 1), 2 -> o, 3 -> o]; add_property(o, "next", x, {player, ""}); destroy(o); run_gc();|))
     end
   end
 
@@ -417,7 +417,7 @@ class TestGarbageCollection < Test::Unit::TestCase
     end
     run_test_as('wizard') do
       9.times do |n|
-        simplify(command(%Q|; x = y = create(#{a}, 1); for i in [1..#{n + 1}]; x.next = create(#{a}, 1); x = x.next; endfor; x.next = y; recycle(y); run_gc();|))
+        simplify(command(%Q|; x = y = create(#{a}, 1); for i in [1..#{n + 1}]; x.next = create(#{a}, 1); x = x.next; endfor; x.next = y; destroy(y); run_gc();|))
       end
     end
     run_test_as('wizard') do
@@ -427,7 +427,7 @@ class TestGarbageCollection < Test::Unit::TestCase
     end
     run_test_as('wizard') do
       8.times do |n|
-        simplify(command(%Q|; x = y = create($nothing, 1); for i in [1..#{n + 1}]; add_property(x, "next", create($nothing, 1), {player, ""}); x = x.next; endfor; add_property(x, "next", y, {player, ""}); recycle(y); run_gc();|))
+        simplify(command(%Q|; x = y = create($nothing, 1); for i in [1..#{n + 1}]; add_property(x, "next", create($nothing, 1), {player, ""}); x = x.next; endfor; add_property(x, "next", y, {player, ""}); destroy(y); run_gc();|))
       end
     end
   end
@@ -444,10 +444,10 @@ class TestGarbageCollection < Test::Unit::TestCase
   # these tests add/leave a purple root value, and then recycle that value...
   def test_contrived_example_that_accesses_an_already_recycled_object
     run_test_as('wizard') do
-      simplify(command(%Q|; x = y = create($nothing, 1); add_property(x, "next", create($nothing, 1), {player, ""}); add_property(x.next, "next", x, {player, ""}); recycle(y); run_gc();|))
+      simplify(command(%Q|; x = y = create($nothing, 1); add_property(x, "next", create($nothing, 1), {player, ""}); add_property(x.next, "next", x, {player, ""}); destroy(y); run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; x = y = create($nothing, 1); add_property(x, "next", create($nothing, 1), {player, ""}); add_property(x.next, "next", x, {player, ""}); recycle(x); run_gc();|))
+      simplify(command(%Q|; x = y = create($nothing, 1); add_property(x, "next", create($nothing, 1), {player, ""}); add_property(x.next, "next", x, {player, ""}); destroy(x); run_gc();|))
     end
   end
 

@@ -102,7 +102,7 @@ $one.name = "One One One!";
 $one.two.name = "Two Two Two!";
 server_log(tostr("$one is ", `valid($one) ! E_PROPNF, E_TYPE' ? "valid" | "invalid"));
 server_log(tostr("$one.two is ", `valid($one.two) ! E_PROPNF, E_TYPE' ? "valid" | "invalid"));
-recycle($one.two);
+destroy($one.two);
 suspend(0);
 shutdown();
 elseif (`valid($one) ! E_TYPE')

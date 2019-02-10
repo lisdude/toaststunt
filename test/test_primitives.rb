@@ -34,7 +34,7 @@ class TestPrimitives < Test::Unit::TestCase
             assert_equal 0, simplify(command(%Q|; return #{value.inspect}:foo();|))
           ensure
             delete_property(:system, "#{proto}")
-            recycle(o)
+            destroy(o)
           end
         end
       end
@@ -60,7 +60,7 @@ class TestPrimitives < Test::Unit::TestCase
       ensure
         kill_task(t)
         delete_property(:system, "map_proto")
-        recycle(o)
+        destroy(o)
       end
     end
   end
@@ -82,7 +82,7 @@ class TestPrimitives < Test::Unit::TestCase
         assert_equal([1, 2, 'three', 4.0], c[0][0])
       ensure
         delete_property(:system, "list_proto")
-        recycle(o)
+        destroy(o)
       end
     end
   end
@@ -104,9 +104,9 @@ class TestPrimitives < Test::Unit::TestCase
       ensure
         delete_property(:system, "list_proto")
         delete_property(:system, "map_proto")
-        recycle(list)
-        recycle(map)
-        recycle(base)
+        destroy(list)
+        destroy(map)
+        destroy(base)
       end
     end
   end
@@ -136,9 +136,9 @@ class TestPrimitives < Test::Unit::TestCase
       ensure
         delete_property(:system, "list_proto")
         delete_property(:system, "map_proto")
-        recycle(list)
-        recycle(map)
-        recycle(base)
+        destroy(list)
+        destroy(map)
+        destroy(base)
       end
     end
   end

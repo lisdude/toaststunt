@@ -9,7 +9,7 @@ class TestVerbCache < Test::Unit::TestCase
       add_verb(b, [player, 'xd', 'test'], ['this', 'none', 'this'])
       set_verb_code(b, 'test', ['return "test";'])
 
-      recycle(a) # should clear the cache
+      destroy(a) # should clear the cache
       x = verb_cache_stats()
       assert_equal E_INVIND, call(a, 'test')
       assert_equal 'test', call(b, 'test')

@@ -138,9 +138,9 @@ class TestAnonymous < Test::Unit::TestCase
 
   def test_that_recycle_invalidates_all_references_to_an_anonymous_object
     run_test_as('programmer') do
-      assert_equal 0, simplify(command("; a = create($anonymous, 1); recycle(a); return valid(a);"))
-      assert_equal 0, simplify(command("; a = create($anonymous, 1); b = a; recycle(a); return valid(b);"))
-      assert_equal 0, simplify(command("; a = create($anonymous, 1); b = a; recycle(b); return valid(a);"))
+      assert_equal 0, simplify(command("; a = create($anonymous, 1); destroy(a); return valid(a);"))
+      assert_equal 0, simplify(command("; a = create($anonymous, 1); b = a; destroy(a); return valid(b);"))
+      assert_equal 0, simplify(command("; a = create($anonymous, 1); b = a; destroy(b); return valid(a);"))
     end
   end
 
@@ -193,7 +193,7 @@ class TestAnonymous < Test::Unit::TestCase
       simplify(command("; create(#{a}, 1);"))
       assert_equal 1, get(a, 'recycle_called')
       assert_equal 0, simplify(command("; return valid(#{a}.reference);"))
-      assert_equal E_INVARG, simplify(command("; recycle(#{a}.reference);"))
+      assert_equal E_INVARG, simplify(command("; destroy(#{a}.reference);"))
       assert_equal E_INVIND, simplify(command("; #{a}.reference.name;"))
     end
   end
@@ -205,7 +205,7 @@ class TestAnonymous < Test::Unit::TestCase
       set_verb_code(o, 'go') do |vc|
         vc << %Q|o = create({});|
         vc << %Q|a = create(o, 1);|
-        vc << %Q|recycle(o);|
+        vc << %Q|destroy(o);|
         vc << %Q|return valid(a);|
       end
       assert_equal 0, call(o, 'go')
@@ -268,8 +268,8 @@ class TestAnonymous < Test::Unit::TestCase
       o = create(:nothing)
       add_verb(o, ['player', 'xd', 'go'], ['this', 'none', 'this'])
       set_verb_code(o, 'go') do |vc|
-        vc << %Q|recycle(create($nothing));|
-        vc << %Q|recycle(create($nothing));|
+        vc << %Q|destroy(create($nothing));|
+        vc << %Q|destroy(create($nothing));|
         vc << %Q|a = create($nothing);|
         vc << %Q|add_property(a, "xyz", 1, {player, ""});|
         vc << %Q|m = create(a, 1);|
@@ -288,7 +288,7 @@ class TestAnonymous < Test::Unit::TestCase
         vc << %Q|a = create($nothing);|
         vc << %Q|add_property(a, "xyz", 1, {player, ""});|
         vc << %Q|m = create(a, 1);|
-        vc << %Q|recycle(a);|
+        vc << %Q|destroy(a);|
         vc << %Q|reset_max_object();|
         vc << %Q|b = create($nothing);|
         vc << %Q|add_property(b, "xyz", 2, {player, ""});|
@@ -300,19 +300,19 @@ class TestAnonymous < Test::Unit::TestCase
 
   def test_that_getting_a_property_on_an_invalid_anonymous_object_fails
     run_test_as('programmer') do
-      assert_equal E_INVIND, simplify(command('; a = create($anonymous, 1); recycle(a); a.name;'))
+      assert_equal E_INVIND, simplify(command('; a = create($anonymous, 1); destroy(a); a.name;'))
     end
   end
 
   def test_that_setting_a_property_on_an_invalid_anonymous_object_fails
     run_test_as('programmer') do
-      assert_equal E_INVIND, simplify(command('; a = create($anonymous, 1); recycle(a); a.name = "Hello";'))
+      assert_equal E_INVIND, simplify(command('; a = create($anonymous, 1); destroy(a); a.name = "Hello";'))
     end
   end
 
   def test_that_a_verb_call_on_an_invalid_anonymous_object_fails
     run_test_as('programmer') do
-      assert_equal E_INVIND, simplify(command('; a = create($anonymous, 1); recycle(a); a:foo();'))
+      assert_equal E_INVIND, simplify(command('; a = create($anonymous, 1); destroy(a); a:foo();'))
     end
   end
 

@@ -111,7 +111,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        recycle(o)
+        destroy(o)
         assert_equal E_INVARG, add_property(o, 'foobar', 0, ['player', ''])
       end
     end
@@ -234,7 +234,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        recycle(o)
+        destroy(o)
         assert_equal E_INVARG, delete_property(o, 'foobar')
       end
     end
@@ -319,7 +319,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        recycle(o)
+        destroy(o)
         assert_equal E_INVARG, is_clear_property(o, 'foobar')
       end
     end
@@ -421,7 +421,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        recycle(o)
+        destroy(o)
         assert_equal E_INVARG, clear_property(o, 'foobar')
       end
     end
@@ -513,7 +513,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        recycle(o)
+        destroy(o)
         assert_equal E_INVARG, property_info(o, 'foobar')
       end
     end
@@ -593,7 +593,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        recycle(o)
+        destroy(o)
         assert_equal E_INVARG, set_property_info(o, 'foobar', [player, ''])
       end
     end
@@ -673,7 +673,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        recycle(o)
+        destroy(o)
         assert_equal E_INVARG, properties(o)
       end
     end

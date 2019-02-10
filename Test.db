@@ -149,7 +149,7 @@ if ((args && (length(args) == 1)) && (args[1] == "shutdown"))
 reset_max_object();
 while (max_object() > #6)
 ticks_left() < 2000 || seconds_left() < 2 && suspend(0);
-`recycle(max_object()) ! ANY';
+`destroy(max_object()) ! ANY';
 reset_max_object();
 endwhile
 boot_player(player);
@@ -163,7 +163,7 @@ set_player_flag(o, 1);
 o.programmer = 1;
 o.wizard = 1;
 move(o, #2);
-switch_player(player, o, 1);
+switch_player(player, o);
 return;
 elseif (args[2] == "programmer")
 o = create($nothing);
@@ -171,14 +171,14 @@ o.owner = o;
 set_player_flag(o, 1);
 o.programmer = 1;
 move(o, #2);
-switch_player(player, o, 1);
+switch_player(player, o);
 return;
 elseif (args[2] == "player")
 o = create($nothing);
 o.owner = o;
 set_player_flag(o, 1);
 move(o, #2);
-switch_player(player, o, 1);
+switch_player(player, o);
 return;
 endif
 endif

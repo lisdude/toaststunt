@@ -565,7 +565,7 @@ class TestStressObjects < Test::Unit::TestCase
 
         assert_equal [_(a), _(b), _(c)], parents(m)
 
-        recycle(b)
+        destroy(b)
 
         if typeof(m) == TYPE_OBJ
           assert_equal [_(a), _(c)], parents(m)
@@ -592,21 +592,21 @@ class TestStressObjects < Test::Unit::TestCase
 
         assert_equal [_(a), _(b), _(c), _(m)], parents(x)
 
-        recycle(b)
+        destroy(b)
         if typeof(x) == TYPE_OBJ
           assert_equal [_(a), _(c), _(m)], parents(x)
         else
           assert_equal false, valid(x)
         end
 
-        recycle(m)
+        destroy(m)
         if typeof(x) == TYPE_OBJ
           assert_equal [_(a), _(c), _(d), _(e)], parents(x)
         else
           assert_equal false, valid(x)
         end
 
-        recycle(e)
+        destroy(e)
         if typeof(x) == TYPE_OBJ
           assert_equal [_(a), _(c), _(d)], parents(x)
         else
@@ -635,8 +635,8 @@ class TestStressObjects < Test::Unit::TestCase
 
   def test_that_the_argument_to_object_bytes_must_be_valid
     run_test_as('wizard') do
-      assert_equal E_INVIND, simplify(command(%Q|; o = create($object, 0); recycle(o); object_bytes(o);|))
-      assert_equal E_INVIND, simplify(command(%Q|; o = create($anonymous, 1); recycle(o); object_bytes(o);|))
+      assert_equal E_INVIND, simplify(command(%Q|; o = create($object, 0); destroy(o); object_bytes(o);|))
+      assert_equal E_INVIND, simplify(command(%Q|; o = create($anonymous, 1); destroy(o); object_bytes(o);|))
     end
   end
 
@@ -665,11 +665,11 @@ class TestStressObjects < Test::Unit::TestCase
         assert_equal E_QUOTA, d
 
         # recycle
-        recycle(a)
+        destroy(a)
         assert_equal 1, get(player, 'ownership_quota')
-        recycle(c)
+        destroy(c)
         assert_equal 2, get(player, 'ownership_quota')
-        recycle(b)
+        destroy(b)
         assert_equal 3, get(player, 'ownership_quota')
       end
     end
