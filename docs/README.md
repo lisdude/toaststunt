@@ -1,6 +1,10 @@
-See `README.stunt' for general information on Stunt.
+# ToastStunt
 
-ToastStunt is the server that runs [Miriani](https://www.toastsoft.net) and [ChatMud](https://www.chatmud.com/). It has a number of features of dubious usefulness that have been tacked on over the past decade, a semi-complete list of which can be found below:
+ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of features that were found useful while developing [Miriani](https://www.toastsoft.net) and [ChatMud](https://www.chatmud.com/), a mostly complete list of which can be found below.
+
+[[Features](#features)]  [[Build Instructions](#build-instructions)]  [[Stunt Information](docs/README.stunt)]
+
+## Features
 
 - SQLite [functions: sqlite_open(), sqlite_close(), sqlite_handle(), sqlite_info(), sqlite_query(), sqlite_execute()]
 - Perl Compatible Regular Expressions (PCRE) [functions: pcre_match(), pcre_replace]
@@ -75,3 +79,13 @@ ToastStunt is the server that runs [Miriani](https://www.toastsoft.net) and [Cha
     - Rename recycle() to destroy() (also call pre_destroy rather than recycle verbs)
     - New argument to notify() to suppress the newline
     - Support object lists in isa() as well as an optional third argument to return the matching parent rather than simply true or false.
+
+## Build Instructions
+### **Debian/Ubuntu**
+```bash
+apt install build-essential bison gperf autoconf libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev
+autoconf
+./configure
+make
+```
+**NOTE**: If you want to use Argon2 in Debian/Ubuntu, you will need to install the `libargon2-dev` package from the unstable repository.
