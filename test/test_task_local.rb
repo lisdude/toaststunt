@@ -128,8 +128,8 @@ class TestTaskLocal < Test::Unit::TestCase
     run_test_as('wizard') do
       x = create(:nothing)
 
-      add_verb(x, [player, 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(x, 'recycle') do |code|
+      add_verb(x, [player, 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(x, 'pre_destroy') do |code|
         code << %Q|this:bar();|
       end
 

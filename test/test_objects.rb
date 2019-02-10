@@ -443,7 +443,7 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_recycle
+  def test_destroy
     run_test_as('wizard') do
       e = kahuna(NOTHING, NOTHING, 'e')
       b = kahuna(e, e, 'b')

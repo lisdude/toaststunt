@@ -131,24 +131,24 @@ class TestGarbageCollection < Test::Unit::TestCase
     end
   end
 
-  def test_that_running_the_garbage_collector_recycles_values_with_cyclic_references
+  def test_that_running_the_garbage_collector_destroys_values_with_cyclic_references
     run_test_as('wizard') do
       a = create(:object)
       add_property(a, 'next', 0, [player, ''])
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
         vc << %Q<typeof(this) == ANON || raise(E_INVARG);>
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
       end
       simplify(command("; run_gc();"))
-      assert_equal 0, get(a, 'recycle_called')
+      assert_equal 0, get(a, 'pre_destroy_called')
       simplify(command("; x = create(#{a}, 1); x.next = create(#{a}, 1); x.next.next = x; x = 0; run_gc();"))
-      assert_equal 2, get(a, 'recycle_called')
+      assert_equal 2, get(a, 'pre_destroy_called')
       simplify(command("; x = {create(#{a}, 1)}; x[1].next = x; x = 0; run_gc();"))
-      assert_equal 3, get(a, 'recycle_called')
+      assert_equal 3, get(a, 'pre_destroy_called')
       simplify(command("; x = [1 -> create(#{a}, 1)]; x[1].next = x; x = 0; run_gc();"))
-      assert_equal 4, get(a, 'recycle_called')
+      assert_equal 4, get(a, 'pre_destroy_called')
     end
   end
 
@@ -441,8 +441,8 @@ class TestGarbageCollection < Test::Unit::TestCase
     end
   end
 
-  # these tests add/leave a purple root value, and then recycle that value...
-  def test_contrived_example_that_accesses_an_already_recycled_object
+  # these tests add/leave a purple root value, and then destroy that value...
+  def test_contrived_example_that_accesses_an_already_destroyed_object
     run_test_as('wizard') do
       simplify(command(%Q|; x = y = create($nothing, 1); add_property(x, "next", create($nothing, 1), {player, ""}); add_property(x.next, "next", x, {player, ""}); destroy(y); run_gc();|))
     end

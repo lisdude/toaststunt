@@ -648,7 +648,7 @@ class TestStressObjects < Test::Unit::TestCase
     end
   end
 
-  def test_that_ownership_quota_is_changed_as_objects_are_created_and_recycled
+  def test_that_ownership_quota_is_changed_as_objects_are_created_and_destroyed
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         add_property(player, 'ownership_quota', 3, [player, ''])
@@ -664,7 +664,7 @@ class TestStressObjects < Test::Unit::TestCase
         d = create(*args)
         assert_equal E_QUOTA, d
 
-        # recycle
+        # destroy
         destroy(a)
         assert_equal 1, get(player, 'ownership_quota')
         destroy(c)

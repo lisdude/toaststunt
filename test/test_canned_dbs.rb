@@ -49,8 +49,8 @@ class TestCannedDbs < Test::Unit::TestCase
       '> 4'
     ]
 
-    assert log1.none? { |l| l =~ /recycle called/ }
-    assert log2.any? { |l| l =~ /recycle called/ }
+    assert log1.none? { |l| l =~ /pre_destroy called/ }
+    assert log2.any? { |l| l =~ /pre_destroy called/ }
 
     assert diff1.include_sequence? delta
     assert_equal [], diff2
@@ -70,9 +70,9 @@ class TestCannedDbs < Test::Unit::TestCase
       '> 5'
     ]
 
-    assert log1.none? { |l| l =~ /recycle called/ }
-    assert log2.any? { |l| l =~ /recycle called on A/ }
-    assert log2.any? { |l| l =~ /recycle called on B/ }
+    assert log1.none? { |l| l =~ /pre_destroy called/ }
+    assert log2.any? { |l| l =~ /pre_destroy called on A/ }
+    assert log2.any? { |l| l =~ /pre_destroy called on B/ }
 
     assert diff1.include_sequence? delta
     assert_equal [], diff2
@@ -82,8 +82,8 @@ class TestCannedDbs < Test::Unit::TestCase
     log1, diff1 = log_and_diff('test/Anon3.db', '/tmp/Foo.db')
     log2, diff2 = log_and_diff('/tmp/Foo.db', '/tmp/Bar.db')
 
-    assert log1.any? { |l| l =~ /recycle called/ }
-    assert log2.any? { |l| l =~ /recycle called/ }
+    assert log1.any? { |l| l =~ /pre_destroy called/ }
+    assert log2.any? { |l| l =~ /pre_destroy called/ }
 
     assert_equal [], diff1
     assert_equal [], diff2

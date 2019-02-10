@@ -136,7 +136,7 @@ class TestAnonymous < Test::Unit::TestCase
     end
   end
 
-  def test_that_recycle_invalidates_all_references_to_an_anonymous_object
+  def test_that_destroy_invalidates_all_references_to_an_anonymous_object
     run_test_as('programmer') do
       assert_equal 0, simplify(command("; a = create($anonymous, 1); destroy(a); return valid(a);"))
       assert_equal 0, simplify(command("; a = create($anonymous, 1); b = a; destroy(a); return valid(b);"))
@@ -144,54 +144,54 @@ class TestAnonymous < Test::Unit::TestCase
     end
   end
 
-  def test_that_losing_all_references_to_an_anonymous_object_calls_recycle
+  def test_that_losing_all_references_to_an_anonymous_object_calls_pre_destroy
     run_test_as('programmer') do
       a = create(:object)
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
         vc << %Q<typeof(this) == ANON || raise(E_INVARG);>
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
       end
-      assert_equal 0, get(a, 'recycle_called')
+      assert_equal 0, get(a, 'pre_destroy_called')
       simplify(command("; create(#{a}, 1);"))
-      assert_equal 1, get(a, 'recycle_called')
+      assert_equal 1, get(a, 'pre_destroy_called')
     end
   end
 
-  def test_that_losing_all_references_to_an_anonymous_object_calls_recycle_once
+  def test_that_losing_all_references_to_an_anonymous_object_calls_pre_destroy_once
     run_test_as('programmer') do
       a = create(:object)
       add_property(a, 'reference', 0, [player, ''])
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
         vc << %Q<typeof(this) == ANON || raise(E_INVARG);>
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
         vc << %Q<#{a}.reference = this;>
       end
-      assert_equal 0, get(a, 'recycle_called')
+      assert_equal 0, get(a, 'pre_destroy_called')
       simplify(command("; create(#{a}, 1);"))
-      assert_equal 1, get(a, 'recycle_called')
+      assert_equal 1, get(a, 'pre_destroy_called')
       simplify(command("; #{a}.reference = 0;"))
-      assert_equal 1, get(a, 'recycle_called')
+      assert_equal 1, get(a, 'pre_destroy_called')
     end
   end
 
-  def test_that_an_anonymous_object_is_invalid_after_it_is_recycled
+  def test_that_an_anonymous_object_is_invalid_after_it_is_destroyed
     run_test_as('programmer') do
       a = create(:object)
       add_property(a, 'reference', 0, [player, ''])
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
         vc << %Q<typeof(this) == ANON || raise(E_INVARG);>
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
         vc << %Q<#{a}.reference = this;>
       end
-      assert_equal 0, get(a, 'recycle_called')
+      assert_equal 0, get(a, 'pre_destroy_called')
       simplify(command("; create(#{a}, 1);"))
-      assert_equal 1, get(a, 'recycle_called')
+      assert_equal 1, get(a, 'pre_destroy_called')
       assert_equal 0, simplify(command("; return valid(#{a}.reference);"))
       assert_equal E_INVARG, simplify(command("; destroy(#{a}.reference);"))
       assert_equal E_INVIND, simplify(command("; #{a}.reference.name;"))

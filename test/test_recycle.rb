@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class TestRecycle < Test::Unit::TestCase
+class Testdestroy < Test::Unit::TestCase
 
   def test_that_the_first_argument_is_required
     run_test_as('programmer') do
@@ -34,7 +34,7 @@ class TestRecycle < Test::Unit::TestCase
     end
   end
 
-  def test_that_a_wizard_can_recycle_anything
+  def test_that_a_wizard_can_destroy_anything
     m = nil
     n = nil
     run_test_as('wizard') do
@@ -61,7 +61,7 @@ class TestRecycle < Test::Unit::TestCase
     end
   end
 
-  def test_that_a_programmer_can_only_recycle_things_it_controls
+  def test_that_a_programmer_can_only_destroy_things_it_controls
     m = nil
     n = nil
     run_test_as('programmer') do
@@ -89,74 +89,74 @@ class TestRecycle < Test::Unit::TestCase
   end
 
 
-  def test_that_recycling_an_object_calls_recycle
+  def test_that_destroying_an_object_calls_pre_destroy
     run_test_as('programmer') do
       a = create(:object)
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
         vc << %Q<typeof(this) == OBJ || raise(E_INVARG);>
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
       end
-      assert_equal 0, get(a, 'recycle_called')
+      assert_equal 0, get(a, 'pre_destroy_called')
       simplify(command("; destroy(create(#{a}, 0));"))
-      assert_equal 1, get(a, 'recycle_called')
+      assert_equal 1, get(a, 'pre_destroy_called')
     end
   end
 
-  def test_that_recycling_an_anonymous_object_calls_recycle
+  def test_that_destroying_an_anonymous_object_calls_pre_destroy
     run_test_as('programmer') do
       a = create(:object)
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
         vc << %Q<typeof(this) == ANON || raise(E_INVARG);>
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
       end
-      assert_equal 0, get(a, 'recycle_called')
+      assert_equal 0, get(a, 'pre_destroy_called')
       simplify(command("; destroy(create(#{a}, 1));"))
-      assert_equal 1, get(a, 'recycle_called')
+      assert_equal 1, get(a, 'pre_destroy_called')
     end
   end
 
-  def test_that_calling_recycle_when_recycling_an_object_fails
+  def test_that_calling_pre_destroy_when_recycling_an_object_fails
     run_test_as('programmer') do
       a = create(:object)
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
         vc << %Q<typeof(this) == OBJ || raise(E_INVARG);>
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
         vc << %Q<destroy(this);>
       end
-      assert_equal 0, get(a, 'recycle_called')
+      assert_equal 0, get(a, 'pre_destroy_called')
       simplify(command("; destroy(create(#{a}, 0));"))
-      assert_equal 1, get(a, 'recycle_called')
+      assert_equal 1, get(a, 'pre_destroy_called')
     end
   end
 
-  def test_that_calling_recycle_when_recycling_an_anonymous_object_fails
+  def test_that_calling_pre_destroy_when_recycling_an_anonymous_object_fails
     run_test_as('programmer') do
       a = create(:object)
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
         vc << %Q<typeof(this) == ANON || raise(E_INVARG);>
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
         vc << %Q<destroy(this);>
       end
-      assert_equal 0, get(a, 'recycle_called')
+      assert_equal 0, get(a, 'pre_destroy_called')
       simplify(command("; destroy(create(#{a}, 1));"))
-      assert_equal 1, get(a, 'recycle_called')
+      assert_equal 1, get(a, 'pre_destroy_called')
     end
   end
 
-  def test_that_calling_recycle_on_a_recycled_object_fails
+  def test_that_calling_pre_destroy_on_a_destroyd_object_fails
     run_test_as('programmer') do
       a = create(:object)
       add_property(a, 'keep', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
         vc << %Q<typeof(this) == OBJ || raise(E_INVARG);>
         vc << %Q<#{a}.keep = this;>
       end
@@ -168,12 +168,12 @@ class TestRecycle < Test::Unit::TestCase
     end
   end
 
-  def test_that_calling_recycle_on_a_recycled_anonymous_object_fails
+  def test_that_calling_pre_destroy_on_a_destroyd_anonymous_object_fails
     run_test_as('programmer') do
       a = create(:object)
       add_property(a, 'keep', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
         vc << %Q<typeof(this) == ANON || raise(E_INVARG);>
         vc << %Q<#{a}.keep = this;>
       end
@@ -185,13 +185,13 @@ class TestRecycle < Test::Unit::TestCase
     end
   end
 
-  def test_that_recycling_an_object_recycles_values_in_properties_defined_on_the_object
+  def test_that_destroying_an_object_destroys_values_in_properties_defined_on_the_object
     run_test_as('wizard') do
       a = create(:object)
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
       end
       add_verb(a, ['player', 'xd', 'go'], ['this', 'none', 'this'])
       set_verb_code(a, 'go') do |vc|
@@ -200,20 +200,20 @@ class TestRecycle < Test::Unit::TestCase
         vc << %Q<x.next = create(#{a}, 1);>
         vc << %Q<destroy(x);>
       end
-      set(a, 'recycle_called', 0)
+      set(a, 'pre_destroy_called', 0)
       call(a, 'go')
-      assert_equal 2, get(a, 'recycle_called')
+      assert_equal 2, get(a, 'pre_destroy_called')
     end
   end
 
-  def test_that_recycling_an_object_recycles_values_in_properties_defined_on_the_parent
+  def test_that_destroying_an_object_destroys_values_in_properties_defined_on_the_parent
     run_test_as('wizard') do
       a = create(:object)
       add_property(a, 'next', 0, [player, ''])
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
       end
       add_verb(a, ['player', 'xd', 'go'], ['this', 'none', 'this'])
       set_verb_code(a, 'go') do |vc|
@@ -221,19 +221,19 @@ class TestRecycle < Test::Unit::TestCase
         vc << %Q<x.next = create(#{a}, 1);>
         vc << %Q<destroy(x);>
       end
-      set(a, 'recycle_called', 0)
+      set(a, 'pre_destroy_called', 0)
       call(a, 'go')
-      assert_equal 2, get(a, 'recycle_called')
+      assert_equal 2, get(a, 'pre_destroy_called')
     end
   end
 
-  def test_that_recycling_an_anonymous_object_recycles_values_in_properties_defined_on_the_object
+  def test_that_destroying_an_anonymous_object_destroys_values_in_properties_defined_on_the_object
     run_test_as('wizard') do
       a = create(:object)
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
       end
       add_verb(a, ['player', 'xd', 'go'], ['this', 'none', 'this'])
       set_verb_code(a, 'go') do |vc|
@@ -242,23 +242,23 @@ class TestRecycle < Test::Unit::TestCase
         vc << %Q<x.next = create(#{a}, 1);>
         vc << %Q<args || destroy(x);>
       end
-      set(a, 'recycle_called', 0)
+      set(a, 'pre_destroy_called', 0)
       call(a, 'go')
-      assert_equal 2, get(a, 'recycle_called')
-      set(a, 'recycle_called', 0)
+      assert_equal 2, get(a, 'pre_destroy_called')
+      set(a, 'pre_destroy_called', 0)
       call(a, 'go', 1)
-      assert_equal 2, get(a, 'recycle_called')
+      assert_equal 2, get(a, 'pre_destroy_called')
     end
   end
 
-  def test_that_recycling_an_anonymous_object_recycles_values_in_properties_defined_on_the_parent
+  def test_that_destroying_an_anonymous_object_destroys_values_in_properties_defined_on_the_parent
     run_test_as('wizard') do
       a = create(:object)
       add_property(a, 'next', 0, [player, ''])
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
+      add_property(a, 'pre_destroy_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', 'pre_destroy'], ['this', 'none', 'this'])
+      set_verb_code(a, 'pre_destroy') do |vc|
+        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
       end
       add_verb(a, ['player', 'xd', 'go'], ['this', 'none', 'this'])
       set_verb_code(a, 'go') do |vc|
@@ -266,12 +266,12 @@ class TestRecycle < Test::Unit::TestCase
         vc << %Q<x.next = create(#{a}, 1);>
         vc << %Q<args || destroy(x);>
       end
-      set(a, 'recycle_called', 0)
+      set(a, 'pre_destroy_called', 0)
       call(a, 'go')
-      assert_equal 2, get(a, 'recycle_called')
-      set(a, 'recycle_called', 0)
+      assert_equal 2, get(a, 'pre_destroy_called')
+      set(a, 'pre_destroy_called', 0)
       call(a, 'go', 1)
-      assert_equal 2, get(a, 'recycle_called')
+      assert_equal 2, get(a, 'pre_destroy_called')
     end
   end
 
