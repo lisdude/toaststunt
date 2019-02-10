@@ -556,7 +556,8 @@ free_waif(Waif *waif)
     waif_class_count[waif->_class]--;
     if (waif_class_count[waif->_class] <= 0)
         waif_class_count.erase(waif->_class);
-	/* assert(refcount(waif) == 0) */
+
+    /* assert(refcount(waif) == 0) */
 	cnt = count_waif_propvals(waif);
 	free_waif_propdefs(waif->propdefs);
 	for (i = 0; i < cnt; ++i)

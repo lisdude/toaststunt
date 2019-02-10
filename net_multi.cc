@@ -296,7 +296,7 @@ pull_input(nhandle * h)
                         while (cmd != TN_SE && ptr + telnet_counter <= end)
                             cmd = *(ptr + telnet_counter++);
 
-                            if (cmd == TN_SE) {
+                        if (cmd == TN_SE) {
                             // We got a complete option sequence.
                             stream_add_raw_bytes_to_binary(oob, ptr, telnet_counter);
                             ptr += --telnet_counter;

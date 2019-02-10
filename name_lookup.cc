@@ -186,19 +186,19 @@ lookup(int to_intermediary, int from_intermediary)
 		addr = inet_addr(buffer);
 		write(to_intermediary, &addr, sizeof(addr));
 	    }
-	} else {
-	    const char *host_name;
-	    int length;
-	    id = set_timer(req.timeout, timeout_proc, 0);
-	    if (getnameinfo((struct sockaddr *)&req.u.address, sizeof(req.u.address), hbuf, sizeof(hbuf), NULL, 0, 0) == 0)
+    } else {
+        const char *host_name;
+        int length;
+        id = set_timer(req.timeout, timeout_proc, 0);
+        if (getnameinfo((struct sockaddr *)&req.u.address, sizeof(req.u.address), hbuf, sizeof(hbuf), NULL, 0, 0) == 0)
             host_name = hbuf;
         else
             host_name = "";
-	    cancel_timer(id);
-	    length = strlen(host_name);
-	    write(to_intermediary, &length, sizeof(length));
-	    write(to_intermediary, host_name, length);
-	}
+        cancel_timer(id);
+        length = strlen(host_name);
+        write(to_intermediary, &length, sizeof(length));
+        write(to_intermediary, host_name, length);
+    }
     }
 }
 
