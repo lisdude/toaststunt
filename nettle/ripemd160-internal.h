@@ -1,6 +1,8 @@
-/* write-le32.c
+/* ripemd160-internal.h
 
-   Copyright (C) 2001, 2011 Niels Möller
+   RIPEMD-160 hash function.
+
+   Copyright (C) 2011 Andres Mejia
 
    This file is part of GNU Nettle.
 
@@ -29,41 +31,13 @@
    not, see http://www.gnu.org/licenses/.
 */
 
-#if HAVE_CONFIG_H
-# include "config.h"
-#endif
+#ifndef NETTLE_RIPEMD160_INTERNAL_H_INCLUDED
+#define NETTLE_RIPEMD160_INTERNAL_H_INCLUDED
 
-#include <stdlib.h>
 
-#include "nettle-write.h"
-
-#include "macros.h"
-
+/* Internal compression function. STATE points to 5 uint32_t words,
+   and DATA points to 64 bytes of input data, possibly unaligned. */
 void
-_nettle_write_le32(size_t length, uint8_t *dst,
-		   const uint32_t *src)
-{
-  size_t i;
-  size_t words;
-  unsigned leftover;
-  
-  words = length / 4;
-  leftover = length % 4;
+_nettle_ripemd160_compress(uint32_t *state, const uint8_t *data);
 
-  for (i = 0; i < words; i++, dst += 4)
-    LE_WRITE_UINT32(dst, src[i]);
-
-  if (leftover)
-    {
-      uint32_t word;
-      
-      word = src[i];
-
-      do
-	{
-	  *dst++ = word & 0xff;
-	  word >>= 8;
-	}
-      while (--leftover);
-    }
-}
+#endif /* NETTLE_RIPEMD160_INTERNAL_H_INCLUDED */
