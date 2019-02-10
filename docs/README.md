@@ -2,7 +2,10 @@
 
 ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of features that were found useful while developing [Miriani](https://www.toastsoft.net) and [ChatMud](https://www.chatmud.com/), a mostly complete list of which can be found below.
 
-[[Features](#features)]  [[Build Instructions](#build-instructions)]  [[Stunt Information](README.stunt)]
+*[Features](#features)]
+*[Build Instructions](#build-instructions)
+  *[Debian/Ubuntu](#debian-ubuntu)
+*[Stunt Information](docs/README.stunt)
 
 ## Features
 
