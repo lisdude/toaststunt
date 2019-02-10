@@ -541,8 +541,8 @@ module MooSupport
     simplify command %Q|; return set_connection_option(#{value_ref(connection)}, #{value_ref(option)}, #{value_ref(value)});|
   end
 
-  def switch_player(old_player, new_player, new)
-    simplify command %Q|; switch_player(#{value_ref(old_player)}, #{value_ref(new_player)}, #{value_ref(new)}); notify(#{value_ref(new_player)}, "{-1, 0}"); notify(#{value_ref(new_player)}, "-=!-v-!=-");|
+  def switch_player(old_player, new_player)
+    simplify command %Q|; switch_player(#{value_ref(old_player)}, #{value_ref(new_player)}); notify(#{value_ref(new_player)}, "{-1, 0}"); notify(#{value_ref(new_player)}, "-=!-v-!=-");|
   end
 
   def boot_player(player)
