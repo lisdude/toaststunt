@@ -283,7 +283,7 @@ dnl ***************************************************************************
         AC_MSG_ERROR([Nettle could not be found.])
     else
         AC_DEFINE(HAS_NETTLE)
-        ELIBS="${ELIBS} -lhogweed -lnettle -lgmp"
+        ELIBS="${ELIBS} -lnettle"
     fi
 
 dnl ***************************************************************************
