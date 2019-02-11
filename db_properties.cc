@@ -919,6 +919,8 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
 	o = dbpriv_dereference(ancestor);
 	new_offsets[i1 - 1] = offset;
 	offset += o->propdefs.cur_length;
+	free_waif_propdefs((WaifPropdefs*)o->waif_propdefs);
+	o->waif_propdefs = NULL;
     }
     new_count = new_offsets[i1 - 1] = offset;
 
