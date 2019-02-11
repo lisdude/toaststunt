@@ -18,7 +18,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 - 32-bit and 64-bit versions
 
 - Waifs
-    - Call :recycle on waifs when they're destroyed
+    - Call :pre_destroy on waifs when they're destroyed
     - A WAIF type (so typeof(some_waif) == WAIF)
     - Waif dict patch (so waif[x] and waif[x] = y will call the :_index and :_set_index verbs on the waif)
     - '-w' command line option to convert existing databases with a different waif type to the new waif type

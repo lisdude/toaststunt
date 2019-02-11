@@ -61,7 +61,7 @@
 #include "utils.h"
 #include "version.h"
 #include "net_multi.h"  /* rewrite connection name */
-#include "waif.h" /* recycled_waifs */
+#include "waif.h" /* destroyed_waifs */
 
 extern "C" {
 #include "linenoise.h"
@@ -561,21 +561,21 @@ recycle_anonymous_objects(void)
 static void
 recycle_waifs(void)
 {
-    /* This seems like a lot of work to go through just to get a recycle verb name.
+    /* This seems like a lot of work to go through just to get a destroy verb name.
      * Maybe it should just be a #define in waif.h? Ah well.*/
-    static char *waif_recycle_verb = NULL;
-    if (!waif_recycle_verb) {
-        waif_recycle_verb = (char *)mymalloc(9, M_STRING);
-        waif_recycle_verb[0] = WAIF_VERB_PREFIX;
-        strcpy(waif_recycle_verb + 1, "recycle");
+    static char *waif_pre_destroy_verb = NULL;
+    if (!waif_pre_destroy_verb) {
+        waif_pre_destroy_verb = (char *)mymalloc(13, M_STRING);
+        waif_pre_destroy_verb[0] = WAIF_VERB_PREFIX;
+        strcpy(waif_pre_destroy_verb + 1, "pre_destroy");
     }
 
     std::vector<Waif*> removals;
-    for (auto &x: recycled_waifs) {
-        if (recycled_waifs[x.first] == false) {
-            run_server_task(-1, Var::new_waif(x.first), waif_recycle_verb, new_list(0), "", 0);
-            recycled_waifs[x.first] = true;
-            /* Flag it as recycled. Now we just wait for the refcount to hit zero so we can free it. */
+    for (auto &x: destroyed_waifs) {
+        if (destroyed_waifs[x.first] == false) {
+            run_server_task(-1, Var::new_waif(x.first), waif_pre_destroy_verb, new_list(0), "", 0);
+            destroyed_waifs[x.first] = true;
+            /* Flag it as destroyed. Now we just wait for the refcount to hit zero so we can free it. */
         }
         if (refcount(x.first) == 0) {
             removals.push_back(x.first);
@@ -583,7 +583,7 @@ recycle_waifs(void)
       }
       for (auto x:removals) {
         free_waif(x);
-        recycled_waifs.erase(x);
+        destroyed_waifs.erase(x);
     }
 }
 

@@ -175,8 +175,8 @@ complex_free_var(Var v)
 	break;
     case TYPE_WAIF:
     if (delref(v.v.waif) == 0) {
-        if (recycled_waifs.count(v.v.waif) == 0)
-            recycled_waifs[v.v.waif] = false;
+        if (destroyed_waifs.count(v.v.waif) == 0)
+            destroyed_waifs[v.v.waif] = false;
     }
     break;
     case TYPE_ANON:
@@ -235,8 +235,8 @@ complex_free_var(Var v)
 	break;
 	case TYPE_WAIF:
 	if (delref(v.v.waif) == 0) {
-        if (recycled_waifs.count(v.v.waif) == 0)
-            recycled_waifs[v.v.waif] = false;
+        if (destroyed_waifs.count(v.v.waif) == 0)
+            destroyed_waifs[v.v.waif] = false;
     }
 	break;
     case TYPE_ANON:
