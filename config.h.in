@@ -404,5 +404,6 @@ typedef unsigned char uint8_t;
 #endif
 
 #undef HAS_ARGON2
+#undef HAS_ASPELL
 
 #endif /* !Config_H */
