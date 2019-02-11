@@ -2,7 +2,12 @@
 
 ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of features that were found useful while developing [Miriani](https://www.toastsoft.net) and [ChatMud](https://www.chatmud.com/), a mostly complete list of which can be found below.
 
-[[Features](#features)]  [[Build Instructions](#build-instructions)]  [[Stunt Information](README.stunt)]
+* [Features](#features)
+* [Build Instructions](#build-instructions)
+  * [Debian/Ubuntu](#debian-ubuntu)
+  * [REL/CentOS](#rel-centos)
+* [Support and Development](#support-and-development)
+* [Stunt Information](docs/README.stunt)
 
 ## Features
 
@@ -82,10 +87,34 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 
 ## Build Instructions
 ### **Debian/Ubuntu**
-```bash
+```
+bash
 apt install build-essential bison gperf autoconf libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev
 autoconf
 ./configure
 make
 ```
-**NOTE**: If you want to use Argon2 in Debian/Ubuntu, you will need to install the `libargon2-dev` package from the unstable repository.
+
+### **REL/CentOS**
+```
+yum group install -y "Development Tools"
+yum install -y sqlite-devel pcre-devel aspell-devel nettle-devel gperf   centos-release-scl
+yum install -y devtoolset-7
+scl enable devtoolset-7 bash
+autoconf
+./configure
+make
+exit
+```
+
+### **Notes**
+Many distributions do not include [Libargon2](https://github.com/P-H-C/phc-winner-argon2) which is required for Argon2id password hashing. As such, it has been included as a Git submodule in this repository. TO build it yourself, follow these steps:
+
+1. Inside of the ToastStunt repository, checkout all available submodules: `git submodule update --init`
+2. `cd dependencies/phc-winner-argon2`
+3. Build the library: `make`
+4. Install it on your system: `make install PREFIX=/usr`
+
+## Support and Development
+
+Realtime support and collaborative discussion for ToastStunt primarily takes place on the 'toaststunt' channel on ChatMUD. Barring this, the [Miriani Message Boards](https://board.toastsoft.net/) are another good resource for assistance.
