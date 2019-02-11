@@ -87,7 +87,8 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 
 ## Build Instructions
 ### **Debian/Ubuntu**
-```bash
+```
+bash
 apt install build-essential bison gperf autoconf libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev
 autoconf
 ./configure
@@ -95,7 +96,8 @@ make
 ```
 
 ### **REL/CentOS**
-```yum group install -y "Development Tools"
+```
+yum group install -y "Development Tools"
 yum install -y sqlite-devel pcre-devel aspell-devel nettle-devel gperf   centos-release-scl
 yum install -y devtoolset-7
 scl enable devtoolset-7 bash
