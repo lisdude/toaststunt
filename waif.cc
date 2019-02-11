@@ -584,11 +584,13 @@ dup_waif(Waif *waif)
 static package
 bf_new_waif(Var arglist, Byte next, void *vdata, Objid progr)
 {
-	free_var(arglist);
+    free_var(arglist);
 
-	if (!is_valid(caller()))
-		return make_error_pack(E_INVIND);
-	return make_var_pack(new_waif(caller().v.obj, progr));
+    if (!is_valid(caller()))
+        return make_error_pack(E_INVIND);
+    else if (caller().type == TYPE_ANON)
+        return make_error_pack(E_INVARG);
+    return make_var_pack(new_waif(caller().v.obj, progr));
 }
 
 static package
