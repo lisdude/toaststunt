@@ -87,16 +87,15 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 
 ## Build Instructions
 ### **Debian/Ubuntu**
-```
-bash
-apt install build-essential bison gperf autoconf libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev
+```bash
+apt install build-essential bison gperf autoconf libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++
 autoconf
 ./configure
 make
 ```
 
 ### **REL/CentOS**
-```
+```bash
 yum group install -y "Development Tools"
 yum install -y sqlite-devel pcre-devel aspell-devel nettle-devel gperf   centos-release-scl
 yum install -y devtoolset-7
@@ -107,8 +106,16 @@ make
 exit
 ```
 
+### **Gentoo**
+```bash
+emerge dev-db/sqlite app-text/aspell app-crypt/argon2
+autoconf
+./configure
+make
+```
+
 ### **Notes**
-Many distributions do not include [Libargon2](https://github.com/P-H-C/phc-winner-argon2) which is required for Argon2id password hashing. As such, it has been included as a Git submodule in this repository. TO build it yourself, follow these steps:
+Many distributions do not include [Libargon2](https://github.com/P-H-C/phc-winner-argon2) which is required for Argon2id password hashing. As such, it has been included as a Git submodule in this repository. To build it yourself, follow these steps:
 
 1. Inside of the ToastStunt repository, checkout all available submodules: `git submodule update --init`
 2. `cd dependencies/phc-winner-argon2`
