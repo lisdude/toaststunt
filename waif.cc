@@ -658,6 +658,9 @@ waif_get_prop(Waif *w, const char *name, Var *prop, Objid progr)
     } else if (!strcasecmp(name, "wizard")) {
         *prop = zero;
         return E_NONE;
+    } else if (!strcasecmp(name, "programmer")) {
+        *prop = zero;
+        return E_NONE;
 	} else if (!valid(w->_class))
 		return E_INVIND;
 
@@ -726,6 +729,8 @@ waif_put_prop(Waif *w, const char *name, Var val, Objid progr)
 		 */
 		return E_PERM;
     else if (!strcasecmp(name, "wizard"))
+		return E_PERM;
+    else if (!strcasecmp(name, "programmer"))
 		return E_PERM;
 	else if (!valid(w->_class))
 		return E_INVIND;
