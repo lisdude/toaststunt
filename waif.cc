@@ -386,8 +386,9 @@ update_waif_propdefs(Waif *waif)
 	static Var *xfer;
 	static int xfer_sz;
 
-	/* If the class has been recycled we're invalid!  Destroy the
+	/* If the class has been destroyed we're invalid!  Destroy the
 	 * properties and release our reference to the old propvals.
+     * Mark the waif invalid so that future renumbers() won't hose us.
 	 */
 	if (!classp) {
 		cnt = count_waif_propvals(waif);
@@ -399,6 +400,7 @@ update_waif_propdefs(Waif *waif)
 			myfree(waif->propvals, M_WAIF_XTRA);
 			waif->propvals = NULL;
 		}
+        waif->_class = NOTHING;
 		return;
 	}
 
