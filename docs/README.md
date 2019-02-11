@@ -6,8 +6,9 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 * [Build Instructions](#build-instructions)
   * [Debian/Ubuntu](#debian-ubuntu)
   * [REL/CentOS](#rel-centos)
+  * [Gentoo](##gentoo)
 * [Support and Development](#support-and-development)
-* [Stunt Information](docs/README.stunt)
+* [Stunt Information](README.stunt)
 
 ## Features
 
