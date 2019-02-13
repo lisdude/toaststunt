@@ -24,6 +24,7 @@ module MooSupport
   SYSTEM = MooObj.new('#0')
   OBJECT = MooObj.new('#1')
   ANONYMOUS = MooObj.new('#5')
+  WAIF = MooObj.new('#7')
 
   E_NONE = MooErr.new('E_NONE')
   E_TYPE = MooErr.new('E_TYPE')

@@ -1,6 +1,6 @@
 ** LambdaMOO Database, Format Version 4 **
-7
-4
+8
+5
 0
 2
 3
@@ -29,13 +29,14 @@ handle_task_timeout
 3
 172
 -1
-5
+6
 nothing
 system
 object
 anonymous
 server_options
-5
+waif
+6
 1
 -1
 4
@@ -54,6 +55,10 @@ server_options
 1
 1
 6
+3
+1
+1
+7
 3
 1
 #1
@@ -140,14 +145,32 @@ Server Options
 -1
 1
 -1
--1
+7
 0
+0
+0
+#7
+Waif Class
+
+128
+3
+-1
+-1
+-1
+1
+-1
+-1
+1
+new
+3
+173
+-1
 0
 0
 #0:0
 if ((args && (length(args) == 1)) && (args[1] == "shutdown"))
 reset_max_object();
-while (max_object() > #6)
+while (max_object() > #7)
 ticks_left() < 2000 || seconds_left() < 2 && suspend(0);
 `destroy(max_object()) ! ANY';
 reset_max_object();
@@ -209,6 +232,11 @@ endtry
 finally
 notify(player, "-=!-v-!=-");
 endtry
+.
+#7:0
+set_task_perms(caller_perms());
+player = caller_perms();
+return new_waif();
 .
 0 clocks
 0 queued tasks
