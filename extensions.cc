@@ -419,11 +419,10 @@ bf_chr(Var arglist, Byte next, void *vdata, Objid progr)
 
     switch (arglist.v.list[1].type) {
         case TYPE_INT:
-            if ((arglist.v.list[1].v.num < 1) || (arglist.v.list[1].v.num == 2) || (arglist.v.list[1].v.num > 6 && arglist.v.list[1].v.num < 14)  || (arglist.v.list[1].v.num
-== 27) || (arglist.v.list[1].v.num > 255)) {
+            if ((arglist.v.list[1].v.num < 1) || (arglist.v.list[1].v.num > 255)) {
                 free_var(arglist);
                 return make_error_pack(E_INVARG);
-            } else if (!is_wizard(progr)) {
+            } else if (arglist.v.list[1].v.num < 32 && !is_wizard(progr)) {
                 free_var(arglist);
                 return make_error_pack(E_PERM);
             }
