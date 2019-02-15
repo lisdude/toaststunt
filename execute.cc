@@ -1393,9 +1393,10 @@ do {								\
 		if (arg.type == TYPE_INT) {
 		    ans.type = TYPE_INT;
 		    ans.v.num = -arg.v.num;
-		} else if (arg.type == TYPE_FLOAT)
+        } else if (arg.type == TYPE_FLOAT) {
+            ans.type = TYPE_FLOAT;
             ans.v.fnum = -arg.v.fnum;
-		else {
+        } else {
 		    free_var(arg);
 		    PUSH_ERROR(E_TYPE);
 		    break;
