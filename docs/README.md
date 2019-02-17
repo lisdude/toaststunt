@@ -8,6 +8,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
   * [REL/CentOS](#rel-centos)
   * [Gentoo](##gentoo)
 * [Function Documentation](https://github.com/lisdude/toaststunt-documentation)
+* [ToastCore](https://github.com/lisdude/toastcore)
 * [Support and Development](#support-and-development)
 * [Stunt Information](README.stunt)
 
