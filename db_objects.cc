@@ -1036,17 +1036,21 @@ db_for_all_contents(Objid oid, int (*func) (void *, Objid), void *data)
 }
 
 void
-db_change_location(Objid oid, Objid new_location)
+db_change_location(Objid oid, Objid new_location, int position)
 {
     Var me = Var::new_obj(oid);
 
     Objid old_location = objects[oid]->location.v.obj;
 
     if (valid(old_location))
-	objects[old_location]->contents = setremove(objects[old_location]->contents, var_dup(me));
+        objects[old_location]->contents = setremove(objects[old_location]->contents, var_dup(me));
 
-    if (valid(new_location))
-	objects[new_location]->contents = setadd(objects[new_location]->contents, me);
+    if (valid(new_location)) {
+        if (position <= 0)
+            position = objects[new_location]->contents.v.list[0].v.num + 1;
+
+        objects[new_location]->contents = listinsert(objects[new_location]->contents, me, position);
+    }
 
     free_var(objects[oid]->location);
     if (objects[oid]->last_move.type != TYPE_MAP) {

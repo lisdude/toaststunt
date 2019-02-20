@@ -244,7 +244,7 @@ extern int db_for_all_contents(Objid,
 				 *      db_renumber_object()
 				 *      db_change_location()
 				 */
-extern void db_change_location(Objid oid, Objid location);
+extern void db_change_location(Objid oid, Objid location, int position);
 
 typedef enum {
     /* Permanent flags */

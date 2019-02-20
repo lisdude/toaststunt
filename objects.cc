@@ -106,12 +106,14 @@ any_are_descendants(Var these, Var obj)
 
 struct bf_move_data {
     Objid what, where;
+    int position;
 };
 
 static package
 do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 {
     Objid what = data->what, where = data->where;
+    int position = 0;
     Objid oid, oldloc;
     int accepts;
     Var args;
@@ -125,6 +127,8 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	    return make_error_pack(E_PERM);
 	else if (where == NOTHING)
 	    accepts = 1;
+    else if (data->position > 0 && !controls(progr, where))
+        return make_error_pack(E_PERM);
 	else {
 	    args = make_arglist(what);
 	    e = call_verb(where, "accept", Var::new_obj(where), args, 0);
@@ -151,7 +155,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 
 	if (!valid(what)
 	    || (where != NOTHING && !valid(where))
-	    || db_object_location(what) == where)
+	    || (db_object_location(what) == where && position == 0))
 	    return no_var_pack();
 
 	/* Check to see that we're not trying to violate the hierarchy */
@@ -160,7 +164,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 		return make_error_pack(E_RECMOVE);
 
 	oldloc = db_object_location(what);
-	db_change_location(what, where);
+	db_change_location(what, where, position);
 
 	args = make_arglist(what);
 	e = call_verb(oldloc, "exitfunc", Var::new_obj(oldloc), args, 0);
@@ -209,6 +213,7 @@ bf_move(Var arglist, Byte next, void *vdata, Objid progr)
 	data = (bf_move_data *)alloc_data(sizeof(*data));
 	data->what = arglist.v.list[1].v.obj;
 	data->where = arglist.v.list[2].v.obj;
+    data->position = arglist.v.list[0].v.num < 3 ? 0 : arglist.v.list[3].v.num;
     }
     p = do_move(arglist, next, data, progr);
     free_var(arglist);
@@ -224,8 +229,8 @@ bf_move_write(void *vdata)
 {
     struct bf_move_data *data = (bf_move_data *)vdata;
 
-    dbio_printf("bf_move data: what = %" PRIdN ", where = %" PRIdN "\n",
-		data->what, data->where);
+    dbio_printf("bf_move data: what = %" PRIdN ", where = %" PRIdN ", position = %" PRIdN "\n",
+		data->what, data->where, data->position);
 }
 
 static void *
@@ -233,8 +238,8 @@ bf_move_read()
 {
     struct bf_move_data *data = (bf_move_data *)alloc_data(sizeof(*data));
 
-    if (dbio_scanf("bf_move data: what = %" PRIdN ", where = %" PRIdN "\n",
-		   &data->what, &data->where) == 2)
+    if (dbio_scanf("bf_move data: what = %" PRIdN ", where = %" PRIdN ", position = %" PRIdN "\n",
+		   &data->what, &data->where, &data->position) == 3)
 	return data;
     else
 	return 0;
@@ -630,7 +635,7 @@ move_to_nothing(Objid oid)
     Var args;
     enum error e;
 
-    db_change_location(oid, NOTHING);
+    db_change_location(oid, NOTHING, 0);
 
     args = make_arglist(oid);
     e = call_verb(oldloc, "exitfunc", Var::new_obj(oldloc), args, 0);
@@ -985,8 +990,8 @@ register_objects(void)
     register_function("is_player", 1, 1, bf_is_player, TYPE_OBJ);
     register_function("set_player_flag", 2, 2, bf_set_player_flag,
 		      TYPE_OBJ, TYPE_ANY);
-    register_function_with_read_write("move", 2, 2, bf_move,
+    register_function_with_read_write("move", 2, 3, bf_move,
 				      bf_move_read, bf_move_write,
-				      TYPE_OBJ, TYPE_OBJ);
+				      TYPE_OBJ, TYPE_OBJ, TYPE_INT);
     register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_INT);
 }
