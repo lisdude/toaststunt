@@ -1040,10 +1040,31 @@ bf_mapvalues(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+static package
+bf_maphaskey(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var key = arglist.v.list[2];
+    if (key.is_collection()) {
+        free_var(arglist);
+        return make_error_pack(E_TYPE);
+    }
+
+    Var map = arglist.v.list[1];
+    Var ret;
+    bool case_matters = arglist.v.list[0].v.num >= 3 && is_true(arglist.v.list[3]);
+
+    ret = Var::new_int(!(maplookup(map, key, NULL, case_matters) == NULL));
+
+    free_var(arglist);
+    return make_var_pack(ret);
+}
+
+
 void
 register_map(void)
 {
     register_function("mapdelete", 2, 2, bf_mapdelete, TYPE_MAP, TYPE_ANY);
     register_function("mapkeys", 1, 1, bf_mapkeys, TYPE_MAP);
     register_function("mapvalues", 1, 1, bf_mapvalues, TYPE_MAP);
+    register_function("maphaskey", 2, 3, bf_maphaskey, TYPE_MAP, TYPE_ANY, TYPE_INT);
 }
