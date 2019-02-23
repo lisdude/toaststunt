@@ -232,7 +232,14 @@ rbfind(rbtree *tree, rbnode *node, int case_matters)
 	   If the tree supports duplicates, they should be
 	   chained to the right subtree for this to work
 	 */
-	it = it->link[cmp < 0];
+    if (case_matters) {
+        /* The tree is built without case sensitivity. So if we try to
+         * navigate with case_matters, we will skip things and ultimately get
+         * incorrect results. So in lieu of a smarter solution, compare again
+         * without case sensitivity for the purposes of navigation. */
+        cmp = node_compare(it, node, 0);
+    }
+    it = it->link[cmp < 0];
     }
 
     return it;
