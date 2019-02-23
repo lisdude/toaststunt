@@ -306,7 +306,9 @@ pull_input(nhandle * h)
                              * will get passed to do_out_of_band_command as gibberish. */
                         }
                     }
-                } else if ((c == '\r' || (c == '\n' && !h->last_input_was_CR)))
+                }
+
+                if ((c == '\r' || (c == '\n' && !h->last_input_was_CR)))
                     server_receive_line(h->shandle, reset_stream(s), 0);
 
                 h->last_input_was_CR = (c == '\r');
