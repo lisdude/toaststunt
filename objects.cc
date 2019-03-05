@@ -113,19 +113,18 @@ static package
 do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 {
     Objid what = data->what, where = data->where;
-    int position = 0;
+    int position = data->position, accepts;
     Objid oid, oldloc;
-    int accepts;
     Var args;
     enum error e;
 
     switch (next) {
     case 1:			/* Check validity and decide `accepts' */
-	if (!valid(what) || (!valid(where) && where != NOTHING))
+	if (!valid(what) || (!valid(where) && where != NOTHING) || position < 0)
 	    return make_error_pack(E_INVARG);
 	else if (!controls(progr, what))
 	    return make_error_pack(E_PERM);
-	else if (where == NOTHING)
+	else if (where == NOTHING || where == db_object_location(what))
 	    accepts = 1;
     else if (data->position > 0 && !controls(progr, where))
         return make_error_pack(E_PERM);
@@ -140,6 +139,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 		free_var(args);
 		if (e == E_VERBNF)
 		    accepts = 0;
+
 		else		/* (e == E_MAXREC) */
 		    return make_error_pack(e);
 	    }
@@ -166,21 +166,23 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	oldloc = db_object_location(what);
 	db_change_location(what, where, position);
 
-	args = make_arglist(what);
-	e = call_verb(oldloc, "exitfunc", Var::new_obj(oldloc), args, 0);
+	if (where != oldloc) {
+		args = make_arglist(what);
+		e = call_verb(oldloc, "exitfunc", Var::new_obj(oldloc), args, 0);
 
-	if (e == E_NONE)
-	    return make_call_pack(3, data);
-	else {
-	    free_var(args);
-	    if (e == E_MAXREC)
-		return make_error_pack(e);
-	}
+		if (e == E_NONE)
+		    return make_call_pack(3, data);
+		else {
+		    free_var(args);
+		    if (e == E_MAXREC)
+			return make_error_pack(e);
+		}
 	/* e == E_INVIND or E_VERBNF, in both cases fall through */
+	}
 
     case 3:			/* Returned from exitfunc call */
 	if (valid(where) && valid(what)
-	    && db_object_location(what) == where) {
+	    && where != oldloc && db_object_location(what) == where) {
 	    args = make_arglist(what);
 	    e = call_verb(where, "enterfunc", Var::new_obj(where), args, 0);
 	    /* e != E_INVIND */
