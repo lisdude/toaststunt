@@ -1578,8 +1578,8 @@ bf_file_count_lines(Var arglist, Byte next, void *vdata, Objid progr)
 
     rv.type = TYPE_INT;
     rv.v.num = count;
-  }
     r = make_var_pack(rv);
+  }
 
     return r;
   }
