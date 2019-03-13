@@ -109,9 +109,9 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             return make_raise_pack(E_INVARG, err, var_ref(zero));
         } else if (rc == 0) {
             /* We don't have enough room to store all of these substrings. */
+            sprintf(err, "pcre_exec only has room for %d substrings", entry->captures);
             free_entry(entry);
             free_var(arglist);
-            sprintf(err, "pcre_exec only has room for %d substrings", entry->captures);
             return make_raise_pack(E_QUOTA, err, var_ref(zero));
         } else if (rc == PCRE_ERROR_NOMATCH) {
             /* There are no more matches. */
