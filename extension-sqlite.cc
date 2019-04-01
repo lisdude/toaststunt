@@ -457,6 +457,9 @@ int callback(void *index, int argc, char **argv, char **azColName)
  * TODO: Check the performance impact of this being on by default with long strings. */
 void sanitize_string_for_moo(char *string)
 {
+    if (!string)
+        return;
+
     char *p = string;
 
     while (*p)
