@@ -330,11 +330,11 @@
 #define MEMO_VALUE_BYTES /* */
 
 /******************************************************************************
- * DEFAULT_MAX_STRING_CONCAT,      if set to a postive value, is the length
+ * DEFAULT_MAX_STRING_CONCAT,      if set to a positive value, is the length
  *                                 of the largest constructible string.
- * DEFAULT_MAX_LIST_VALUE_BYTES,   if set to a postive value, is the number of
+ * DEFAULT_MAX_LIST_VALUE_BYTES,   if set to a positive value, is the number of
  *                                 bytes in the largest constructible list.
- * DEFAULT_MAX_MAP_VALUE_BYTES,    if set to a postive value, is the number of
+ * DEFAULT_MAX_MAP_VALUE_BYTES,    if set to a positive value, is the number of
  *                                 bytes in the largest constructible map.
  * Limits on "constructible" values apply to values built by concatenation,
  * splicing, index/subrange assignment and various builtin functions.
