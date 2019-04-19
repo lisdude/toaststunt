@@ -59,6 +59,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - UNSAFE_FIO (skip character by character line verification, trading off potential safety for speed)
     - LOG_EVALS (add an entry to the server log any time eval is called)
     - ONLY_32_BITS (switch from 64-bit integers back to 32-bit)
+    - MAX_LINE_BYTES (unceremoniously close connections that send lines exceeding this value to prevent memory allocation panics)
 
 - Additional builtins:
     - frandom (random floats)

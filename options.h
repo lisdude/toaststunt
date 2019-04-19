@@ -226,6 +226,9 @@
  *		    it stops reading from the connection at all.  The server
  *		    starts reading from the connection again once most of the
  *		    buffered input is consumed.
+ * MAX_LINE_BYTES is the maximum amount of bytes that a line sent to the server can consist of
+ *		    prior to the connection unceremoniously being closed,
+ *		    to prevent memory allocation panics.
  * DEFAULT_CONNECT_TIMEOUT is the default number of seconds an un-logged-in
  *			   connection is allowed to remain idle without being
  *			   forcibly closed by the server; this can be
@@ -236,6 +239,7 @@
 
 #define MAX_QUEUED_OUTPUT	65536
 #define MAX_QUEUED_INPUT	MAX_QUEUED_OUTPUT
+#define MAX_LINE_BYTES	5242880 
 #define DEFAULT_CONNECT_TIMEOUT	300
 
 /******************************************************************************

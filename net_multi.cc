@@ -265,6 +265,12 @@ pull_input(nhandle * h)
 #define TN_SE   240
 
     Stream *s = h->input;
+
+        if (stream_length(s) >= MAX_LINE_BYTES) {
+        errlog("Connection `%s` closed for exceeding MAX_LINE_BYTES! (%" PRIdN" /%" PRIdN")\n", h->name, stream_length(s), MAX_LINE_BYTES);
+        return 0;
+    }
+
     int count;
     char buffer[1024];
     char *ptr, *end;
