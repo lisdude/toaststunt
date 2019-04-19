@@ -353,6 +353,51 @@ bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+static void InitListToZero(Var list)
+{
+    const Var z = Var::new_int(0);
+
+    for(int i=1; i <= list.v.list[0].v.num; ++i)
+        list.v.list[i]=z;
+}
+
+/* Return all items of sublists at index */
+static package
+bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    const int length = arglist.v.list[0].v.num;
+    if(length < 0)
+        {
+            free_var(arglist);
+            return make_error_pack(E_INVARG);
+        }
+
+    Var ret = new_list(length);
+    InitListToZero(ret);
+
+    int c = 0;
+    if(arglist.v.list[0].v.num == 2)
+        c = arglist.v.list[2].v.num;
+    else
+        c = 1;
+
+    const Var list=arglist.v.list[1];
+    for(int i = 1; i <= length; ++i)
+        if( list.v.list[i].type != TYPE_LIST || list.v.list[i].v.list[0].v.num < c )
+            {
+                free_var(ret);
+                free_var(arglist);
+                return make_error_pack(E_INVARG);
+            }
+        else
+            {
+                ret.v.list[i] = var_dup(list.v.list[i].v.list[c]);
+            }
+
+    free_var(arglist);
+    return make_var_pack(ret);
+}
+
 /* Return a list of objects of parent, optionally with a player flag set.
  * With only one argument, player flag is assumed to be the only condition.
  * With two arguments, parent is the only condition.
@@ -592,6 +637,7 @@ register_extensions()
     register_function("panic", 0, 1, bf_panic, TYPE_STR);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
     register_function("explode", 1, 2, bf_explode, TYPE_STR, TYPE_STR);
+    register_function("slice", 1, 2, bf_slice, TYPE_LIST, TYPE_INT);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
     register_function("chr", 1, 1, bf_chr, TYPE_INT);
