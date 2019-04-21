@@ -353,29 +353,19 @@ bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-static void InitListToZero(Var list)
-{
-    const Var z = Var::new_int(0);
-
-    for(int i=1; i <= list.v.list[0].v.num; ++i)
-        list.v.list[i]=z;
-}
-
 /* Return all items of sublists at index */
 static package
 bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    const int length = arglist.v.list[0].v.num;
+    const int length = arglist.v.list[1].v.list[0].v.num;
     if(length < 0)
         {
             free_var(arglist);
             return make_error_pack(E_INVARG);
         }
 
-    Var ret = new_list(length);
-    InitListToZero(ret);
-
-    int c = 0;
+    Var ret = new_list(0);
+    int c;
     if(arglist.v.list[0].v.num == 2)
         c = arglist.v.list[2].v.num;
     else
@@ -391,7 +381,8 @@ bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
             }
         else
             {
-                ret.v.list[i] = var_dup(list.v.list[i].v.list[c]);
+                Var element = var_ref(list.v.list[i].v.list[c]);
+                ret = listappend(ret, element);
             }
 
     free_var(arglist);
