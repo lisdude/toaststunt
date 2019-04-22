@@ -81,8 +81,10 @@ bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_INVARG);
     }
 
+    bool case_matters = arglist.v.list[0].v.num < 3 || (arglist.v.list[0].v.num >= 3 && is_true(arglist.v.list[3]));
+
     r.type = TYPE_INT;
-    r.v.num = ismember(arglist.v.list[1], rhs, 1);
+    r.v.num = ismember(arglist.v.list[1], rhs, case_matters);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -90,5 +92,5 @@ bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
 void
 register_collection(void)
 {
-    register_function("is_member", 2, 2, bf_is_member, TYPE_ANY, TYPE_ANY);
+    register_function("is_member", 2, 3, bf_is_member, TYPE_ANY, TYPE_ANY, TYPE_INT);
 }

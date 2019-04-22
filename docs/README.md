@@ -91,8 +91,9 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - Move #0.dump_interval to $server_options.dump_interval
     - Rename recycle() to destroy() (also call pre_destroy rather than recycle verbs)
     - New argument to notify() to suppress the newline
-    - Support object lists in isa() as well as an optional third argument to return the matching parent rather than simply true or false.
+    - Support object lists in isa() as well as an optional third argument to return the matching parent rather than simply true or false
     - New argument to move() to effectively listinsert() the object into the destination's .contents
+    - New argument to is_member() for controlling case sensitivity of equality comparisons. No third argument or a true value results in standard functionality; a false value as the third argument results in case not mattering at all
 
 ## Build Instructions
 ### **Debian/Ubuntu**
