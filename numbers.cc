@@ -647,13 +647,16 @@ static package
 bf_random(Var arglist, Byte next, void *vdata, Objid progr)
 {
     int nargs = arglist.v.list[0].v.num;
-    Num num = (nargs >= 1 ? arglist.v.list[1].v.num : INTNUM_MAX);
+
+    Num minnum = (nargs == 2 ? arglist.v.list[1].v.num : 1);
+    Num maxnum = (nargs >= 1 ? arglist.v.list[nargs].v.num : INTNUM_MAX);
+
     free_var(arglist);
 
-    if (num <= 0)
+    if (maxnum <= 0 || maxnum < minnum || minnum > maxnum)
         	return make_error_pack(E_INVARG);
 
-    uniform_int_distribution<Num> distribution(1, num);
+    uniform_int_distribution<Num> distribution(minnum, maxnum);
     auto r = Var::new_int(distribution(random_generator));
     return make_var_pack(r);
 }
@@ -749,7 +752,7 @@ register_numbers(void)
     register_function("min", 1, -1, bf_min, TYPE_NUMERIC);
     register_function("max", 1, -1, bf_max, TYPE_NUMERIC);
     register_function("abs", 1, 1, bf_abs, TYPE_NUMERIC);
-    register_function("random", 0, 1, bf_random, TYPE_INT);
+    register_function("random", 0, 2, bf_random, TYPE_INT, TYPE_INT);
     register_function("random_bytes", 1, 1, bf_random_bytes, TYPE_INT);
     register_function("time", 0, 0, bf_time);
     register_function("ctime", 0, 1, bf_ctime, TYPE_INT);
