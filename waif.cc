@@ -162,7 +162,7 @@ waif_rename_propdef(Object *o, const char *old, const char *_new)
 				wpd->defs[i].hash = str_hash(_new);
 				return;
 			}
-		panic("waif_rename_propdef(): missing old propdef?");
+		panic_moo("waif_rename_propdef(): missing old propdef?");
 	}
 
 	/* Otherwise a waif property has been created or deleted.  This
@@ -263,7 +263,7 @@ new_waif(Objid _class, Objid owner)
 
 	classp = dbpriv_find_object(_class);
 	if (!classp)
-		panic("new_waif() called with invalid class");
+		panic_moo("new_waif() called with invalid class");
 
 	res.type = TYPE_WAIF;
 	res.v.waif = (Waif *) mymalloc(sizeof(Waif), M_WAIF);
@@ -347,7 +347,7 @@ alloc_propval_offset(Waif *w, int idx)
 
 	/* assert(idx < N_MAPPABLE_PROPS) */
 	if (PROP_MAPPED(w->map, idx))
-		panic("alloc_propval_offset for already allocated idx");
+		panic_moo("alloc_propval_offset for already allocated idx");
 	MAP_PROP(w->map, idx);
 
 	newpv = alloc_waif_propvals(w, 0);
@@ -579,7 +579,7 @@ Waif *
 dup_waif(Waif *waif)
 {
 	update_waif_propdefs(waif);
-	panic("can't dup waif yet");
+	panic_moo("can't dup waif yet");
 	return NULL;
 }
 
@@ -697,9 +697,9 @@ waif_get_prop(Waif *w, const char *name, Var *prop, Objid progr)
 	h = db_find_property(Var::new_obj(w->_class), name,
 		prop->type == TYPE_CLEAR ? prop : NULL);
 	if (!h.ptr)
-		panic("waif propdef update failed in waif_get_prop");
+		panic_moo("waif propdef update failed in waif_get_prop");
 	else if (h.built_in != BP_NONE)
-		panic("built-in property beginning with WAIF_PROP_PREFIX?!");
+		panic_moo("built-in property beginning with WAIF_PROP_PREFIX?!");
 	else if (!waif_property_allows(w, h, progr, PF_READ))
 		return E_PERM;
 
@@ -769,9 +769,9 @@ waif_put_prop(Waif *w, const char *name, Var val, Objid progr)
 	 */
 	h = db_find_property(Var::new_obj(w->_class), name, NULL);
 	if (!h.ptr)
-		panic("waif propdef update failed in waif_put_prop");
+		panic_moo("waif propdef update failed in waif_put_prop");
 	else if (h.built_in != BP_NONE)
-		panic("built-in property beginning with WAIF_PROP_PREFIX?!");
+		panic_moo("built-in property beginning with WAIF_PROP_PREFIX?!");
 	else if (!waif_property_allows(w, h, progr, PF_WRITE))
 		return E_PERM;
 
@@ -940,7 +940,7 @@ read_waif()
 		(void) dbio_read_string();	/* XXX 1.9 terminator */
 		w = saved_waifs[index];
 		if (!w)
-			panic("waif ref to unsaved waif!");
+			panic_moo("waif ref to unsaved waif!");
 
 		res.type = TYPE_WAIF;
 		res.v.waif = w;
@@ -964,7 +964,7 @@ read_waif()
 	 * waif.
 	 */
 	if (index != waif_count)
-		panic("WAIF index mismatch");
+		panic_moo("WAIF index mismatch");
 
 	/* I'd like to use new_waif() here but this is so hacked up it
 	 * seemed silly to try and overload new_waif() to do it.

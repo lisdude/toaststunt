@@ -270,7 +270,7 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 		break;
 
 	    default:
-		panic("Can't happen in proto_accept_connection()");
+		panic_moo("Can't happen in proto_accept_connection()");
 	    }
 	}
 

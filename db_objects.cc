@@ -236,14 +236,14 @@ db_destroy_object(Objid oid)
     db_priv_affected_callable_verb_lookup();
 
     if (!o)
-	panic("DB_DESTROY_OBJECT: Invalid object!");
+	panic_moo("DB_DESTROY_OBJECT: Invalid object!");
 
     if (o->location.v.obj != NOTHING ||
 	o->contents.v.list[0].v.num != 0 ||
 	(o->parents.type == TYPE_OBJ && o->parents.v.obj != NOTHING) ||
 	(o->parents.type == TYPE_LIST && o->parents.v.list[0].v.num != 0) ||
 	o->children.v.list[0].v.num != 0)
-	panic("DB_DESTROY_OBJECT: Not a barren orphan!");
+	panic_moo("DB_DESTROY_OBJECT: Not a barren orphan!");
 
     free_var(o->parents);
     free_var(o->children);

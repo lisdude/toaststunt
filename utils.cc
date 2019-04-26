@@ -338,7 +338,7 @@ complex_var_dup(Var v)
 	v.v.waif = dup_waif(v.v.waif);
 	break;
     case TYPE_ANON:
-	panic("cannot var_dup() anonymous objects\n");
+	panic_moo("cannot var_dup() anonymous objects\n");
 	break;
     }
     return v;
@@ -414,7 +414,7 @@ compare(Var lhs, Var rhs, int case_matters)
     case TYPE_ANON:
         return lhs.v.anon == rhs.v.anon ? 0 : 1;
 	default:
-	    panic("COMPARE: Invalid value type");
+	    panic_moo("COMPARE: Invalid value type");
 	}
     }
     return lhs.type - rhs.type;
@@ -456,7 +456,7 @@ equality(Var lhs, Var rhs, int case_matters)
 	case TYPE_WAIF:
 		return lhs.v.waif == rhs.v.waif;
 	default:
-	    panic("EQUALITY: Unknown value type");
+	    panic_moo("EQUALITY: Unknown value type");
 	}
     }
     return 0;

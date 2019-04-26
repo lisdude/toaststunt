@@ -47,7 +47,7 @@ null_program(void)
 	code = new_list(0);
 	p = parse_list_as_program(code, &errors);
 	if (!p)
-	    panic("Can't create the null program!");
+	    panic_moo("Can't create the null program!");
 	free_var(code);
 	free_var(errors);
     }

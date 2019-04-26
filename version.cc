@@ -87,12 +87,12 @@ static void init_version_structure()
 
 #define BEGIN_LIST(n)				\
     if (++the_list - stack >= DEPTH)		\
-	panic("init_version_structure:  push");	\
+	panic_moo("init_version_structure:  push");	\
     the_list[0] = new_list(n)
 
 #define END_LIST()				\
     if (the_list-- == stack)			\
-	panic("init_version_structure:  pop");	\
+	panic_moo("init_version_structure:  pop");	\
     the_list[0] = listappend(the_list[0],the_list[1])
 
 #define BEGIN_GROUP(name)			\
@@ -157,7 +157,7 @@ static void init_version_structure()
     END_GROUP();
 
     if (stack != the_list)
-	panic("init_version_structure: unpopped stuff");
+	panic_moo("init_version_structure: unpopped stuff");
 
     free_var(truev);
     free_var(falsev);

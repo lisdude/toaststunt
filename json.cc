@@ -182,7 +182,7 @@ append_type(const char *str, var_type type)
 	stream_add_string(stream, "|str");
 	break;
     default:
-	panic("Unsupported type in append_type()");
+	panic_moo("Unsupported type in append_type()");
     }
     return reset_stream(stream);
 }
@@ -299,7 +299,7 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 		break;
 	    }
 	default:
-	    panic("Unsupported type in handle_string()");
+	    panic_moo("Unsupported type in handle_string()");
 	}
     } else {
 	char temp[len + 1];
@@ -393,7 +393,7 @@ generate_key(yajl_gen g, Var v, void *ctx)
     case TYPE_WAIF:
     break;
     default:
-	panic("Unsupported type in generate_key()");
+	panic_moo("Unsupported type in generate_key()");
     }
 
     return yajl_gen_keys_must_be_strings;

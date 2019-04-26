@@ -200,7 +200,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	return no_var_pack();
 
     default:
-	panic("Unknown PC in DO_MOVE");
+	panic_moo("Unknown PC in DO_MOVE");
 	return no_var_pack();	/* Dead code to eliminate compiler warning */
     }
 }
@@ -811,7 +811,7 @@ bf_destroy(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	}
     }
 
-    panic("Can't happen in bf_destroy");
+    panic_moo("Can't happen in bf_destroy");
     return no_var_pack();
 }
 

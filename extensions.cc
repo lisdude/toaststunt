@@ -6,7 +6,7 @@
 #include "list.h"           // listappend and friends
 #include "my-stdlib.h"      // rand()
 #include "random.h"         // random() (nowai)
-#include "server.h"         // panic()
+#include "server.h"         // panic_moo()
 #include <sys/time.h>       // getrusage
 #include <sys/resource.h>   // getrusage
 #if !defined(__FreeBSD__) && !defined(__MACH__)
@@ -276,7 +276,7 @@ bf_panic(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     free_var(arglist);
-    panic(msg);
+    panic_moo(msg);
 
     return make_error_pack(E_NONE);
 }

@@ -53,7 +53,7 @@ new_list(int size)
 
 	if (emptylist.v.list == NULL) {
 	    if ((ptr = (Var *)mymalloc(1 * sizeof(Var), M_LIST)) == NULL)
-		panic("EMPTY_LIST: mymalloc failed");
+		panic_moo("EMPTY_LIST: mymalloc failed");
 
 	    emptylist.type = TYPE_LIST;
 	    emptylist.v.list = ptr;
@@ -71,7 +71,7 @@ new_list(int size)
     }
 
     if ((ptr = (Var *)mymalloc((size + 1) * sizeof(Var), M_LIST)) == NULL)
-	panic("EMPTY_LIST: mymalloc failed");
+	panic_moo("EMPTY_LIST: mymalloc failed");
 
     list.type = TYPE_LIST;
     list.v.list = ptr;
@@ -392,7 +392,7 @@ stream_add_tostr(Stream * s, Var v)
     stream_add_string(s, "[[waif]]");
     break;
     default:
-	panic("STREAM_ADD_TOSTR: Unknown Var type");
+	panic_moo("STREAM_ADD_TOSTR: Unknown Var type");
     }
 }
 
@@ -1027,7 +1027,7 @@ do_match(Var arglist, int reverse)
     } else
 	switch (match_pattern(pat, subject, regs, reverse)) {
 	default:
-	    panic("do_match:  match_pattern returned unfortunate value.\n");
+	    panic_moo("do_match:  match_pattern returned unfortunate value.\n");
 	    /*notreached*/
 	case MATCH_SUCCEEDED:
 	    ans = new_list(4);

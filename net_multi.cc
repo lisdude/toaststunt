@@ -432,7 +432,7 @@ get_pocket_descriptors()
 	pocket_descriptors[i] = dup(0);
 	if (!pocket_descriptors[i]) {
 	    log_perror("Can't get a pocket descriptor");
-	    panic("Need pocket descriptors to continue");
+	    panic_moo("Need pocket descriptors to continue");
 	}
     }
 }

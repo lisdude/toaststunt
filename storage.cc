@@ -80,7 +80,7 @@ mymalloc(unsigned size, Memory_Type type)
     memptr = (char *) malloc(offs + size);
     if (!memptr) {
 	sprintf(msg, "memory allocation (size %u) failed!", size);
-	panic(msg);
+	panic_moo(msg);
     }
     alloc_num[type]++;
 
@@ -142,7 +142,7 @@ myrealloc(void *ptr, unsigned size, Memory_Type type)
     ptr = realloc((char *) ptr - offs, size + offs);
     if (!ptr) {
 	sprintf(msg, "memory re-allocation (size %u) failed!", size);
-	panic(msg);
+	panic_moo(msg);
     }
 
     return (char *) ptr + offs;

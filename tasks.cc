@@ -598,7 +598,7 @@ free_task(task * t, int strong)
 				   for SUSPENDED tasks, strong == 1 means free the vm also. */
     switch (t->kind) {
     default:
-	panic("Unknown task kind in free_task()");
+	panic_moo("Unknown task kind in free_task()");
 	break;
     case TASK_BINARY:
     case TASK_INBAND:
@@ -769,7 +769,7 @@ do_intrinsic_command(tqueue * tq, Parsed_Command * pc)
 	return 0;
     switch (icmd) {
     default: 
-	panic("Bad return value from icmd_index()");
+	panic_moo("Bad return value from icmd_index()");
 	break;
     case ICMD_PROGRAM:
 	if (!is_programmer(tq->player))
@@ -1717,7 +1717,7 @@ run_ready_tasks(void)
 
 		switch (t->kind) {
 		default:
-		    panic("Unexpected task kind in run_ready_tasks()");
+		    panic_moo("Unexpected task kind in run_ready_tasks()");
 		    break;
 		case TASK_OOB:
 		    do_out_of_band_command(tq, t->t.input.string);
@@ -2620,7 +2620,7 @@ find_suspended_task(int id)
 	    /* Do nothing; continue searching other queues */
 	    break;
 	case TEA_KILL:
-	    panic("Can't happen in FIND_SUSPENDED_TASK!");
+	    panic_moo("Can't happen in FIND_SUSPENDED_TASK!");
 	case TEA_STOP:
 	    return fdata.the_vm;
 	}

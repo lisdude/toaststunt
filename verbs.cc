@@ -373,7 +373,7 @@ unparse_arg_spec(db_arg_spec spec)
     case ASPEC_THIS:
 	return str_dup("this");
     default:
-	panic("UNPARSE_ARG_SPEC: Unknown db_arg_spec!");
+	panic_moo("UNPARSE_ARG_SPEC: Unknown db_arg_spec!");
 	return "";
     }
 }

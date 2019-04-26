@@ -590,7 +590,7 @@ push_lvalue(Expr * expr, int indexed_above, State * state)
 	}
 	break;
     default:
-	panic("Bad lvalue in PUSH_LVALUE()");
+	panic_moo("Bad lvalue in PUSH_LVALUE()");
     }
 }
 
@@ -708,7 +708,7 @@ generate_expr(Expr * expr, State * state)
 		op = OP_GET_PROP;
 		break;
 	    default:
-		panic("Not a binary operator in GENERATE_EXPR()");
+		panic_moo("Not a binary operator in GENERATE_EXPR()");
 	    }
 	    emit_byte(op, state);
 	    pop_stack(1, state);
@@ -745,7 +745,7 @@ generate_expr(Expr * expr, State * state)
 		op = EOP_BITSHR;
 		break;
 	    default:
-		panic("Not a binary operator in GENERATE_EXPR()");
+		panic_moo("Not a binary operator in GENERATE_EXPR()");
 	    }
 	    emit_extended_byte(op, state);
 	    pop_stack(1, state);
@@ -785,7 +785,7 @@ generate_expr(Expr * expr, State * state)
 		add_stack_ref(saved, state);
 		push_stack(1, state);
 	    } else
-		panic("Missing saved stack for `^' in GENERATE_EXPR()");
+		panic_moo("Missing saved stack for `^' in GENERATE_EXPR()");
 	}
 	break;
     case EXPR_LAST:
@@ -797,7 +797,7 @@ generate_expr(Expr * expr, State * state)
 		add_stack_ref(saved, state);
 		push_stack(1, state);
 	    } else
-		panic("Missing saved stack for `$' in GENERATE_EXPR()");
+		panic_moo("Missing saved stack for `$' in GENERATE_EXPR()");
 	}
 	break;
     case EXPR_MAP:
@@ -906,7 +906,7 @@ generate_expr(Expr * expr, State * state)
 			pop_stack(2, state);
 			break;
 		    default:
-			panic("Bad lvalue in GENERATE_EXPR()");
+			panic_moo("Bad lvalue in GENERATE_EXPR()");
 		    }
 		    break;
 		}
@@ -951,7 +951,7 @@ generate_expr(Expr * expr, State * state)
 	}
 	break;
     default:
-	panic("Can't happen in GENERATE_EXPR()");
+	panic_moo("Can't happen in GENERATE_EXPR()");
     }
 }
 
@@ -1151,7 +1151,7 @@ generate_stmt(Stmt * stmt, State * state)
 		if (stmt->s.exit == -1) {
 		    emit_extended_byte(EOP_EXIT, state);
 		    if (state->num_loops == 0)
-			panic("No loop to exit, in CODE_GEN!");
+			panic_moo("No loop to exit, in CODE_GEN!");
 		    loop = &(state->loops[state->num_loops - 1]);
 		} else {
 		    emit_extended_byte(EOP_EXIT_ID, state);
@@ -1163,7 +1163,7 @@ generate_stmt(Stmt * stmt, State * state)
 			    break;
 			}
 		    if (i < 0)
-			panic("Can't find loop in CONTINUE_LOOP!");
+			panic_moo("Can't find loop in CONTINUE_LOOP!");
 		}
 
 		if (stmt->kind == STMT_CONTINUE) {
@@ -1177,7 +1177,7 @@ generate_stmt(Stmt * stmt, State * state)
 	    }
 	    break;
 	default:
-	    panic("Can't happen in GENERATE_STMT()");
+	    panic_moo("Can't happen in GENERATE_STMT()");
 	}
     }
 }
@@ -1228,9 +1228,9 @@ stmt_to_code(Stmt * stmt, GState * gstate)
     emit_ending_op(OP_DONE, &state);
 
     if (state.cur_stack != 0)
-	panic("Stack not entirely popped in STMT_TO_CODE()");
+	panic_moo("Stack not entirely popped in STMT_TO_CODE()");
     if (state.saved_stack != UINT_MAX)
-	panic("Still a saved stack index in STMT_TO_CODE()");
+	panic_moo("Still a saved stack index in STMT_TO_CODE()");
 
     /* The max()ing here with gstate->* is wrong (since that's a global
      * cumulative count, and thus unrelated to the local maximum), but required
@@ -1358,7 +1358,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
 		size = bc.numbytes_label;
 		break;
 	    default:
-		panic("Can't happen #1 in STMT_TO_CODE()");
+		panic_moo("Can't happen #1 in STMT_TO_CODE()");
 	    }
 
 	    switch (size) {
@@ -1371,7 +1371,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
 		bc.vector[new_i++] = value;
 		break;
 	    default:
-		panic("Can't happen #2 in STMT_TO_CODE()");
+		panic_moo("Can't happen #2 in STMT_TO_CODE()");
 	    }
 
 	    fixup++;

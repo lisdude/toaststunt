@@ -266,7 +266,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 			found = 1;
 			v = *(vv + 1);
 			if (v.type != TYPE_INT)
-			    panic("Non-numeric PC value on stack!");
+			    panic_moo("Non-numeric PC value on stack!");
 			a->pc = v.v.num;
 		    }
 		    free_var(*vv);
@@ -525,7 +525,7 @@ abort_task(enum abort_reason reason)
 
     switch(reason) {
     default:
-	panic("Bad abort_reason");
+	panic_moo("Bad abort_reason");
 	/*NOTREACHED*/
 
     case ABORT_TICKS:
@@ -1819,7 +1819,7 @@ do {								\
 			    err = E_PERM;
 			    break;
 			default:
-			    panic("Unknown built-in property in OP_PUT_PROP!");
+			    panic_moo("Unknown built-in property in OP_PUT_PROP!");
 			}
 		    }
 
@@ -2296,7 +2296,7 @@ MATCH_TYPE(OBJ, obj)
 
 			marker = POP();
 			if (marker.type != TYPE_CATCH)
-			    panic("Stack marker is not TYPE_CATCH!");
+			    panic_moo("Stack marker is not TYPE_CATCH!");
 			for (i = 0; i < marker.v.num; i++) {
 			    (void) POP();	/* handler PC */
 			    free_var(POP());	/* code list */
@@ -2316,7 +2316,7 @@ MATCH_TYPE(OBJ, obj)
 
 			v = POP();
 			if (v.type != TYPE_FINALLY)
-			    panic("Stack marker is not TYPE_FINALLY!");
+			    panic_moo("Stack marker is not TYPE_FINALLY!");
 			why.type = TYPE_INT;
 			why.v.num = FIN_FALL_THRU;
 			PUSH(why);
@@ -2344,7 +2344,7 @@ MATCH_TYPE(OBJ, obj)
 			    LOAD_STATE_VARIABLES();
 			    break;
 			default:
-			    panic("Unknown FINALLY reason!");
+			    panic_moo("Unknown FINALLY reason!");
 			}
 		    }
 		    break;
@@ -2596,7 +2596,7 @@ MATCH_TYPE(OBJ, obj)
 		    break;
 
 		default:
-		    panic("Unknown extended opcode!");
+		    panic_moo("Unknown extended opcode!");
 		}
 	    }
 	    break;
@@ -2749,7 +2749,7 @@ MATCH_TYPE(OBJ, obj)
 		value.v.num = OPCODE_TO_OPTIM_NUM(op);
 		PUSH(value);
 	    } else
-		panic("Unknown opcode!");
+		panic_moo("Unknown opcode!");
 	    break;
 	}
     }

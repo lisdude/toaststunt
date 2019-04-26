@@ -586,7 +586,7 @@ empty_map(void)
     rbtree *tree;
 
     if ((tree = rbnew()) == NULL)
-	panic("EMPTY_MAP: rbnew failed");
+	panic_moo("EMPTY_MAP: rbnew failed");
 
     map.type = TYPE_MAP;
     map.v.tree = tree;
@@ -631,7 +631,7 @@ map_dup(Var map)
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
 	if (!rbinsert(_new.v.tree, &node))
-	    panic("MAP_DUP: rbinsert failed");
+	    panic_moo("MAP_DUP: rbinsert failed");
     }
 
     gc_set_color(_new.v.tree, gc_get_color(map.v.tree));
@@ -676,7 +676,7 @@ mapinsert(Var map, Var key, Var value)
      */
     if (key.type == TYPE_NONE || key.type == TYPE_CLEAR
 	|| (key.is_collection() && TYPE_ANON != key.type))
-	panic("MAPINSERT: invalid key");
+	panic_moo("MAPINSERT: invalid key");
 
     Var _new = map;
 
@@ -697,7 +697,7 @@ mapinsert(Var map, Var key, Var value)
     rberase(_new.v.tree, &node);
 
     if (!rbinsert(_new.v.tree, &node))
-	panic("MAPINSERT: rbinsert failed");
+	panic_moo("MAPINSERT: rbinsert failed");
 
 #ifdef ENABLE_GC
     gc_set_color(_new.v.tree, GC_YELLOW);
@@ -857,7 +857,7 @@ maprange(Var map, rbtrav *from, rbtrav *to)
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
 	if (!rbinsert(_new.v.tree, &node))
-	    panic("MAP_DUP: rbinsert failed");
+	    panic_moo("MAP_DUP: rbinsert failed");
     } while (pnode != to->it);
 
     free_var(map);
@@ -883,7 +883,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
     enum error e = E_NONE;
 
     if (_new == NULL)
-	panic("MAP_DUP: new is NULL");
+	panic_moo("MAP_DUP: new is NULL");
 
     free_var(*_new);
     *_new = empty_map();
@@ -894,7 +894,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
 	if (!rbinsert(_new->v.tree, &node))
-	    panic("MAP_DUP: rbinsert failed");
+	    panic_moo("MAP_DUP: rbinsert failed");
     }
 
     for (pnode = rbtfirst(&trav, value.v.tree); pnode; pnode = rbtnext(&trav)) {
@@ -902,7 +902,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
 	node.value = var_ref(pnode->value);
 	rberase(_new->v.tree, &node);
 	if (!rbinsert(_new->v.tree, &node))
-	    panic("MAP_DUP: rbinsert failed");
+	    panic_moo("MAP_DUP: rbinsert failed");
     }
 
     while ((pnode = rbtnext(to))) {
@@ -910,7 +910,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
 	node.value = var_ref(pnode->value);
 	rberase(_new->v.tree, &node);
 	if (!rbinsert(_new->v.tree, &node))
-	    panic("MAP_DUP: rbinsert failed");
+	    panic_moo("MAP_DUP: rbinsert failed");
     }
 
     free_var(map);
@@ -930,7 +930,7 @@ new_iter(Var map)
 
     iter.type = TYPE_ITER;
     if ((iter.v.trav = rbtnew()) == NULL)
-	panic("NEW_ITER: rbtnew failed");
+	panic_moo("NEW_ITER: rbtnew failed");
 
     rbtfirst(iter.v.trav, map.v.tree);
 
@@ -948,7 +948,7 @@ destroy_iter(Var iter)
 Var
 iter_dup(Var iter)
 {
-    panic("ITER_DUP: don't do this");
+    panic_moo("ITER_DUP: don't do this");
 
     return none;
 }
