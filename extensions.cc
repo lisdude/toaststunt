@@ -174,15 +174,25 @@ bf_relative_heading(Var arglist, Byte next, void *vdata, Objid progr)
     static package
 bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    // Values are returned in pages. To get KB, multiply by 4.
+    // LINUX: Values are returned in pages. To get KB, multiply by 4.
+    // macOS: The only value available is the resident set size, which is returned in bytes.
     free_var(arglist);
 
-    long double size, resident, share, text, lib, data, dt;
+    long double size = 0.0, resident = 0.0, share = 0.0, text = 0.0, lib = 0.0, data = 0.0, dt = 0.0;
 
+#ifdef __MACH__
+    // macOS doesn't have /proc, so we have to search elsewhere.
+    struct mach_task_basic_info info;
+    mach_msg_type_number_t infoCount = MACH_TASK_BASIC_INFO_COUNT;
+    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&info, &infoCount) == KERN_SUCCESS)
+        resident = (size_t)info.resident_size;
+    else
+        return make_error_pack(E_FILE);
+#else
     FILE *f = fopen("/proc/self/statm", "r");
 
     if (!f)
-        return make_error_pack(E_NACC);
+        return make_error_pack(E_FILE);
 
     if (fscanf(f, "%Lf %Lf %Lf %Lf %Lf %Lf %Lf",
                 &size, &resident, &share, &text, &lib, &data, &dt) != 7)
@@ -192,6 +202,7 @@ bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     fclose(f);
+#endif
 
     Var s = new_list(5);
     s.v.list[1].type = TYPE_FLOAT;
