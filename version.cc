@@ -45,6 +45,7 @@
 #include "utils.h"
 #include "options.h"
 #include "server.h"
+#include <sys/utsname.h>
 
 /*
  * Server executable version
@@ -69,6 +70,19 @@
 #endif
 
 const char *server_version = VERSION_STRING;
+
+const char *operating_system_name()
+{
+    char *os_name;
+
+	struct utsname name;
+	if (uname(&name))
+        asprintf(&os_name, "unknown");
+    else
+        asprintf(&os_name, "%s", name.sysname);
+
+    return os_name;
+}
 
 static Var *version_structure = 0;
 
@@ -126,6 +140,7 @@ static void init_version_structure()
     PUSH_PAIR("release",INT,VERSION_RELEASE);
     PUSH_PAIR("ext",STR,VERSION_EXT);
     PUSH_PAIR("string",STR,server_version);
+    PUSH_PAIR("os",STR,operating_system_name());
 
     BEGIN_GROUP(features);
 #define _FDEF(name) PUSH_VALUE(STR,#name)
