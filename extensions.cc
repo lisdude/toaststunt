@@ -10,26 +10,27 @@
 #include <sys/time.h>       // getrusage
 #include <sys/resource.h>   // getrusage
 #if !defined(__FreeBSD__) && !defined(__MACH__)
-    #include <sys/sysinfo.h>    // CPU usage
+#include <sys/sysinfo.h>    // CPU usage
 #endif
 #include "extension-background.h"   // Threads
 #ifdef __MACH__
-#include <mach/clock.h>     // Millisecond time for OS X
+#include <mach/clock.h>     // Millisecond time for macOS
 #include <mach/mach.h>
+#include <sys/sysctl.h>
 #endif
 
 /**
-* On FreeBSD, CLOCK_MONOTONIC_RAW is simply CLOCK_MONOTONIC
-*/
+ * On FreeBSD, CLOCK_MONOTONIC_RAW is simply CLOCK_MONOTONIC
+ */
 #ifdef __FreeBSD__
-    #define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
+#define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
 #endif
 /**
-* BSD doesn't support sysinfo.
-* There are probably other ways to get CPU info, but for the sake of compilation we'll just return all 0 for CPU usage on BSD for now.
-*/
-#if defined(__FreeBSD__) || defined(__MACH__)
-    #define _MOO_NO_CPU_USAGE
+ * BSD doesn't support sysinfo.
+ * There are probably other ways to get CPU info, but for the sake of compilation we'll just return all 0 for CPU usage on BSD for now.
+ */
+#if defined(__FreeBSD__)
+#define _MOO_NO_CPU_USAGE
 #endif
 
 /* Returns a float of the time (including milliseconds)
@@ -40,7 +41,7 @@
 bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
 {
 #ifdef __MACH__
-    // OS X only provides SYSTEM_CLOCK for monotonic time, so our arguments don't matter.
+    // macOS only provides SYSTEM_CLOCK for monotonic time, so our arguments don't matter.
     clock_id_t clock_type = (arglist.v.list[0].v.num == 0 ? CALENDAR_CLOCK : SYSTEM_CLOCK);
 #else
     // Other OSes provide MONOTONIC_RAW and MONOTONIC, so we'll check args for 2(raw) or 1.
@@ -54,7 +55,7 @@ bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
     struct timespec ts;
 
 #ifdef __MACH__
-    // OS X lacks clock_gettime, use clock_get_time instead
+    // macOS lacks clock_gettime, use clock_get_time instead
     clock_serv_t cclock;
     mach_timespec_t mts;
     host_get_clock_service(mach_host_self(), clock_type, &cclock);
@@ -228,15 +229,24 @@ bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
     for (x = 1; x <= 3; x++)
         cpu.v.list[x] = Var::new_int(0); //initialize to all 0
 
-    #ifndef _MOO_NO_CPU_USAGE
+#ifndef _MOO_NO_CPU_USAGE
     /*** Begin CPU load averages ***/
-        struct sysinfo sys_info;
-        int info_ret = sysinfo(&sys_info);
-
+#ifdef __MACH__
+    struct loadavg load;
+    size_t size = sizeof(load);
+    if (sysctlbyname("vm.loadavg", &load, &size, 0, 0) != -1) {
         for (x = 0; x < 3; x++)
-            cpu.v.list[x+1].v.num = (info_ret != 0 ? 0 : sys_info.loads[x]);
-    #endif
-    
+            cpu.v.list[x+1].v.num = load.ldavg[x];
+    }
+#else
+    struct sysinfo sys_info;
+    int info_ret = sysinfo(&sys_info);
+
+    for (x = 0; x < 3; x++)
+        cpu.v.list[x+1].v.num = (info_ret != 0 ? 0 : sys_info.loads[x]);
+#endif
+#endif
+
     /*** Now rusage ***/
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
@@ -355,15 +365,15 @@ bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 /* Return all items of sublists at index */
-static package
+    static package
 bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
 {
     const int length = arglist.v.list[1].v.list[0].v.num;
     if(length < 0)
-        {
-            free_var(arglist);
-            return make_error_pack(E_INVARG);
-        }
+    {
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
+    }
 
     Var ret = new_list(0);
     int c;
@@ -375,16 +385,16 @@ bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
     const Var list=arglist.v.list[1];
     for(int i = 1; i <= length; ++i)
         if( list.v.list[i].type != TYPE_LIST || list.v.list[i].v.list[0].v.num < c )
-            {
-                free_var(ret);
-                free_var(arglist);
-                return make_error_pack(E_INVARG);
-            }
+        {
+            free_var(ret);
+            free_var(arglist);
+            return make_error_pack(E_INVARG);
+        }
         else
-            {
-                Var element = var_ref(list.v.list[i].v.list[c]);
-                ret = listappend(ret, element);
-            }
+        {
+            Var element = var_ref(list.v.list[i].v.list[c]);
+            ret = listappend(ret, element);
+        }
 
     free_var(arglist);
     return make_var_pack(ret);
@@ -396,7 +406,7 @@ bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
  * With three arguments, parent is checked first and then the player flag is checked.
  * occupants(LIST objects, OBJ parent, ?INT player flag set)
  */
-static package
+    static package
 bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object) */
     Var ret = new_list(0);
@@ -410,8 +420,8 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
     for (int x = 1; x <= content_length; x++) {
         Objid oid = contents.v.list[x].v.obj;
         if (valid(oid)
-            && (!check_parent ? 1 : db_object_isa(Var::new_obj(oid), parent))
-            && (!check_player_flag || (check_player_flag && is_user(oid))))
+                && (!check_parent ? 1 : db_object_isa(Var::new_obj(oid), parent))
+                && (!check_player_flag || (check_player_flag && is_user(oid))))
         {
             ret = setadd(ret, Var::new_obj(oid));
         }
@@ -425,9 +435,9 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
  * For objects in $nothing (#-1), this returns an empty list.
  * locations(OBJ object)
  */
-static package
+    static package
 bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
-{    
+{
     Objid what = arglist.v.list[1].v.obj;
 
     free_var(arglist);
@@ -448,7 +458,7 @@ bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 /* Return a symbol for the ASCII value associated. */
-static package
+    static package
 bf_chr(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
