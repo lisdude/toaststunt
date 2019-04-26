@@ -9,12 +9,13 @@
 #include "server.h"         // panic()
 #include <sys/time.h>       // getrusage
 #include <sys/resource.h>   // getrusage
-#ifndef __FreeBSD__
+#if !defined(__FreeBSD__) && !defined(__MACH__)
     #include <sys/sysinfo.h>    // CPU usage
 #endif
 #include "extension-background.h"   // Threads
 #ifdef __MACH__
 #include <mach/clock.h>     // Millisecond time for OS X
+#include <mach/mach.h>
 #endif
 
 /**
@@ -27,7 +28,7 @@
 * BSD doesn't support sysinfo.
 * There are probably other ways to get CPU info, but for the sake of compilation we'll just return all 0 for CPU usage on BSD for now.
 */
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__MACH__)
     #define _MOO_NO_CPU_USAGE
 #endif
 
