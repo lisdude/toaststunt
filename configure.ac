@@ -286,6 +286,12 @@ dnl ***************************************************************************
         ELIBS="${ELIBS} -lnettle"
     fi
 
+ dnl ***************************************************************************
+    AC_CHECK_FILE([/etc/redhat-release], [using_rel=yes], [using_rel=no])
+    if test "$using_rel" = "yes" ; then
+        AC_DEFINE(USING_REL)
+    fi
+
 dnl ***************************************************************************
 echo checking which MOO networking configurations are likely to work...
 define(MOO_ADD_NET_CONFIG,[
