@@ -126,7 +126,9 @@ make
 ```
 
 ### **macOS**
-Follow the instructions in the notes section to compile and install Argon2. **NOTE**: In the last step, the install prefix should be changed to `/usr/local`
+Installing dependencies requires [Homebrew](https://brew.sh/).
+
+Follow the instructions in the notes section below to compile and install Argon2. **NOTE**: In the last step, the install prefix should be changed to `/usr/local`
 
 ```bash
 brew install autoconf pcre aspell nettle
