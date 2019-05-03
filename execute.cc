@@ -2786,6 +2786,7 @@ run_interpreter(char raise, enum error e,
        but now it's possible to raise E_NONE on resumption from
        suspend().) */
 {
+
     enum outcome ret;
     Var args;
 
@@ -2834,6 +2835,19 @@ run_interpreter(char raise, enum error e,
 	for (i = 1; i <= traceback.v.list[0].v.num; i++)
 	    notify(activ_stack[0].player, traceback.v.list[i].v.str);
     }
+	Var object_and_verb = new_list(8);
+	object_and_verb.v.list[1] =  var_dup(RUN_ACTIV._this);
+	object_and_verb.v.list[2] = Var::new_obj(RUN_ACTIV.player);
+	object_and_verb.v.list[3] = Var::new_obj(RUN_ACTIV.progr);
+	object_and_verb.v.list[4] = Var::new_obj(RUN_ACTIV.recv);
+	object_and_verb.v.list[5] = var_dup(RUN_ACTIV.vloc);
+	object_and_verb.v.list[6] = str_dup_to_var(RUN_ACTIV.verbname);
+	object_and_verb.v.list[7] = Var::new_int(is_fg);
+	object_and_verb.v.list[8] = (ret == OUTCOME_BLOCKED ? Var::new_int(1) : Var::new_int(0)); // Task suspended?
+	finished_tasks = listappend(finished_tasks, object_and_verb);
+
+	if (finished_tasks.v.list[0].v.num > 20)
+		finished_tasks = listdelete(finished_tasks, 1);
     free_var(args);
     return ret;
 }
