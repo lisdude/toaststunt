@@ -15,6 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <chrono>
 #include "my-string.h"
 
 #include "collection.h"
@@ -2803,10 +2804,18 @@ run_interpreter(char raise, enum error e,
      * and this is the only place run() is called. */
     handler_verb_args = zero;
     handler_verb_name = 0;
-    interpreter_is_running = 1;
-    ret = run(raise, e, result);
-    interpreter_is_running = 0;
-    args = handler_verb_args;
+
+	Var total_cputime;
+	total_cputime.type = TYPE_FLOAT;
+
+	interpreter_is_running = 1;
+	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+	ret = run(raise, e, result);
+	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
+	total_cputime.v.fnum = elapsed.count();
+	interpreter_is_running = 0;
+
+	args = handler_verb_args;
 
     cancel_timer(task_alarm_id);
     task_timed_out = 0;
@@ -2847,6 +2856,7 @@ run_interpreter(char raise, enum error e,
 	postmortem = mapinsert(postmortem, str_dup_to_var("fullverb"), str_dup_to_var(RUN_ACTIV.verbname));
 	postmortem = mapinsert(postmortem, str_dup_to_var("foreground"), Var::new_int(is_fg));
 	postmortem = mapinsert(postmortem, str_dup_to_var("suspended"), (ret == OUTCOME_BLOCKED ? Var::new_int(1) : Var::new_int(0))); // Task suspended?
+	postmortem = mapinsert(postmortem, str_dup_to_var("time"), total_cputime);
 
 	finished_tasks = listappend(finished_tasks, postmortem);
 
