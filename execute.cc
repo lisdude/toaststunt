@@ -2835,19 +2835,24 @@ run_interpreter(char raise, enum error e,
 	for (i = 1; i <= traceback.v.list[0].v.num; i++)
 	    notify(activ_stack[0].player, traceback.v.list[i].v.str);
     }
-	Var object_and_verb = new_list(8);
-	object_and_verb.v.list[1] =  var_dup(RUN_ACTIV._this);
-	object_and_verb.v.list[2] = Var::new_obj(RUN_ACTIV.player);
-	object_and_verb.v.list[3] = Var::new_obj(RUN_ACTIV.progr);
-	object_and_verb.v.list[4] = Var::new_obj(RUN_ACTIV.recv);
-	object_and_verb.v.list[5] = var_dup(RUN_ACTIV.vloc);
-	object_and_verb.v.list[6] = str_dup_to_var(RUN_ACTIV.verbname);
-	object_and_verb.v.list[7] = Var::new_int(is_fg);
-	object_and_verb.v.list[8] = (ret == OUTCOME_BLOCKED ? Var::new_int(1) : Var::new_int(0)); // Task suspended?
-	finished_tasks = listappend(finished_tasks, object_and_verb);
+
+	Var postmortem = new_map();
+
+	postmortem = mapinsert(postmortem, str_dup_to_var("this"), var_dup(RUN_ACTIV._this));
+	postmortem = mapinsert(postmortem, str_dup_to_var("player"), Var::new_obj(RUN_ACTIV.player));
+	postmortem = mapinsert(postmortem, str_dup_to_var("programmer"), Var::new_obj(RUN_ACTIV.progr));
+	postmortem = mapinsert(postmortem, str_dup_to_var("receiver"), Var::new_obj(RUN_ACTIV.recv));
+	postmortem = mapinsert(postmortem, str_dup_to_var("object"), var_dup(RUN_ACTIV.vloc));
+	postmortem = mapinsert(postmortem, str_dup_to_var("verb"), str_dup_to_var(RUN_ACTIV.verb));
+	postmortem = mapinsert(postmortem, str_dup_to_var("fullverb"), str_dup_to_var(RUN_ACTIV.verbname));
+	postmortem = mapinsert(postmortem, str_dup_to_var("foreground"), Var::new_int(is_fg));
+	postmortem = mapinsert(postmortem, str_dup_to_var("suspended"), (ret == OUTCOME_BLOCKED ? Var::new_int(1) : Var::new_int(0))); // Task suspended?
+
+	finished_tasks = listappend(finished_tasks, postmortem);
 
 	if (finished_tasks.v.list[0].v.num > 20)
 		finished_tasks = listdelete(finished_tasks, 1);
+
     free_var(args);
     return ret;
 }
