@@ -2847,12 +2847,13 @@ run_interpreter(char raise, enum error e,
 
 	Var postmortem = new_map();
 
-	postmortem = mapinsert(postmortem, str_dup_to_var("this"), var_dup(RUN_ACTIV._this));
+	/* TODO: Store the raw data and only create lists and maps when finished_tasks() is called */
+	postmortem = mapinsert(postmortem, str_dup_to_var("this"), Var::new_obj(RUN_ACTIV._this.v.obj));
 	postmortem = mapinsert(postmortem, str_dup_to_var("player"), Var::new_obj(RUN_ACTIV.player));
 	postmortem = mapinsert(postmortem, str_dup_to_var("programmer"), Var::new_obj(RUN_ACTIV.progr));
 	postmortem = mapinsert(postmortem, str_dup_to_var("receiver"), Var::new_obj(RUN_ACTIV.recv));
-	postmortem = mapinsert(postmortem, str_dup_to_var("object"), var_dup(RUN_ACTIV.vloc));
-	postmortem = mapinsert(postmortem, str_dup_to_var("verb"), str_dup_to_var(RUN_ACTIV.verb));
+	postmortem = mapinsert(postmortem, str_dup_to_var("object"), Var::new_obj(RUN_ACTIV.vloc.v.obj));
+	postmortem = mapinsert(postmortem, str_dup_to_var("verb"), strcmp(RUN_ACTIV.verb, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verb));
 	postmortem = mapinsert(postmortem, str_dup_to_var("fullverb"), str_dup_to_var(RUN_ACTIV.verbname));
 	postmortem = mapinsert(postmortem, str_dup_to_var("foreground"), Var::new_int(is_fg));
 	postmortem = mapinsert(postmortem, str_dup_to_var("suspended"), (ret == OUTCOME_BLOCKED ? Var::new_int(1) : Var::new_int(0))); // Task suspended?
