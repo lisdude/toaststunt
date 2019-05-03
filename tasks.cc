@@ -236,7 +236,9 @@ int current_task_id;
 static tqueue *idle_tqueues = 0, *active_tqueues = 0;
 static task *waiting_tasks = 0;	/* forked and suspended tasks */
 static ext_queue *external_queues = 0;
+#ifdef SAVE_FINISHED_TASKS
 Var finished_tasks = new_list(0);
+#endif
 
 /*
  * Forward declarations for functions that operate on external queues.
@@ -2987,6 +2989,7 @@ bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
     return no_var_pack();
 }
 
+#ifdef SAVE_FINISHED_TASKS
 static package
 bf_finished_tasks(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -2997,13 +3000,16 @@ bf_finished_tasks(Var arglist, Byte next, void *vdata, Objid progr)
 
 	return make_var_pack(var_ref(finished_tasks));
 }
+#endif
 
 void
 register_tasks(void)
 {
     register_function("task_id", 0, 0, bf_task_id);
     register_function("queued_tasks", 0, 0, bf_queued_tasks);
+	#ifdef SAVE_FINISHED_TASKS
     register_function("finished_tasks", 0, 0, bf_finished_tasks);
+	#endif
     register_function("kill_task", 1, 1, bf_kill_task, TYPE_INT);
     register_function("output_delimiters", 1, 1, bf_output_delimiters,
 		      TYPE_OBJ);

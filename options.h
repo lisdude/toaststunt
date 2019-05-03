@@ -467,6 +467,15 @@
 /* #define UNSAFE_FIO */
 
 /******************************************************************************
+ * When functions leave the interpreter, the server can store certain information
+ * about that function's execution and total time spent. This can be useful for
+ * debugging server-locking functions at the expense of time spent storing data.
+ * (The number defined is how many tasks will get saved.)
+ ******************************************************************************
+*/
+/* #define SAVE_FINISHED_TASKS 15 */
+
+/******************************************************************************
  * The server supports 64-bit integers. If you don't want the added memory usage
  * and don't need the larger integers, you can disable that here. NOTE: Disabling
  * this option and loading a database that has saved 64-bit integers will probably

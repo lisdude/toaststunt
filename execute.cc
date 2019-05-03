@@ -2787,7 +2787,6 @@ run_interpreter(char raise, enum error e,
        but now it's possible to raise E_NONE on resumption from
        suspend().) */
 {
-
     enum outcome ret;
     Var args;
 
@@ -2845,6 +2844,7 @@ run_interpreter(char raise, enum error e,
 	    notify(activ_stack[0].player, traceback.v.list[i].v.str);
     }
 
+#ifdef SAVE_FINISHED_TASKS
 	Var postmortem = new_map();
 
 	/* TODO: Store the raw data and only create lists and maps when finished_tasks() is called */
@@ -2861,10 +2861,11 @@ run_interpreter(char raise, enum error e,
 
 	finished_tasks = listappend(finished_tasks, postmortem);
 
-	if (finished_tasks.v.list[0].v.num > 20)
+	if (finished_tasks.v.list[0].v.num > SAVE_FINISHED_TASKS)
 		finished_tasks = listdelete(finished_tasks, 1);
+#endif
 
-    free_var(args);
+	free_var(args);
     return ret;
 }
 
