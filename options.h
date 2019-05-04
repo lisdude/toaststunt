@@ -130,6 +130,8 @@
 #define DEFAULT_FG_SECONDS	5
 #define DEFAULT_BG_SECONDS	3
 
+#define DEFAULT_LAG_THRESHOLD 5.0
+
 /******************************************************************************
  * NETWORK_PROTOCOL must be defined as one of the following:
  *
