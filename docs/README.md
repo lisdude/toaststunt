@@ -53,6 +53,10 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 - Maps
     - maphaskey() (check if a key exists in a map. Looks nicer than `!(x in mapkeys(map))` and is faster when not dealing with hundreds of keys)
 
+- Profiling
+    - finished_tasks() (returns a list of the last X tasks to finish executing, including their total execution time) [see options.h below]
+    - Set a maximum lag threshold (can be overridden with $server_options.task_lag_threshold) that, when exceeded, will make a note in the server log and call #0:handle_lagging_task with arguments: {object, verb, callers, execution time}
+
 - Options.h configuration:
     - LOG_CODE_CHANGES (causes .program and set_verb_code to add a line to the server log indicating the object, verb, and programmer)
     - OWNERSHIP_QUOTA (disable the server's builtin quota management)
@@ -61,6 +65,8 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - LOG_EVALS (add an entry to the server log any time eval is called)
     - ONLY_32_BITS (switch from 64-bit integers back to 32-bit)
     - MAX_LINE_BYTES (unceremoniously close connections that send lines exceeding this value to prevent memory allocation panics)
+    - DEFAULT_LAG_THRESHOLD (the number of seconds allowed before a task is considered laggy and triggers #0:handle_lagging_task)
+    - SAVE_FINISHED_TASKS (enable the finished_tasks function and define how many tasks get saved)
 
 - Additional builtins:
     - frandom (random floats)
