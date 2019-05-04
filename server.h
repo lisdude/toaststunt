@@ -126,6 +126,13 @@ extern int server_int_option(const char *name, int defallt);
 				 * Otherwise, return DEFALLT.
 				 */
 
+extern double server_float_option(const char *name, double defallt);
+				/* If both $server_options and
+				 * $server_options.NAME exist and the latter
+				 * has a float value, then return that value.
+				 * Otherwise, return DEFALLT.
+				 */
+
 extern const char *server_string_option(const char *name,
 					const char *defallt);
 				/* If either $server_options or

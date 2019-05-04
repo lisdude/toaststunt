@@ -1287,6 +1287,17 @@ server_int_option(const char *name, int defallt)
 	return defallt;
 }
 
+double
+server_float_option(const char *name, double defallt)
+{
+    Var v;
+
+    if (get_server_option(SYSTEM_OBJECT, name, &v))
+	return (v.type == TYPE_FLOAT ? v.v.fnum : defallt);
+    else
+	return defallt;
+}
+
 const char *
 server_string_option(const char *name, const char *defallt)
 {
