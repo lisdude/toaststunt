@@ -2819,7 +2819,8 @@ run_interpreter(char raise, enum error e,
     cancel_timer(task_alarm_id);
     task_timed_out = 0;
 
-	if (total_cputime.v.fnum >= server_float_option("task_lag_threshold", DEFAULT_LAG_THRESHOLD)) {
+	double lag_threshold = server_float_option("task_lag_threshold", DEFAULT_LAG_THRESHOLD);
+	if (total_cputime.v.fnum >= lag_threshold && lag_threshold >= 1.0) {
 		errlog("LAG: %f seconds\n", total_cputime.v.fnum);
 		db_verb_handle handle = db_find_callable_verb(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task");
 		if (handle.ptr) {
@@ -2875,7 +2876,7 @@ run_interpreter(char raise, enum error e,
 
 	finished_tasks = listappend(finished_tasks, postmortem);
 
-	while (finished_tasks.v.list[0].v.num > server_int_option("finished_tasks_limit", SAVE_FINISHED_TASKS))
+	while (finished_tasks.v.list[0].v.num > server_int_option("finished_tasks_limit", SAVE_FINISHED_TASKS) && finished_tasks.v.list[0].v.num > 1)
 		finished_tasks = listdelete(finished_tasks, 1);
 #endif
 
