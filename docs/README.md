@@ -66,7 +66,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - ONLY_32_BITS (switch from 64-bit integers back to 32-bit)
     - MAX_LINE_BYTES (unceremoniously close connections that send lines exceeding this value to prevent memory allocation panics)
     - DEFAULT_LAG_THRESHOLD (the number of seconds allowed before a task is considered laggy and triggers #0:handle_lagging_task)
-    - SAVE_FINISHED_TASKS (enable the finished_tasks function and define how many tasks get saved)
+    - SAVE_FINISHED_TASKS (enable the finished_tasks function and define how many tasks get saved by default) [default can be overridden with $server_options.finished_tasks_limit]
 
 - Additional builtins:
     - frandom (random floats)

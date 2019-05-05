@@ -2875,7 +2875,7 @@ run_interpreter(char raise, enum error e,
 
 	finished_tasks = listappend(finished_tasks, postmortem);
 
-	if (finished_tasks.v.list[0].v.num > SAVE_FINISHED_TASKS)
+	while (finished_tasks.v.list[0].v.num > server_int_option("finished_tasks_limit", SAVE_FINISHED_TASKS))
 		finished_tasks = listdelete(finished_tasks, 1);
 #endif
 
