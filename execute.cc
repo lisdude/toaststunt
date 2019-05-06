@@ -79,6 +79,19 @@ static char *waif_index_verb;
 static char *waif_indexset_verb;
 #endif				/* WAIF_DICT */
 
+#ifdef SAVE_FINISHED_TASKS
+static Var map_this;
+static Var map_player;
+static Var map_programmer;
+static Var map_receiver;
+static Var map_object;
+static Var map_verb;
+static Var map_fullverb;
+static Var map_foreground;
+static Var map_suspended;
+static Var map_time;
+#endif              /* SAVE_FINISHED_TASKS */
+
 /* macros to ease indexing into activation stack */
 #define RUN_ACTIV     activ_stack[top_activ_stack]
 #define CALLER_ACTIV  activ_stack[top_activ_stack - 1]
@@ -2860,19 +2873,20 @@ run_interpreter(char raise, enum error e,
     }
 
 #ifdef SAVE_FINISHED_TASKS
+
 	Var postmortem = new_map();
 
 	/* TODO: Store the raw data and only create lists and maps when finished_tasks() is called */
-	postmortem = mapinsert(postmortem, str_dup_to_var("this"), Var::new_obj(RUN_ACTIV._this.v.obj));
-	postmortem = mapinsert(postmortem, str_dup_to_var("player"), Var::new_obj(RUN_ACTIV.player));
-	postmortem = mapinsert(postmortem, str_dup_to_var("programmer"), Var::new_obj(RUN_ACTIV.progr));
-	postmortem = mapinsert(postmortem, str_dup_to_var("receiver"), Var::new_obj(RUN_ACTIV.recv));
-	postmortem = mapinsert(postmortem, str_dup_to_var("object"), Var::new_obj(RUN_ACTIV.vloc.v.obj));
-	postmortem = mapinsert(postmortem, str_dup_to_var("verb"), strcmp(RUN_ACTIV.verb, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verb));
-	postmortem = mapinsert(postmortem, str_dup_to_var("fullverb"), str_dup_to_var(RUN_ACTIV.verbname));
-	postmortem = mapinsert(postmortem, str_dup_to_var("foreground"), Var::new_int(is_fg));
-	postmortem = mapinsert(postmortem, str_dup_to_var("suspended"), (ret == OUTCOME_BLOCKED ? Var::new_int(1) : Var::new_int(0))); // Task suspended?
-	postmortem = mapinsert(postmortem, str_dup_to_var("time"), total_cputime);
+	postmortem = mapinsert(postmortem, var_ref(map_this), Var::new_obj(RUN_ACTIV._this.v.obj));
+	postmortem = mapinsert(postmortem, var_ref(map_player), Var::new_obj(RUN_ACTIV.player));
+	postmortem = mapinsert(postmortem, var_ref(map_programmer), Var::new_obj(RUN_ACTIV.progr));
+	postmortem = mapinsert(postmortem, var_ref(map_receiver), Var::new_obj(RUN_ACTIV.recv));
+	postmortem = mapinsert(postmortem, var_ref(map_object), Var::new_obj(RUN_ACTIV.vloc.v.obj));
+	postmortem = mapinsert(postmortem, var_ref(map_verb), strcmp(RUN_ACTIV.verb, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verb));
+	postmortem = mapinsert(postmortem, var_ref(map_fullverb), str_dup_to_var(RUN_ACTIV.verbname));
+	postmortem = mapinsert(postmortem, var_ref(map_foreground), Var::new_int(is_fg));
+	postmortem = mapinsert(postmortem, var_ref(map_suspended), (ret == OUTCOME_BLOCKED ? Var::new_int(1) : Var::new_int(0))); // Task suspended?
+	postmortem = mapinsert(postmortem, var_ref(map_time), total_cputime);
 
 	finished_tasks = listappend(finished_tasks, postmortem);
 
@@ -3441,6 +3455,19 @@ register_execute(void)
     waif_index_verb = str_dup(WAIF_INDEX_VERB);
     waif_indexset_verb = str_dup(WAIF_INDEXSET_VERB);
 #endif				/* WAIF_DICT */
+
+#ifdef SAVE_FINISHED_TASKS
+    map_this = str_dup_to_var("this");
+    map_player = str_dup_to_var("player");
+    map_programmer = str_dup_to_var("programmer");
+    map_receiver = str_dup_to_var("receiver");
+    map_object = str_dup_to_var("object");
+    map_verb = str_dup_to_var("verb");
+    map_fullverb = str_dup_to_var("fullverb");
+    map_foreground = str_dup_to_var("foreground");
+    map_suspended = str_dup_to_var("suspended");
+    map_time = str_dup_to_var("time");
+#endif          /* SAVE_FINISHED_TASKS */
 }
 
 
