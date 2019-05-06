@@ -2872,17 +2872,15 @@ run_interpreter(char raise, enum error e,
     }
 
 #ifdef SAVE_FINISHED_TASKS
-
 	Var postmortem = new_map();
 
-	/* TODO: Store the raw data and only create lists and maps when finished_tasks() is called */
 	postmortem = mapinsert(postmortem, var_ref(map_this), Var::new_obj(RUN_ACTIV._this.v.obj));
 	postmortem = mapinsert(postmortem, var_ref(map_player), Var::new_obj(RUN_ACTIV.player));
 	postmortem = mapinsert(postmortem, var_ref(map_programmer), Var::new_obj(RUN_ACTIV.progr));
 	postmortem = mapinsert(postmortem, var_ref(map_receiver), Var::new_obj(RUN_ACTIV.recv));
 	postmortem = mapinsert(postmortem, var_ref(map_object), Var::new_obj(RUN_ACTIV.vloc.v.obj));
 	postmortem = mapinsert(postmortem, var_ref(map_verb), strcmp(RUN_ACTIV.verb, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verb));
-	postmortem = mapinsert(postmortem, var_ref(map_fullverb), str_dup_to_var(RUN_ACTIV.verbname));
+	postmortem = mapinsert(postmortem, var_ref(map_fullverb), strcmp(RUN_ACTIV.verbname, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verbname));
 	postmortem = mapinsert(postmortem, var_ref(map_foreground), Var::new_int(is_fg));
 	postmortem = mapinsert(postmortem, var_ref(map_suspended), (ret == OUTCOME_BLOCKED ? Var::new_int(1) : Var::new_int(0))); // Task suspended?
 	postmortem = mapinsert(postmortem, var_ref(map_time), total_cputime);
@@ -2891,7 +2889,7 @@ run_interpreter(char raise, enum error e,
 
 	while (finished_tasks.v.list[0].v.num > server_int_option("finished_tasks_limit", SAVE_FINISHED_TASKS) && finished_tasks.v.list[0].v.num > 1)
 		finished_tasks = listdelete(finished_tasks, 1);
-#endif
+#endif		/* SAVE_FINISHED_TASKS */
 
 	free_var(args);
     return ret;
