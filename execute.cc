@@ -2837,13 +2837,12 @@ run_interpreter(char raise, enum error e,
 		errlog("LAG: %f seconds\n", total_cputime.v.fnum);
 		db_verb_handle handle = db_find_callable_verb(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task");
 		if (handle.ptr) {
-			Var dummy;
 			Var lag_info = new_list(4);
 			lag_info.v.list[1] = Var::new_obj(RUN_ACTIV.vloc.v.obj);
 			lag_info.v.list[2] = str_dup_to_var(RUN_ACTIV.verbname);
 			lag_info.v.list[3] = make_stack_list(activ_stack, 0, top_activ_stack, 0, root_activ_vector, 1, RUN_ACTIV.progr);
 			lag_info.v.list[4] = total_cputime;
-			do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task", lag_info, handle, activ_stack[0].player, "", &dummy, 0);
+			do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task", lag_info, handle, activ_stack[0].player, "", NULL, 0);
 		}
 	}
 
