@@ -2833,7 +2833,7 @@ run_interpreter(char raise, enum error e,
     task_timed_out = 0;
 
 	double lag_threshold = server_float_option("task_lag_threshold", DEFAULT_LAG_THRESHOLD);
-	if (total_cputime.v.fnum >= lag_threshold && lag_threshold >= 1.0) {
+	if (total_cputime.v.fnum >= lag_threshold && lag_threshold >= 0.1) {
 		errlog("LAG: %f seconds\n", total_cputime.v.fnum);
 		db_verb_handle handle = db_find_callable_verb(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task");
 		if (handle.ptr) {
