@@ -2793,29 +2793,42 @@ setup_task_execution_limits(int seconds, int ticks)
 
 enum outcome
 run_interpreter(char raise, enum error e,
-		Var * result, int is_fg, int do_db_tracebacks)
-    /* raise is boolean, true iff an error should be raised.
+				Var *result, int is_fg, int do_db_tracebacks)
+/* raise is boolean, true iff an error should be raised.
        e is the specific error to be raised if so.
        (in earlier versions, an error was raised iff e != E_NONE,
        but now it's possible to raise E_NONE on resumption from
        suspend().) */
 {
-    enum outcome ret;
-    Var args;
+	enum outcome ret;
+	Var args;
 
-    setup_task_execution_limits(is_fg ? server_int_option("fg_seconds",
-						      DEFAULT_FG_SECONDS)
-				: server_int_option("bg_seconds",
-						    DEFAULT_BG_SECONDS),
-				is_fg ? server_int_option("fg_ticks",
-							DEFAULT_FG_TICKS)
-				: server_int_option("bg_ticks",
-						    DEFAULT_BG_TICKS));
+	setup_task_execution_limits(is_fg ? server_int_option("fg_seconds",
+														  DEFAULT_FG_SECONDS)
+									  : server_int_option("bg_seconds",
+														  DEFAULT_BG_SECONDS),
+								is_fg ? server_int_option("fg_ticks",
+														  DEFAULT_FG_TICKS)
+									  : server_int_option("bg_ticks",
+														  DEFAULT_BG_TICKS));
 
-    /* handler_verb_* is garbage/unreferenced outside of run()
+	/* handler_verb_* is garbage/unreferenced outside of run()
      * and this is the only place run() is called. */
-    handler_verb_args = zero;
-    handler_verb_name = 0;
+	handler_verb_args = zero;
+	handler_verb_name = 0;
+
+#ifdef SAVE_FINISHED_TASKS
+	Var postmortem = new_map();
+
+	postmortem = mapinsert(postmortem, var_ref(map_this), Var::new_obj(RUN_ACTIV._this.v.obj));
+	postmortem = mapinsert(postmortem, var_ref(map_player), Var::new_obj(RUN_ACTIV.player));
+	postmortem = mapinsert(postmortem, var_ref(map_programmer), Var::new_obj(RUN_ACTIV.progr));
+	postmortem = mapinsert(postmortem, var_ref(map_receiver), Var::new_obj(RUN_ACTIV.recv));
+	postmortem = mapinsert(postmortem, var_ref(map_object), Var::new_obj(RUN_ACTIV.vloc.v.obj));
+	postmortem = mapinsert(postmortem, var_ref(map_verb), strcmp(RUN_ACTIV.verb, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verb));
+	postmortem = mapinsert(postmortem, var_ref(map_fullverb), strcmp(RUN_ACTIV.verbname, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verbname));
+	postmortem = mapinsert(postmortem, var_ref(map_foreground), Var::new_int(is_fg));
+#endif	/* SAVE_FINISHED_TASKS */
 
 	Var total_cputime;
 	total_cputime.type = TYPE_FLOAT;
@@ -2829,14 +2842,16 @@ run_interpreter(char raise, enum error e,
 
 	args = handler_verb_args;
 
-    cancel_timer(task_alarm_id);
-    task_timed_out = 0;
+	cancel_timer(task_alarm_id);
+	task_timed_out = 0;
 
 	double lag_threshold = server_float_option("task_lag_threshold", DEFAULT_LAG_THRESHOLD);
-	if (total_cputime.v.fnum >= lag_threshold && lag_threshold >= 0.1) {
+	if (total_cputime.v.fnum >= lag_threshold && lag_threshold >= 0.1)
+	{
 		errlog("LAG: %f seconds\n", total_cputime.v.fnum);
 		db_verb_handle handle = db_find_callable_verb(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task");
-		if (handle.ptr) {
+		if (handle.ptr)
+		{
 			Var lag_info = new_list(4);
 			lag_info.v.list[1] = Var::new_obj(RUN_ACTIV.vloc.v.obj);
 			lag_info.v.list[2] = str_dup_to_var(RUN_ACTIV.verbname);
@@ -2846,55 +2861,45 @@ run_interpreter(char raise, enum error e,
 		}
 	}
 
-    if (ret == OUTCOME_ABORTED && handler_verb_name) {
-	db_verb_handle h;
-	enum outcome hret;
-	Var handled, traceback;
-	int i;
-
-	h = db_find_callable_verb(Var::new_obj(SYSTEM_OBJECT), handler_verb_name);
-	if (do_db_tracebacks && h.ptr) {
-	    hret = do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), handler_verb_name,
-				       var_ref(args), h,
-				       activ_stack[0].player, "", &handled,
-				       0/*no-traceback*/);
-	    if ((hret == OUTCOME_DONE && is_true(handled))
-		|| hret == OUTCOME_BLOCKED) {
-		/* Assume the in-DB code handled it */
-		free_var(args);
-		return OUTCOME_ABORTED;		/* original ret value */
-	    }
-	}
-	i = args.v.list[0].v.num;
-	traceback = args.v.list[i];	/* traceback is always the last argument */
-	for (i = 1; i <= traceback.v.list[0].v.num; i++)
-	    notify(activ_stack[0].player, traceback.v.list[i].v.str);
-    }
-
 #ifdef SAVE_FINISHED_TASKS
-	Var postmortem = new_map();
-
-	postmortem = mapinsert(postmortem, var_ref(map_this), Var::new_obj(RUN_ACTIV._this.v.obj));
-	postmortem = mapinsert(postmortem, var_ref(map_player), Var::new_obj(RUN_ACTIV.player));
-	postmortem = mapinsert(postmortem, var_ref(map_programmer), Var::new_obj(RUN_ACTIV.progr));
-	postmortem = mapinsert(postmortem, var_ref(map_receiver), Var::new_obj(RUN_ACTIV.recv));
-	postmortem = mapinsert(postmortem, var_ref(map_object), Var::new_obj(RUN_ACTIV.vloc.v.obj));
-	postmortem = mapinsert(postmortem, var_ref(map_verb), strcmp(RUN_ACTIV.verb, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verb));
-	postmortem = mapinsert(postmortem, var_ref(map_fullverb), strcmp(RUN_ACTIV.verbname, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verbname));
-	postmortem = mapinsert(postmortem, var_ref(map_foreground), Var::new_int(is_fg));
 	postmortem = mapinsert(postmortem, var_ref(map_suspended), (ret == OUTCOME_BLOCKED ? Var::new_int(1) : Var::new_int(0))); // Task suspended?
 	postmortem = mapinsert(postmortem, var_ref(map_time), total_cputime);
-
 	finished_tasks = listappend(finished_tasks, postmortem);
 
 	while (finished_tasks.v.list[0].v.num > server_int_option("finished_tasks_limit", SAVE_FINISHED_TASKS) && finished_tasks.v.list[0].v.num > 1)
 		finished_tasks = listdelete(finished_tasks, 1);
-#endif		/* SAVE_FINISHED_TASKS */
+#endif /* SAVE_FINISHED_TASKS */
+
+	if (ret == OUTCOME_ABORTED && handler_verb_name)
+	{
+		db_verb_handle h;
+		enum outcome hret;
+		Var handled, traceback;
+		int i;
+
+		h = db_find_callable_verb(Var::new_obj(SYSTEM_OBJECT), handler_verb_name);
+		if (do_db_tracebacks && h.ptr)
+		{
+			hret = do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), handler_verb_name,
+									   var_ref(args), h,
+									   activ_stack[0].player, "", &handled,
+									   0 /*no-traceback*/);
+			if ((hret == OUTCOME_DONE && is_true(handled)) || hret == OUTCOME_BLOCKED)
+			{
+				/* Assume the in-DB code handled it */
+				free_var(args);
+				return OUTCOME_ABORTED; /* original ret value */
+			}
+		}
+		i = args.v.list[0].v.num;
+		traceback = args.v.list[i]; /* traceback is always the last argument */
+		for (i = 1; i <= traceback.v.list[0].v.num; i++)
+			notify(activ_stack[0].player, traceback.v.list[i].v.str);
+	}
 
 	free_var(args);
-    return ret;
+	return ret;
 }
-
 
 Var
 caller()
@@ -2950,7 +2955,7 @@ do_task(Program * prog, int which_vector, Var * result, int is_fg, int do_db_tra
     RUN_ACTIV.error_pc = 0;
     RUN_ACTIV.bi_func_pc = 0;
     RUN_ACTIV.temp.type = TYPE_NONE;
-
+	
     return run_interpreter(0, E_NONE, result, is_fg, do_db_tracebacks);
 }
 
