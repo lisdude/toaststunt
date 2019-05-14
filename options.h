@@ -444,7 +444,7 @@
  * Enable the obsolete in-server ownership quota management.
  ******************************************************************************
 */
-/* #define OWNERSHIP_QUOTA */
+#define OWNERSHIP_QUOTA
 
 /******************************************************************************
  * Cache ancestor lists until a parent changes. This is a quick and dirty solution
