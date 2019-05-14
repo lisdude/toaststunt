@@ -36,17 +36,20 @@
 #include "structures.h"
 #include "utils.h"
 
-using namespace std;
-
 sosemanuk_key_context key_context;
 sosemanuk_run_context run_context;
 
-/**
-* I don't particularly like these being global, but we don't want to reseed
-* each and every time we generate a random number.
-*/
-static random_device rand_dev;
-static mt19937 random_generator(rand_dev());
+static std::mt19937 rng;
+
+void reseed_rng()
+{
+    std::random_device entropy_source;
+    std::seed_seq::result_type data[std::mt19937::state_size];
+    std::generate_n(data, std::mt19937::state_size, std::ref(entropy_source));
+
+    std::seed_seq prng_seed(data, data + std::mt19937::state_size);
+    rng.seed(prng_seed);
+}
 
 int
 parse_number(const char *str, Num *result, int try_floating_point)
@@ -656,9 +659,21 @@ bf_random(Var arglist, Byte next, void *vdata, Objid progr)
     if (maxnum <= 0 || maxnum < minnum || minnum > maxnum)
         	return make_error_pack(E_INVARG);
 
-    uniform_int_distribution<Num> distribution(minnum, maxnum);
-    auto r = Var::new_int(distribution(random_generator));
+    std::uniform_int_distribution<Num> distribution(minnum, maxnum);
+    Var r = Var::new_int(distribution(rng));
     return make_var_pack(r);
+}
+
+static package
+bf_reseed_random(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    if (!is_wizard(progr))
+        return make_error_pack(E_PERM);
+
+    reseed_rng();
+    return no_var_pack();
 }
 
 #define TRY_STREAM enable_stream_exceptions()
@@ -747,12 +762,15 @@ register_numbers(void)
     zero.type = TYPE_INT;
     zero.v.num = 0;
 
+    reseed_rng();
+
     register_function("toint", 1, 1, bf_toint, TYPE_ANY);
     register_function("tofloat", 1, 1, bf_tofloat, TYPE_ANY);
     register_function("min", 1, -1, bf_min, TYPE_NUMERIC);
     register_function("max", 1, -1, bf_max, TYPE_NUMERIC);
     register_function("abs", 1, 1, bf_abs, TYPE_NUMERIC);
     register_function("random", 0, 2, bf_random, TYPE_INT, TYPE_INT);
+    register_function("reseed_random", 0, 0, bf_reseed_random);
     register_function("random_bytes", 1, 1, bf_random_bytes, TYPE_INT);
     register_function("time", 0, 0, bf_time);
     register_function("ctime", 0, 1, bf_ctime, TYPE_INT);
