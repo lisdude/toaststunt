@@ -136,7 +136,8 @@ brew install autoconf pcre aspell nettle
 make
 ```
 
-### **Notes**
+## **Notes**
+### Argon2
 Many distributions do not include [Libargon2](https://github.com/P-H-C/phc-winner-argon2) which is required for Argon2id password hashing. As such, it has been included as a Git submodule in this repository. To build it yourself, follow these steps:
 
 1. Inside of the ToastStunt repository, checkout all available submodules: `git submodule update --init`
@@ -146,6 +147,11 @@ Many distributions do not include [Libargon2](https://github.com/P-H-C/phc-winne
 
 **NOTE**: macOS users should instead use `make install PREFIX=/usr/local` in step 4.
 
+### Stuck seeding from /dev/random
+It can take some time to seed if your system is low on entropy. If you find startup hangs here, there are a couple of options:
+
+1. Install `haveged` to generate entropy.
+2. Edit `options.h` and change the value of MINIMUM_SEED_ENTROPY to something smaller, like 20.
 ## Support and Development
 
 Realtime support and collaborative discussion for ToastStunt primarily takes place on the 'toaststunt' channel on ChatMUD. Barring this, the [Miriani Message Boards](https://board.toastsoft.net/) are another good resource for assistance.
