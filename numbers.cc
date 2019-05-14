@@ -20,6 +20,8 @@
 #include <errno.h>
 #include <float.h>
 #include <random>
+#include <algorithm>
+#include <functional>
 #include "my-math.h"
 #include "my-stdlib.h"
 #include "my-string.h"
