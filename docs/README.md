@@ -55,7 +55,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 
 - Profiling
     - finished_tasks() (returns a list of the last X tasks to finish executing, including their total execution time) [see options.h below]
-    - Set a maximum lag threshold (can be overridden with $server_options.task_lag_threshold) that, when exceeded, will make a note in the server log and call #0:handle_lagging_task with arguments: {object, verb, callers, execution time}
+    - Set a maximum lag threshold (can be overridden with $server_options.task_lag_threshold) that, when exceeded, will make a note in the server log and call #0:handle_lagging_task with arguments: {callers, execution time}
 
 - Options.h configuration:
     - LOG_CODE_CHANGES (causes .program and set_verb_code to add a line to the server log indicating the object, verb, and programmer)
