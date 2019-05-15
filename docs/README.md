@@ -83,6 +83,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - locations (recursive location function)
     - clear_ancestor_cache (clears the ancestor cache manually)
     - chr (return extended ASCII characters; characters that can corrupt your database are considered invalid)
+    - reseed_random (reseed the random number generator)
 
 - Miscellaneous changes:
     - Numeric IP addresses in connection_name
