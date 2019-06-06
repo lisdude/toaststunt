@@ -161,7 +161,7 @@ It can take some time to seed if your system is low on entropy. If you find star
 2. Edit `options.h` and change the value of MINIMUM_SEED_ENTROPY to something smaller, like 20.
 
 ### Login screen not showing
-Due to the way proxy detection works, if you're connecting to your MOO from localhost, you won't see the login screen. This is a minor inconvenient and shouldn't affect your ability to actually use your MOO. However, if it bothers you, you can disable HAProxy rewriting:
+Due to the way proxy detection works, if you're connecting to your MOO from localhost, you won't see the login screen. This is a minor inconvenience and shouldn't affect your ability to actually use your MOO. However, if it bothers you, you can disable HAProxy rewriting:
 
 1. `@prop $server_options.proxy_rewrite 0`
 2. `;load_server_options()`
