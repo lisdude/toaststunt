@@ -16,21 +16,13 @@
 CC = @CC@
 CXX = @CXX@
 CCAS = @CCAS@
-LDFLAGS=@LDFLAGS@
+LDFLAGS=@LDFLAGS@ -z noexecstack
 LIBRARIES = @LIBS@
 ELIBS=@ELIBS@
 YACC = @YACC@
 
 CFLAGS = -Wall -march=native -O3 -Wno-sign-compare -Wno-switch @CFLAGS@
-#CFLAGS = -g -Wall -march=native -O3 -ggdb
-CXXFLAGS = $(CFLAGS) @CXXFLAGS@
-# If you're using GCC, you may prefer:
-# CFLAGS = -O2 -finline-functions
-#
-# If you're not using GCC, and your compiler doesn't understand the
-# inline keyword, use the following.  (This will be fixed in autoconf2
-# upgrade).
-# CFLAGS = -O2 -Dinline=
+CXXFLAGS = $(CFLAGS) @CXXFLAGS@ -std=c++11
 
 MI_OPTS = --fill-column 79 --no-split
 
