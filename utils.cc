@@ -374,11 +374,21 @@ var_refcount(Var v)
 int
 is_true(Var v)
 {
-    return ((v.type == TYPE_INT && v.v.num != 0)
-	    || (v.type == TYPE_FLOAT && v.v.fnum != 0.0)
-	    || (v.type == TYPE_STR && v.v.str && *v.v.str != '\0')
-	    || (v.type == TYPE_LIST && v.v.list[0].v.num != 0)
-	    || (v.type == TYPE_MAP && !mapempty(v)));
+    switch(v.type)
+    {
+        case TYPE_INT:
+            return v.v.num != 0;
+        case TYPE_FLOAT:
+            return v.v.fnum != 0.0;
+        case TYPE_STR:
+            return v.v.str && *v.v.str != '\0';
+        case TYPE_LIST:
+            return v.v.list[0].v.num != 0;
+        case TYPE_MAP:
+            return !mapempty(v);
+        default:
+            return 0;
+    }
 }
 
 /* What is the sound of the comparison:
