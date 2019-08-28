@@ -3255,16 +3255,16 @@ bf_suspend(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_yield_if_needed(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    static double seconds, *secondsp = NULL;
+    static double seconds = 0.0, *secondsp = NULL;
     int min_ticks, min_seconds;
     int nargs = arglist.v.list[0].v.num;
 
-    if (nargs >= 1) {
+    if (nargs >= 1)
         seconds = arglist.v.list[1].type == TYPE_INT ?
             arglist.v.list[1].v.num :
             arglist.v.list[1].v.fnum;
-        secondsp = &seconds;
-    }
+
+    secondsp = &seconds;
 
     min_ticks = (nargs >= 2 ? arglist.v.list[2].v.num : 2000);
     min_seconds = (nargs >= 3 ? arglist.v.list[3].v.num : 2);
@@ -3272,8 +3272,8 @@ bf_yield_if_needed(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     if (nargs >= 1 && (seconds < 0 || min_ticks <= 0 || min_seconds <= 0
-                    || min_ticks >= server_int_option("fg_ticks", DEFAULT_FG_TICKS)
-                    || min_seconds >= server_int_option("fg_seconds", DEFAULT_FG_SECONDS)))
+                || min_ticks >= server_int_option("fg_ticks", DEFAULT_FG_TICKS)
+                || min_seconds >= server_int_option("fg_seconds", DEFAULT_FG_SECONDS)))
         return make_error_pack(E_INVARG);
     else if (ticks_remaining <= min_ticks || timer_wakeup_interval(task_alarm_id) <= min_seconds)
         return make_suspend_pack(enqueue_suspended_task, secondsp);
