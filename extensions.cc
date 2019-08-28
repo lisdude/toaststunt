@@ -76,16 +76,12 @@ bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 /* Locate an object in the database by name more quickly than is possible in-DB. */
-    static package
-bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
+void locate_by_name_thread_callback(void *bw, Var *ret)
 {
-    if (!is_wizard(progr))
-    {
-        free_var(arglist);
-        return make_error_pack(E_PERM);
-    }
+    Var arglist = ((background_waiter*)bw)->data;
 
-    Var ret = new_list(0), name, object;
+    *ret = new_list(0);
+    Var name, object;
     object.type = TYPE_OBJ;
 
     int case_matters = is_true(arglist.v.list[2]);
@@ -99,12 +95,25 @@ bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
         object.v.obj = x;
         db_find_property(object, "name", &name);
         if (strindex(name.v.str, memo_strlen(name.v.str), arglist.v.list[1].v.str, string_length, case_matters))
-            ret = listappend(ret, object);
+            *ret = listappend(*ret, object);
+    }
+}
+
+    static package
+bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (!is_wizard(progr))
+    {
+        free_var(arglist);
+        return make_error_pack(E_PERM);
     }
 
-    free_var(arglist);
-    return make_var_pack(ret);
+    char *human_string = 0;
+    asprintf(&human_string, "locate_by_name: \"%s\"", arglist.v.list[1].v.str);
+
+    return background_thread(locate_by_name_thread_callback, &arglist, human_string);
 }
+
 
 /* Calculates the distance between two n-dimensional sets of coordinates. */
     static package
