@@ -18,6 +18,7 @@
 #include <mach/mach.h>
 #include <sys/sysctl.h>
 #endif
+#include <vector>
 
 /**
  * On FreeBSD, CLOCK_MONOTONIC_RAW is simply CLOCK_MONOTONIC
@@ -75,14 +76,16 @@ bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-/* Locate an object in the database by name more quickly than is possible in-DB. */
+/* Locate an object in the database by name more quickly than is possible in-DB.
+ * To avoid numerous list reallocations, we put everything in a vector and then
+ * transfer it over to a list when we know how many values we have. */
 void locate_by_name_thread_callback(void *bw, Var *ret)
 {
     Var arglist = ((background_waiter*)bw)->data;
 
-    *ret = new_list(0);
     Var name, object;
     object.type = TYPE_OBJ;
+    std::vector<int> tmp;
 
     int case_matters = is_true(arglist.v.list[2]);
     int string_length = memo_strlen(arglist.v.list[1].v.str);
@@ -95,7 +98,13 @@ void locate_by_name_thread_callback(void *bw, Var *ret)
         object.v.obj = x;
         db_find_property(object, "name", &name);
         if (strindex(name.v.str, memo_strlen(name.v.str), arglist.v.list[1].v.str, string_length, case_matters))
-            *ret = listappend(*ret, object);
+            tmp.push_back(x);
+    }
+
+    *ret = new_list(tmp.size());
+    for (size_t x = 0; x < tmp.size(); x++) {
+        ret->v.list[x+1].type = TYPE_OBJ;
+        ret->v.list[x+1].v.obj = tmp[x];
     }
 }
 
