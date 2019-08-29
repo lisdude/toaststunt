@@ -205,7 +205,7 @@ void sort_callback(void *bw, Var *ret)
         if (type == TYPE_LIST || type == TYPE_MAP || type == TYPE_ANON || type == TYPE_WAIF || type != type_to_sort)
         {
             ret->type = TYPE_ERR;
-            ret->v.err = E_INVARG;
+            ret->v.err = E_TYPE;
             return;
         }
         s[count-1] = count;
