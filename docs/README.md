@@ -31,7 +31,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 
 - Basic threading support:
     - background.cc (a library, of sorts, to make it easier to thread builtins)
-    - Threaded sqlite_query and sqlite_execute functions
+    - Threaded builtins: sqlite_query, sqlite_execute, locate_by_name, sort
 
 - FileIO improvements:
     - Faster reading
@@ -84,6 +84,8 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - clear_ancestor_cache (clears the ancestor cache manually)
     - chr (return extended ASCII characters; characters that can corrupt your database are considered invalid)
     - reseed_random (reseed the random number generator)
+    - yin (yield if needed. Replicates :suspend_if_needed and ticks_left() checks)
+    - sort (a significantly faster replacement for the :sort verb. Also allows for natural sort order and reverse sorting)
 
 - Miscellaneous changes:
     - Numeric IP addresses in connection_name
