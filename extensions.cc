@@ -19,6 +19,7 @@
 #include <sys/sysctl.h>
 #endif
 #include <vector>
+#include <algorithm>        // std::sort
 
 /**
  * On FreeBSD, CLOCK_MONOTONIC_RAW is simply CLOCK_MONOTONIC
@@ -123,6 +124,56 @@ bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
     return background_thread(locate_by_name_thread_callback, &arglist, human_string);
 }
 
+int compare_vars(const void *a, const void *b)
+{
+    Var lhs = *(Var*)a;
+    Var rhs = *(Var*)b;
+
+    if (rhs.type != lhs.type)
+        return 0;
+
+    switch (rhs.type) {
+        case TYPE_INT:
+            return lhs.v.num > rhs.v.num ? 1 : -1;
+        case TYPE_FLOAT:
+            return lhs.v.fnum > rhs.v.fnum ? 1 : -1;
+        case TYPE_OBJ:
+            return lhs.v.obj > rhs.v.obj ? 1 : -1;
+        case TYPE_ERR:
+            return ((int) lhs.v.err) > ((int) rhs.v.err) ? 1 : -1;
+        case TYPE_STR:
+            return strcasecmp(lhs.v.str, rhs.v.str) > 0 ? 1 : -1;
+        default:
+            errlog("Unknown type in sort compare: %d\n", rhs.type);
+            return 0;
+    }
+}
+
+/* Sort values in descending order.
+ * NOTE: If disparate types are combined, they will be considered
+ *       equal rather than an error for performance reasons. It's
+ *       up to the programmer to use correct types. */
+void qsort_callback(void *bw, Var *ret)
+{
+    Var arglist = ((background_waiter*)bw)->data;
+
+    if (arglist.v.list[1].v.list[0].v.num == 0)
+        return;
+
+    *ret = var_dup(arglist.v.list[1]);
+
+    qsort(ret->v.list+1, ret->v.list[0].v.num, sizeof(Var), compare_vars);
+
+}
+
+    static package
+bf_qsort(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    char *human_string = 0;
+    asprintf(&human_string, "qsorting %" PRIdN " element list", arglist.v.list[1].v.list[0].v.num);
+
+    return background_thread(qsort_callback, &arglist, human_string);
+}
 
 /* Calculates the distance between two n-dimensional sets of coordinates. */
     static package
@@ -672,6 +723,7 @@ register_extensions()
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
     register_function("chr", 1, 1, bf_chr, TYPE_INT);
+    register_function("qsort", 1, 1, bf_qsort, TYPE_LIST);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
