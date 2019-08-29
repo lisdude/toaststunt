@@ -39,7 +39,7 @@ CSRCS = http_parser.c regexpr.c thpool.c \
  yajl/yajl_encode.c yajl/yajl_gen.c yajl/yajl_lex.c \
  yajl/yajl_parser.c yajl/yajl_version.c \
  crypt/crypt_blowfish.c crypt/crypt_gensalt.c \
- sosemanuk.c linenoise.c pcrs.c
+ sosemanuk.c linenoise.c pcrs.c dependencies/strnatcmp.c
 
 CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
 	db_file.cc db_io.cc db_objects.cc db_properties.cc \
@@ -80,7 +80,7 @@ HDRS = ast.h base64.h bf_register.h code_gen.h collection.h crypto.h \
 	yajl/yajl_version.h fileio.h system.h \
 	sosemanuk.h linenoise.h \
 	extension-sqlite.h extension-background.h waif.h \
-	extension-simplexnoise.h
+	extension-simplexnoise.h dependencies/strnatcmp.h
 
 SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
 	my-poll.h my-signal.h my-socket.h my-stat.h my-stdarg.h my-stdio.h \
@@ -293,6 +293,7 @@ crypt_gensalt.o: crypt/crypt_gensalt.c crypt/crypt_gensalt.h
 sosemanuk.o: sosemanuk.c sosemanuk.h
 linenoise.o: linenoise.c linenoise.h
 pcrs.o: pcrs.c my-ctype.h config.h options.h pcrs.h
+strnatcmp.o: dependencies/strnatcmp.c dependencies/strnatcmp.h
 ast.o: ast.cc my-string.h config.h options.h ast.h parser.h program.h \
  structures.h my-stdio.h storage.h version.h sym_table.h list.h streams.h \
  log.h utils.h execute.h db.h opcode.h parse_cmd.h
@@ -361,7 +362,8 @@ extensions.o: extensions.cc functions.h my-stdio.h config.h options.h \
  execute.h db.h program.h structures.h storage.h my-string.h version.h \
  opcode.h parse_cmd.h log.h utils.h streams.h numbers.h sosemanuk.h \
  list.h my-stdlib.h random.h server.h network.h extension-background.h \
- bf_register.h my-unistd.h tasks.h net_multi.h thpool.h
+ bf_register.h my-unistd.h tasks.h net_multi.h thpool.h \
+ dependencies/strnatcmp.c dependencies/strnatcmp.h
 fileio.o: fileio.cc my-stat.h config.h options.h my-unistd.h my-ctype.h \
  my-string.h structures.h my-stdio.h storage.h bf_register.h functions.h \
  execute.h db.h program.h version.h opcode.h parse_cmd.h list.h streams.h \
@@ -508,10 +510,10 @@ extension-simplexnoise.o: extension-simplexnoise.cc bf_register.h \
 extension-argon2.o: extension-argon2.cc options.h config.h functions.h \
  my-stdio.h execute.h db.h program.h structures.h storage.h my-string.h \
  version.h opcode.h parse_cmd.h utils.h streams.h log.h
-extension-spellcheck.o: extension-spellcheck.cc bf_register.h functions.h \
- my-stdio.h config.h options.h execute.h db.h program.h structures.h \
- storage.h my-string.h version.h opcode.h parse_cmd.h log.h utils.h \
- streams.h list.h
+extension-spellcheck.o: extension-spellcheck.cc options.h config.h \
+ bf_register.h functions.h my-stdio.h execute.h db.h program.h \
+ structures.h storage.h my-string.h version.h opcode.h parse_cmd.h log.h \
+ utils.h streams.h list.h
 net_single.o: net_single.cc my-ctype.h config.h options.h my-fcntl.h \
  my-stdio.h my-unistd.h log.h structures.h storage.h my-string.h \
  network.h server.h streams.h db.h program.h version.h utils.h execute.h \
@@ -526,6 +528,8 @@ net_mp_selct.o: net_mp_selct.cc my-string.h config.h options.h \
  net_mplex.h
 net_mp_poll.o: net_mp_poll.cc my-poll.h config.h options.h log.h \
  my-stdio.h structures.h storage.h my-string.h net_mplex.h
+net_mp_fake.o: net_mp_fake.cc my-types.h config.h options.h my-stat.h \
+ my-unistd.h net_mplex.h storage.h my-string.h
 net_tcp.o: net_tcp.cc
 net_bsd_tcp.o: net_bsd_tcp.cc my-inet.h config.h options.h my-in.h \
  my-types.h my-socket.h my-stdlib.h my-string.h my-unistd.h list.h \

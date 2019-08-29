@@ -20,6 +20,7 @@
 #endif
 #include <vector>
 #include <algorithm>        // std::sort
+#include "dependencies/strnatcmp.c" // natural sorting
 
 /**
  * On FreeBSD, CLOCK_MONOTONIC_RAW is simply CLOCK_MONOTONIC
@@ -178,8 +179,9 @@ bf_qsort(Var arglist, Byte next, void *vdata, Objid progr)
 void sort_callback(void *bw, Var *ret)
 {
     Var arglist = ((background_waiter*)bw)->data;
-    // Conveniently, the list we want to sort is also the number of arguments.
-    int list_to_sort = arglist.v.list[0].v.num;
+    int nargs = arglist.v.list[0].v.num;
+    int list_to_sort = (nargs >= 2 && arglist.v.list[2].v.list[0].v.num > 0 ? 2 : 1);
+    bool natural = (nargs >= 3 && is_true(arglist.v.list[3]));
 
     if (arglist.v.list[list_to_sort].v.list[0].v.num == 0)
         return;
@@ -206,7 +208,7 @@ void sort_callback(void *bw, Var *ret)
     }
 
     struct VarCompare {
-        VarCompare(const Var *Arglist) : m_Arglist(Arglist) {}
+        VarCompare(const Var *Arglist, const bool Natural) : m_Arglist(Arglist), m_Natural(Natural) {}
 
         bool operator()(size_t a, size_t b) const
         {
@@ -223,16 +225,17 @@ void sort_callback(void *bw, Var *ret)
                 case TYPE_ERR:
                     return ((int) lhs.v.err) < ((int) rhs.v.err);
                 case TYPE_STR:
-                    return strcasecmp(lhs.v.str, rhs.v.str) < 0;
+                    return (m_Natural ? strnatcasecmp(lhs.v.str, rhs.v.str) : strcasecmp(lhs.v.str, rhs.v.str)) < 0;
                 default:
                     errlog("Unknown type in sort compare: %d\n", rhs.type);
                     return 0;
             }
         }
         const Var *m_Arglist;
+        const bool m_Natural;
     };
 
-    std::sort(s.begin(), s.end(), VarCompare(arglist.v.list[list_to_sort].v.list));
+    std::sort(s.begin(), s.end(), VarCompare(arglist.v.list[list_to_sort].v.list, natural));
 
     *ret = new_list(s.size());
     for (size_t x = 0; x < s.size(); x++)
@@ -797,7 +800,7 @@ register_extensions()
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
     register_function("chr", 1, 1, bf_chr, TYPE_INT);
     register_function("qsort", 1, 1, bf_qsort, TYPE_LIST);
-    register_function("sort", 1, 2, bf_sort, TYPE_LIST, TYPE_LIST);
+    register_function("sort", 1, 3, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_INT);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
