@@ -158,8 +158,10 @@ void qsort_callback(void *bw, Var *ret)
 {
     Var arglist = ((background_waiter*)bw)->data;
 
-    if (arglist.v.list[1].v.list[0].v.num == 0)
+    if (arglist.v.list[1].v.list[0].v.num == 0) {
+        *ret = new_list(0);
         return;
+    }
 
     *ret = var_dup(arglist.v.list[1]);
 
