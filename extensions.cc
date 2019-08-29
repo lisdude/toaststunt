@@ -182,6 +182,7 @@ void sort_callback(void *bw, Var *ret)
     int nargs = arglist.v.list[0].v.num;
     int list_to_sort = (nargs >= 2 && arglist.v.list[2].v.list[0].v.num > 0 ? 2 : 1);
     bool natural = (nargs >= 3 && is_true(arglist.v.list[3]));
+    bool reverse = (nargs >= 4 && is_true(arglist.v.list[4]));
 
     if (arglist.v.list[list_to_sort].v.list[0].v.num == 0)
         return;
@@ -208,34 +209,43 @@ void sort_callback(void *bw, Var *ret)
     }
 
     struct VarCompare {
-        VarCompare(const Var *Arglist, const bool Natural) : m_Arglist(Arglist), m_Natural(Natural) {}
+        VarCompare(const Var *Arglist, const bool Natural, const bool Reverse) : m_Arglist(Arglist), m_Natural(Natural), m_Reverse(Reverse) {}
 
         bool operator()(size_t a, size_t b) const
         {
             Var lhs = m_Arglist[a];
             Var rhs = m_Arglist[b];
+            int result = 0;
 
             switch (rhs.type) {
                 case TYPE_INT:
-                    return lhs.v.num < rhs.v.num;
+                    result = lhs.v.num < rhs.v.num;
+                    break;
                 case TYPE_FLOAT:
-                    return lhs.v.fnum < rhs.v.fnum;
+                    result = lhs.v.fnum < rhs.v.fnum;
+                    break;
                 case TYPE_OBJ:
-                    return lhs.v.obj < rhs.v.obj;
+                    result = lhs.v.obj < rhs.v.obj;
+                    break;
                 case TYPE_ERR:
-                    return ((int) lhs.v.err) < ((int) rhs.v.err);
+                    result = ((int) lhs.v.err) < ((int) rhs.v.err);
+                    break;
                 case TYPE_STR:
-                    return (m_Natural ? strnatcasecmp(lhs.v.str, rhs.v.str) : strcasecmp(lhs.v.str, rhs.v.str)) < 0;
+                    result = (m_Natural ? strnatcasecmp(lhs.v.str, rhs.v.str) : strcasecmp(lhs.v.str, rhs.v.str)) < 0;
+                    break;
                 default:
                     errlog("Unknown type in sort compare: %d\n", rhs.type);
-                    return 0;
+                    result = 0;
+                    break;
             }
+            return m_Reverse ? !result : result;
         }
         const Var *m_Arglist;
         const bool m_Natural;
+        const bool m_Reverse;
     };
 
-    std::sort(s.begin(), s.end(), VarCompare(arglist.v.list[list_to_sort].v.list, natural));
+    std::sort(s.begin(), s.end(), VarCompare(arglist.v.list[list_to_sort].v.list, natural, reverse));
 
     *ret = new_list(s.size());
     for (size_t x = 0; x < s.size(); x++)
@@ -800,7 +810,7 @@ register_extensions()
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
     register_function("chr", 1, 1, bf_chr, TYPE_INT);
     register_function("qsort", 1, 1, bf_qsort, TYPE_LIST);
-    register_function("sort", 1, 3, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_INT);
+    register_function("sort", 1, 4, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_INT, TYPE_INT);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
