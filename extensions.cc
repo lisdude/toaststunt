@@ -175,6 +175,79 @@ bf_qsort(Var arglist, Byte next, void *vdata, Objid progr)
     return background_thread(qsort_callback, &arglist, human_string);
 }
 
+void sort_callback(void *bw, Var *ret)
+{
+    Var arglist = ((background_waiter*)bw)->data;
+    // Conveniently, the list we want to sort is also the number of arguments.
+    int list_to_sort = arglist.v.list[0].v.num;
+
+    if (arglist.v.list[list_to_sort].v.list[0].v.num == 0)
+        return;
+    else if (list_to_sort == 2 && arglist.v.list[1].v.list[0].v.num != arglist.v.list[2].v.list[0].v.num) {
+        ret->type = TYPE_ERR;
+        ret->v.err = E_INVARG;
+        return;
+    }
+
+    // A vector of indices
+    std::vector<size_t> s(arglist.v.list[list_to_sort].v.list[0].v.num);
+    var_type type_to_sort = arglist.v.list[list_to_sort].v.list[1].type;
+
+    for (int count = 1; count <= arglist.v.list[list_to_sort].v.list[0].v.num; count++)
+    {
+        var_type type = arglist.v.list[list_to_sort].v.list[count].type;
+        if (type == TYPE_LIST || type == TYPE_MAP || type == TYPE_ANON || type == TYPE_WAIF || type != type_to_sort)
+        {
+            ret->type = TYPE_ERR;
+            ret->v.err = E_INVARG;
+            return;
+        }
+        s[count-1] = count;
+    }
+
+    struct VarCompare {
+        VarCompare(const Var *Arglist) : m_Arglist(Arglist) {}
+
+        bool operator()(size_t a, size_t b) const
+        {
+            Var lhs = m_Arglist[a];
+            Var rhs = m_Arglist[b];
+
+            switch (rhs.type) {
+                case TYPE_INT:
+                    return lhs.v.num < rhs.v.num;
+                case TYPE_FLOAT:
+                    return lhs.v.fnum < rhs.v.fnum;
+                case TYPE_OBJ:
+                    return lhs.v.obj < rhs.v.obj;
+                case TYPE_ERR:
+                    return ((int) lhs.v.err) < ((int) rhs.v.err);
+                case TYPE_STR:
+                    return strcasecmp(lhs.v.str, rhs.v.str) < 0;
+                default:
+                    errlog("Unknown type in sort compare: %d\n", rhs.type);
+                    return 0;
+            }
+        }
+        const Var *m_Arglist;
+    };
+
+    std::sort(s.begin(), s.end(), VarCompare(arglist.v.list[list_to_sort].v.list));
+
+    *ret = new_list(s.size());
+    for (size_t x = 0; x < s.size(); x++)
+        ret->v.list[x+1] = var_dup(arglist.v.list[1].v.list[s[x]]);
+}
+
+    static package
+bf_sort(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    char *human_string = 0;
+    asprintf(&human_string, "sorting %" PRIdN " element list", arglist.v.list[1].v.list[0].v.num);
+
+    return background_thread(sort_callback, &arglist, human_string);
+}
+
 /* Calculates the distance between two n-dimensional sets of coordinates. */
     static package
 bf_distance(Var arglist, Byte next, void *vdata, Objid progr)
@@ -724,6 +797,7 @@ register_extensions()
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
     register_function("chr", 1, 1, bf_chr, TYPE_INT);
     register_function("qsort", 1, 1, bf_qsort, TYPE_LIST);
+    register_function("sort", 1, 2, bf_sort, TYPE_LIST, TYPE_LIST);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
