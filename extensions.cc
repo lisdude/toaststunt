@@ -184,9 +184,10 @@ void sort_callback(void *bw, Var *ret)
     bool natural = (nargs >= 3 && is_true(arglist.v.list[3]));
     bool reverse = (nargs >= 4 && is_true(arglist.v.list[4]));
 
-    if (arglist.v.list[list_to_sort].v.list[0].v.num == 0)
+    if (arglist.v.list[list_to_sort].v.list[0].v.num == 0) {
+        *ret = new_list(0);
         return;
-    else if (list_to_sort == 2 && arglist.v.list[1].v.list[0].v.num != arglist.v.list[2].v.list[0].v.num) {
+    } else if (list_to_sort == 2 && arglist.v.list[1].v.list[0].v.num != arglist.v.list[2].v.list[0].v.num) {
         ret->type = TYPE_ERR;
         ret->v.err = E_INVARG;
         return;
