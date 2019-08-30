@@ -150,7 +150,7 @@ int compare_vars(const void *a, const void *b)
     }
 }
 
-/* Sort values in descending order.
+/* Sort values in descending order using quicksort.
  * NOTE: If disparate types are combined, they will be considered
  *       equal rather than an error for performance reasons. It's
  *       up to the programmer to use correct types. */
@@ -178,6 +178,8 @@ bf_qsort(Var arglist, Byte next, void *vdata, Objid progr)
     return background_thread(qsort_callback, &arglist, human_string);
 }
 
+/* Sorts various MOO types using std::sort.
+ * Args: LIST <values to sort>, [LIST <values to sort by>], [INT <natural sort ordering?>], [INT <reverse?>] */
 void sort_callback(void *bw, Var *ret)
 {
     Var arglist = ((background_waiter*)bw)->data;
@@ -195,7 +197,7 @@ void sort_callback(void *bw, Var *ret)
         return;
     }
 
-    // A vector of indices
+    // Create and sort a vector of indices rather than values. This makes it easier to sort a list by another list.
     std::vector<size_t> s(arglist.v.list[list_to_sort].v.list[0].v.num);
     var_type type_to_sort = arglist.v.list[list_to_sort].v.list[1].type;
 
@@ -212,51 +214,46 @@ void sort_callback(void *bw, Var *ret)
     }
 
     struct VarCompare {
-        VarCompare(const Var *Arglist, const bool Natural, const bool Reverse) : m_Arglist(Arglist), m_Natural(Natural), m_Reverse(Reverse) {}
+        VarCompare(const Var *Arglist, const bool Natural) : m_Arglist(Arglist), m_Natural(Natural) {}
 
         bool operator()(size_t a, size_t b) const
         {
             Var lhs = m_Arglist[a];
             Var rhs = m_Arglist[b];
-            int result = 0;
 
             switch (rhs.type) {
                 case TYPE_INT:
-                    result = lhs.v.num < rhs.v.num;
-                    break;
+                    return lhs.v.num < rhs.v.num;
                 case TYPE_FLOAT:
-                    result = lhs.v.fnum < rhs.v.fnum;
-                    break;
+                    return lhs.v.fnum < rhs.v.fnum;
                 case TYPE_OBJ:
-                    result = lhs.v.obj < rhs.v.obj;
-                    break;
+                    return lhs.v.obj < rhs.v.obj;
                 case TYPE_ERR:
-                    result = ((int) lhs.v.err) < ((int) rhs.v.err);
-                    break;
+                    return ((int) lhs.v.err) < ((int) rhs.v.err);
                 case TYPE_STR:
-                    result = (m_Natural ? strnatcasecmp(lhs.v.str, rhs.v.str) : strcasecmp(lhs.v.str, rhs.v.str));
-                    if (m_Reverse && result == 0)
-                        result = 1;
-                    else
-                        result = result < 0;
-                    break;
+                    return (m_Natural ? strnatcasecmp(lhs.v.str, rhs.v.str) : strcasecmp(lhs.v.str, rhs.v.str)) < 0;
                 default:
                     errlog("Unknown type in sort compare: %d\n", rhs.type);
-                    result = 0;
-                    break;
+                    return 0;
             }
-            return m_Reverse ? !result : result;
         }
         const Var *m_Arglist;
         const bool m_Natural;
-        const bool m_Reverse;
     };
 
-    std::sort(s.begin(), s.end(), VarCompare(arglist.v.list[list_to_sort].v.list, natural, reverse));
+    std::sort(s.begin(), s.end(), VarCompare(arglist.v.list[list_to_sort].v.list, natural));
 
     *ret = new_list(s.size());
-    for (size_t x = 0; x < s.size(); x++)
-        ret->v.list[x+1] = var_dup(arglist.v.list[1].v.list[s[x]]);
+
+    if (reverse)
+    {
+        int moo_list_pos = 0;
+        for (auto it = s.rbegin(); it != s.rend(); ++it)
+            ret->v.list[++moo_list_pos] = var_dup(arglist.v.list[1].v.list[*it]);
+    } else {
+        for (size_t x = 0; x < s.size(); x++)
+            ret->v.list[x+1] = var_dup(arglist.v.list[1].v.list[s[x]]);
+    }
 }
 
     static package
