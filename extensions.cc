@@ -234,7 +234,11 @@ void sort_callback(void *bw, Var *ret)
                     result = ((int) lhs.v.err) < ((int) rhs.v.err);
                     break;
                 case TYPE_STR:
-                    result = (m_Natural ? strnatcasecmp(lhs.v.str, rhs.v.str) : strcasecmp(lhs.v.str, rhs.v.str)) < 0;
+                    result = (m_Natural ? strnatcasecmp(lhs.v.str, rhs.v.str) : strcasecmp(lhs.v.str, rhs.v.str));
+                    if (m_Reverse && result == 0)
+                        result = 1;
+                    else
+                        result = result < 0;
                     break;
                 default:
                     errlog("Unknown type in sort compare: %d\n", rhs.type);
