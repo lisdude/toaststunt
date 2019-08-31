@@ -3278,7 +3278,7 @@ bf_yield_if_needed(Var arglist, Byte next, void *vdata, Objid progr)
                 || min_seconds >= server_int_option("fg_seconds", DEFAULT_FG_SECONDS)))
         return make_error_pack(E_INVARG);
 
-    if (ticks_remaining <= min_ticks || timer_wakeup_interval(task_alarm_id) <= min_seconds)
+    if (ticks_remaining < min_ticks || timer_wakeup_interval(task_alarm_id) < min_seconds)
         return make_suspend_pack(enqueue_suspended_task, secondsp);
     else
         return no_var_pack();
