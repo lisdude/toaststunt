@@ -338,7 +338,8 @@ complex_var_dup(Var v)
 	v.v.waif = dup_waif(v.v.waif);
 	break;
     case TYPE_ANON:
-	panic_moo("cannot var_dup() anonymous objects\n");
+	v = var_ref(v);
+	/* panic_moo("cannot var_dup() anonymous objects\n"); */
 	break;
     }
     return v;
