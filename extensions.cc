@@ -204,7 +204,7 @@ void sort_callback(void *bw, Var *ret)
     for (int count = 1; count <= arglist.v.list[list_to_sort].v.list[0].v.num; count++)
     {
         var_type type = arglist.v.list[list_to_sort].v.list[count].type;
-        if (type == TYPE_LIST || type == TYPE_MAP || type == TYPE_ANON || type == TYPE_WAIF || type != type_to_sort)
+        if (type != type_to_sort || type == TYPE_LIST || type == TYPE_MAP || type == TYPE_ANON || type == TYPE_WAIF)
         {
             ret->type = TYPE_ERR;
             ret->v.err = E_TYPE;
@@ -249,10 +249,10 @@ void sort_callback(void *bw, Var *ret)
     {
         int moo_list_pos = 0;
         for (auto it = s.rbegin(); it != s.rend(); ++it)
-            ret->v.list[++moo_list_pos] = var_dup(arglist.v.list[1].v.list[*it]);
+            ret->v.list[++moo_list_pos] = var_ref(arglist.v.list[1].v.list[*it]);
     } else {
         for (size_t x = 0; x < s.size(); x++)
-            ret->v.list[x+1] = var_dup(arglist.v.list[1].v.list[s[x]]);
+            ret->v.list[x+1] = var_ref(arglist.v.list[1].v.list[s[x]]);
     }
 }
 
