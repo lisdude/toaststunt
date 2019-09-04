@@ -334,12 +334,11 @@ complex_var_dup(Var v)
     case TYPE_ITER:
 	v = iter_dup(v);
 	break;
-	case TYPE_WAIF:
-	v.v.waif = dup_waif(v.v.waif);
+    case TYPE_WAIF:
+	v = var_ref(v);
 	break;
     case TYPE_ANON:
 	v = var_ref(v);
-	/* panic_moo("cannot var_dup() anonymous objects\n"); */
 	break;
     }
     return v;
