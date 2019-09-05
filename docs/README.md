@@ -141,6 +141,7 @@ Follow the instructions in the notes section below to compile and install Argon2
 
 ```bash
 brew install autoconf pcre aspell nettle
+autoconf
 ./configure
 make
 ```
