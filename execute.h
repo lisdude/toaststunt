@@ -58,6 +58,7 @@ typedef struct {
     const char *verb;
     const char *verbname;
     int debug;
+    bool threaded;
 } activation;
 
 extern void free_activation(activation *, char data_too);
@@ -72,7 +73,6 @@ typedef struct {
     /* root_activ_vector == MAIN_VECTOR
        means root activation is main_vector */
     unsigned func_id;
-    bool threading_active;
 } vmstruct;
 
 typedef vmstruct *vm;
@@ -132,5 +132,8 @@ Var *reorder_rt_env(Var * old_rt_env, const char **old_names,
 extern void free_reordered_rt_env_values(void);
 extern void write_activ(activation a);
 extern int read_activ(activation * a, int which_vector);
+
+extern bool get_thread_mode();
+extern void set_thread_mode(bool mode);
 
 #endif

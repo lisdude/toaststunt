@@ -80,7 +80,7 @@ typedef enum {
                  */
     DBV_Last_Move,      /* Addition of the 'last_move' built-in property
                  */
-    DBV_TaskThreaded,   /* Keep track of whether threading is enabled in the task.
+    DBV_Threaded,       /* Store threading information
                  */
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;

@@ -215,7 +215,7 @@ error_backtrace_list(const char *msg)
 static enum error
 suspend_task(package p)
 {
-    vm the_vm = new_vm(current_task_id, var_ref(current_local), top_activ_stack + 1, threading_active);
+    vm the_vm = new_vm(current_task_id, var_ref(current_local), top_activ_stack + 1);
     unsigned int i;
     enum error e;
 
@@ -702,6 +702,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
     RUN_ACTIV.verb = str_ref(vname);
     RUN_ACTIV.verbname = str_ref(db_verb_names(h));
     RUN_ACTIV.debug = (db_verb_flags(h) & VF_DEBUG);
+    RUN_ACTIV.threaded = true;
 
     alloc_rt_stack(&RUN_ACTIV, program->main_vector.max_stack);
     RUN_ACTIV.pc = 0;
@@ -3029,6 +3030,7 @@ do_server_program_task(Var _this, const char *verb, Var args, Var vloc,
     RUN_ACTIV.verb = str_dup(verb);
     RUN_ACTIV.verbname = str_dup(verbname);
     RUN_ACTIV.debug = debug;
+    RUN_ACTIV.threaded = true;
     fill_in_rt_consts(env, program->version);
     set_rt_env_obj(env, SLOT_PLAYER, player);
     set_rt_env_obj(env, SLOT_CALLER, -1);
@@ -3063,6 +3065,7 @@ do_input_task(Objid user, Parsed_Command * pc, Objid recv, db_verb_handle vh)
     RUN_ACTIV.verb = str_ref(pc->verb);
     RUN_ACTIV.verbname = str_ref(db_verb_names(vh));
     RUN_ACTIV.debug = (db_verb_flags(vh) & VF_DEBUG);
+    RUN_ACTIV.threaded = true;
     fill_in_rt_consts(env, prog->version);
     set_rt_env_obj(env, SLOT_PLAYER, user);
     set_rt_env_obj(env, SLOT_CALLER, user);
@@ -3124,6 +3127,7 @@ setup_activ_for_eval(Program * prog)
     RUN_ACTIV.verb = str_dup("");
     RUN_ACTIV.verbname = str_dup("Input to EVAL");
     RUN_ACTIV.debug = 1;
+    RUN_ACTIV.threaded = true;
     alloc_rt_stack(&RUN_ACTIV, RUN_ACTIV.prog->main_vector.max_stack);
     RUN_ACTIV.pc = 0;
     RUN_ACTIV.error_pc = 0;
@@ -3523,6 +3527,7 @@ write_activ_as_pi(activation a)
 
     dbio_write_var(a._this);
     dbio_write_var(a.vloc);
+    dbio_write_num(a.threaded); // Apparently adding things to the beginning is easier for backward compatibility...
     dbio_printf("%" PRIdN " -7 -8 %" PRIdN " -9 %" PRIdN " %" PRIdN " -10 %d\n", a.recv, a.player, a.progr, a.vloc, a.debug);
     dbio_write_string("No");
     dbio_write_string("More");
@@ -3542,9 +3547,13 @@ read_activ_as_pi(activation * a)
 
     Var _this, vloc;
     if (dbio_input_version >= DBV_This)
-	_this = dbio_read_var();
+        _this = dbio_read_var();
     if (dbio_input_version >= DBV_Anon)
-	vloc = dbio_read_var();
+        vloc = dbio_read_var();
+    if (dbio_input_version >= DBV_Threaded)
+        a->threaded = dbio_read_num();
+    else
+        a->threaded = true;
 
     /* I use a `dummy' variable here and elsewhere instead of the `*'
      * assignment-suppression syntax of `scanf' because it allows more
@@ -3788,4 +3797,14 @@ read_activ(activation * a, int which_vector)
 	}
     }
     return 1;
+}
+
+bool get_thread_mode()
+{
+    return RUN_ACTIV.threaded;
+}
+
+void set_thread_mode(bool mode)
+{
+    RUN_ACTIV.threaded = mode;
 }

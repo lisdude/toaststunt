@@ -239,7 +239,6 @@ static ext_queue *external_queues = 0;
 #ifdef SAVE_FINISHED_TASKS
 Var finished_tasks = new_list(0);
 #endif
-bool threading_active;
 
 /*
  * Forward declarations for functions that operate on external queues.
@@ -1320,6 +1319,7 @@ enqueue_forked_task2(activation a, int f_index, double after_seconds, int vid)
     a.verb = str_ref(a.verb);
     a.verbname = str_ref(a.verbname);
     a.prog = program_ref(a.prog);
+    a.threaded = true;
     if (vid >= 0) {
 	free_var(a.rt_env[vid]);
 	a.rt_env[vid].type = TYPE_INT;
@@ -1701,7 +1701,6 @@ run_ready_tasks(void)
 		    reset_http_parsing_state(tq->parsing_state);
 		current_task_id = tq->reading_vm->task_id;
 		current_local = var_ref(tq->reading_vm->local);
-        threading_active = tq->reading_vm->threading_active;
 		v.type = TYPE_ERR;
 		v.v.err = E_INVARG;
 		resume_from_previous_vm(tq->reading_vm, v);
@@ -1779,7 +1778,6 @@ run_ready_tasks(void)
 			    reset_http_parsing_state(tq->parsing_state);
 			    current_task_id = tq->reading_vm->task_id;
 			    current_local = var_ref(tq->reading_vm->local);
-                threading_active = tq->reading_vm->threading_active;
 			    resume_from_previous_vm(tq->reading_vm, v);
                             free_var(v);
 			    current_task_id = -1;
@@ -1793,7 +1791,6 @@ run_ready_tasks(void)
 			tq->parsing = 0;
 			current_task_id = tq->reading_vm->task_id;
 			current_local = var_ref(tq->reading_vm->local);
-            threading_active = tq->reading_vm->threading_active;
 			v.type = TYPE_STR;
 			v.v.str = t->t.input.string;
 			resume_from_previous_vm(tq->reading_vm, v);
@@ -1817,7 +1814,7 @@ run_ready_tasks(void)
 			ft = t->t.forked;
 			current_task_id = ft.id;
 			current_local = new_map();
-            threading_active = true;
+            ft.a.threaded = true;
 			do_forked_task(ft.program, ft.rt_env, ft.a,
 				       ft.f_index);
 			current_task_id = -1;
@@ -1828,7 +1825,6 @@ run_ready_tasks(void)
 		case TASK_SUSPENDED:
 		    current_task_id = t->t.suspended.the_vm->task_id;
 		    current_local = var_ref(t->t.suspended.the_vm->local);
-            threading_active = t->t.suspended.the_vm->threading_active;
 		    resume_from_previous_vm(t->t.suspended.the_vm,
 					    t->t.suspended.value);
 		    /* must free value passed in to resume_task() and do_resume() */
@@ -1894,7 +1890,6 @@ run_server_task_setting_id(Objid player, Var what, const char *verb,
 
     current_task_id = new_task_id();
     current_local = new_map();
-    threading_active = true;
 
     if (task_id)
 	*task_id = current_task_id;
@@ -1923,7 +1918,6 @@ run_server_program_task(Objid _this, const char *verb, Var args, Objid vloc,
 {
     current_task_id = new_task_id();
     current_local = new_map();
-    threading_active = true;
 
     enum outcome ret = do_server_program_task(Var::new_obj(_this), verb, args, Var::new_obj(vloc), verbname, program,
                                               progr, debug, player, argstr,
@@ -3013,19 +3007,14 @@ bf_finished_tasks(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_set_thread_mode(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    if (!is_wizard(progr)) {
-        free_var(arglist);
-        return make_error_pack(E_PERM);
-    }
-
     if (arglist.v.list[0].v.num == 0) {
         Var ret;
         ret.type = TYPE_INT;
-        ret.v.num = threading_active;
+        ret.v.num = get_thread_mode();
         free_var(arglist);
         return make_var_pack(ret);
     } else {
-        threading_active = is_true(arglist.v.list[1]);
+        set_thread_mode(is_true(arglist.v.list[1]));
         free_var(arglist);
         return no_var_pack();
     }

@@ -22,11 +22,11 @@
 extern vm read_vm(int task_id);
 extern void write_vm(vm);
 
-extern vm new_vm(int task_id, Var local, int stack_size, bool threading_active); /* Creates a new vm.
-                                                                                  * Stores task id and
-                                                                                  * task local value.
-                                                                                  * Consumes `local'.
-                                                                                  */
+extern vm new_vm(int task_id, Var local, int stack_size); /* Creates a new vm.
+                                                           * Stores task id and
+                                                           * task local value.
+                                                           * Consumes `local'.
+                                                           */
 extern void free_vm(vm the_vm, int stack_too);            /* Frees vm.  Free
                                                            * associated allocations
                                                            * if `stack_too' is 1.
