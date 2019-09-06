@@ -31,13 +31,14 @@
 /**** external functions ****/
 
 vm
-new_vm(int task_id, Var local, int stack_size)
+new_vm(int task_id, Var local, int stack_size, bool threading_active)
 {
     vm the_vm = (vm)mymalloc(sizeof(vmstruct), M_VM);
 
     the_vm->task_id = task_id;
     the_vm->local = local;
     the_vm->activ_stack = (activation *)mymalloc(sizeof(activation) * stack_size, M_VM);
+    the_vm->threading_active = threading_active;
 
     return the_vm;
 }
@@ -89,6 +90,8 @@ write_vm(vm the_vm)
 
     dbio_write_var(the_vm->local);
 
+    dbio_write_num(the_vm->threading_active);
+
     dbio_printf("%u %d %u %u\n",
 		the_vm->top_activ_stack, the_vm->root_activ_vector,
 		the_vm->func_id, the_vm->max_stack_size);
@@ -111,6 +114,12 @@ read_vm(int task_id)
     else
 	local = new_map();
 
+    bool threading_active;
+    if (dbio_input_version >= DBV_TaskThreaded)
+        threading_active = dbio_read_num();
+    else
+        threading_active = true;
+
     if (dbio_scanf("%u %d %u%c", &top, &vector, &func_id, &c) != 4
 	|| (c == ' '
 	    ? dbio_scanf("%u%c", &max, &c) != 2 || c != '\n'
@@ -119,7 +128,7 @@ read_vm(int task_id)
 	errlog("READ_VM: Bad vm header\n");
 	return 0;
     }
-    the_vm = new_vm(task_id, local, top + 1);
+    the_vm = new_vm(task_id, local, top + 1, threading_active);
     the_vm->max_stack_size = max;
     the_vm->top_activ_stack = top;
     the_vm->root_activ_vector = vector;

@@ -98,6 +98,7 @@ extern enum outcome run_server_program_task(Objid _this, const char *verb,
 
 extern Var current_local;
 extern int current_task_id;
+extern bool threading_active;
 extern int last_input_task_id(Objid player);
 #ifdef SAVE_FINISHED_TASKS
 extern Var finished_tasks;

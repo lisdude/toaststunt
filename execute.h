@@ -72,6 +72,7 @@ typedef struct {
     /* root_activ_vector == MAIN_VECTOR
        means root activation is main_vector */
     unsigned func_id;
+    bool threading_active;
 } vmstruct;
 
 typedef vmstruct *vm;
