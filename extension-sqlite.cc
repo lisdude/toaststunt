@@ -510,7 +510,7 @@ register_sqlite() {
     register_function("sqlite_close", 1, 1, bf_sqlite_close, TYPE_INT);
     register_function("sqlite_handles", 0, 0, bf_sqlite_handles);
     register_function("sqlite_info", 1, 1, bf_sqlite_info, TYPE_INT);
-    register_function("sqlite_query", 2, 3, bf_sqlite_query, TYPE_INT, TYPE_STR, TYPE_INT);
-    register_function("sqlite_execute", 3, 4, bf_sqlite_execute, TYPE_INT, TYPE_STR, TYPE_LIST, TYPE_INT);
+    register_function("sqlite_query", 2, 2, bf_sqlite_query, TYPE_INT, TYPE_STR);
+    register_function("sqlite_execute", 3, 3, bf_sqlite_execute, TYPE_INT, TYPE_STR, TYPE_LIST);
     register_function("sqlite_last_insert_row_id", 1, 1, bf_sqlite_last_insert_row_id, TYPE_INT);
 }

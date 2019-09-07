@@ -220,7 +220,7 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
 	 */
 	if ((!caller().is_obj() || caller().v.obj != SYSTEM_OBJECT) && f->_protected) {
 	    /* Try calling #0:bf_FUNCNAME(@ARGS) instead */
-	    enum error e = call_verb2(SYSTEM_OBJECT, f->verb_str, Var::new_obj(SYSTEM_OBJECT), arglist, 0);
+	    enum error e = call_verb2(SYSTEM_OBJECT, f->verb_str, Var::new_obj(SYSTEM_OBJECT), arglist, 0, get_thread_mode());
 
 	    if (e == E_NONE)
 		return tail_call_pack();

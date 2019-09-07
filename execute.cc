@@ -618,14 +618,14 @@ call_verb(Objid recv, const char *vname_in, Var _this, Var args, int do_pass)
     const char *vname = str_dup(vname_in);
     enum error result;
 
-    result = call_verb2(recv, vname, _this, args, do_pass);
+    result = call_verb2(recv, vname, _this, args, do_pass, true);
     /* call_verb2 got any refs it wanted */
     free_str(vname);
     return result;
 }
 
 enum error
-call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
+call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass, bool should_thread)
 {
     /* if call succeeds, args will be consumed.  If call fails, args
        will NOT be consumed  -- it must therefore be freed by caller */
@@ -702,7 +702,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
     RUN_ACTIV.verb = str_ref(vname);
     RUN_ACTIV.verbname = str_ref(db_verb_names(h));
     RUN_ACTIV.debug = (db_verb_flags(h) & VF_DEBUG);
-    RUN_ACTIV.threaded = true;
+    RUN_ACTIV.threaded = should_thread;
 
     alloc_rt_stack(&RUN_ACTIV, program->main_vector.max_stack);
     RUN_ACTIV.pc = 0;
@@ -1085,7 +1085,7 @@ do {								\
 			err = E_TYPE;
 		    } else {
 			STORE_STATE_VARIABLES();
-			err = call_verb2(_class, waif_indexset_verb, list, args, 0);
+			err = call_verb2(_class, waif_indexset_verb, list, args, 0, true);
 			if (err == E_VERBNF) {
 			    err = E_TYPE;
 			}
@@ -1445,7 +1445,7 @@ do {								\
 			err = E_TYPE;
 		    } else {
 			STORE_STATE_VARIABLES();
-			err = call_verb2(_class, waif_index_verb, list, args, 0);
+			err = call_verb2(_class, waif_index_verb, list, args, 0, true);
 			if (err == E_VERBNF) {
 			    err = E_TYPE;
 			}
@@ -1903,7 +1903,7 @@ do {								\
 			free_str(verb.v.str);
 			verb.v.str = str;
 			STORE_STATE_VARIABLES();
-			err = call_verb2(_class, verb.v.str, obj, args, 0);
+			err = call_verb2(_class, verb.v.str, obj, args, 0, true);
 			LOAD_STATE_VARIABLES();
 		} else {
 		    Objid recv = NOTHING;
@@ -1940,7 +1940,7 @@ MATCH_TYPE(OBJ, obj)
 
 		    if (obj.is_object() || recv != NOTHING) {
 			STORE_STATE_VARIABLES();
-			err = call_verb2(recv, verb.v.str, obj, args, 0);
+			err = call_verb2(recv, verb.v.str, obj, args, 0, true);
 			/* if there is no error, RUN_ACTIV is now the CALLEE's.
 			   args will be consumed in the new rt_env */
 			/* if there is an error, then RUN_ACTIV is unchanged, and
@@ -3389,7 +3389,7 @@ bf_ticks_left(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_pass(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    enum error e = call_verb2(RUN_ACTIV.recv, RUN_ACTIV.verb, RUN_ACTIV._this, arglist, 1);
+    enum error e = call_verb2(RUN_ACTIV.recv, RUN_ACTIV.verb, RUN_ACTIV._this, arglist, 1, true);
 
     if (e == E_NONE)
 	return tail_call_pack();

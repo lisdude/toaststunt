@@ -92,6 +92,7 @@ package
 background_thread(void (*callback)(Var, Var*), Var* data, char *human_title)
 {
     bool threading_enabled = get_thread_mode();
+
     if (threading_enabled && !can_create_thread())
     {
         errlog("Can't create a new thread\n");
