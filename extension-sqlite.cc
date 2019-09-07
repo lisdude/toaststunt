@@ -138,7 +138,7 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
 /* The function responsible for the actual execute call.
  * Contains functionality shared by both the threaded and
  * unthreaded builtins. */
-void do_sqlite_execute(Var args, Var *r)
+void sqlite_execute_thread_callback(Var args, Var *r)
 {
     int index = args.v.list[1].v.num;
     if (!valid_handle(index))
@@ -221,13 +221,6 @@ void do_sqlite_execute(Var args, Var *r)
     handle->locks--;
 }
 
-void sqlite_execute_thread_callback(void *bw, Var *r)
-{
-    background_waiter *w = (background_waiter*)bw;
-
-    do_sqlite_execute(w->data, r);
-}
-
 /* Creates and executes a prepared statement.
  * Args: INT <database handle>, STR <SQL query>, LIST <values>, BOOL <threaded>
  * e.g. sqlite_execute(0, 'INSERT INTO test VALUES (?, ?);', {5, #5})
@@ -241,24 +234,16 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    if (arglist.v.list[0].v.num >= 4 && !is_true(arglist.v.list[4]))
-    {
-        Var r;
-        do_sqlite_execute(arglist, &r);
-        free_var(arglist);
-        return make_var_pack(r);
-    } else {
         char *human_string = 0;
         asprintf(&human_string, "sqlite_execute: %s", arglist.v.list[2].v.str);
 
         return background_thread(sqlite_execute_thread_callback, &arglist, human_string);
-    }
 }
 
 /* The function responsible for the actual query call.
  * Contains functionality shared by both the threaded and
  * unthreaded builtins. */
-void do_sqlite_query(Var args, Var *r)
+void sqlite_query_thread_callback(Var args, Var *r)
 {
     int index = args.v.list[1].v.num;
 
@@ -295,12 +280,6 @@ void do_sqlite_query(Var args, Var *r)
     myfree(thread_handle, M_STRUCT);
 }
 
-void sqlite_query_thread_callback(void *bw, Var *r)
-{
-    background_waiter *w = (background_waiter*)bw;
-
-    do_sqlite_query(w->data, r);
-}
 
 /* Execute an SQL command.
  * Args: INT <database handle>, STR <query>, BOOL <threaded> */
@@ -313,18 +292,10 @@ bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    if (arglist.v.list[0].v.num >= 3 && !is_true(arglist.v.list[3]))
-    {
-        Var r;
-        do_sqlite_query(arglist, &r);
-        free_var(arglist);
-        return make_var_pack(r);
-    } else {
         char *human_string = 0;
         asprintf(&human_string, "sqlite_query: %s", arglist.v.list[2].v.str);
 
         return background_thread(sqlite_query_thread_callback, &arglist, human_string);
-    }
 }
 
 /* Identifies the row ID of the last insert command.

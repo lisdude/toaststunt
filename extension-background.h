@@ -22,7 +22,7 @@
 typedef struct background_waiter {
     vm the_vm;                          // Where we resume when we're done.
     int handle;                         // Our position in the process table.
-    void (*callback)(void*, Var*);      // The callback function that does the actual work.
+    void (*callback)(Var, Var*);      // The callback function that does the actual work.
     Var data;                           // Any data the callback function should be aware of.
     bool active;                        // @kill will set active to false and the callback should handle it accordingly.
     int fd[2];                          // The pipe used to resume the task immediately.
@@ -35,7 +35,7 @@ static int next_background_handle = 1;
 static threadpool background_pool;
 
 // User-visible functions
-extern package background_thread(void (*callback)(void*, Var*), Var* data, char *human_title);
+extern package background_thread(void (*callback)(Var, Var*), Var* data, char *human_title);
 extern bool can_create_thread();
 
 // Other helper functions
@@ -44,6 +44,6 @@ void initialize_background_waiter(background_waiter *waiter);
 void run_callback(void *bw);
 
 // Example functions
-void background_test_callback(void *bw, Var *ret);
+void background_test_callback(Var args, Var *ret);
 
 #endif /* EXTENSION_BACKGROUND_H */

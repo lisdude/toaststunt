@@ -51,7 +51,7 @@ void run_callback(void *bw)
 {
     background_waiter *w = (background_waiter*)bw;
 
-    w->callback(bw, &w->return_value);
+    w->callback(w->data, &w->return_value);
 
     // Write to our network pipe to resume the MOO loop
     write(w->fd[1], "1", 1);
@@ -87,16 +87,25 @@ background_suspender(vm the_vm, void *data)
 }
 
 /* Create a new background thread, supplying a callback function, a Var of data, and a string of explanatory text for what the thread is.
- * You should check can_create_thread from your own functions before relying on moo_background_thread. */
+ * If threading has been disabled for the current verb, this function will invoke the callback immediately. */
 package
-background_thread(void (*callback)(void*, Var*), Var* data, char *human_title)
+background_thread(void (*callback)(Var, Var*), Var* data, char *human_title)
 {
-    if (!can_create_thread())
+    bool threading_enabled = get_thread_mode();
+    if (threading_enabled && !can_create_thread())
     {
         errlog("Can't create a new thread\n");
         return make_error_pack(E_QUOTA);
     }
 
+    if (!threading_enabled)
+    {
+        Var r;
+        callback(*data, &r);
+        free_var(*data);
+        free(human_title);
+        return make_var_pack(r);
+    } else {
     background_waiter *w = (background_waiter*)mymalloc(sizeof(background_waiter), M_STRUCT);
     initialize_background_waiter(w);
     w->callback = callback;
@@ -110,6 +119,7 @@ background_thread(void (*callback)(void*, Var*), Var* data, char *human_title)
     }
 
     return make_suspend_pack(background_suspender, (void*)w);
+    }
 }
 
 /********************************************************************************************************/
@@ -205,22 +215,17 @@ bf_background_test(Var arglist, Byte next, void *vdata, Objid progr)
 
 /* The actual callback function for our background_test function. This function does all of the actual work
  * for the background_test. Receives a pointer to the relevant background_waiter struct. */
-void background_test_callback(void *bw, Var *ret)
+void background_test_callback(Var args, Var *ret)
 {
-    background_waiter *w = (background_waiter*)bw;
-    Var args = w->data;
     int wait = (args.v.list[0].v.num >= 2 ? args.v.list[2].v.num : 5);
 
     sleep(wait);
 
-    if (w->active)
-    {
         ret->type = TYPE_STR;
         if (args.v.list[0].v.num == 0)
             ret->v.str = str_dup("Hello, world.");
         else
             ret->v.str = str_dup(args.v.list[1].v.str);
-    }
 }
 
 void

@@ -81,10 +81,8 @@ bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
 /* Locate an object in the database by name more quickly than is possible in-DB.
  * To avoid numerous list reallocations, we put everything in a vector and then
  * transfer it over to a list when we know how many values we have. */
-void locate_by_name_thread_callback(void *bw, Var *ret)
+void locate_by_name_thread_callback(Var arglist, Var *ret)
 {
-    Var arglist = ((background_waiter*)bw)->data;
-
     Var name, object;
     object.type = TYPE_OBJ;
     std::vector<int> tmp;
@@ -125,36 +123,10 @@ bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
     return background_thread(locate_by_name_thread_callback, &arglist, human_string);
 }
 
-int compare_vars(const void *a, const void *b)
-{
-    Var lhs = *(Var*)a;
-    Var rhs = *(Var*)b;
-
-    if (rhs.type != lhs.type)
-        return 0;
-
-    switch (rhs.type) {
-        case TYPE_INT:
-            return lhs.v.num > rhs.v.num ? 1 : -1;
-        case TYPE_FLOAT:
-            return lhs.v.fnum > rhs.v.fnum ? 1 : -1;
-        case TYPE_OBJ:
-            return lhs.v.obj > rhs.v.obj ? 1 : -1;
-        case TYPE_ERR:
-            return ((int) lhs.v.err) > ((int) rhs.v.err) ? 1 : -1;
-        case TYPE_STR:
-            return strcasecmp(lhs.v.str, rhs.v.str) > 0 ? 1 : -1;
-        default:
-            errlog("Unknown type in sort compare: %d\n", rhs.type);
-            return 0;
-    }
-}
-
 /* Sorts various MOO types using std::sort.
  * Args: LIST <values to sort>, [LIST <values to sort by>], [INT <natural sort ordering?>], [INT <reverse?>] */
-void sort_callback(void *bw, Var *ret)
+void sort_callback(Var arglist, Var *ret)
 {
-    Var arglist = ((background_waiter*)bw)->data;
     int nargs = arglist.v.list[0].v.num;
     int list_to_sort = (nargs >= 2 && arglist.v.list[2].v.list[0].v.num > 0 ? 2 : 1);
     bool natural = (nargs >= 3 && is_true(arglist.v.list[3]));
