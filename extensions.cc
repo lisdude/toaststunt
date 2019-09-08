@@ -89,7 +89,7 @@ void locate_by_name_thread_callback(void *bw, Var *ret)
     object.type = TYPE_OBJ;
     std::vector<int> tmp;
 
-    int case_matters = is_true(arglist.v.list[2]);
+    int case_matters = arglist.v.list[0].v.num < 2 ? 0 : is_true(arglist.v.list[2]);
     int string_length = memo_strlen(arglist.v.list[1].v.str);
 
     for (int x = 1; x < db_last_used_objid(); x++)
