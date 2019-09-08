@@ -552,7 +552,7 @@ static package
 bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
 {
     char *human_string = 0;
-    asprintf(&human_string, "slicing a %" PRIdN " element list", arglist.v.list[1].v.num);
+    asprintf(&human_string, "slicing a %" PRIdN " element list", arglist.v.list[1].v.list[0].v.num);
 
     return background_thread(slice_thread_callback, &arglist, human_string);
 }
