@@ -495,9 +495,9 @@ void slice_thread_callback(Var arglist, Var *r)
     // Check that that index isn't an empty list and doesn't contain negative or zeroes
     if (index.type == TYPE_LIST) {
         if (index.v.list[0].v.num == 0) {
-        r->type = TYPE_ERR;
-        r->v.err = E_RANGE;
-        return;
+            r->type = TYPE_ERR;
+            r->v.err = E_RANGE;
+            return;
         }
         for (int x = 1; x <= index.v.list[0].v.num; x++) {
             if (index.v.list[x].type != TYPE_INT || index.v.list[x].v.num <= 0) {
@@ -523,9 +523,9 @@ void slice_thread_callback(Var arglist, Var *r)
         } else if (index.type != TYPE_LIST) {
             if (index.v.num > alist.v.list[x].v.list[0].v.num) {
                 free_var(ret);
-            r->type = TYPE_ERR;
-            r->v.err = E_RANGE;
-            return;
+                r->type = TYPE_ERR;
+                r->v.err = E_RANGE;
+                return;
             } else {
                 ret.v.list[x] = var_ref(alist.v.list[x].v.list[index.v.num]);
             }
@@ -535,9 +535,9 @@ void slice_thread_callback(Var arglist, Var *r)
                 if (index.v.list[y].v.num > alist.v.list[x].v.list[0].v.num) {
                     free_var(ret);
                     free_var(tmp);
-            r->type = TYPE_ERR;
-            r->v.err = E_RANGE;
-            return;
+                    r->type = TYPE_ERR;
+                    r->v.err = E_RANGE;
+                    return;
                 } else {
                     tmp.v.list[y] = var_ref(alist.v.list[x].v.list[index.v.list[y].v.num]);
                 }
@@ -545,7 +545,6 @@ void slice_thread_callback(Var arglist, Var *r)
             ret.v.list[x] = tmp;
         }
     }
-
     *r = ret;
 }
 
