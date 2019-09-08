@@ -150,34 +150,6 @@ int compare_vars(const void *a, const void *b)
     }
 }
 
-/* Sort values in descending order using quicksort.
- * NOTE: If disparate types are combined, they will be considered
- *       equal rather than an error for performance reasons. It's
- *       up to the programmer to use correct types. */
-void qsort_callback(void *bw, Var *ret)
-{
-    Var arglist = ((background_waiter*)bw)->data;
-
-    if (arglist.v.list[1].v.list[0].v.num == 0) {
-        *ret = new_list(0);
-        return;
-    }
-
-    *ret = var_dup(arglist.v.list[1]);
-
-    qsort(ret->v.list+1, ret->v.list[0].v.num, sizeof(Var), compare_vars);
-
-}
-
-    static package
-bf_qsort(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    char *human_string = 0;
-    asprintf(&human_string, "qsorting %" PRIdN " element list", arglist.v.list[1].v.list[0].v.num);
-
-    return background_thread(qsort_callback, &arglist, human_string);
-}
-
 /* Sorts various MOO types using std::sort.
  * Args: LIST <values to sort>, [LIST <values to sort by>], [INT <natural sort ordering?>], [INT <reverse?>] */
 void sort_callback(void *bw, Var *ret)
@@ -813,7 +785,6 @@ register_extensions()
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
     register_function("chr", 1, 1, bf_chr, TYPE_INT);
-    register_function("qsort", 1, 1, bf_qsort, TYPE_LIST);
     register_function("sort", 1, 4, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_INT, TYPE_INT);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
