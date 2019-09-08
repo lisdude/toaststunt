@@ -924,34 +924,28 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
     bool return_obj = (arglist.v.list[0].v.num > 2 && is_true(arglist.v.list[3]));
 
     if (!object.is_object() || (!is_obj_or_list_of_objs(parent) && parent.type != TYPE_ANON)) {
-	free_var(arglist);
-	return make_error_pack(E_TYPE);
-    }
-    else if (!is_valid(object)) {
-	free_var(arglist);
-	return make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
+        free_var(arglist);
+        return make_error_pack(E_TYPE);
     }
 
-    if (parent.type != TYPE_LIST)
-        if (db_object_isa(object, parent)) {
-            free_var(arglist);
-            return make_var_pack(return_obj ? Var::new_obj(parent.v.obj) : Var::new_int(1));
-        }
-        else {
-            free_var(arglist);
-            return make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
-        }
-    else {
+    package ret = make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
+
+    if (!is_valid(object)) {
+        // Do nothing
+    } else if (parent.type == TYPE_LIST) {
         int parent_length = parent.v.list[0].v.num;
-                free_var(arglist);
-
-        for (int x = 1; x <= parent_length; x++)
-            if (db_object_isa(object, Var::new_obj(parent.v.list[x].v.obj))) {
-                return make_var_pack(return_obj ? Var::new_obj(parent.v.list[x].v.obj) : Var::new_int(1));
+        for (int x = 1; x <= parent_length; x++) {
+            if (db_object_isa(object, parent.v.list[x])) {
+                ret = make_var_pack(return_obj ? Var::new_obj(parent.v.list[x].v.obj) : Var::new_int(1));
+                break;
             }
+        }
+    } else if (db_object_isa(object, parent)) {
+        ret = make_var_pack(return_obj ? Var::new_obj(parent.v.obj) : Var::new_int(1));
     }
 
-return make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
+    free_var(arglist);
+    return ret;
 }
 
 Var nothing;			/* useful constant */
