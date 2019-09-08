@@ -527,7 +527,7 @@ void slice_thread_callback(Var arglist, Var *r)
                 r->v.err = E_RANGE;
                 return;
             } else {
-                ret.v.list[x] = var_ref(alist.v.list[x].v.list[index.v.num]);
+                ret.v.list[x] = var_dup(alist.v.list[x].v.list[index.v.num]);
             }
         } else {
             Var tmp = new_list(index.v.list[0].v.num);
@@ -539,7 +539,7 @@ void slice_thread_callback(Var arglist, Var *r)
                     r->v.err = E_RANGE;
                     return;
                 } else {
-                    tmp.v.list[y] = var_ref(alist.v.list[x].v.list[index.v.list[y].v.num]);
+                    tmp.v.list[y] = var_dup(alist.v.list[x].v.list[index.v.list[y].v.num]);
                 }
             }
             ret.v.list[x] = tmp;
