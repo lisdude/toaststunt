@@ -743,8 +743,8 @@ bf_floatstr(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
 
     free_var(arglist);
-    if (prec > DECIMAL_DIG)
-	prec = DECIMAL_DIG;
+    if (prec > __DECIMAL_DIG__)
+	prec = __DECIMAL_DIG__;
     else if (prec < 0)
 	return make_error_pack(E_INVARG);
     sprintf(fmt, "%%.%d%c", prec, use_sci ? 'e' : 'f');
