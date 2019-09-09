@@ -17,7 +17,7 @@ To run the tests:
     ln -s `which true` true
 
 5) In one console/terminal/window, run the Stunt server:
-    ./moo Test.db /dev/null 9898
+    ../moo Test.db /dev/null 9898
 
 6) In another console/terminal/window, run the tests:
     make tests

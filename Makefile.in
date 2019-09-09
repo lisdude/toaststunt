@@ -246,12 +246,6 @@ depend: ${ALL_CSRCS}
 	ed - Makefile.in < eddep
 	rm -f eddep makedep
 
-tests:
-	for test in test/*.rb ; do \
-	  echo "\n\nRunning $$test..." ; \
-	  ruby -rubygems -Itest/lib $$test ; \
-	done
-
 # Have to do this one manually, since make depend cannot hack yacc files.
 parser.o: my-ctype.h my-math.h my-stdlib.h my-string.h ast.h \
 		code_gen.h config.h functions.h keywords.h list.h \
