@@ -31,7 +31,8 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 
 - Basic threading support:
     - background.cc (a library, of sorts, to make it easier to thread builtins)
-    - Threaded builtins: sqlite_query, sqlite_execute, locate_by_name, sort
+    - Threaded builtins: sqlite_query, sqlite_execute, locate_by_name, sort, slice
+    - set_thread_mode (an argument of 0 will disable threading for all builtins in the current verb, 1 will re-enable, and no arguments will print the current mode)
 
 - FileIO improvements:
     - Faster reading
