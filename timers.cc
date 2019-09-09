@@ -24,7 +24,7 @@
 #include "config.h"
 #include "timers.h"
 
-#if (defined(MACH) && defined(CMU)) || !defined(SIGVTALRM)
+#if (defined(MACH) && defined(CMU)) || !defined(SIGVTALRM) || defined(__APPLE__)
 /* Virtual interval timers are broken on Mach 3.0 */
 #  undef ITIMER_VIRTUAL
 #endif
