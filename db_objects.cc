@@ -32,7 +32,7 @@
 #include "server.h"
 #include "storage.h"
 #include "utils.h"
-#include "xtrapbits.h"
+#include "dependencies/xtrapbits.h"
 #include "map.h"
 #include <map>
 #include "options.h"

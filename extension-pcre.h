@@ -7,10 +7,10 @@
 #include "list.h"
 #include "utils.h"
 #include "log.h"
-#include "dependencies/pcrs.h"
 #include "server.h"
 #include "map.h"
-#include "xtrapbits.h"
+#include "dependencies/pcrs.h"
+#include "dependencies/xtrapbits.h"
 
 #define EXT_PCRE_VERSION    "3.0"
 #define DEFAULT_LOOPS       1000

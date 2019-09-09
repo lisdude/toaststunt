@@ -32,7 +32,7 @@
 #include "log.h"
 #include "random.h"
 #include "server.h"
-#include "sosemanuk.h"
+#include "dependencies/sosemanuk.h"
 #include "storage.h"
 #include "streams.h"
 #include "structures.h"

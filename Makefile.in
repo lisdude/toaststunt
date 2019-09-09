@@ -34,12 +34,12 @@ ASFLAGS = -c
 
 COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
 
-CSRCS = http_parser.c regexpr.c thpool.c \
+CSRCS = http_parser.c regexpr.c dependencies/thpool.c \
  yajl/yajl.c yajl/yajl_alloc.c yajl/yajl_buf.c \
  yajl/yajl_encode.c yajl/yajl_gen.c yajl/yajl_lex.c \
  yajl/yajl_parser.c yajl/yajl_version.c \
  crypt/crypt_blowfish.c crypt/crypt_gensalt.c \
- sosemanuk.c linenoise.c \
+ dependencies/sosemanuk.c dependencies/linenoise.c \
  dependencies/pcrs.c dependencies/strnatcmp.c
 
 CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
@@ -74,12 +74,12 @@ HDRS = ast.h base64.h bf_register.h code_gen.h collection.h crypto.h \
 	numbers.h opcode.h options.h parse_cmd.h parser.h pattern.h \
 	program.h quota.h random.h regexpr.h server.h storage.h \
 	streams.h structures.h str_intern.h sym_table.h tasks.h \
-	thpool.h timers.h tokens.h unparse.h utils.h verbs.h version.h \
+	dependencies/thpool.h timers.h tokens.h unparse.h utils.h verbs.h version.h \
 	yajl/yajl_alloc.h yajl/yajl_buf.h yajl/yajl_bytestack.h \
 	yajl/yajl_common.h yajl/yajl_encode.h yajl/yajl_gen.h \
 	yajl/yajl_lex.h yajl/yajl_parse.h yajl/yajl_parser.h \
 	yajl/yajl_version.h fileio.h system.h \
-	sosemanuk.h linenoise.h \
+	dependencies/sosemanuk.h dependencies/linenoise.h \
 	extension-sqlite.h extension-background.h waif.h \
 	extension-simplexnoise.h dependencies/strnatcmp.h
 
@@ -271,7 +271,7 @@ $(OPT_NET_OBJS):
 http_parser.o: http_parser.c http_parser.h
 regexpr.o: regexpr.c my-stdio.h config.h options.h regexpr.h my-stdlib.h \
  my-string.h
-thpool.o: thpool.c thpool.h
+thpool.o: dependencies/thpool.c dependencies/thpool.h
 yajl.o: yajl/yajl.c yajl/yajl_lex.h yajl/yajl_common.h yajl/yajl_parse.h \
  yajl/yajl_parser.h yajl/yajl_bytestack.h yajl/yajl_buf.h \
  yajl/yajl_alloc.h
@@ -291,8 +291,8 @@ yajl_version.o: yajl/yajl_version.c yajl/yajl_version.h \
  yajl/yajl_common.h
 crypt_blowfish.o: crypt/crypt_blowfish.c crypt/crypt_blowfish.h
 crypt_gensalt.o: crypt/crypt_gensalt.c crypt/crypt_gensalt.h
-sosemanuk.o: sosemanuk.c sosemanuk.h
-linenoise.o: linenoise.c linenoise.h
+sosemanuk.o: dependencies/sosemanuk.c dependencies/sosemanuk.h
+linenoise.o: dependencies/linenoise.c dependencies/linenoise.h
 pcrs.o: pcrs.c my-ctype.h config.h options.h dependencies/pcrs.h
 strnatcmp.o: dependencies/strnatcmp.c dependencies/strnatcmp.h
 ast.o: ast.cc my-string.h config.h options.h ast.h parser.h program.h \
@@ -320,12 +320,12 @@ db_file.o: db_file.cc my-stat.h config.h options.h my-unistd.h my-stdio.h \
  my-time.h utils.h waif.h map.h
 db_io.o: db_io.cc config.h options.h my-ctype.h my-stdarg.h my-stdio.h \
  my-stdlib.h db.h program.h structures.h storage.h my-string.h version.h \
- db_io.h db_private.h list.h streams.h log.h map.h numbers.h sosemanuk.h \
+ db_io.h db_private.h list.h streams.h log.h map.h numbers.h dependencies/sosemanuk.h \
  parser.h server.h network.h str_intern.h unparse.h waif.h
 db_objects.o: db_objects.cc my-string.h config.h options.h db.h program.h \
  structures.h my-stdio.h storage.h version.h db_io.h db_private.h \
  collection.h list.h streams.h server.h network.h utils.h execute.h \
- opcode.h parse_cmd.h xtrapbits.h map.h log.h
+ opcode.h parse_cmd.h dependencies/xtrapbits.h map.h log.h
 db_properties.o: db_properties.cc collection.h structures.h my-stdio.h \
  config.h options.h storage.h my-string.h db.h program.h version.h \
  db_private.h list.h streams.h server.h network.h utils.h execute.h \
@@ -357,13 +357,13 @@ execute.o: execute.cc my-string.h config.h options.h collection.h \
  structures.h my-stdio.h storage.h db.h program.h version.h db_io.h \
  decompile.h ast.h parser.h sym_table.h eval_env.h eval_vm.h execute.h \
  opcode.h parse_cmd.h functions.h list.h streams.h log.h map.h numbers.h \
- sosemanuk.h server.h network.h tasks.h timers.h my-time.h utils.h waif.h \
- db_private.h
+ dependencies/sosemanuk.h server.h network.h tasks.h timers.h my-time.h \
+ utils.h waif.h  db_private.h
 extensions.o: extensions.cc functions.h my-stdio.h config.h options.h \
  execute.h db.h program.h structures.h storage.h my-string.h version.h \
- opcode.h parse_cmd.h log.h utils.h streams.h numbers.h sosemanuk.h \
+ opcode.h parse_cmd.h log.h utils.h streams.h numbers.h dependencies/sosemanuk.h \
  list.h my-stdlib.h random.h server.h network.h extension-background.h \
- bf_register.h my-unistd.h tasks.h net_multi.h thpool.h \
+ bf_register.h my-unistd.h tasks.h net_multi.h dependencies/thpool.h \
  dependencies/strnatcmp.c dependencies/strnatcmp.h
 fileio.o: fileio.cc my-stat.h config.h options.h my-unistd.h my-ctype.h \
  my-string.h structures.h my-stdio.h storage.h bf_register.h functions.h \
@@ -379,9 +379,9 @@ garbage.o: garbage.cc functions.h my-stdio.h config.h options.h execute.h \
  utils.h
 json.o: json.cc my-string.h config.h options.h my-stdlib.h functions.h \
  my-stdio.h execute.h db.h program.h structures.h storage.h version.h \
- opcode.h parse_cmd.h json.h list.h streams.h map.h numbers.h sosemanuk.h \
- server.h network.h unparse.h utils.h yajl/yajl_gen.h yajl/yajl_common.h \
- yajl/yajl_lex.h yajl/yajl_parse.h
+ opcode.h parse_cmd.h json.h list.h streams.h map.h numbers.h \
+ dependencies/sosemanuk.h server.h network.h unparse.h utils.h \
+ yajl/yajl_gen.h yajl/yajl_common.h yajl/yajl_lex.h yajl/yajl_parse.h
 keywords.o: keywords.cc my-string.h config.h options.h keywords.h \
  structures.h my-stdio.h storage.h version.h tokens.h ast.h parser.h \
  program.h sym_table.h y.tab.h utils.h execute.h db.h opcode.h \
@@ -420,11 +420,11 @@ net_proto.o: net_proto.cc options.h config.h net_bsd_tcp.cc my-inet.h \
 numbers.o: numbers.cc my-math.h my-stdlib.h config.h options.h \
  my-string.h my-time.h functions.h my-stdio.h execute.h db.h program.h \
  structures.h storage.h version.h opcode.h parse_cmd.h log.h random.h \
- server.h network.h streams.h sosemanuk.h utils.h
+ server.h network.h streams.h dependencies/sosemanuk.h utils.h
 objects.o: objects.cc collection.h structures.h my-stdio.h config.h \
  options.h storage.h my-string.h db.h program.h version.h db_io.h \
  execute.h opcode.h parse_cmd.h functions.h list.h streams.h numbers.h \
- sosemanuk.h quota.h server.h network.h utils.h
+ dependencies/sosemanuk.h quota.h server.h network.h utils.h
 parse_cmd.o: parse_cmd.cc my-ctype.h config.h options.h my-stdio.h \
  my-stdlib.h my-string.h my-time.h db.h program.h structures.h storage.h \
  version.h list.h streams.h match.h parse_cmd.h utils.h execute.h \
@@ -444,9 +444,9 @@ server.o: server.cc my-types.h config.h options.h my-signal.h my-stdarg.h \
  my-stdio.h my-stdlib.h my-string.h my-unistd.h my-wait.h db.h program.h \
  structures.h storage.h version.h db_io.h disassemble.h exec.h execute.h \
  opcode.h parse_cmd.h functions.h garbage.h list.h streams.h log.h \
- network.h server.h numbers.h sosemanuk.h parser.h quota.h random.h \
+ network.h server.h numbers.h dependencies/sosemanuk.h parser.h quota.h random.h \
  tasks.h timers.h my-time.h unparse.h utils.h net_multi.h waif.h \
- db_private.h linenoise.h
+ db_private.h dependencies/linenoise.h
 storage.o: storage.cc my-stdlib.h config.h options.h my-string.h list.h \
  structures.h my-stdio.h storage.h streams.h server.h network.h db.h \
  program.h version.h utils.h execute.h opcode.h parse_cmd.h
@@ -475,7 +475,7 @@ unparse.o: unparse.cc my-ctype.h config.h options.h my-stdio.h ast.h \
  keywords.h list.h streams.h log.h unparse.h utils.h
 utils.o: utils.cc my-ctype.h config.h options.h my-stdio.h my-string.h \
  db.h program.h structures.h storage.h version.h db_io.h garbage.h list.h \
- streams.h log.h map.h match.h numbers.h sosemanuk.h quota.h server.h \
+ streams.h log.h map.h match.h numbers.h dependencies/sosemanuk.h quota.h server.h \
  network.h waif.h db_private.h utils.h execute.h opcode.h parse_cmd.h
 verbs.o: verbs.cc my-string.h config.h options.h db.h program.h \
  structures.h my-stdio.h storage.h version.h execute.h opcode.h \
@@ -488,18 +488,18 @@ version.o: version.cc config.h options.h version.h structures.h \
 extension-sqlite.o: extension-sqlite.cc extension-sqlite.h functions.h \
  my-stdio.h config.h options.h execute.h db.h program.h structures.h \
  storage.h my-string.h version.h opcode.h parse_cmd.h numbers.h \
- sosemanuk.h utils.h streams.h list.h log.h server.h network.h map.h \
+ dependencies/sosemanuk.h utils.h streams.h list.h log.h server.h network.h map.h \
  extension-background.h bf_register.h my-unistd.h tasks.h net_multi.h \
- thpool.h
+ dependencies/thpool.h
 extension-pcre.o: extension-pcre.cc extension-pcre.h functions.h \
  my-stdio.h config.h options.h execute.h db.h program.h structures.h \
  storage.h my-string.h version.h opcode.h parse_cmd.h list.h streams.h \
- utils.h log.h dependencies/pcrs.h server.h network.h map.h xtrapbits.h
+ utils.h log.h dependencies/pcrs.h server.h network.h map.h dependencies/xtrapbits.h
 extension-background.o: extension-background.cc extension-background.h \
  bf_register.h functions.h my-stdio.h config.h options.h execute.h db.h \
  program.h structures.h storage.h my-string.h version.h opcode.h \
  parse_cmd.h my-unistd.h tasks.h utils.h streams.h server.h network.h \
- list.h net_multi.h thpool.h log.h
+ list.h net_multi.h dependencies/thpool.h log.h
 waif.o: waif.cc structures.h my-stdio.h config.h options.h storage.h \
  my-string.h bf_register.h functions.h execute.h db.h program.h version.h \
  opcode.h parse_cmd.h streams.h utils.h db_private.h db_io.h waif.h \
@@ -507,7 +507,7 @@ waif.o: waif.cc structures.h my-stdio.h config.h options.h storage.h \
 extension-simplexnoise.o: extension-simplexnoise.cc bf_register.h \
  functions.h my-stdio.h config.h options.h execute.h db.h program.h \
  structures.h storage.h my-string.h version.h opcode.h parse_cmd.h \
- utils.h streams.h numbers.h sosemanuk.h log.h extension-simplexnoise.h
+ utils.h streams.h numbers.h dependencies/sosemanuk.h log.h extension-simplexnoise.h
 extension-argon2.o: extension-argon2.cc options.h config.h functions.h \
  my-stdio.h execute.h db.h program.h structures.h storage.h my-string.h \
  version.h opcode.h parse_cmd.h utils.h streams.h log.h

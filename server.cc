@@ -64,7 +64,7 @@
 #include "waif.h" /* destroyed_waifs */
 
 extern "C" {
-#include "linenoise.h"
+#include "dependencies/linenoise.h"
 }
 
 static pid_t parent_pid;

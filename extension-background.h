@@ -12,7 +12,7 @@
 #include "server.h"         // server options
 #include "list.h"           // listappend
 #include "net_multi.h"      // network_fd shenanigans
-#include "thpool.h"         // thread pool
+#include "dependencies/thpool.h"         // thread pool
 
 #define THREAD_MOO_VERSION      "2.4"   // Version of our MOO threading library.
 #define TOTAL_BACKGROUND_THREADS 2      // The total number of background threads running in the pool.
