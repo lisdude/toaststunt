@@ -39,7 +39,8 @@ CSRCS = http_parser.c regexpr.c thpool.c \
  yajl/yajl_encode.c yajl/yajl_gen.c yajl/yajl_lex.c \
  yajl/yajl_parser.c yajl/yajl_version.c \
  crypt/crypt_blowfish.c crypt/crypt_gensalt.c \
- sosemanuk.c linenoise.c pcrs.c dependencies/strnatcmp.c
+ sosemanuk.c linenoise.c \
+ dependencies/pcrs.c dependencies/strnatcmp.c
 
 CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
 	db_file.cc db_io.cc db_objects.cc db_properties.cc \
@@ -292,7 +293,7 @@ crypt_blowfish.o: crypt/crypt_blowfish.c crypt/crypt_blowfish.h
 crypt_gensalt.o: crypt/crypt_gensalt.c crypt/crypt_gensalt.h
 sosemanuk.o: sosemanuk.c sosemanuk.h
 linenoise.o: linenoise.c linenoise.h
-pcrs.o: pcrs.c my-ctype.h config.h options.h pcrs.h
+pcrs.o: pcrs.c my-ctype.h config.h options.h dependencies/pcrs.h
 strnatcmp.o: dependencies/strnatcmp.c dependencies/strnatcmp.h
 ast.o: ast.cc my-string.h config.h options.h ast.h parser.h program.h \
  structures.h my-stdio.h storage.h version.h sym_table.h list.h streams.h \
@@ -493,7 +494,7 @@ extension-sqlite.o: extension-sqlite.cc extension-sqlite.h functions.h \
 extension-pcre.o: extension-pcre.cc extension-pcre.h functions.h \
  my-stdio.h config.h options.h execute.h db.h program.h structures.h \
  storage.h my-string.h version.h opcode.h parse_cmd.h list.h streams.h \
- utils.h log.h pcrs.h server.h network.h map.h xtrapbits.h
+ utils.h log.h dependencies/pcrs.h server.h network.h map.h xtrapbits.h
 extension-background.o: extension-background.cc extension-background.h \
  bf_register.h functions.h my-stdio.h config.h options.h execute.h db.h \
  program.h structures.h storage.h my-string.h version.h opcode.h \

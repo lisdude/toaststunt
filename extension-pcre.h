@@ -7,7 +7,7 @@
 #include "list.h"
 #include "utils.h"
 #include "log.h"
-#include "pcrs.h"
+#include "dependencies/pcrs.h"
 #include "server.h"
 #include "map.h"
 #include "xtrapbits.h"

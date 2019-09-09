@@ -141,7 +141,7 @@ const char pcrs_rcs[] = "$Id: pcrs.c,v 1.19.2.3 2003/12/04 12:32:45 oes Exp $";
 
 
 #include <string.h>
-#include "my-ctype.h"
+#include "../my-ctype.h"
 
 #include "pcrs.h"
 
