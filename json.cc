@@ -43,9 +43,9 @@
 #include "streams.h"
 #include "unparse.h"
 #include "utils.h"
-#include "yajl/yajl_gen.h"
-#include "yajl/yajl_lex.h"
-#include "yajl/yajl_parse.h"
+#include "dependencies/yajl/yajl_gen.h"
+#include "dependencies/yajl/yajl_lex.h"
+#include "dependencies/yajl/yajl_parse.h"
 
 /*
   Handle many modes of mapping between JSON and internal MOO types.
