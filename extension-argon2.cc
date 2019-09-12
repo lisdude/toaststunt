@@ -7,15 +7,28 @@
 #include "functions.h"
 #include "utils.h"
 #include "log.h"
+#include "map.h"
+#include "extension-background.h"
 
-static package
-bf_argon2(Var arglist, Byte next, void *vdata, Objid progr)
+/* Since threaded functions can only return Vars, not packages, we instead
+ * create and return an 'error map'. Which is just a map with the keys:
+ * error, which is an error type, and message, which is the error string. */
+static void make_error_map(enum error error_type, const char *msg, Var *ret)
 {
-    if (!is_wizard(progr)) {
-        free_var(arglist);
-        return make_error_pack(E_PERM);
-    }
+    static Var error_key = str_dup_to_var("error");
+    static Var message_key = str_dup_to_var("message");
 
+    Var err;
+    err.type = TYPE_ERR;
+    err.v.err = error_type;
+
+    *ret = new_map();
+    *ret = mapinsert(*ret, var_ref(error_key), err);
+    *ret = mapinsert(*ret, var_ref(message_key), str_dup_to_var(msg));
+}
+
+void argon2_thread_callback(Var arglist, Var *r)
+{
     const int nargs = arglist.v.list[0].v.num;
 
     // password, salt, iterations, memory, parallelism
@@ -29,40 +42,68 @@ bf_argon2(Var arglist, Byte next, void *vdata, Objid progr)
     const size_t saltlen = strlen(salt);
     const size_t len = strlen(str);
 
-    if (saltlen > UINT32_MAX) {
-        free_var(arglist);
-        return make_raise_pack(E_INVARG, "salt too long", var_ref(zero));
-    }
+    if (saltlen > UINT32_MAX)
+        return make_error_map(E_INVARG, "salt too long", r);
 
     unsigned char *out = (unsigned char *)malloc(outlen + 1);
-    if (!out) {
-        free_var(arglist);
-        return make_raise_pack(E_QUOTA, "could not allocate memory for output", var_ref(zero));
-    }
+    if (!out)
+        return make_error_map(E_QUOTA, "could not allocate memory for output", r);
 
     size_t encodedlen = argon2_encodedlen(t_cost, m_cost, parallelism, saltlen, outlen, type);
     char *encoded = (char *)mymalloc(encodedlen + 1, M_STRING);
     if (!encoded) {
-        free_var(arglist);
         free(out);
-        return make_raise_pack(E_QUOTA, "could not allocate memory for hash", var_ref(zero));
+        return make_error_map(E_QUOTA, "could not allocate memory for hash", r);
     }
 
     int result = argon2_hash(t_cost, m_cost, parallelism, str, len, salt, saltlen, out, outlen, encoded, encodedlen, type, ARGON2_VERSION_NUMBER);
     if (result != ARGON2_OK) {
-        free_var(arglist);
         free(out);
         myfree(encoded, M_STRING);
-        return make_raise_pack(E_INVIND, argon2_error_message(result), var_ref(zero));
+        return make_error_map(E_INVIND, argon2_error_message(result), r);
     }
 
-    Var r;
-    r.type = TYPE_STR;
-    r.v.str = encoded;
-    free_var(arglist);
+    r->type = TYPE_STR;
+    r->v.str = encoded;
     free(out);
+}
 
-    return make_var_pack(r);
+static package
+bf_argon2(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (!is_wizard(progr)) {
+        free_var(arglist);
+        return make_error_pack(E_PERM);
+    }
+
+#ifdef THREAD_ARGON2
+    char *human_string = 0;
+    asprintf(&human_string, "argon2");
+
+    return background_thread(argon2_thread_callback, &arglist, human_string);
+#else
+    Var ret;
+    argon2_thread_callback(arglist, &ret);
+
+    free_var(arglist);
+    return make_var_pack(ret);
+#endif
+}
+
+void argon2_verify_thread_callback(Var arglist, Var *r)
+{
+    const char *encoded = arglist.v.list[1].v.str;
+    const char *str = arglist.v.list[2].v.str;
+    const size_t len = strlen(str);
+
+    int result = argon2_verify(encoded, str, len, Argon2_id);
+
+    r->type = TYPE_INT;
+
+    if (result != ARGON2_OK)
+        r->v.num = 0;
+    else
+        r->v.num = 1;
 }
 
 static package
@@ -73,23 +114,18 @@ bf_argon2_verify(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    const char *encoded = arglist.v.list[1].v.str;
-    const char *str = arglist.v.list[2].v.str;
-    const size_t len = strlen(str);
+#ifdef THREAD_ARGON2
+    char *human_string = 0;
+    asprintf(&human_string, "argon2_verify");
 
-    int result = argon2_verify(encoded, str, len, Argon2_id);
+    return background_thread(argon2_verify_thread_callback, &arglist, human_string);
+#else
+    Var ret;
+    argon2_verify_thread_callback(arglist, &ret);
 
     free_var(arglist);
-
-    Var r;
-    r.type = TYPE_INT;
-
-    if (result != ARGON2_OK)
-        r.v.num = 0;
-    else
-        r.v.num = 1;
-
-    return make_var_pack(r);
+    return make_var_pack(ret);
+#endif
 }
 
 void

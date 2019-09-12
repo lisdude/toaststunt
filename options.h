@@ -486,6 +486,16 @@
 */
 /* #define ONLY_32_BITS */
 
+/******************************************************************************
+ * The Argon2 functions can be threaded for performance reasons, but there is a
+ * significant caveat to be aware of: do_login_command cannot be suspended.
+ * Since threading implicitly suspends the MOO task, you won't be able to directly
+ * use Argon2 in do_login_command. Instead, you'll have to devise a new solution
+ * for logins that doesn't directly involve calling Argon2 in do_login_command.
+ ******************************************************************************
+*/
+/* #define THREAD_ARGON2 */
+
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/
