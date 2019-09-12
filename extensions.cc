@@ -570,11 +570,23 @@ bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
     return background_thread(slice_thread_callback, &arglist, human_string);
 }
 
+static bool multi_parent_isa(const Var *object, const Var *parents)
+{
+    if (parents->type == TYPE_OBJ)
+        return db_object_isa(*object, *parents);
+
+    for (int y = 1; y <= parents->v.list[0].v.num; y++)
+        if (db_object_isa(*object, parents->v.list[y]))
+            return true;
+
+    return false;
+}
+
 /* Return a list of objects of parent, optionally with a player flag set.
  * With only one argument, player flag is assumed to be the only condition.
  * With two arguments, parent is the only condition.
  * With three arguments, parent is checked first and then the player flag is checked.
- * occupants(LIST objects, OBJ parent, ?INT player flag set)
+ * occupants(LIST objects, OBJ | LIST parent, ?INT player flag set)
  */
     static package
 bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
@@ -587,10 +599,15 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
     Var parent = check_parent ? arglist.v.list[2] : nothing;
     bool check_player_flag = (nargs == 1 || (nargs > 2 && is_true(arglist.v.list[3])));
 
+    if (check_parent && !is_obj_or_list_of_objs(parent)) {
+        free_var(arglist);
+        return make_error_pack(E_TYPE);
+    }
+
     for (int x = 1; x <= content_length; x++) {
         Objid oid = contents.v.list[x].v.obj;
         if (valid(oid)
-                && (!check_parent ? 1 : db_object_isa(contents.v.list[x], parent))
+                && (!check_parent ? 1 : multi_parent_isa(&contents.v.list[x], &parent))
                 && (!check_player_flag || (check_player_flag && is_user(oid))))
         {
             ret = setadd(ret, contents.v.list[x]);
@@ -811,7 +828,7 @@ register_extensions()
     register_function("explode", 1, 2, bf_explode, TYPE_STR, TYPE_STR);
     register_function("reverse", 1, 1, bf_reverse, TYPE_LIST);
     register_function("slice", 1, 2, bf_slice, TYPE_LIST, TYPE_ANY);
-    register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
+    register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_ANY, TYPE_INT);
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
     register_function("chr", 1, 1, bf_chr, TYPE_INT);
     register_function("sort", 1, 4, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_INT, TYPE_INT);
