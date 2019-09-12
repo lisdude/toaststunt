@@ -1,9 +1,14 @@
 # ToastStunt ChangeLog
 
-## 2.5.9 (In Progress)
+## 2.5.9 (Sep 12, 2019)
 - Add a `reverse(<list>)` function to reverse lists.
 - Add a `recreate(<object>, <parent>, <?owner>)` function. This will effectively fill in any holes created by destroy()ing an object.
 - Disabled the Nagle algorithm and delayed acks for better network performance.
+- Allow `occupants()` to accept a list of parents to check each object against.
+- Add `THREAD_AGON2` to options.h to allow `argon2()` and `argon2_verify()` to be threaded. There are significant issues to be aware of when enabling this option, so please read the comment in options.h.
+- Fixed a small bug that would limit 64-bit MOOs to 'only' being able to create 2147483647 objects instead of 9223372036854775807 objects.
+
+**WARNING**: This potentially breaks compatibility with old code that relies on `argon2()` raising errors. Due to threading limitations, it now returns errors as a map with the keys `error` and `message`.
 
 ## 2.5.8 (Sep 9, 2019)
 - `sort()` more appropriately returns a type mismatch when given an incorrect type rather than an invalid argument.
