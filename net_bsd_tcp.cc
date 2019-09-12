@@ -44,6 +44,7 @@
 #include "utils.h"
 
 #include "net_tcp.cc"
+#include <netinet/tcp.h>
 
 const char *
 proto_name(void)
@@ -139,27 +140,36 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 			const char **name)
 {
     int timeout = server_int_option("name_lookup_timeout", 5);
+    int option = 1;
     int fd;
     struct sockaddr_in address;
     socklen_t addr_length = sizeof(address);
     static Stream *s = 0;
 
     if (!s)
-	s = new_stream(100);
+        s = new_stream(100);
 
     fd = accept(listener_fd, (struct sockaddr *) &address, &addr_length);
     if (fd < 0) {
-	if (errno == EMFILE)
-	    return PA_FULL;
-	else {
-	    log_perror("Accepting new network connection");
-	    return PA_OTHER;
-	}
+        if (errno == EMFILE)
+            return PA_FULL;
+        else {
+            log_perror("Accepting new network connection");
+            return PA_OTHER;
+        }
     }
+
+    // Disable Nagle algorithm on the socket
+    if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *) &option, sizeof(option)) < 0)
+        log_perror("Couldn't set TCP_NODELAY");
+    // Disable delayed ACKs
+    if (setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, (char*) &option, sizeof(option)) < 0)
+        log_perror("Couldn't set TCP_QUICKACK");
+
     *read_fd = *write_fd = fd;
     stream_printf(s, "%s, port %" PRIdN,
-		  lookup_name_from_addr(&address, timeout),
-		  (int) ntohs(address.sin_port));
+            lookup_name_from_addr(&address, timeout),
+            (int) ntohs(address.sin_port));
     *name = reset_stream(s);
     return PA_OKAY;
 }
