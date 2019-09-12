@@ -15,8 +15,6 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
-#include "/usr/local/include/gperftools/profiler.h"
-
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
