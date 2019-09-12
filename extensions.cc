@@ -478,6 +478,19 @@ bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+    static package
+bf_reverse(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    int elements = arglist.v.list[1].v.list[0].v.num;
+    Var ret = new_list(elements);
+
+    for (int x = elements, y = 1; x >= 1; x--, y++)
+        ret.v.list[y] = var_ref(arglist.v.list[1].v.list[x]);
+
+    free_var(arglist);
+    return make_var_pack(ret);
+}
+
 void slice_thread_callback(Var arglist, Var *r)
 {
     int nargs = arglist.v.list[0].v.num;
@@ -796,6 +809,7 @@ register_extensions()
     register_function("panic", 0, 1, bf_panic, TYPE_STR);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
     register_function("explode", 1, 2, bf_explode, TYPE_STR, TYPE_STR);
+    register_function("reverse", 1, 1, bf_reverse, TYPE_LIST);
     register_function("slice", 1, 2, bf_slice, TYPE_LIST, TYPE_ANY);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_OBJ, TYPE_INT);
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
