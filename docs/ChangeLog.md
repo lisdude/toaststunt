@@ -1,5 +1,10 @@
 # ToastStunt ChangeLog
 
+## 2.5.9 (In Progress)
+- Add a `reverse(<list>)` function to reverse lists.
+- Add a `recreate(<object>, <parent>, <?owner>)` function. This will effectively fill in any holes created by destroy()ing an object.
+- Disabled the Nagle algorithm and delayed acks for better network performance.
+
 ## 2.5.8 (Sep 9, 2019)
 - `sort()` more appropriately returns a type mismatch when given an incorrect type rather than an invalid argument.
 - Fix a bug where `sort()` would crash the server when reversing a sort with identical strings.
