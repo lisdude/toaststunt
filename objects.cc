@@ -383,7 +383,7 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 	else {
 	    enum error e;
 	    Objid last = db_last_used_objid();
-	    Objid oid = db_create_object();
+	    Objid oid = db_create_object(-1);
 	    Var args;
 
 	    db_set_object_owner(oid, !valid(owner) ? oid : owner);
@@ -426,6 +426,79 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 	    free_var(*data);
 	    free_data(data);
 	    free_var(args);
+
+	    if (e == E_MAXREC) {
+		free_var(r);
+		return make_error_pack(e);
+	    } else		/* (e == E_VERBNF) do nothing */
+		return make_var_pack(r);
+	}
+    } else {			/* next == 2, returns from initialize verb_call */
+	r = var_ref(*data);
+	free_var(*data);
+	free_data(data);
+	return make_var_pack(r);
+    }
+}
+
+/* Recreate a destroyed object. Mostly a duplicate of bf_create, unfortunately. */
+static package
+bf_recreate(Var arglist, Byte next, void *vdata, Objid progr)
+{			/* (OBJ old_object, OBJ parent [, OBJ owner]) */
+    Var *data = (Var *)vdata;
+    Var r;
+
+    if (next == 1) {
+	if (arglist.v.list[1].v.obj <= 0 || is_valid(arglist.v.list[1])) {
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
+    }
+
+	Objid owner = progr;
+    if (arglist.v.list[0].v.num > 2 && arglist.v.list[3].type == TYPE_OBJ && is_valid(arglist.v.list[3]))
+        owner = arglist.v.list[3].v.obj;
+
+	if ((progr != owner && !is_wizard(progr))
+		 || (arglist.v.list[2].type == TYPE_OBJ
+		     && valid(arglist.v.list[2].v.obj)
+		     && !db_object_allows(arglist.v.list[2], progr, FLAG_FERTILE))) {
+	    free_var(arglist);
+	    return make_error_pack(E_PERM);
+	}
+
+	if (valid(owner) && !decr_quota(owner)) {
+	    free_var(arglist);
+	    return make_error_pack(E_QUOTA);
+	}
+	else {
+	    enum error e;
+	    Objid oid = db_create_object(arglist.v.list[1].v.obj);
+
+	    db_set_object_owner(oid, !valid(owner) ? oid : owner);
+
+	    if (!db_change_parents(Var::new_obj(oid), arglist.v.list[2], none)) {
+		db_destroy_object(oid);
+		free_var(arglist);
+		return make_error_pack(E_INVARG);
+	    }
+
+	    data = (Var *)alloc_data(sizeof(Var));
+	    *data = var_ref(r);
+
+	    free_var(arglist);
+
+        r.type = TYPE_OBJ;
+        r.v.obj = oid;
+	    e = call_verb(oid, "initialize", r, new_list(0), 0);
+	    /* e will not be E_INVIND */
+
+	    if (e == E_NONE) {
+		free_var(r);
+		return make_call_pack(2, data);
+	    }
+
+	    free_var(*data);
+	    free_data(data);
 
 	    if (e == E_MAXREC) {
 		free_var(r);
@@ -965,6 +1038,9 @@ register_objects(void)
     register_function_with_read_write("create", 1, 4, bf_create,
 				      bf_create_read, bf_create_write,
 				      TYPE_ANY, TYPE_ANY, TYPE_ANY, TYPE_ANY);
+    register_function_with_read_write("recreate", 2, 3, bf_recreate,
+				      bf_create_read, bf_create_write,
+				      TYPE_OBJ, TYPE_OBJ, TYPE_OBJ);
     register_function_with_read_write("destroy", 1, 1, bf_destroy,
 				      bf_destroy_read, bf_destroy_write,
 				      TYPE_ANY);

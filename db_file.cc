@@ -320,7 +320,7 @@ ng_read_object(int anonymous)
 	o = dbpriv_find_object(oid);
     }
     else {
-	o = dbpriv_new_object();
+	o = dbpriv_new_object(-1);
 	dbpriv_assign_nonce(o);
     }
 
@@ -749,7 +749,7 @@ v4_upgrade_objects()
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
-	    Object *_new = dbpriv_new_object();
+	    Object *_new = dbpriv_new_object(-1);
 
 	    dbpriv_assign_nonce(_new);
 

@@ -154,7 +154,7 @@ extern void dbpriv_set_all_users(Var);
 				 * db_all_users().
 				 */
 
-extern Object *dbpriv_new_object(void);
+extern Object *dbpriv_new_object(int new_objid);
 extern Object *dbpriv_new_anonymous_object(void);
 				/* Creates a new object, assigning it a number,
 				 * but doesn't fill in any of the fields other
