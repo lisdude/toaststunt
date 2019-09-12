@@ -162,9 +162,11 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
     // Disable Nagle algorithm on the socket
     if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *) &option, sizeof(option)) < 0)
         log_perror("Couldn't set TCP_NODELAY");
+#ifdef __linux__
     // Disable delayed ACKs
     if (setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, (char*) &option, sizeof(option)) < 0)
         log_perror("Couldn't set TCP_QUICKACK");
+#endif
 
     *read_fd = *write_fd = fd;
     stream_printf(s, "%s, port %" PRIdN,
