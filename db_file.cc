@@ -77,8 +77,8 @@ typedef struct Object4 {
 } Object4;
 
 static Object4 **objects;
-static int num_objects = 0;
-static int max_objects = 0;
+static Num num_objects = 0;
+static Num max_objects = 0;
 
 static void
 dbv4_ensure_new_object(void)

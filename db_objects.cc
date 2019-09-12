@@ -39,8 +39,8 @@
 #include "log.h"
 
 static Object **objects;
-static int num_objects = 0;
-static int max_objects = 0;
+static Num num_objects = 0;
+static Num max_objects = 0;
 
 static unsigned int nonce = 0;
 
@@ -159,7 +159,7 @@ dbpriv_after_load(void)
  * includes space for reference counts.
  */
 Object *
-dbpriv_new_object(int new_objid)
+dbpriv_new_object(Num new_objid)
 {
     Object *o;
 
@@ -220,7 +220,7 @@ db_init_object(Object *o)
 }
 
 Objid
-db_create_object(int new_objid)
+db_create_object(Num new_objid)
 {
     Object *o;
 
