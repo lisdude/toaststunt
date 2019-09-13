@@ -1,5 +1,13 @@
+#include <unordered_map>
+
 #include "extension-sqlite.h"
 #include "extension-background.h"
+
+// Map of open connections
+static std::unordered_map <int, sqlite_conn> sqlite_connections;
+// Next database handle. This will get reset to 1 when all connections get closed.
+static int next_sqlite_handle = 1;
+
 
 /* Open an SQLite database.
  * Args: STR <path to database>, [INT options] */
