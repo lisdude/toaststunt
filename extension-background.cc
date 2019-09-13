@@ -61,7 +61,7 @@ void run_callback(void *bw)
  * is responsible for actually resuming the task and cleaning up the associated mess. */
 void network_callback(int fd, void *data)
 {
-	background_waiter *w = (background_waiter*)data;
+    background_waiter *w = (background_waiter*)data;
 
     /* Resume the MOO task if it hasn't already been killed. */
     if (w->active)
@@ -106,19 +106,19 @@ background_thread(void (*callback)(Var, Var*), Var* data, char *human_title)
         free(human_title);
         return make_var_pack(r);
     } else {
-    background_waiter *w = (background_waiter*)mymalloc(sizeof(background_waiter), M_STRUCT);
-    initialize_background_waiter(w);
-    w->callback = callback;
-    w->data = *data;
-    w->human_title = human_title;
-    if (pipe(w->fd) == -1)
-    {
-        errlog("Failed to create pipe for background thread\n");
-        deallocate_background_waiter(w);
-        return make_error_pack(E_QUOTA);
-    }
+        background_waiter *w = (background_waiter*)mymalloc(sizeof(background_waiter), M_STRUCT);
+        initialize_background_waiter(w);
+        w->callback = callback;
+        w->data = *data;
+        w->human_title = human_title;
+        if (pipe(w->fd) == -1)
+        {
+            errlog("Failed to create pipe for background thread\n");
+            deallocate_background_waiter(w);
+            return make_error_pack(E_QUOTA);
+        }
 
-    return make_suspend_pack(background_suspender, (void*)w);
+        return make_suspend_pack(background_suspender, (void*)w);
     }
 }
 
@@ -203,6 +203,7 @@ bf_thread_info(Var arglist, Byte next, void *vdata, Objid progr)
 
 /********************************************************************************************************/
 
+#ifdef BACKGROUND_TEST
 /* The background testing function. Accepts a string argument and a time argument. Its goal is simply
  * to spawn a helper thread, sleep, and then return the string back to you. */
 static package
@@ -221,12 +222,13 @@ void background_test_callback(Var args, Var *ret)
 
     sleep(wait);
 
-        ret->type = TYPE_STR;
-        if (args.v.list[0].v.num == 0)
-            ret->v.str = str_dup("Hello, world.");
-        else
-            ret->v.str = str_dup(args.v.list[1].v.str);
+    ret->type = TYPE_STR;
+    if (args.v.list[0].v.num == 0)
+        ret->v.str = str_dup("Hello, world.");
+    else
+        ret->v.str = str_dup(args.v.list[1].v.str);
 }
+#endif
 
 void
 register_background()

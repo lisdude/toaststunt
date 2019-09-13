@@ -5,16 +5,16 @@
 
 #include "bf_register.h"
 #include "functions.h"
-#include "my-unistd.h"      // sleep()
-#include "storage.h"        // myfree, mymalloc
-#include "tasks.h"          // TEA
-#include "utils.h"          // var_dup
-#include "server.h"         // server options
-#include "list.h"           // listappend
-#include "net_multi.h"      // network_fd shenanigans
-#include "dependencies/thpool.h"         // thread pool
+#include "my-unistd.h"                  // sleep()
+#include "storage.h"                    // myfree, mymalloc
+#include "tasks.h"                      // TEA
+#include "utils.h"                      // var_dup
+#include "server.h"                     // server options
+#include "list.h"                       // listappend
+#include "net_multi.h"                  // network_fd shenanigans
+#include "dependencies/thpool.h"        // thread pool
 
-#define THREAD_MOO_VERSION      "2.4"   // Version of our MOO threading library.
+#define THREAD_MOO_VERSION      "2.5"   // Version of our MOO threading library.
 #define TOTAL_BACKGROUND_THREADS 2      // The total number of background threads running in the pool.
 #define MAX_BACKGROUND_THREADS  20      /* The total number threads allowed to be run from within the MOO.
                                            Can be overridden with $server_options.max_background_threads */
@@ -22,7 +22,7 @@
 typedef struct background_waiter {
     vm the_vm;                          // Where we resume when we're done.
     int handle;                         // Our position in the process table.
-    void (*callback)(Var, Var*);      // The callback function that does the actual work.
+    void (*callback)(Var, Var*);        // The callback function that does the actual work.
     Var data;                           // Any data the callback function should be aware of.
     bool active;                        // @kill will set active to false and the callback should handle it accordingly.
     int fd[2];                          // The pipe used to resume the task immediately.
