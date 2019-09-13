@@ -122,13 +122,12 @@ make
 ### **REL/CentOS**
 ```bash
 yum group install -y "Development Tools"
-yum install -y sqlite-devel pcre-devel aspell-devel nettle-devel gperf   centos-release-scl
+yum install -y sqlite-devel pcre-devel aspell-devel nettle-devel gperf centos-release-scl
 yum install -y devtoolset-7
 scl enable devtoolset-7 bash
 autoconf
 ./configure
 make
-exit
 ```
 
 ### **Gentoo**
