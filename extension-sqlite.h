@@ -3,7 +3,6 @@
 
 #include <sqlite3.h>
 #include <stdbool.h>
-#include <map>
 
 #include "functions.h"
 #include "numbers.h"
@@ -39,11 +38,6 @@ typedef struct sqlite_result
     sqlite_conn *connection;
     Var last_result;
 } sqlite_result;
-
-// Map of open connections
-static std::map <int, sqlite_conn> sqlite_connections;
-// Next database handle. This will get reset to 1 when all connections get closed.
-static int next_sqlite_handle = 1;
 
 // Forward declarations
 extern const char *file_resolve_path(const char *);             // from fileio.cc
