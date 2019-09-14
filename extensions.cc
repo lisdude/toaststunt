@@ -525,7 +525,11 @@ void slice_thread_callback(Var arglist, Var *r)
         return;
     }
 
-    ret = new_list(alist.v.list[0].v.num);
+    /* Ideally, we could allocate the list with the number of elements in our first list.
+     * Unfortunately, if we need to return an error in the middle of setting elements in the return list,
+     * we can't free_var the entire list because some elements haven't been set yet. So instead we do it the
+     * old fashioned way unless/until somebody wants to refactor this to do all the error checking ahead of time. */
+    ret = new_list(0);
 
     for (int x = 1; x <= alist.v.list[0].v.num; x++) {
         if (alist.v.list[x].type != TYPE_LIST) {
@@ -540,10 +544,10 @@ void slice_thread_callback(Var arglist, Var *r)
                 r->v.err = E_RANGE;
                 return;
             } else {
-                ret.v.list[x] = var_dup(alist.v.list[x].v.list[index.v.num]);
+                ret = listappend(ret, var_dup(alist.v.list[x].v.list[index.v.num]));
             }
         } else {
-            Var tmp = new_list(index.v.list[0].v.num);
+            Var tmp = new_list(0);
             for (int y = 1; y <= index.v.list[0].v.num; y++) {
                 if (index.v.list[y].v.num > alist.v.list[x].v.list[0].v.num) {
                     free_var(ret);
@@ -552,10 +556,10 @@ void slice_thread_callback(Var arglist, Var *r)
                     r->v.err = E_RANGE;
                     return;
                 } else {
-                    tmp.v.list[y] = var_dup(alist.v.list[x].v.list[index.v.list[y].v.num]);
+                    tmp = listappend(tmp, var_dup(alist.v.list[x].v.list[index.v.list[y].v.num]));
                 }
             }
-            ret.v.list[x] = tmp;
+            ret = listappend(ret, tmp);
         }
     }
     *r = ret;
