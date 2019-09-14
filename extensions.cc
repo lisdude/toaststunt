@@ -532,31 +532,32 @@ void slice_thread_callback(Var arglist, Var *r)
     ret = new_list(0);
 
     for (int x = 1; x <= alist.v.list[0].v.num; x++) {
-        if (alist.v.list[x].type != TYPE_LIST) {
+        Var element = alist.v.list[x];
+        if (element.type != TYPE_LIST && element.type != TYPE_STR) {
             free_var(ret);
             r->type = TYPE_ERR;
             r->v.err = E_INVARG;
             return;
         } else if (index.type != TYPE_LIST) {
-            if (index.v.num > alist.v.list[x].v.list[0].v.num) {
+            if (index.v.num > (element.type == TYPE_STR ? memo_strlen(element.v.str) : element.v.list[0].v.num)) {
                 free_var(ret);
                 r->type = TYPE_ERR;
                 r->v.err = E_RANGE;
                 return;
             } else {
-                ret = listappend(ret, var_dup(alist.v.list[x].v.list[index.v.num]));
+                ret = listappend(ret, (element.type == TYPE_STR ? substr(var_ref(element), index.v.num, index.v.num) : var_ref(element.v.list[index.v.num])));
             }
         } else {
             Var tmp = new_list(0);
             for (int y = 1; y <= index.v.list[0].v.num; y++) {
-                if (index.v.list[y].v.num > alist.v.list[x].v.list[0].v.num) {
+                if (index.v.list[y].v.num > (element.type == TYPE_STR ? memo_strlen(element.v.str) : element.v.list[0].v.num)) {
                     free_var(ret);
                     free_var(tmp);
                     r->type = TYPE_ERR;
                     r->v.err = E_RANGE;
                     return;
                 } else {
-                    tmp = listappend(tmp, var_dup(alist.v.list[x].v.list[index.v.list[y].v.num]));
+                    tmp = listappend(tmp, (element.type == TYPE_STR ? substr(var_ref(element), index.v.list[y].v.num, index.v.list[y].v.num) : var_dup(element.v.list[index.v.list[y].v.num])));
                 }
             }
             ret = listappend(ret, tmp);
