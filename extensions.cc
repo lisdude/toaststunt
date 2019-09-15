@@ -21,6 +21,7 @@
 #include <vector>
 #include <algorithm>        // std::sort
 #include "dependencies/strnatcmp.c" // natural sorting
+#include "map.h"
 
 /**
  * On FreeBSD, CLOCK_MONOTONIC_RAW is simply CLOCK_MONOTONIC
@@ -499,7 +500,7 @@ void slice_thread_callback(Var arglist, Var *r)
     Var ret;
 
     // Validate the types here since we used TYPE_ANY to allow lists and ints
-    if (nargs > 1 && index.type != TYPE_LIST && index.type != TYPE_INT) {
+    if (nargs > 1 && index.type != TYPE_LIST && index.type != TYPE_INT && index.type != TYPE_STR) {
         r->type = TYPE_ERR;
         r->v.err = E_INVARG;
         return;
@@ -533,12 +534,25 @@ void slice_thread_callback(Var arglist, Var *r)
 
     for (int x = 1; x <= alist.v.list[0].v.num; x++) {
         Var element = alist.v.list[x];
-        if (element.type != TYPE_LIST && element.type != TYPE_STR) {
+        if ((element.type != TYPE_LIST && element.type != TYPE_STR && element.type != TYPE_MAP)
+                || ((element.type == TYPE_MAP && index.type != TYPE_STR) || (index.type == TYPE_STR && element.type != TYPE_MAP))) {
             free_var(ret);
             r->type = TYPE_ERR;
             r->v.err = E_INVARG;
             return;
-        } else if (index.type != TYPE_LIST) {
+        }
+        if (index.type == TYPE_STR) {
+            if (element.type != TYPE_MAP) {
+                free_var(ret);
+                r->type = TYPE_ERR;
+                r->v.err = E_INVARG;
+                return;
+            } else {
+                Var tmp;
+                if (maplookup(element, index, &tmp, 0) != NULL)
+                    ret = listappend(ret, var_ref(tmp));
+            }
+        } else if (index.type == TYPE_INT) {
             if (index.v.num > (element.type == TYPE_STR ? memo_strlen(element.v.str) : element.v.list[0].v.num)) {
                 free_var(ret);
                 r->type = TYPE_ERR;
@@ -547,7 +561,7 @@ void slice_thread_callback(Var arglist, Var *r)
             } else {
                 ret = listappend(ret, (element.type == TYPE_STR ? substr(var_ref(element), index.v.num, index.v.num) : var_ref(element.v.list[index.v.num])));
             }
-        } else {
+        } else if (index.type == TYPE_LIST) {
             Var tmp = new_list(0);
             for (int y = 1; y <= index.v.list[0].v.num; y++) {
                 if (index.v.list[y].v.num > (element.type == TYPE_STR ? memo_strlen(element.v.str) : element.v.list[0].v.num)) {
