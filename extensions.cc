@@ -559,7 +559,7 @@ void slice_thread_callback(Var arglist, Var *r)
                 r->v.err = E_RANGE;
                 return;
             } else {
-                ret = listappend(ret, (element.type == TYPE_STR ? substr(var_ref(element), index.v.num, index.v.num) : var_ref(element.v.list[index.v.num])));
+                ret = listappend(ret, (element.type == TYPE_STR ? substr(var_ref(element), index.v.num, index.v.num) : element.v.list[index.v.num]));
             }
         } else if (index.type == TYPE_LIST) {
             Var tmp = new_list(0);
