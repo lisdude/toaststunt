@@ -1,5 +1,10 @@
 # ToastStunt ChangeLog
 
+## 2.5.10 (In Progress)
+- Fix a bug in `slice()` where the server would crash if `slice()` raised an error in the middle of processing a list.
+- Add missing support for strings to `slice()`.
+- Add support to `slice()` for slicing maps by key. At this time it doesn't support lists of keys.
+
 ## 2.5.9 (Sep 12, 2019)
 - Add a `reverse(<list>)` function to reverse lists.
 - Add a `recreate(<object>, <parent>, <?owner>)` function. This will effectively fill in any holes created by destroy()ing an object.
