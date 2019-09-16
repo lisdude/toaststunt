@@ -1781,6 +1781,8 @@ main(int argc, char **argv)
 
     db_shutdown();
 
+    db_clear_ancestor_cache();
+
     free_str(this_program);
 
     return 0;

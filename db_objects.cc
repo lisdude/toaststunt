@@ -1191,6 +1191,8 @@ void
 db_clear_ancestor_cache(void)
 {
 #ifdef USE_ANCESTOR_CACHE /*Just in case */
+    for (auto const& x : ancestor_cache)
+        free_var(x.second);
     ancestor_cache.clear();
 #endif 
 }
