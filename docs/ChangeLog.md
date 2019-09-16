@@ -1,6 +1,6 @@
 # ToastStunt ChangeLog
 
-## 2.5.10 (In Progress)
+## 2.5.10 (Sep 16, 2019)
 - Fix a bug in `slice()` where the server would crash if `slice()` raised an error in the middle of processing a list.
 - Add missing support for strings to `slice()`.
 - Add support to `slice()` for slicing maps by key. At this time it doesn't support lists of keys.
