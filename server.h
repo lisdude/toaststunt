@@ -355,4 +355,6 @@ extern void panic_moo(const char *message);
 
 void set_system_object_integer_limits();
 
+extern void sqlite_shutdown();
+
 #endif				/* Server_H */

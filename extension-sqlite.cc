@@ -59,7 +59,7 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
     if (rc != SQLITE_OK)
     {
         const char *err = sqlite3_errmsg(handle->id);
-        deallocate_handle(index);
+        deallocate_handle(index, false);
         return make_raise_pack(E_NONE, err, var_ref(zero));
     } else {
         handle->path = str_dup(path);
@@ -91,7 +91,7 @@ bf_sqlite_close(Var arglist, Byte next, void *vdata, Objid progr)
     if (handle->locks > 0)
         return make_raise_pack(E_PERM, "Handle can't be closed until all worker threads are finished", var_ref(zero));
 
-    deallocate_handle(index);
+    deallocate_handle(index, false);
 
     return no_var_pack();
 }
@@ -374,14 +374,15 @@ int allocate_handle()
 }
 
 /* Free up memory and remove a handle from the connection map. */
-void deallocate_handle(int handle)
+void deallocate_handle(int handle, bool shutdown)
 {
     sqlite_conn conn = sqlite_connections[handle];
 
     sqlite3_close(conn.id);
     if (conn.path != NULL)
         free_str(conn.path);
-    sqlite_connections.erase(handle);
+    if (!shutdown)
+        sqlite_connections.erase(handle);
 
     if (sqlite_connections.size() == 0)
         next_sqlite_handle = 1;
@@ -500,6 +501,13 @@ Stream* object_to_string(Var *thing)
     stream_printf(s, "#%d", thing->v.num);
 
     return s;
+}
+
+/* Clean up when the server shuts down. */
+void sqlite_shutdown()
+{
+    for (auto const& x : sqlite_connections)
+        deallocate_handle(x.first, true);
 }
 
 void

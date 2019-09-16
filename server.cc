@@ -1782,6 +1782,7 @@ main(int argc, char **argv)
     db_shutdown();
 
     db_clear_ancestor_cache();
+    sqlite_shutdown();
 
     free_str(this_program);
 
