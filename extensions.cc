@@ -22,6 +22,7 @@
 #include <algorithm>        // std::sort
 #include "dependencies/strnatcmp.c" // natural sorting
 #include "map.h"
+#include <string.h>         // strtok
 
 /**
  * On FreeBSD, CLOCK_MONOTONIC_RAW is simply CLOCK_MONOTONIC
@@ -441,42 +442,31 @@ bf_round(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ret);
 }
 
-/* Return a list of substrings of an argument separated by a break. */
+/* Return a list of substrings of an argument separated by a delimiter. */
     static package
 bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    int nargs = arglist.v.list[0].v.num;
-    Stream *brk = new_stream(2);
-    stream_add_string(brk, (nargs > 1) ? arglist.v.list[2].v.str : " ");
-    Var r;
+    const int nargs = arglist.v.list[0].v.num;
+    const char *delim = (nargs > 1 ? arglist.v.list[2].v.str : " ");
+    const bool adjacent_delim = (nargs > 2 && is_true(arglist.v.list[3]));
+    char *found, *return_string, *freeme;
+    Var ret = new_list(0);
 
-    if (strcmp(stream_contents(brk), "") == 0) {
-        // Do we want to break it into letters here?
-        r.type = TYPE_ERR;
-        r.v.err = E_INVARG;
-    } else {
-        r = new_list(0);
-        int i, l = stream_length(brk);
-        Stream *tmp = new_stream(memo_strlen(arglist.v.list[1].v.str)+1);
-        stream_add_string(tmp, arglist.v.list[1].v.str);
-        stream_add_string(tmp, stream_contents(brk));
-
-        Var subject;
-        subject.type = TYPE_STR;
-        subject.v.str = str_dup(reset_stream(tmp));
-        free_stream(tmp);
-
-        while (memo_strlen(subject.v.str)) {
-            if ((i = strindex(subject.v.str, memo_strlen(subject.v.str), stream_contents(brk), stream_length(brk), 0)) > 1) {
-                r = listappend(r, substr(var_dup(subject), 1, i - 1));
-            }
-            subject = substr(subject, i + l, memo_strlen(subject.v.str));
-        }
-        free_var(subject);
-    }
+    freeme = return_string = strdup(arglist.v.list[1].v.str);
     free_var(arglist);
-    free_stream(brk);
-    return make_var_pack(r);
+
+    if (adjacent_delim) {
+        while ((found = strsep(&return_string, delim)) != NULL)
+            ret = listappend(ret, str_dup_to_var(found));
+    } else {
+        found = strtok(return_string, delim);
+        while (found != NULL) {
+            ret = listappend(ret, str_dup_to_var(found));
+            found = strtok(NULL, delim);
+        }
+    }
+    free(freeme);
+    return make_var_pack(ret);
 }
 
     static package
@@ -844,7 +834,7 @@ register_extensions()
     register_function("ftime", 0, 1, bf_ftime, TYPE_INT);
     register_function("panic", 0, 1, bf_panic, TYPE_STR);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
-    register_function("explode", 1, 2, bf_explode, TYPE_STR, TYPE_STR);
+    register_function("explode", 1, 3, bf_explode, TYPE_STR, TYPE_STR, TYPE_INT);
     register_function("reverse", 1, 1, bf_reverse, TYPE_LIST);
     register_function("slice", 1, 2, bf_slice, TYPE_LIST, TYPE_ANY);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_ANY, TYPE_INT);
