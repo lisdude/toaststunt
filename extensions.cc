@@ -472,14 +472,34 @@ bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
     static package
 bf_reverse(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    int elements = arglist.v.list[1].v.list[0].v.num;
-    Var ret = new_list(elements);
+    Var ret;
 
-    for (int x = elements, y = 1; x >= 1; x--, y++)
-        ret.v.list[y] = var_ref(arglist.v.list[1].v.list[x]);
+    if (arglist.v.list[1].type == TYPE_LIST) {
+        int elements = arglist.v.list[1].v.list[0].v.num;
+        ret = new_list(elements);
+
+        for (size_t x = elements, y = 1; x >= 1; x--, y++) {
+            ret.v.list[y] = var_ref(arglist.v.list[1].v.list[x]);
+        }
+    } else if (arglist.v.list[1].type == TYPE_STR) {
+        size_t len = memo_strlen(arglist.v.list[1].v.str);
+        if (len <= 1) {
+            ret = var_ref(arglist.v.list[1]);
+        } else {
+            char *new_str = (char *)mymalloc(len + 1, M_STRING);
+            for (size_t x = 0, y = len-1; x < len; x++, y--)
+                new_str[x] = arglist.v.list[1].v.str[y];
+            new_str[len] = '\0';
+            ret.type = TYPE_STR;
+            ret.v.str = new_str;
+        }
+    } else {
+        ret.type = TYPE_ERR;
+        ret.v.err = E_INVARG;
+    }
 
     free_var(arglist);
-    return make_var_pack(ret);
+    return ret.type == TYPE_ERR ? make_error_pack(ret.v.err) : make_var_pack(ret);
 }
 
 void slice_thread_callback(Var arglist, Var *r)
@@ -835,7 +855,7 @@ register_extensions()
     register_function("panic", 0, 1, bf_panic, TYPE_STR);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
     register_function("explode", 1, 3, bf_explode, TYPE_STR, TYPE_STR, TYPE_INT);
-    register_function("reverse", 1, 1, bf_reverse, TYPE_LIST);
+    register_function("reverse", 1, 1, bf_reverse, TYPE_ANY);
     register_function("slice", 1, 2, bf_slice, TYPE_LIST, TYPE_ANY);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_ANY, TYPE_INT);
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
