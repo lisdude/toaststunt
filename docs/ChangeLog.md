@@ -4,6 +4,9 @@
 - Fix a bug in `slice()` where the server would crash if `slice()` raised an error in the middle of processing a list.
 - Add missing support for strings to `slice()`.
 - Add support to `slice()` for slicing maps by key. At this time it doesn't support lists of keys.
+- Increase the performance of the `explode()` builtin.
+- Add a third argument to the `explode()` builtin to indicate that sequential occurences of the delimiter should be included in the return result.
+- Fix a memory leak when clearing the ancestor cache.
 
 ## 2.5.9 (Sep 12, 2019)
 - Add a `reverse(<list>)` function to reverse lists.
