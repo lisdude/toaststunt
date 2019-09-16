@@ -7,6 +7,7 @@
 - Increase the performance of the `explode()` builtin.
 - Add a third argument to the `explode()` builtin to indicate that sequential occurences of the delimiter should be included in the return result.
 - Fix a memory leak when clearing the ancestor cache.
+- The `reverse()` function now accepts strings.
 
 ## 2.5.9 (Sep 12, 2019)
 - Add a `reverse(<list>)` function to reverse lists.
