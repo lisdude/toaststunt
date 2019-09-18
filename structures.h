@@ -123,22 +123,6 @@ typedef struct rbtree rbtree;
 typedef struct rbnode rbnode;
 typedef struct rbtrav rbtrav;
 
-/* Experimental.  On the Alpha, DEC cc allows us to specify certain
- * pointers to be 32 bits, but only if we compile and link with "-taso
- * -xtaso" in CFLAGS, which limits us to a 31-bit address space.  This
- * could be a win if your server is thrashing.  Running JHM's db, SIZE
- * went from 50M to 42M.  No doubt these pragmas could be applied
- * elsewhere as well, but I know this at least manages to load and run
- * a non-trivial db.
- */
-
-/* #define SHORT_ALPHA_VAR_POINTERS 1 */
-
-#ifdef SHORT_ALPHA_VAR_POINTERS
-#pragma pointer_size save
-#pragma pointer_size short
-#endif
-
 /* defined in db_private.h */
 typedef struct Object Object;
 
@@ -274,10 +258,6 @@ typedef struct var_pair {
     Var a;
     Var b;
 } var_pair;
-
-#ifdef SHORT_ALPHA_VAR_POINTERS
-#pragma pointer_size restore
-#endif
 
 extern Var zero;		/* see numbers.c */
 extern Var nothing;		/* see objects.c */
