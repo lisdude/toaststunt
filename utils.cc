@@ -335,17 +335,17 @@ complex_var_dup(Var v)
 	v = iter_dup(v);
 	break;
     case TYPE_WAIF:
-	v = var_ref(v);
+    v.v.waif = dup_waif(v.v.waif);
 	break;
     case TYPE_ANON:
-	v = var_ref(v);
+	panic_moo("cannot var_dup() anonymous objects\n");
 	break;
     }
     return v;
 }
 
 /* could be inlined and use complex_etc like the others, but this should
- * usually be called in a context where we already konw the type.
+ * usually be called in a context where we already know the type.
  */
 int
 var_refcount(Var v)
@@ -367,6 +367,9 @@ var_refcount(Var v)
 	if (v.v.anon)
 	    return refcount(v.v.anon);
 	break;
+    case TYPE_WAIF:
+    return refcount(v.v.waif);
+    break;
     }
     return 1;
 }
