@@ -32,11 +32,30 @@
 #include "utils.h"
 
 static FILE *log_file = 0;
+static const char *log_file_name = 0;
 
 void
 set_log_file(FILE * f)
 {
     log_file = f;
+}
+
+FILE*
+get_log_file()
+{
+    return log_file;
+}
+
+void
+set_log_file_name(const char *name)
+{
+    log_file_name = name;
+}
+
+const char*
+get_log_file_name()
+{
+    return log_file_name;
 }
 
 int log_pcount = 5000;

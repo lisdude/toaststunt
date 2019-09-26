@@ -84,6 +84,8 @@ static Checkpoint_Reason checkpoint_requested = CHKPT_OFF;
 
 static int checkpoint_finished = 0;	/* 1 = failure, 2 = success */
 
+static bool reopen_logfile_requested = false;
+
 typedef struct shandle {
     struct shandle *next, **prev;
     network_handle nhandle;
@@ -249,8 +251,8 @@ panic_moo(const char *message)
     log_command_history();
 
     if (in_child) {		/* We're a forked checkpointer */
-	errlog("Child shutting down parent via USR1 signal\n");
-	kill(parent_pid, SIGUSR1);
+	errlog("Child shutting down parent via INT signal\n");
+	kill(parent_pid, SIGINT);
 	_exit(1);
     }
     print_error_backtrace("server panic", output_to_log);
@@ -295,6 +297,13 @@ shutdown_signal(int sig)
 {
     shutdown_triggered = true;
     shutdown_message << "shutdown signal received";
+}
+
+static void
+logfile_signal(int sig)
+{
+    if (get_log_file())
+        reopen_logfile_requested = true;
 }
 
 static void
@@ -372,7 +381,7 @@ setup_signals(void)
 
     signal(SIGINT, shutdown_signal);
     signal(SIGTERM, shutdown_signal);
-    signal(SIGUSR1, shutdown_signal);	/* remote shutdown signal */
+    signal(SIGUSR1, logfile_signal);	    /* logfile reopen signal */
     signal(SIGUSR2, checkpoint_signal);		/* remote checkpoint signal */
 
     signal(SIGCHLD, child_completed_signal);
@@ -684,6 +693,22 @@ main_loop(void)
 	    || checkpoint_requested != CHKPT_OFF)
 	    gc_collect();
 #endif
+
+    if (reopen_logfile_requested) {
+        reopen_logfile_requested = false;
+
+        FILE *new_log;
+        oklog("CLOSING logfile due to remote request signal.\n");
+
+        new_log = fopen(get_log_file_name(), "a");
+        if (new_log) {
+            fclose(get_log_file());
+            set_log_file(new_log);
+            oklog("RE-OPENING logfile due to remote request signal.\n");
+        } else {
+            perror("Error re-opening log file.");
+        }
+    }
 
 	if (checkpoint_requested != CHKPT_OFF) {
 	    if (checkpoint_requested == CHKPT_SIGNAL)
@@ -1638,6 +1663,7 @@ main(int argc, char **argv)
 	case 'l':		/* Specified log file */
 	    if (argc > 1) {
 		log_file = argv[1];
+        set_log_file_name(log_file);
 		argc--;
 		argv++;
 	    } else
