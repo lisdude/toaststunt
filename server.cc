@@ -698,15 +698,15 @@ main_loop(void)
         reopen_logfile_requested = false;
 
         FILE *new_log;
-        oklog("CLOSING logfile due to remote request signal.\n");
+        oklog("LOGFILE: Closing due to remote request signal.\n");
 
         new_log = fopen(get_log_file_name(), "a");
         if (new_log) {
             fclose(get_log_file());
             set_log_file(new_log);
-            oklog("RE-OPENING logfile due to remote request signal.\n");
+            oklog("LOGFILE: Reopening due to remote request signal.\n");
         } else {
-            perror("Error re-opening log file.");
+            perror("Error reopening log file.");
         }
     }
 
