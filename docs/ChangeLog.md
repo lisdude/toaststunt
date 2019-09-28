@@ -2,8 +2,9 @@
 
 ## 2.5.11 (In Progress)
 - Catch SIGUSR1 and, if the server was started with a log file, will close and reopen the file. This way scripts can move the old log file and `kill -SIGUSR1 <pid>` to rotate logs without restarting the server.
+- Add an `all_members(<value>, <list>)` function to return the indices of all occurances of <value> in <list>.
 
-** WARNING **: This redefines the SIGUSR1 signal to mean 'reopen logfile' rather than 'shutdown'. If you rely on the old behavior, you will need to update your scripts accordingly.
+**WARNING**: This redefines the SIGUSR1 signal to mean 'reopen logfile' rather than 'shutdown'. If you rely on the old behavior, you will need to update your scripts accordingly.
 
 ## 2.5.10 (Sep 16, 2019)
 - Fix a bug in `slice()` where the server would crash if `slice()` raised an error in the middle of processing a list.
