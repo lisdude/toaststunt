@@ -1183,7 +1183,7 @@ db_object_isa(Var object, Var parent)
 
 	ancestors = listconcat(ancestors, enlist_var(var_ref(t->parents)));
     }
-
+    free_var(ancestors);
     return 0;
 }
 
