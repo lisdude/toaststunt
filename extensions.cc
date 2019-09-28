@@ -696,6 +696,27 @@ bf_chr(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+void all_members_thread_callback(Var arglist, Var *ret)
+{
+    *ret = new_list(0);
+    Var data = arglist.v.list[1];
+    Var *thelist = arglist.v.list[2].v.list;
+
+    for (int x = 1, list_size = arglist.v.list[2].v.list[0].v.num; x <= list_size; x++)
+        if (equality(data, thelist[x], 0))
+            *ret = listappend(*ret, Var::new_int(x));
+}
+
+/* Return the indices of all elements of a value in a list. */
+    static package
+bf_all_members(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    char *human_string = 0;
+    asprintf(&human_string, "all_members in %" PRIdN " element list", arglist.v.list[2].v.list[0].v.num);
+
+    return background_thread(all_members_thread_callback, &arglist, human_string);
+}
+
 // ============= ANSI ===============
     static package
 bf_parse_ansi(Var arglist, Byte next, void *vdata, Objid progr)
@@ -847,6 +868,7 @@ register_extensions()
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
     register_function("chr", 1, 1, bf_chr, TYPE_INT);
     register_function("sort", 1, 4, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_INT, TYPE_INT);
+    register_function("all_members", 2, 2, bf_all_members, TYPE_ANY, TYPE_LIST);
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
