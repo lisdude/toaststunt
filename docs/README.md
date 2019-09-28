@@ -91,6 +91,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - sort (a significantly faster replacement for the :sort verb. Also allows for natural sort order and reverse sorting)
     - recreate (fill holes created by destroy() by recreating valid objects with those object numbers)
     - reverse (reverse lists)
+    - all_members (return the indices of all instances of a type in a list)
 
 - Miscellaneous changes:
     - Numeric IP addresses in connection_name
@@ -109,6 +110,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - Support object lists in isa() as well as an optional third argument to return the matching parent rather than simply true or false
     - New argument to move() to effectively listinsert() the object into the destination's .contents
     - New argument to is_member() for controlling case sensitivity of equality comparisons. No third argument or a true value results in standard functionality; a false value as the third argument results in case not mattering at all
+    - SIGUSR1 will close and reopen the logfile, allowing it to be rotated without restarting the server.
 
 ## Build Instructions
 ### **Debian/Ubuntu**

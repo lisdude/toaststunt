@@ -460,10 +460,7 @@ equality(Var lhs, Var rhs, int case_matters)
 	    else
 		return !strcasecmp(lhs.v.str, rhs.v.str);
 	case TYPE_FLOAT:
-	    if (lhs.v.fnum == rhs.v.fnum)
-		return 1;
-	    else
-		return (lhs.v.fnum) == (rhs.v.fnum);
+		return lhs.v.fnum == rhs.v.fnum;
 	case TYPE_LIST:
 	    return listequal(lhs, rhs, case_matters);
 	case TYPE_MAP:
