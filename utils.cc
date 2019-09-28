@@ -451,6 +451,10 @@ equality(Var lhs, Var rhs, int case_matters)
 	case TYPE_STR:
 	    if (lhs.v.str == rhs.v.str)
 		return 1;
+#ifdef MEMO_STRLEN
+        else if (memo_strlen(lhs.v.str) != memo_strlen(rhs.v.str))
+        return 0;
+#endif /* memo_strlen */
 	    else if (case_matters)
 		return !strcmp(lhs.v.str, rhs.v.str);
 	    else
