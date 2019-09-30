@@ -114,7 +114,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 {
     Objid what = data->what, where = data->where;
     int position = data->position, accepts;
-    Objid oid, oldloc;
+    Objid oid, oldloc = valid(what) ? db_object_location(what) : NOTHING;
     Var args;
     enum error e;
 
@@ -163,7 +163,6 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	    if (oid == what)
 		return make_error_pack(E_RECMOVE);
 
-	oldloc = db_object_location(what);
 	db_change_location(what, where, position);
 
 	if (where != oldloc) {
@@ -458,7 +457,7 @@ bf_recreate(Var arglist, Byte next, void *vdata, Objid progr)
     if (arglist.v.list[0].v.num > 2 && arglist.v.list[3].type == TYPE_OBJ && is_valid(arglist.v.list[3]))
         owner = arglist.v.list[3].v.obj;
 
-	if ((progr != owner && !is_wizard(progr))
+    if ((progr != owner && !is_wizard(progr))
 		 || (arglist.v.list[2].type == TYPE_OBJ
 		     && valid(arglist.v.list[2].v.obj)
 		     && !db_object_allows(arglist.v.list[2], progr, FLAG_FERTILE))) {

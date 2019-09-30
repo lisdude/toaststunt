@@ -2998,7 +2998,7 @@ bf_finished_tasks(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     if (!is_wizard(progr))
-	return make_error_pack(E_PERM);
+	    return make_error_pack(E_PERM);
 
 	return make_var_pack(var_ref(finished_tasks));
 }

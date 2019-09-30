@@ -709,7 +709,7 @@ bf_file_writeline(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = file_raise_notokcall("file_writeline", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
-  } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_WRITE)
+  } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_WRITE))
 	 r = make_raise_pack(E_INVARG, "File is open read-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
@@ -858,7 +858,7 @@ bf_file_write(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = file_raise_notokcall("file_write", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
-  } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_WRITE)
+  } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_WRITE))
 	 r = make_raise_pack(E_INVARG, "File is open read-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
