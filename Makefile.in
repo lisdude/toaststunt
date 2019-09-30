@@ -367,13 +367,13 @@ execute.o: execute.cc my-string.h config.h options.h collection.h \
  decompile.h ast.h parser.h sym_table.h eval_env.h eval_vm.h execute.h \
  opcode.h parse_cmd.h functions.h list.h streams.h log.h map.h numbers.h \
  dependencies/sosemanuk.h server.h network.h tasks.h timers.h my-time.h \
- utils.h waif.h db_private.h
+ utils.h waif.h db_private.h extension-background.h dependencies/thpool.h
 extensions.o: extensions.cc functions.h my-stdio.h config.h options.h \
  execute.h db.h program.h structures.h storage.h my-string.h version.h \
  opcode.h parse_cmd.h log.h utils.h streams.h numbers.h \
  dependencies/sosemanuk.h list.h my-stdlib.h random.h server.h network.h \
- extension-background.h bf_register.h my-unistd.h tasks.h net_multi.h \
- dependencies/thpool.h dependencies/strnatcmp.c dependencies/strnatcmp.h
+ extension-background.h dependencies/thpool.h dependencies/strnatcmp.c \
+ dependencies/strnatcmp.h map.h
 fileio.o: fileio.cc my-stat.h config.h options.h my-unistd.h my-ctype.h \
  my-string.h structures.h my-stdio.h storage.h bf_register.h functions.h \
  execute.h db.h program.h version.h opcode.h parse_cmd.h list.h streams.h \
@@ -476,7 +476,8 @@ tasks.o: tasks.cc my-string.h config.h options.h my-time.h my-in.h \
  db_io.h decompile.h ast.h parser.h sym_table.h eval_env.h eval_vm.h \
  execute.h opcode.h parse_cmd.h functions.h http_parser.h list.h \
  streams.h log.h map.h match.h random.h server.h network.h tasks.h \
- utils.h verbs.h name_lookup.h
+ utils.h verbs.h name_lookup.h extension-background.h \
+ dependencies/thpool.h
 timers.o: timers.cc my-signal.h config.h options.h my-stdlib.h \
  my-sys-time.h my-types.h my-time.h my-unistd.h timers.h
 unparse.o: unparse.cc my-ctype.h config.h options.h my-stdio.h ast.h \
@@ -496,22 +497,21 @@ version.o: version.cc config.h options.h version.h structures.h \
  my-stdio.h storage.h my-string.h list.h streams.h utils.h execute.h db.h \
  program.h opcode.h parse_cmd.h server.h network.h version_src.h \
  version_options.h
-extension-sqlite.o: extension-sqlite.cc extension-sqlite.h functions.h \
- my-stdio.h config.h options.h execute.h db.h program.h structures.h \
- storage.h my-string.h version.h opcode.h parse_cmd.h numbers.h \
- dependencies/sosemanuk.h utils.h streams.h list.h log.h server.h \
- network.h map.h extension-background.h bf_register.h my-unistd.h tasks.h \
- net_multi.h dependencies/thpool.h
-extension-pcre.o: extension-pcre.cc extension-pcre.h functions.h \
- my-stdio.h config.h options.h execute.h db.h program.h structures.h \
- storage.h my-string.h version.h opcode.h parse_cmd.h list.h streams.h \
+extension-sqlite.o: extension-sqlite.cc extension-sqlite.h structures.h \
+ my-stdio.h config.h options.h storage.h my-string.h streams.h \
+ extension-background.h functions.h execute.h db.h program.h version.h \
+ opcode.h parse_cmd.h dependencies/thpool.h numbers.h \
+ dependencies/sosemanuk.h utils.h list.h log.h server.h network.h map.h
+extension-pcre.o: extension-pcre.cc extension-pcre.h structures.h \
+ my-stdio.h config.h options.h storage.h my-string.h functions.h \
+ execute.h db.h program.h version.h opcode.h parse_cmd.h list.h streams.h \
  utils.h log.h server.h network.h map.h dependencies/pcrs.h \
  dependencies/xtrapbits.h
 extension-background.o: extension-background.cc extension-background.h \
- bf_register.h functions.h my-stdio.h config.h options.h execute.h db.h \
- program.h structures.h storage.h my-string.h version.h opcode.h \
- parse_cmd.h my-unistd.h tasks.h utils.h streams.h server.h network.h \
- list.h net_multi.h dependencies/thpool.h log.h
+ functions.h my-stdio.h config.h options.h execute.h db.h program.h \
+ structures.h storage.h my-string.h version.h opcode.h parse_cmd.h \
+ dependencies/thpool.h bf_register.h my-unistd.h tasks.h utils.h \
+ streams.h server.h network.h list.h net_multi.h log.h
 waif.o: waif.cc structures.h my-stdio.h config.h options.h storage.h \
  my-string.h bf_register.h functions.h execute.h db.h program.h version.h \
  opcode.h parse_cmd.h streams.h utils.h db_private.h db_io.h waif.h \
@@ -523,7 +523,8 @@ extension-simplexnoise.o: extension-simplexnoise.cc bf_register.h \
  extension-simplexnoise.h
 extension-argon2.o: extension-argon2.cc options.h config.h functions.h \
  my-stdio.h execute.h db.h program.h structures.h storage.h my-string.h \
- version.h opcode.h parse_cmd.h utils.h streams.h log.h
+ version.h opcode.h parse_cmd.h utils.h streams.h log.h map.h \
+ extension-background.h dependencies/thpool.h
 extension-spellcheck.o: extension-spellcheck.cc options.h config.h \
  bf_register.h functions.h my-stdio.h execute.h db.h program.h \
  structures.h storage.h my-string.h version.h opcode.h parse_cmd.h log.h \

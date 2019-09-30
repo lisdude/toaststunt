@@ -1,9 +1,10 @@
 # ToastStunt ChangeLog
 
-## 2.5.11 (In Progress)
+## 2.5.11 (Sep 30, 2019)
 - Catch SIGUSR1 and, if the server was started with a log file, close and reopen the file. This way scripts can move the old log file and `kill -SIGUSR1 <pid>` to rotate logs without restarting the server.
 - Add an `all_members(<value>, <list>)` function to return the indices of all occurances of <value> in <list>.
 - Improve performance of string comparisons by using the pre-computed length (if `MEMO_STRLEN` is enabled in options.h) of strings to rule out equality before doing a character by character comparison.
+- Add the ability to specify the default thread mode in `extension-background.h`. By default (true), threaded functions are threaded unless you explicitly `set_thread_mode(0)`. When set to false, threaded functions are not threaded until you explicitly `set_thread_mode(1)`
 
 **WARNING**: This redefines the SIGUSR1 signal to mean 'reopen logfile' rather than 'shutdown'. If you rely on the old behavior, you will need to update your scripts accordingly.
 

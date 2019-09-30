@@ -17,6 +17,9 @@
 
 #include <sys/socket.h>
 #include <stdlib.h>
+#include <sys/time.h>
+#include <math.h>
+#include <arpa/inet.h>
 
 #include "my-string.h"
 #include "my-time.h"
@@ -48,10 +51,7 @@
 #include "verbs.h"
 #include "version.h"
 #include "name_lookup.h"
-
-#include <sys/time.h>
-#include <math.h>
-#include <arpa/inet.h>
+#include "extension-background.h"
 
 #define ROUND(tvp)	((tvp)->tv_sec + ((tvp)->tv_usec > 500000))
 
@@ -1319,7 +1319,7 @@ enqueue_forked_task2(activation a, int f_index, double after_seconds, int vid)
     a.verb = str_ref(a.verb);
     a.verbname = str_ref(a.verbname);
     a.prog = program_ref(a.prog);
-    a.threaded = true;
+    a.threaded = DEFAULT_THREAD_MODE;
     if (vid >= 0) {
 	free_var(a.rt_env[vid]);
 	a.rt_env[vid].type = TYPE_INT;
@@ -1814,7 +1814,7 @@ run_ready_tasks(void)
 			ft = t->t.forked;
 			current_task_id = ft.id;
 			current_local = new_map();
-            ft.a.threaded = true;
+            ft.a.threaded = DEFAULT_THREAD_MODE;
 			do_forked_task(ft.program, ft.rt_env, ft.a,
 				       ft.f_index);
 			current_task_id = -1;
