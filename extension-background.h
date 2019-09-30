@@ -3,15 +3,7 @@
 
 #include <map>
 
-#include "bf_register.h"
 #include "functions.h"
-#include "my-unistd.h"                  // sleep()
-#include "storage.h"                    // myfree, mymalloc
-#include "tasks.h"                      // TEA
-#include "utils.h"                      // var_dup
-#include "server.h"                     // server options
-#include "list.h"                       // listappend
-#include "net_multi.h"                  // network_fd shenanigans
 #include "dependencies/thpool.h"        // thread pool
 
 #define THREAD_MOO_VERSION      "2.5"   // Version of our MOO threading library.
@@ -30,16 +22,12 @@ typedef struct background_waiter {
     char *human_title;                  // A human readable explanation for the thread's existance.
 } background_waiter;
 
-static std::map <int, background_waiter*> background_process_table;
-static int next_background_handle = 1;
-static threadpool background_pool;
-
 // User-visible functions
 extern package background_thread(void (*callback)(Var, Var*), Var* data, char *human_title);
 extern bool can_create_thread();
 
 // Other helper functions
-extern void deallocate_background_waiter(background_waiter *waiter);
+void deallocate_background_waiter(background_waiter *waiter);
 void initialize_background_waiter(background_waiter *waiter);
 void run_callback(void *bw);
 

@@ -3,14 +3,7 @@
 
 #include <pcre.h>
 
-#include "functions.h"
-#include "list.h"
-#include "utils.h"
-#include "log.h"
-#include "server.h"
-#include "map.h"
-#include "dependencies/pcrs.h"
-#include "dependencies/xtrapbits.h"
+#include "structures.h"
 
 #define EXT_PCRE_VERSION    "3.0"
 #define DEFAULT_LOOPS       1000

@@ -2,16 +2,9 @@
 #define EXTENSION_SQLITE_H
 
 #include <sqlite3.h>
-#include <stdbool.h>
 
-#include "functions.h"
-#include "numbers.h"
-#include "utils.h"
-#include "list.h"
-#include "storage.h"
-#include "log.h"
-#include "server.h"
-#include "map.h"
+#include "structures.h"
+#include "streams.h"
 
 #define SQLITE_MOO_VERSION      "2.1"
 #define SQLITE_MAX_HANDLES      20  /* Maximum number of SQLite databases that can be open

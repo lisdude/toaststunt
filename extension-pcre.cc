@@ -1,5 +1,14 @@
 #include <ctype.h>
+
 #include "extension-pcre.h"
+#include "functions.h"
+#include "list.h"
+#include "utils.h"
+#include "log.h"
+#include "server.h"
+#include "map.h"
+#include "dependencies/pcrs.h"
+#include "dependencies/xtrapbits.h"
 
 static struct pcre_cache_entry *
 get_pcre(const char *string, unsigned char options) {

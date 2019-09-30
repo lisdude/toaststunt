@@ -1,5 +1,13 @@
 #include "extension-background.h"
-#include "log.h"
+#include "bf_register.h"
+#include "my-unistd.h"                  // sleep()
+#include "storage.h"                    // myfree, mymalloc
+#include "tasks.h"                      // TEA
+#include "utils.h"                      // var_dup
+#include "server.h"                     // server options
+#include "list.h"                       // listappend
+#include "net_multi.h"                  // network_fd shenanigans
+#include "log.h"                        // errlog
 
 /*
   A general-purpose extension for doing work in separate threads. The entrypoint (background_thread)
@@ -18,6 +26,9 @@
      - Resuming tasks with data from external threads
 */
 
+static threadpool background_pool;
+static std::map <int, background_waiter*> background_process_table;
+static int next_background_handle = 1;
 
 /* @forked will use the enumerator to find relevant tasks in your external queue, so everything we've spawned
  * will need to return TEA_CONTINUE to get counted. The enumerator handles cases where you kill_task from inside the MOO. */
