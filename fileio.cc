@@ -538,7 +538,6 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
   Var rv;
   int len;
   file_mode mode;
-  file_type type;
   const char *line;
 
   errno = 0;
@@ -550,12 +549,12 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
   } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
 	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else {
-	 type = file_handle_type(fhandle);
 	 if ((line = file_get_line(fhandle, &len)) == NULL)
 		r = file_raise_errno("readline");
 	 else {
 		rv.type = TYPE_STR;
 #ifndef UNSAFE_FIO
+	    file_type type = file_handle_type(fhandle);
 		rv.v.str = str_dup((type->in_filter)(line, len));
 #else
         /* For good reason, you can't modify a const char. But shh, we're doing it anyway. */
@@ -605,7 +604,6 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
   Num begin = arglist.v.list[2].v.num;
   Num end   = arglist.v.list[3].v.num;
   Num begin_loc = 0, linecount = 0;
-  file_type type;
   file_mode mode;
   Var rv;
   int current_line = 0, len = 0, i = 0;
@@ -624,7 +622,9 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
   } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
 	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else {
-
+#ifndef UNSAFE_FIO
+    file_type type = file_handle_type(fhandle); /* Quiet warning */
+#endif
 	 /* Back to the beginning ... */
 	 rewind(f);
 
@@ -637,8 +637,6 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 	 if (((begin != 0) && (line == NULL)) || ((begin_loc = ftell(f)) == -1))
 		r = file_raise_errno("read_line");
 	 else {
-		type = file_handle_type(fhandle);
-
 		/*
 		 * now that we have where to begin, it's time to slurp lines
 		 * and seek to EOF or to the end_line, whichever comes first
