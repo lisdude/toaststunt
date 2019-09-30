@@ -27,6 +27,7 @@
 #include "storage.h"
 #include "structures.h"
 #include "utils.h"
+#include "log.h"
 
 static int
 controls(Objid who, Objid what)
@@ -114,7 +115,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 {
     Objid what = data->what, where = data->where;
     int position = data->position, accepts;
-    Objid oid, oldloc = valid(what) ? db_object_location(what) : NOTHING;
+    Objid oid, oldloc = FAILED_MATCH;
     Var args;
     enum error e;
 
@@ -163,6 +164,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	    if (oid == what)
 		return make_error_pack(E_RECMOVE);
 
+    oldloc = db_object_location(what);
 	db_change_location(what, where, position);
 
 	if (where != oldloc) {
