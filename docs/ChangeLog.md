@@ -1,5 +1,8 @@
 # ToastStunt ChangeLog
 
+## 2.5.12 (In Progress)
+- The `chr()` function can now accept any number of arguments, similar to how `encode_binary()` works.
+
 ## 2.5.11 (Sep 30, 2019)
 - Catch SIGUSR1 and, if the server was started with a log file, close and reopen the file. This way scripts can move the old log file and `kill -SIGUSR1 <pid>` to rotate logs without restarting the server.
 - Add an `all_members(<value>, <list>)` function to return the indices of all occurances of <value> in <list>.
