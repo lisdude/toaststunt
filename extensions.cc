@@ -659,43 +659,6 @@ bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(locs);
 }
 
-/* Return a symbol for the ASCII value associated. */
-    static package
-bf_chr(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    Var r;
-    char str[2];
-
-    switch (arglist.v.list[1].type) {
-        case TYPE_INT:
-            if ((arglist.v.list[1].v.num < 1) || (arglist.v.list[1].v.num > 255)) {
-                free_var(arglist);
-                return make_error_pack(E_INVARG);
-            } else if (arglist.v.list[1].v.num < 32 && !is_wizard(progr)) {
-                free_var(arglist);
-                return make_error_pack(E_PERM);
-            }
-            str[0] = (char) arglist.v.list[1].v.num;
-            str[1] = '\0';
-            r.type = TYPE_STR;
-            r.v.str = str_dup(str);
-            break;
-        case TYPE_STR:
-            if (!(r.v.num = (int) arglist.v.list[1].v.str[0])) {
-                free_var(arglist);
-                return make_error_pack(E_INVARG);
-            }
-            r.type = TYPE_INT;
-            break;
-        default:
-            free_var(arglist);
-            return make_error_pack(E_TYPE);
-    }
-
-    free_var(arglist);
-    return make_var_pack(r);
-}
-
 void all_members_thread_callback(Var arglist, Var *ret)
 {
     *ret = new_list(0);
@@ -866,7 +829,6 @@ register_extensions()
     register_function("slice", 1, 2, bf_slice, TYPE_LIST, TYPE_ANY);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_ANY, TYPE_INT);
     register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
-    register_function("chr", 1, 1, bf_chr, TYPE_INT);
     register_function("sort", 1, 4, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_INT, TYPE_INT);
     register_function("all_members", 2, 2, bf_all_members, TYPE_ANY, TYPE_LIST);
     // ======== ANSI ===========

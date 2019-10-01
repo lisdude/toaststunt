@@ -1270,13 +1270,13 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static int
-encode_binary(Stream * s, Var v)
+encode_binary(Stream * s, Var v, int restriction)
 {
     int i;
 
     switch (v.type) {
     case TYPE_INT:
-	if (v.v.num < 0 || v.v.num >= 256)
+	if (v.v.num < restriction || v.v.num >= 256)
 	    return 0;
 	stream_add_char(s, (char) v.v.num);
 	break;
@@ -1285,7 +1285,7 @@ encode_binary(Stream * s, Var v)
 	break;
     case TYPE_LIST:
 	for (i = 1; i <= v.v.list[0].v.num; i++)
-	    if (!encode_binary(s, v.v.list[i]))
+	    if (!encode_binary(s, v.v.list[i], restriction))
 		return 0;
 	break;
     default:
@@ -1305,7 +1305,7 @@ bf_encode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 
     TRY_STREAM;
     try {
-	if (encode_binary(s, arglist)) {
+	if (encode_binary(s, arglist, 0)) {
 	    stream_add_raw_bytes_to_binary(
 		s2, stream_contents(s), stream_length(s));
 	    r.type = TYPE_STR;
@@ -1325,6 +1325,33 @@ bf_encode_binary(Var arglist, Byte next, void *vdata, Objid progr)
     return p;
 }
 
+static package
+bf_chr(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r;
+    package p;
+    Stream *s = new_stream(100);
+
+    TRY_STREAM;
+    try {
+    int encoded = (!is_wizard(progr) ? encode_binary(s, arglist, 32) : encode_binary(s, arglist, 0));
+	if (encoded) {
+	    r.type = TYPE_STR;
+	    r.v.str = str_dup(stream_contents(s));
+	    p = make_var_pack(r);
+	}
+	else
+	    p = make_error_pack(E_INVARG);
+    }
+    catch (stream_too_big& exception) {
+	p = make_space_pack();
+    }
+    ENDTRY_STREAM;
+    free_stream(s);
+    free_var(arglist);
+    return p;
+}
+
 void
 register_list(void)
 {
@@ -1333,6 +1360,7 @@ register_list(void)
     register_function("decode_binary", 1, 2, bf_decode_binary,
 		      TYPE_STR, TYPE_ANY);
     register_function("encode_binary", 0, -1, bf_encode_binary);
+    register_function("chr", 0, -1, bf_chr);
     /* list */
     register_function("length", 1, 1, bf_length, TYPE_ANY);
     register_function("setadd", 2, 2, bf_setadd, TYPE_LIST, TYPE_ANY);
