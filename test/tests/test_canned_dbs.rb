@@ -38,7 +38,7 @@ class TestCannedDbs < Test::Unit::TestCase
   public
 
   def test_that_creating_garbage_and_then_shutting_down_leaves_a_pending_anonymous_object
-    log1, diff1 = log_and_diff('test/Anon1.db', '/tmp/Foo.db')
+    log1, diff1 = log_and_diff('tests/Anon1.db', '/tmp/Foo.db')
     log2, diff2 = log_and_diff('/tmp/Foo.db', '/tmp/Bar.db')
 
     delta = [
@@ -57,7 +57,7 @@ class TestCannedDbs < Test::Unit::TestCase
   end
 
   def test_that_creating_cyclic_garbage_and_then_shutting_down_leaves_pending_anonymous_objects
-    log1, diff1 = log_and_diff('test/Anon2.db', '/tmp/Foo.db')
+    log1, diff1 = log_and_diff('tests/Anon2.db', '/tmp/Foo.db')
     log2, diff2 = log_and_diff('/tmp/Foo.db', '/tmp/Bar.db')
 
     delta = [
@@ -79,7 +79,7 @@ class TestCannedDbs < Test::Unit::TestCase
   end
 
   def test_that_creating_garbage_and_letting_the_server_clean_up_leaves_the_database_as_is
-    log1, diff1 = log_and_diff('test/Anon3.db', '/tmp/Foo.db')
+    log1, diff1 = log_and_diff('tests/Anon3.db', '/tmp/Foo.db')
     log2, diff2 = log_and_diff('/tmp/Foo.db', '/tmp/Bar.db')
 
     assert log1.any? { |l| l =~ /pre_destroy called/ }
@@ -90,7 +90,7 @@ class TestCannedDbs < Test::Unit::TestCase
   end
 
   def test_that_chains_of_objects_are_cleaned_up_correctly
-    log1, diff1 = log_and_diff('test/Anon4.db', '/tmp/Foo.db')
+    log1, diff1 = log_and_diff('tests/Anon4.db', '/tmp/Foo.db')
     log2, diff2 = log_and_diff('/tmp/Foo.db', '/tmp/Bar.db')
     log3, diff3 = log_and_diff('/tmp/Bar.db', '/tmp/Baz.db')
 
@@ -101,7 +101,7 @@ class TestCannedDbs < Test::Unit::TestCase
     assert log3.any? { |l| l =~ /\$one is invalid/ }
     assert log3.any? { |l| l =~ /\$one\.two is invalid/ }
 
-    assert_equal [], diff('test/Anon4.db', '/tmp/Baz.db')
+    assert_equal [], diff('tests/Anon4.db', '/tmp/Baz.db')
 
     delta2 = [
       '< 0 values pending finalization',
@@ -124,7 +124,7 @@ class TestCannedDbs < Test::Unit::TestCase
   end
 
   def test_that_loaded_anonymous_objects_are_accounted_for_correctly
-    log1, diff1 = log_and_diff('test/Anon5.db', '/tmp/Foo.db')
+    log1, diff1 = log_and_diff('tests/Anon5.db', '/tmp/Foo.db')
     log2, diff2 = log_and_diff('/tmp/Foo.db', '/tmp/Bar.db')
     log3, diff3 = log_and_diff('/tmp/Bar.db', '/tmp/Baz.db')
 
@@ -141,7 +141,7 @@ class TestCannedDbs < Test::Unit::TestCase
   end
 
   def test_that_invalid_values_pending_finalization_are_removed
-    log1, diff1 = log_and_diff('test/Anon6.db', '/tmp/Foo.db')
+    log1, diff1 = log_and_diff('tests/Anon6.db', '/tmp/Foo.db')
 
     delta1 = [
       '< 1 values pending finalization',
@@ -157,7 +157,7 @@ class TestCannedDbs < Test::Unit::TestCase
   end
 
   def test_that_check_for_invalid_objects_succeeds
-    log, _ = log_and_diff('test/Broken1.db', '/dev/null')
+    log, _ = log_and_diff('tests/Broken1.db', '/dev/null')
 
     assert log.any? { |l| l =~ /#0.parent = #103 <invalid> ... removed/ }
     assert log.any? { |l| l =~ /#0.child = #104 <invalid> ... removed/ }
@@ -166,7 +166,7 @@ class TestCannedDbs < Test::Unit::TestCase
   end
 
   def test_that_check_for_invalid_object_types_succeeds
-    log, _ = log_and_diff('test/Broken2.db', '/dev/null')
+    log, _ = log_and_diff('tests/Broken2.db', '/dev/null')
 
     assert log.any? { |l| l =~ /#0.parents is not an object or list of objects/ }
     assert log.any? { |l| l =~ /#0.children is not a list of objects/ }
@@ -180,7 +180,7 @@ class TestCannedDbs < Test::Unit::TestCase
 
 
   def test_that_check_for_cycles_succeeds
-    log, _ = log_and_diff('test/Broken3.db', '/dev/null')
+    log, _ = log_and_diff('tests/Broken3.db', '/dev/null')
 
     assert log.any? { |l| l =~ /Cycle in parent chain of #0/ }
     assert log.any? { |l| l =~ /Cycle in location chain of #0/ }
@@ -193,7 +193,7 @@ class TestCannedDbs < Test::Unit::TestCase
   end
 
   def test_that_check_for_inconsistencies_top_down_succeeds
-    log, _ = log_and_diff('test/Broken4.db', '/dev/null')
+    log, _ = log_and_diff('tests/Broken4.db', '/dev/null')
 
     assert log.any? { |l| l =~ /#0 not in it's location's \(#2\) contents/ }
     assert log.any? { |l| l =~ /#0 not in it's parent's \(#1\) children/ }
@@ -204,7 +204,7 @@ class TestCannedDbs < Test::Unit::TestCase
   end
 
   def test_that_check_for_inconsistencies_bottom_up_succeeds
-    log, _ = log_and_diff('test/Broken5.db', '/dev/null')
+    log, _ = log_and_diff('tests/Broken5.db', '/dev/null')
 
     assert log.any? { |l| l =~ /#1 not in it's child's \(#0\) parents/ }
     assert log.any? { |l| l =~ /#2 not in it's content's \(#3\) location/ }

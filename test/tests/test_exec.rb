@@ -66,7 +66,7 @@ class TestExec < Test::Unit::TestCase
   def test_that_showing_queued_tasks_and_killing_a_suspended_exec_works
     run_test_as('wizard') do
       assert_equal [], queued_tasks()
-      task_id = eval('fork go (0); exec({"sleep", "5"}); endfork; suspend(0); return go;')
+      task_id = eval('fork go (0); exec({\"sleep\", \"5\"}); endfork; suspend(0); return go;')
       o = queued_tasks()
       assert_equal task_id, o[0]
       assert_equal 'executables/sleep', o[1]
@@ -80,7 +80,7 @@ class TestExec < Test::Unit::TestCase
   def test_that_resuming_a_suspended_exec_does_not_work
     run_test_as('wizard') do
       assert_equal [], queued_tasks()
-      task_id = eval('fork go (0); exec({"sleep", "5"}); endfork; suspend(0); return go;')
+      task_id = eval('fork go (0); exec({\"sleep\", \"5\"}); endfork; suspend(0); return go;')
       o = queued_tasks()
       assert_equal task_id, o[0]
       assert_equal 'executables/sleep', o[1]
@@ -95,7 +95,7 @@ class TestExec < Test::Unit::TestCase
     run_test_as('wizard') do
       assert_equal [], queued_tasks()
       task_id1 = eval('fork go (0); suspend(5); endfork; suspend(0); return go;')
-      task_id2 = eval('fork go (0); exec({"sleep", "5"}); endfork; suspend(0); return go;')
+      task_id2 = eval('fork go (0); exec({\"sleep\", \"5\"}); endfork; suspend(0); return go;')
       task_stack1 = task_stack(task_id1)
       task_stack2 = task_stack(task_id2)
       assert_equal task_stack1, task_stack2
@@ -110,7 +110,7 @@ class TestExec < Test::Unit::TestCase
     run_test_as('wizard') do
       assert_equal [], queued_tasks()
       task_ids = []
-      TIMES.times { task_ids << eval('fork go (0); exec({"sleep", "' + DURATION.to_s + '"}); endfork; suspend(0); return go;') }
+      TIMES.times { task_ids << eval('fork go (0); exec({\"sleep\", "' + DURATION.to_s + '"}); endfork; suspend(0); return go;') }
       qq = queued_tasks()
       assert_equal TIMES, qq.length
       assert_equal task_ids.sort, qq.map { |q| q[0] }.sort
@@ -129,7 +129,7 @@ class TestExec < Test::Unit::TestCase
     run_test_as('wizard') do
       assert_equal [], queued_tasks()
       task_ids = []
-      TIMES.times { task_ids << eval('fork go (0); exec({"sleep", "' + (rand(DURATION / 2) + DURATION / 2).to_s + '"}); endfork; suspend(0); return go;') }
+      TIMES.times { task_ids << eval('fork go (0); exec({\"sleep\", "' + (rand(DURATION / 2) + DURATION / 2).to_s + '"}); endfork; suspend(0); return go;') }
       qq = queued_tasks()
       assert_equal TIMES, qq.length
       assert_equal task_ids.sort, qq.map { |q| q[0] }.sort
@@ -148,7 +148,7 @@ class TestExec < Test::Unit::TestCase
     run_test_as('wizard') do
       assert_equal [], queued_tasks()
       task_ids = []
-      TIMES.times { task_ids << eval('fork go (0); exec({"true"}); endfork; suspend(0); return go;') }
+      TIMES.times { task_ids << eval('fork go (0); exec({\"true\"}); endfork; suspend(0); return go;') }
       sleep 1
       assert_equal [], queued_tasks()
     end

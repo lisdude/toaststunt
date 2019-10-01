@@ -16,8 +16,12 @@ To run the tests:
     ln -s `which sleep` sleep
     ln -s `which true` true
 
-5) In one console/terminal/window, run the Stunt server:
-    ../moo Test.db /dev/null 9898
+5) Build the server and copy the executable into the test directory.
 
-6) In another console/terminal/window, run the tests:
+6) In one console/terminal/window, run the Stunt server in the test directory:
+    ./moo Test.db /dev/null 9898
+
+7) In another console/terminal/window, run the tests:
     make tests
+
+8) Delete the moo binary from the test directory when done.
