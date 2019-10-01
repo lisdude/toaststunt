@@ -450,7 +450,7 @@ bf_recreate(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
 
     if (next == 1) {
-	if (arglist.v.list[1].v.obj <= 0 || is_valid(arglist.v.list[1])) {
+	if (arglist.v.list[1].v.obj <= 0 || arglist.v.list[1].v.obj > db_last_used_objid() || is_valid(arglist.v.list[1])) {
         free_var(arglist);
         return make_error_pack(E_INVARG);
     }
