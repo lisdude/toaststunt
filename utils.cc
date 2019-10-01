@@ -663,7 +663,7 @@ stream_add_raw_bytes_to_binary(Stream *s, const char *buffer, int buflen)
 	if (c != '~' && (isgraph(c) || c == ' '))
 	    stream_add_char(s, c);
 	else
-	    stream_printf(s, "~%02x", (int) c);
+	    stream_printf(s, "~%02X", (int) c);
     }
 }
 
