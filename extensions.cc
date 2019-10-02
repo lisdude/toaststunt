@@ -812,6 +812,39 @@ bf_remove_ansi(Var arglist, Byte next, void *vdata, Objid progr)
 }
 //==============================================================
 
+#define STUPID_VERB_CACHE 1
+#ifdef STUPID_VERB_CACHE
+#include "db_tune.h"
+
+static package
+bf_verb_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r;
+
+    free_var(arglist);
+
+    if (!is_wizard(progr)) {
+	return make_error_pack(E_PERM);
+    }
+    r = db_verb_cache_stats();
+
+    return make_var_pack(r);
+}
+
+static package
+bf_log_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    if (!is_wizard(progr)) {
+	return make_error_pack(E_PERM);
+    }
+    db_log_cache_stats();
+
+    return no_var_pack();
+}
+#endif
+
     void
 register_extensions()
 {
@@ -834,4 +867,8 @@ register_extensions()
     // ======== ANSI ===========
     register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
     register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
+#ifdef STUPID_VERB_CACHE
+    register_function("log_cache_stats", 0, 0, bf_log_cache_stats);
+    register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
+#endif
 }
