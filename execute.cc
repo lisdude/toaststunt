@@ -2568,15 +2568,11 @@ MATCH_TYPE(OBJ, obj)
 			    ans.type = TYPE_INT;
 			    ans.v.num = lhs.v.num;
 			} else {
-
-#define MASK(n) (~(Num)(~(UNum)0 << sizeof(Num) * (CHAR_BIT - (n))))
-#define SHIFTR(n, m) ((Num)((UNum)n >> m) & MASK(m))
-
 			    ans.type = TYPE_INT;
 			    if (eop == EOP_BITSHL)
 				ans.v.num = lhs.v.num << rhs.v.num;
 			    else if (eop == EOP_BITSHR)
-				ans.v.num = SHIFTR(lhs.v.num, rhs.v.num);
+				ans.v.num = (UNum)lhs.v.num >> rhs.v.num;
 			    else
 				errlog("RUN: Impossible opcode in bitwise ops: %d\n", eop);
 			}
