@@ -16,7 +16,7 @@ To run the tests:
     ln -s `which sleep` sleep
     ln -s `which true` true
 
-5) Build the server and copy the executable into the test directory.
+5) Build the server and copy the executable into the test directory. Verify the settings in test.yml are accurate for your options.
 
 6) In one console/terminal/window, run the Stunt server in the test directory:
     ./moo Test.db /dev/null 9898
