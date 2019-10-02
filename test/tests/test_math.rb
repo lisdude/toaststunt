@@ -18,7 +18,11 @@ class TestMath < Test::Unit::TestCase
     run_test_as('programmer') do
       1000.times do
         r = random
-        assert r > 0 && r <= 2147483647
+        if @@options['64bit']
+            assert r > 0 && r <= 9223372036854775807
+        else
+            assert r > 0 && r <= 2147483647
+        end
       end
     end
   end
@@ -70,8 +74,13 @@ class TestMath < Test::Unit::TestCase
 
   def test_the_minint_edge_case
     run_test_as('programmer') do
-      assert_equal -2147483648, simplify(command(%Q|; return -2147483648 / -1; |))
-      assert_equal 0, simplify(command(%Q|; return -2147483648 % -1; |))
+        if @@options['64bit']
+            assert_equal -9223372036854775807, simplify(command(%Q|; return -9223372036854775807 / -1; |))
+            assert_equal 0, simplify(command(%Q|; return -9223372036854775807 % -1; |))
+        else
+            assert_equal -2147483648, simplify(command(%Q|; return -2147483648 / -1; |))
+            assert_equal 0, simplify(command(%Q|; return -2147483648 % -1; |))
+        end
     end
   end
 

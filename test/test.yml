@@ -1,3 +1,5 @@
 host: localhost
 port: 9898
 verbose: false
+ownership_quota: false
+64bit: true

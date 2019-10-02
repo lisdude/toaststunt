@@ -344,40 +344,42 @@ class TestAnonymous < Test::Unit::TestCase
     end
   end
 
-  def test_that_ownership_quota_is_not_changed_when_an_anonymous_object_becomes_invalid
-    run_test_as('programmer') do
-      o = create(:object)
+  if @@options['ownership_quota']
+      def test_that_ownership_quota_is_not_changed_when_an_anonymous_object_becomes_invalid
+          run_test_as('programmer') do
+              o = create(:object)
 
-      add_property(player, 'stash', {}, [player, ''])
-      add_property(player, 'ownership_quota', 2, [player, ''])
-      assert_equal 2, get(player, 'ownership_quota')
+              add_property(player, 'stash', {}, [player, ''])
+              add_property(player, 'ownership_quota', 2, [player, ''])
+              assert_equal 2, get(player, 'ownership_quota')
 
-      a = simplify(command(%Q|; player.stash["a"] = create(#{o}, 1); return "player.stash[\\\"a\\\"]";|))
-      assert_equal 1, get(player, 'ownership_quota')
+              a = simplify(command(%Q|; player.stash["a"] = create(#{o}, 1); return "player.stash[\\\"a\\\"]";|))
+              assert_equal 1, get(player, 'ownership_quota')
 
-      assert valid(a)
-      chparent(o, :nothing)
-      assert !valid(a)
+              assert valid(a)
+              chparent(o, :nothing)
+              assert !valid(a)
 
-      assert_equal 1, get(player, 'ownership_quota')
-    end
-  end
+              assert_equal 1, get(player, 'ownership_quota')
+          end
+      end
 
-  def test_that_ownership_quota_is_changed_when_an_anonymous_object_loses_its_last_reference
-    run_test_as('programmer') do
-      o = create(:object)
+      def test_that_ownership_quota_is_changed_when_an_anonymous_object_loses_its_last_reference
+          run_test_as('programmer') do
+              o = create(:object)
 
-      add_property(player, 'stash', {}, [player, ''])
-      add_property(player, 'ownership_quota', 2, [player, ''])
-      assert_equal 2, get(player, 'ownership_quota')
+              add_property(player, 'stash', {}, [player, ''])
+              add_property(player, 'ownership_quota', 2, [player, ''])
+              assert_equal 2, get(player, 'ownership_quota')
 
-      a = simplify(command(%Q|; player.stash["a"] = create(#{o}, 1); return "player.stash[\\\"a\\\"]";|))
-      assert_equal 1, get(player, 'ownership_quota')
+              a = simplify(command(%Q|; player.stash["a"] = create(#{o}, 1); return "player.stash[\\\"a\\\"]";|))
+              assert_equal 1, get(player, 'ownership_quota')
 
-      command(%Q|; #{a} = 0;|)
+              command(%Q|; #{a} = 0;|)
 
-      assert_equal 2, get(player, 'ownership_quota')
-    end
+              assert_equal 2, get(player, 'ownership_quota')
+          end
+      end
   end
 
   def test_that_callers_returns_valid_anonymous_objects_for_wizards

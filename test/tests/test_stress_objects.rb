@@ -648,6 +648,7 @@ class TestStressObjects < Test::Unit::TestCase
     end
   end
 
+  if @@options['ownership_quota']
   def test_that_ownership_quota_is_changed_as_objects_are_created_and_destroyed
     SCENARIOS.each do |args|
       run_test_as('programmer') do
@@ -673,6 +674,7 @@ class TestStressObjects < Test::Unit::TestCase
         assert_equal 3, get(player, 'ownership_quota')
       end
     end
+  end
   end
 
 end
