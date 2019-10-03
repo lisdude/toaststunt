@@ -1717,11 +1717,11 @@ main(int argc, char **argv)
 	set_log_file(stderr);
     }
 
-    applog(LOG_INFO1, "           _____                ______\n");
-    applog(LOG_INFO1, "  ___________  /_____  _________ __  /_\n");
-    applog(LOG_INFO1, "   __  ___/_  __/_  / / /__  __ \\_  __/\n");
-    applog(LOG_INFO1, "   _(__  ) / /_  / /_/ / _  / / // /_\n");
-    applog(LOG_INFO1, "   /____/  \\__/  \\__,_/  /_/ /_/ \\__/\n");
+    applog(LOG_INFO1, " _   __           _____                ______\n");
+    applog(LOG_INFO1, "( `^` ))  ___________  /_____  _________ __  /_\n");
+    applog(LOG_INFO1, "|     ||   __  ___/_  __/_  / / /__  __ \\_  __/\n");
+    applog(LOG_INFO1, "|     ||   _(__  ) / /_  / /_/ / _  / / // /_\n");
+    applog(LOG_INFO1, "'-----'`   /____/  \\__/  \\__,_/  /_/ /_/ \\__/\n");
     applog(LOG_INFO1, "\n");
 
     if ((emergency && (script_file || script_line))
@@ -1751,7 +1751,7 @@ main(int argc, char **argv)
 
     parent_pid = getpid();
 
-    applog(LOG_INFO1, "STARTING: Version %s (%" PRIdN "-bit) of the Stunt/LambdaMOO server\n", server_version, SERVER_BITS);
+    applog(LOG_INFO1, "STARTING: Version %s (%" PRIdN "-bit) of the ToastStunt/LambdaMOO server\n", server_version, SERVER_BITS);
     oklog("          (Using %s protocol)\n", network_protocol_name());
     oklog("          (Task timeouts measured in %s seconds.)\n",
 	  virtual_timer_available()? "server CPU" : "wall-clock");
