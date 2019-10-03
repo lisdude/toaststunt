@@ -23,7 +23,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 - 32-bit and 64-bit versions ($maxint and $minint set automatically)
 
 - Waifs
-    - Call :pre_destroy on waifs when they're destroyed
+    - Call :recycle on waifs when they're destroyed
     - A WAIF type (so typeof(some_waif) == WAIF)
     - Waif dict patch (so waif[x] and waif[x] = y will call the :_index and :_set_index verbs on the waif)
     - '-w' command line option to convert existing databases with a different waif type to the new waif type
@@ -89,7 +89,9 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - reseed_random (reseed the random number generator)
     - yin (yield if needed. Replicates :suspend_if_needed and ticks_left() checks)
     - sort (a significantly faster replacement for the :sort verb. Also allows for natural sort order and reverse sorting)
-    - recreate (fill holes created by destroy() by recreating valid objects with those object numbers)
+    - recreate (fill holes created by recycle() by recreating valid objects with those object numbers)
+    - recycled_objects (return a list of all objects destroyed by calling recycle())
+    - next_recycled_object (return the next object available for recreation)
     - reverse (reverse lists)
     - all_members (return the indices of all instances of a type in a list)
 
@@ -105,7 +107,6 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - Change the server log message when calling switch_player()
     - Complete deprecation of tonum() in favor of toint()
     - Move #0.dump_interval to $server_options.dump_interval
-    - Rename recycle() to destroy() (also call pre_destroy rather than recycle verbs)
     - New argument to notify() to suppress the newline
     - Support object lists in isa() as well as an optional third argument to return the matching parent rather than simply true or false
     - New argument to move() to effectively listinsert() the object into the destination's .contents

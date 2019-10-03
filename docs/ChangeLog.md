@@ -1,6 +1,6 @@
 # ToastStunt ChangeLog
 
-## 2.5.12 (In Progress)
+## 2.5.12 (Oct 3, 2019)
 - The `chr()` function can now accept any number of arguments, similar to how `encode_binary()` works.
 - Add a `recycled_objects()` builtin, which will return a list of all invalid object numbers currently in the database.
 - Return `recycle()` to its final glory and call `:recycle` on objects and waifs before destroying them instead of `:pre_destroy`. (Standard LambdaMOO functionality.)
