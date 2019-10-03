@@ -41,6 +41,7 @@
 static Object **objects;
 static Num num_objects = 0;
 static Num max_objects = 0;
+static Num recycled_objects = 0;
 
 static unsigned int nonce = 0;
 
@@ -167,6 +168,8 @@ dbpriv_new_object(Num new_objid)
         ensure_new_object();
         new_objid = num_objects;
         num_objects++;
+    } else {
+        recycled_objects--;
     }
 
     o = objects[new_objid] = (Object *)mymalloc(sizeof(Object), M_OBJECT);
@@ -194,6 +197,7 @@ dbpriv_new_recycled_object(void)
 {
     ensure_new_object();
     num_objects++;
+    recycled_objects++;
 }
 
 void
@@ -291,6 +295,7 @@ db_destroy_object(Objid oid)
 
     myfree(objects[oid], M_OBJECT);
     objects[oid] = 0;
+    recycled_objects++;
 }
 
 Var
@@ -478,6 +483,7 @@ db_renumber_object(Objid old)
 	    o = objects[_new] = objects[old];
 	    objects[old] = 0;
 	    objects[_new]->id = _new;
+        recycled_objects--;
 
 	    /* Fix up the parents/children hierarchy and the
 	     * location/contents hierarchy.
@@ -1152,6 +1158,12 @@ void
 dbpriv_set_all_users(Var v)
 {
     all_users = v;
+}
+
+Num
+db_recycled_object_count()
+{
+    return recycled_objects;
 }
 
 int

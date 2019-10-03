@@ -304,6 +304,8 @@ extern Var db_all_users(void);
 				 */
 
 extern int db_object_isa(Var, Var);
+
+extern Num db_recycled_object_count();
 
 
 /**** properties *****/

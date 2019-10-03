@@ -79,6 +79,7 @@ typedef struct Object4 {
 static Object4 **objects;
 static Num num_objects = 0;
 static Num max_objects = 0;
+static Num recycled_objects = 0;
 
 static void
 dbv4_ensure_new_object(void)
@@ -796,6 +797,7 @@ v4_upgrade_objects()
 
     num_objects = 0;
     max_objects = 0;
+    recycled_objects = 0;
     myfree(objects, M_OBJECT_TABLE);
 
     oklog("UPGRADING objects to new structure ... finished.\n");

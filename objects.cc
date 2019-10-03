@@ -1023,7 +1023,22 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
     return ret;
 }
 
-Var nothing;			/* useful constant */
+    static package
+bf_recycled_objects(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+    Var ret = new_list(db_recycled_object_count());
+    Objid max_obj = db_last_used_objid() + 1;
+
+    for (Objid x = 0, count = 1; x < max_obj; x++) {
+        if (!valid(x))
+            ret.v.list[count++] = Var::new_obj(x);
+    }
+
+    return make_var_pack(ret);
+}
+
+Var nothing;		/* useful constant */
 Var clear;			/* useful constant */
 Var none;			/* useful constant */
 
@@ -1068,4 +1083,5 @@ register_objects(void)
 				      bf_move_read, bf_move_write,
 				      TYPE_OBJ, TYPE_OBJ, TYPE_INT);
     register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_INT);
+    register_function("recycled_objects", 0, 0, bf_recycled_objects);
 }
