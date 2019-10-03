@@ -52,7 +52,7 @@ make_arglist(Objid what)
 
     return r;
 }
-
+
 static bool
 all_valid(Var vars)
 {
@@ -74,7 +74,7 @@ all_allowed(Var vars, Objid progr, db_object_flag f)
 	    return false;
     return true;
 }
-
+
 /*
  * Returns true if `_this' is a descendant of `obj'.
  */
@@ -104,7 +104,7 @@ any_are_descendants(Var these, Var obj)
     free_var(descendants);
     return false;
 }
-
+
 struct bf_move_data {
     Objid what, where;
     int position;
@@ -247,7 +247,7 @@ bf_move_read()
     else
 	return 0;
 }
-
+
 static package
 bf_toobj(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -275,7 +275,7 @@ bf_typeof(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     return make_var_pack(r);
 }
-
+
 static package
 bf_valid(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object) */
@@ -532,7 +532,7 @@ bf_create_read(void)
     else
 	return 0;
 }
-
+
 static package
 bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ obj, OBJ|LIST what, LIST anon) */
@@ -703,7 +703,7 @@ bf_descendants(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_var_pack(r);
     }
 }
-
+
 static int
 move_to_nothing(Objid oid)
 {
@@ -916,7 +916,7 @@ bf_recycle_read(void)
     else
 	return 0;
 }
-
+
 static package
 bf_players(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* () */
@@ -1053,15 +1053,16 @@ bf_recycled_objects(Var arglist, Byte next, void *vdata, Objid progr)
     static package
 bf_next_recycled_object(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    static Objid i_obj = (arglist.v.list[0].v.num == 1 ? arglist.v.list[1].v.obj : 0);
+    Objid i_obj = (arglist.v.list[0].v.num == 1 ? arglist.v.list[1].v.obj : 0);
     Objid max_obj = db_last_used_objid() + 1;
     free_var(arglist);
 
-    if (i_obj > max_obj || i_obj < 0) {
+    if (i_obj > max_obj || i_obj < 0)
 	return make_error_pack(E_INVARG);
-    }
+    else if (!db_recycled_object_count())		/* Don't even proceed if we have none */
+	return no_var_pack();
 
-    package ret =     no_var_pack();
+    package ret = make_var_pack(Var::new_int(0));
 
     for (; i_obj < max_obj; i_obj++) {
 	if (!valid(i_obj)) {
