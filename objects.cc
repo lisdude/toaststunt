@@ -483,13 +483,14 @@ bf_recreate(Var arglist, Byte next, void *vdata, Objid progr)
 		return make_error_pack(E_INVARG);
 	    }
 
-	    data = (Var *)alloc_data(sizeof(Var));
-	    *data = var_ref(r);
-
 	    free_var(arglist);
 
         r.type = TYPE_OBJ;
         r.v.obj = oid;
+
+        data = (Var *)alloc_data(sizeof(Var));
+	    *data = var_ref(r);
+
 	    e = call_verb(oid, "initialize", r, new_list(0), 0);
 	    /* e will not be E_INVIND */
 
