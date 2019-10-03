@@ -1038,6 +1038,29 @@ bf_recycled_objects(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ret);
 }
 
+    static package
+bf_next_recycled_object(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    static Objid i_obj = (arglist.v.list[0].v.num == 1 ? arglist.v.list[1].v.obj : 0);
+    Objid max_obj = db_last_used_objid() + 1;
+    free_var(arglist);
+
+    if (i_obj > max_obj || i_obj < 0) {
+	return make_error_pack(E_INVARG);
+    }
+
+    package ret =     no_var_pack();
+
+    for (; i_obj < max_obj; i_obj++) {
+	if (!valid(i_obj)) {
+		ret = make_var_pack(Var::new_obj(i_obj));
+		break;
+	}
+    }
+
+    return ret;
+}
+
 Var nothing;		/* useful constant */
 Var clear;			/* useful constant */
 Var none;			/* useful constant */
@@ -1084,4 +1107,5 @@ register_objects(void)
 				      TYPE_OBJ, TYPE_OBJ, TYPE_INT);
     register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_INT);
     register_function("recycled_objects", 0, 0, bf_recycled_objects);
+    register_function("next_recycled_object", 0, 1, bf_next_recycled_object, TYPE_OBJ);
 }
