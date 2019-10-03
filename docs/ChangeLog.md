@@ -2,6 +2,11 @@
 
 ## 2.5.12 (In Progress)
 - The `chr()` function can now accept any number of arguments, similar to how `encode_binary()` works.
+- Add a `recycled_objects()` builtin, which will return a list of all invalid object numbers currently in the database.
+- Return `recycle()` to its final glory and call `:recycle` on objects and waifs before destroying them instead of `:pre_destroy`. (Standard LambdaMOO functionality.)
+- Add a `next_recycled_object(<?starting-object>)` builtin, which will iterate through the object hierarchy to find the lowest object that is invalid and return it. If none are available, 0 is returned. Providing an object as the first argument will start the search at that object, in the unlikely event that you only want to find non-valid objects passed a certain point.
+
+**WARNING**: This breaks compatibility with old code that uses `destroy()` or relies on `:pre_destroy` being called. You will need to open your database file in a text editor and replace `destroy` and `pre_destroy` with `recycle`.
 
 ## 2.5.11 (Sep 30, 2019)
 - Catch SIGUSR1 and, if the server was started with a log file, close and reopen the file. This way scripts can move the old log file and `kill -SIGUSR1 <pid>` to rotate logs without restarting the server.
