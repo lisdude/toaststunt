@@ -1023,6 +1023,18 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
     return ret;
 }
 
+static package
+bf_clear_ancestor_cache(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    if (!is_wizard(progr))
+	return make_error_pack(E_PERM);
+
+    db_clear_ancestor_cache();
+    return no_var_pack();
+}
+
     static package
 bf_recycled_objects(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -1106,6 +1118,9 @@ register_objects(void)
 				      bf_move_read, bf_move_write,
 				      TYPE_OBJ, TYPE_OBJ, TYPE_INT);
     register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_INT);
+#ifdef USE_ANCESTOR_CACHE
+    register_function("clear_ancestor_cache", 0, 0, bf_clear_ancestor_cache);
+#endif
     register_function("recycled_objects", 0, 0, bf_recycled_objects);
     register_function("next_recycled_object", 0, 1, bf_next_recycled_object, TYPE_OBJ);
 }

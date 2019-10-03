@@ -1909,18 +1909,6 @@ bf_db_disk_size(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_var_pack(v);
 }
 
-static package
-bf_clear_ancestor_cache(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    free_var(arglist);
-
-    if (!is_wizard(progr))
-	return make_error_pack(E_PERM);
-
-    db_clear_ancestor_cache();
-    return no_var_pack();
-}
-
 #ifdef OUTBOUND_NETWORK
 static slistener *
 find_slistener_by_oid(Objid obj)
@@ -2369,7 +2357,4 @@ register_server(void)
     register_function("listeners", 0, 0, bf_listeners);
     register_function("buffered_output_length", 0, 1,
 		      bf_buffered_output_length, TYPE_OBJ);
-#ifdef USE_ANCESTOR_CACHE
-    register_function("clear_ancestor_cache", 0, 0, bf_clear_ancestor_cache);
-#endif
 }
