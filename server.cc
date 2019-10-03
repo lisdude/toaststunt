@@ -550,10 +550,10 @@ recycle_anonymous_objects(void)
 	db_set_object_flag2(v, FLAG_RECYCLED);
 
         /* the best approximation I could think of */
-	run_server_task(-1, v, "pre_destroy", new_list(0), "", 0);
+	run_server_task(-1, v, "recycle", new_list(0), "", 0);
 
 	/* We'd like to run `db_change_parents()' to be consistent
-	 * with the pattern laid out in `bf_destroy()', but we can't
+	 * with the pattern laid out in `bf_recycle()', but we can't
 	 * because the object can be invalid at this point due to
 	 * changes in parentage.
 	 */
@@ -572,17 +572,17 @@ recycle_waifs(void)
 {
     /* This seems like a lot of work to go through just to get a destroy verb name.
      * Maybe it should just be a #define in waif.h? Ah well.*/
-    static char *waif_pre_destroy_verb = NULL;
-    if (!waif_pre_destroy_verb) {
-        waif_pre_destroy_verb = (char *)mymalloc(13, M_STRING);
-        waif_pre_destroy_verb[0] = WAIF_VERB_PREFIX;
-        strcpy(waif_pre_destroy_verb + 1, "pre_destroy");
+    static char *waif_recycle_verb = NULL;
+    if (!waif_recycle_verb) {
+        waif_recycle_verb = (char *)mymalloc(13, M_STRING);
+        waif_recycle_verb[0] = WAIF_VERB_PREFIX;
+        strcpy(waif_recycle_verb + 1, "recycle");
     }
 
     std::vector<Waif*> removals;
     for (auto &x: destroyed_waifs) {
         if (destroyed_waifs[x.first] == false) {
-            run_server_task(-1, Var::new_waif(x.first), waif_pre_destroy_verb, new_list(0), "", 0);
+            run_server_task(-1, Var::new_waif(x.first), waif_recycle_verb, new_list(0), "", 0);
             destroyed_waifs[x.first] = true;
             /* Flag it as destroyed. Now we just wait for the refcount to hit zero so we can free it. */
         }
