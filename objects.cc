@@ -1040,7 +1040,7 @@ bf_recycled_objects(Var arglist, Byte next, void *vdata, Objid progr)
 {
     free_var(arglist);
     Var ret = new_list(db_recycled_object_count());
-    Objid max_obj = db_last_used_objid() + 1;
+    Objid max_obj = db_last_used_objid();
 
     for (Objid x = 0, count = 1; x < max_obj; x++) {
         if (!valid(x))
@@ -1054,7 +1054,7 @@ bf_recycled_objects(Var arglist, Byte next, void *vdata, Objid progr)
 bf_next_recycled_object(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Objid i_obj = (arglist.v.list[0].v.num == 1 ? arglist.v.list[1].v.obj : 0);
-    Objid max_obj = db_last_used_objid() + 1;
+    Objid max_obj = db_last_used_objid();
     free_var(arglist);
 
     if (i_obj > max_obj || i_obj < 0)
