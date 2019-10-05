@@ -432,10 +432,7 @@ bf_round(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
 
-    Var ret;
-    ret.type = TYPE_FLOAT;
-    ret.v.fnum = r;
-
+    Var ret = Var::new_float(r);
     return make_var_pack(ret);
 }
 
