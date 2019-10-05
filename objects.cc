@@ -15,6 +15,8 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <vector>
+
 #include "collection.h"
 #include "db.h"
 #include "db_io.h"
@@ -1039,12 +1041,18 @@ bf_clear_ancestor_cache(Var arglist, Byte next, void *vdata, Objid progr)
 bf_recycled_objects(Var arglist, Byte next, void *vdata, Objid progr)
 {
     free_var(arglist);
-    Var ret = new_list(db_recycled_object_count());
+    std::vector<Objid> tmp;
     Objid max_obj = db_last_used_objid();
 
-    for (Objid x = 0, count = 1; x < max_obj; x++) {
+    for (Objid x = 0; x <= max_obj; x++) {
         if (!valid(x))
-            ret.v.list[count++] = Var::new_obj(x);
+            tmp.push_back(x);
+    }
+
+    Var ret = new_list(tmp.size());
+    for (size_t x = 1; x <= tmp.size(); x++) {
+        ret.v.list[x].type = TYPE_OBJ;
+        ret.v.list[x].v.obj = tmp[x-1];
     }
 
     return make_var_pack(ret);
@@ -1059,8 +1067,6 @@ bf_next_recycled_object(Var arglist, Byte next, void *vdata, Objid progr)
 
     if (i_obj > max_obj || i_obj < 0)
 	return make_error_pack(E_INVARG);
-    else if (!db_recycled_object_count())		/* Don't even proceed if we have none */
-	return no_var_pack();
 
     package ret = make_var_pack(Var::new_int(0));
 
