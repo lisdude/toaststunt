@@ -217,7 +217,8 @@ bf_distance(Var arglist, Byte next, void *vdata, Objid progr)
     double ret = 0.0, tmp = 0.0;
     int count;
 
-    for (count = 1; count <= arglist.v.list[1].v.list[0].v.num; count++)
+    const auto list_length = arglist.v.list[1].v.list[0].v.num;
+    for (count = 1; count <= list_length; count++)
     {
         if ((arglist.v.list[1].v.list[count].type != TYPE_INT && arglist.v.list[1].v.list[count].type != TYPE_FLOAT) || (arglist.v.list[2].v.list[count].type != TYPE_INT && arglist.v.list[2].v.list[count].type != TYPE_FLOAT))
         {
@@ -233,10 +234,7 @@ bf_distance(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
 
-    Var s;
-    s.type = TYPE_FLOAT;
-    s.v.fnum = sqrt(ret);
-
+    auto s = Var::new_float(sqrt(ret));
     return make_var_pack(s);
 }
 
