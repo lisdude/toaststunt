@@ -339,6 +339,70 @@ bf_sqlite_last_insert_row_id(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+/* Set run-time limits */
+    static package
+bf_sqlite_limit(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    static const struct {
+        const char *str;
+        int value;
+    } categories[] = {
+        {"SQLITE_LIMIT_LENGTH", 0},
+        {"SQLITE_LIMIT_SQL_LENGTH", 1},
+        {"SQLITE_LIMIT_COLUMN", 2},
+        {"SQLITE_LIMIT_EXPR_DEPTH", 3},
+		{"SQLITE_LIMIT_COMPOUND_SELECT", 4},
+		{"SQLITE_LIMIT_VDBE_OP", 5},
+		{"SQLITE_LIMIT_FUNCTION_ARG", 6},
+		{"SQLITE_LIMIT_ATTACHED", 7},
+		{"SQLITE_LIMIT_LIKE_PATTERN_LENGTH", 8},
+		{"SQLITE_LIMIT_VARIABLE_NUMBER", 9},
+		{"SQLITE_LIMIT_TRIGGER_DEPTH", 10},
+		{"SQLITE_LIMIT_WORKER_THREADS", 11}
+    };
+
+    static const int max_categories = sizeof(categories) / sizeof(categories[0]);
+
+    if (!is_wizard(progr))
+    {
+        free_var(arglist);
+        return make_error_pack(E_PERM);
+    }
+
+    int index = arglist.v.list[1].v.num;
+    if (!valid_handle(index)) {
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
+    }
+
+    int category = -1;
+    int new_value = arglist.v.list[3].v.num;
+
+    if (arglist.v.list[2].type == TYPE_STR) {
+        const char *cat_str = arglist.v.list[2].v.str;
+        for (int x = 0; x < max_categories; ++x)
+            if (!strcmp(cat_str, categories[x].str)) {
+                category = categories[x].value;
+                break;
+            }
+    } else if (arglist.v.list[2].type == TYPE_INT) {
+        category = arglist.v.list[2].v.num;
+    }
+
+    free_var(arglist);
+
+    if (category < 0 || category > max_categories - 1)
+        return make_error_pack(E_INVARG);
+
+    sqlite_conn *handle = &sqlite_connections[index];
+
+    Var r;
+    r.type = TYPE_INT;
+    r.v.num = sqlite3_limit(handle->id, category, new_value);
+
+    return make_var_pack(r);
+}
+
 /* -------------------------------------------------------- */
 
 /* Return true if a handle is valid and active. */
@@ -536,4 +600,5 @@ register_sqlite() {
     register_function("sqlite_query", 2, 2, bf_sqlite_query, TYPE_INT, TYPE_STR);
     register_function("sqlite_execute", 3, 3, bf_sqlite_execute, TYPE_INT, TYPE_STR, TYPE_LIST);
     register_function("sqlite_last_insert_row_id", 1, 1, bf_sqlite_last_insert_row_id, TYPE_INT);
+    register_function("sqlite_limit", 3, 3, bf_sqlite_limit, TYPE_INT, TYPE_ANY, TYPE_INT);
 }
