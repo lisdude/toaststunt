@@ -197,20 +197,29 @@ struct Var {
     }
 
     static Var
-    new_int(Num num) {
+    new_int(const Num num) {
 	Var v;
 	v.type = TYPE_INT;
 	v.v.num = num;
 	return v;
     }
 
+    static Var
+    new_float(const double& d)
+    {
+        Var v;
+        v.type = TYPE_FLOAT;
+        v.v.fnum = d;
+        return v;
+    }
+    
     bool
-    is_obj() {
+    is_obj() const {
 	return TYPE_OBJ == type;
     }
 
     static Var
-    new_obj(Objid obj) {
+    new_obj(const Objid &obj) {
 	Var v;
 	v.type = TYPE_OBJ;
 	v.v.obj = obj;
@@ -218,7 +227,7 @@ struct Var {
     }
 
     bool
-    is_str() {
+    is_str() const {
 	return TYPE_STR == type;
     }
 

@@ -72,9 +72,7 @@ bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
     clock_gettime(clock_type, &ts);
 #endif
 
-    Var r;
-    r.type = TYPE_FLOAT;
-    r.v.fnum = (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+    Var r = Var::new_float((double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0);
 
     free_var(arglist);
     return make_var_pack(r);
