@@ -128,10 +128,10 @@ bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
  * Args: LIST <values to sort>, [LIST <values to sort by>], [INT <natural sort ordering?>], [INT <reverse?>] */
 void sort_callback(Var arglist, Var *ret)
 {
-    int nargs = arglist.v.list[0].v.num;
-    int list_to_sort = (nargs >= 2 && arglist.v.list[2].v.list[0].v.num > 0 ? 2 : 1);
-    bool natural = (nargs >= 3 && is_true(arglist.v.list[3]));
-    bool reverse = (nargs >= 4 && is_true(arglist.v.list[4]));
+    const int nargs = arglist.v.list[0].v.num;
+    const int list_to_sort = (nargs >= 2 && arglist.v.list[2].v.list[0].v.num > 0 ? 2 : 1);
+    const bool natural = (nargs >= 3 && is_true(arglist.v.list[3]));
+    const bool reverse = (nargs >= 4 && is_true(arglist.v.list[4]));
 
     if (arglist.v.list[list_to_sort].v.list[0].v.num == 0) {
         *ret = new_list(0);
@@ -144,9 +144,10 @@ void sort_callback(Var arglist, Var *ret)
 
     // Create and sort a vector of indices rather than values. This makes it easier to sort a list by another list.
     std::vector<size_t> s(arglist.v.list[list_to_sort].v.list[0].v.num);
-    var_type type_to_sort = arglist.v.list[list_to_sort].v.list[1].type;
+    const var_type type_to_sort = arglist.v.list[list_to_sort].v.list[1].type;
 
-    for (int count = 1; count <= arglist.v.list[list_to_sort].v.list[0].v.num; count++)
+    const auto list_length = arglist.v.list[list_to_sort].v.list[0].v.num;
+    for (int count = 1; count <= list_length; count++)
     {
         var_type type = arglist.v.list[list_to_sort].v.list[count].type;
         if (type != type_to_sort || type == TYPE_LIST || type == TYPE_MAP || type == TYPE_ANON || type == TYPE_WAIF)
@@ -161,7 +162,7 @@ void sort_callback(Var arglist, Var *ret)
     struct VarCompare {
         VarCompare(const Var *Arglist, const bool Natural) : m_Arglist(Arglist), m_Natural(Natural) {}
 
-        bool operator()(size_t a, size_t b) const
+        bool operator()(const size_t a, const size_t b) const
         {
             Var lhs = m_Arglist[a];
             Var rhs = m_Arglist[b];
@@ -191,13 +192,12 @@ void sort_callback(Var arglist, Var *ret)
     *ret = new_list(s.size());
 
     if (reverse)
+        std::reverse(std::begin(s), std::end(s));
+        
+    int moo_list_pos = 0;
+    for (const auto &it:s)
     {
-        int moo_list_pos = 0;
-        for (auto it = s.rbegin(); it != s.rend(); ++it)
-            ret->v.list[++moo_list_pos] = var_ref(arglist.v.list[1].v.list[*it]);
-    } else {
-        for (size_t x = 0; x < s.size(); x++)
-            ret->v.list[x+1] = var_ref(arglist.v.list[1].v.list[s[x]]);
+        ret->v.list[++moo_list_pos] = var_ref(arglist.v.list[1].v.list[it]);
     }
 }
 
