@@ -87,10 +87,11 @@ void locate_by_name_thread_callback(Var arglist, Var *ret)
     object.type = TYPE_OBJ;
     std::vector<int> tmp;
 
-    int case_matters = arglist.v.list[0].v.num < 2 ? 0 : is_true(arglist.v.list[2]);
-    int string_length = memo_strlen(arglist.v.list[1].v.str);
+    const int case_matters = arglist.v.list[0].v.num < 2 ? 0 : is_true(arglist.v.list[2]);
+    const int string_length = memo_strlen(arglist.v.list[1].v.str);
 
-    for (int x = 1; x < db_last_used_objid(); x++)
+    const auto last_objid = db_last_used_objid();
+    for (int x = 1; x < last_objid; x++)
     {
         if (!valid(x))
             continue;
@@ -102,9 +103,9 @@ void locate_by_name_thread_callback(Var arglist, Var *ret)
     }
 
     *ret = new_list(tmp.size());
-    for (size_t x = 0; x < tmp.size(); x++) {
-        ret->v.list[x+1].type = TYPE_OBJ;
-        ret->v.list[x+1].v.obj = tmp[x];
+    const auto vector_size = tmp.size();
+    for (size_t x = 0; x < vector_size; x++) {
+        ret->v.list[x+1] = Var::new_obj(tmp[x]);
     }
 }
 
