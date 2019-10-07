@@ -546,7 +546,7 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = file_raise_notokcall("file_readline", progr);
   } else if (!file_handle_valid(fhandle)) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
-  } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
+  } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_READ))
 	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else {
 	 if ((line = file_get_line(fhandle, &len)) == NULL)
@@ -619,7 +619,7 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = file_raise_notokcall("file_readlines", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
-  } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
+  } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_READ))
 	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else {
 #ifndef UNSAFE_FIO
@@ -767,7 +767,7 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = file_raise_notokcall("file_read", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
-  } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
+  } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_READ))
 	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
@@ -1502,7 +1502,7 @@ bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
     r = file_raise_notokcall("file_readline", progr);
   else if (!file_handle_valid(fhandle))
     r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
-  else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
+  else if (!((mode = file_handle_mode(fhandle)) & FILE_O_READ))
     r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else
   {
@@ -1561,7 +1561,7 @@ bf_file_count_lines(Var arglist, Byte next, void *vdata, Objid progr)
     r = file_raise_notokcall("file_readline", progr);
   else if (!file_handle_valid(fhandle))
     r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
-  else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
+  else if (!((mode = file_handle_mode(fhandle)) & FILE_O_READ))
     r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else
   {

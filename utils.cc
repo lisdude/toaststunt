@@ -518,7 +518,7 @@ strtr(const char *source, int source_len,
     }
 
     for (i = 0; i < source_len; i++) {
-	int c = temp[source[i]];
+	int c = temp[(unsigned char)source[i]];
 	if (c > 0)
 	    stream_add_char(str, c);
     }
