@@ -189,7 +189,6 @@
 #undef HAVE_WAIT3
 #undef HAVE_SIGEMPTYSET
 #undef HAVE_SIGPROCMASK
-#undef HAVE_SIGSETMASK
 #undef HAVE_SIGRELSE
 
 /* A good source of randomness is a prerequisite for many things,
