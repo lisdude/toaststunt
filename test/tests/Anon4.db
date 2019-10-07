@@ -97,7 +97,7 @@ Wizard
 #0:0
 server_log("----------------------------------------------------------------------");
 server_log("Creates an anonymous object with a reference to another anonymous");
-server_log("object, destroys the latter anonymous object (thus invalidating");
+server_log("object, recycles the latter anonymous object (thus invalidating");
 server_log("it), and dumps the database.  On load, loses the reference to the");
 server_log("first object, runs garbage collection, and dumps the database");
 server_log("again.  On load, there should be no reference to either object.");
@@ -110,7 +110,7 @@ $one.name = "One One One!";
 $one.two.name = "Two Two Two!";
 server_log(tostr("$one is ", `valid($one) ! E_PROPNF, E_TYPE' ? "valid" | "invalid"));
 server_log(tostr("$one.two is ", `valid($one.two) ! E_PROPNF, E_TYPE' ? "valid" | "invalid"));
-destroy($one.two);
+recycle($one.two);
 suspend(0);
 shutdown();
 elseif (`valid($one) ! E_TYPE')

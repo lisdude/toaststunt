@@ -99,19 +99,19 @@ server_log("--------------------------------------------------------------------
 server_log("Creates cyclic garbage and shuts down.  The garbage will be in the    ");
 server_log("pending anonymous objects as #4 and #5.  There will also be objects #4");
 server_log("and #5.  When the server restarts from the dumped database, the       ");
-server_log("pending objects will be destroyed.                                    ");
+server_log("pending objects will be recycled.                                     ");
 server_log("----------------------------------------------------------------------");
 suspend(0);
 try
 try
 a = create(#-1, 1);
 add_property(a, "next", 0, {task_perms(), ""});
-add_verb(a, {task_perms(), "xd", "pre_destroy"}, {"this", "none", "this"});
-set_verb_code(a, "pre_destroy", {"server_log(\"pre_destroy called on A\");"});
+add_verb(a, {task_perms(), "xd", "recycle"}, {"this", "none", "this"});
+set_verb_code(a, "recycle", {"server_log(\"recycle called on A\");"});
 b = create(#-1, 1);
 add_property(b, "next", 0, {task_perms(), ""});
-add_verb(b, {task_perms(), "xd", "pre_destroy"}, {"this", "none", "this"});
-set_verb_code(b, "pre_destroy", {"server_log(\"pre_destroy called on B\");"});
+add_verb(b, {task_perms(), "xd", "recycle"}, {"this", "none", "this"});
+set_verb_code(b, "recycle", {"server_log(\"recycle called on B\");"});
 a.name = "A";
 b.name = "B";
 a.next = b;

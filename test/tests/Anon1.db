@@ -99,14 +99,14 @@ server_log("--------------------------------------------------------------------
 server_log("Creates garbage and shuts down.  The garbage will be in the pending   ");
 server_log("anonymous objects as #4.  There will also be an object #4.  When the  ");
 server_log("server restarts from the dumped database, the pending object will be  ");
-server_log("destroyed.                                                            ");
+server_log("recycled.                                                             ");
 server_log("----------------------------------------------------------------------");
 suspend(0);
 try
 try
 l = {o = create(#-1, 1)};
-add_verb(o, {task_perms(), "xd", "pre_destroy"}, {"this", "none", "this"});
-set_verb_code(o, "pre_destroy", {"server_log(\"pre_destroy called\");"});
+add_verb(o, {task_perms(), "xd", "recycle"}, {"this", "none", "this"});
+set_verb_code(o, "recycle", {"server_log(\"recycle called\");"});
 except ex (ANY)
 server_log(toliteral(ex));
 endtry

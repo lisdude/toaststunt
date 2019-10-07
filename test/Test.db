@@ -172,7 +172,7 @@ if ((args && (length(args) == 1)) && (args[1] == "shutdown"))
 reset_max_object();
 while (max_object() > #7)
 ticks_left() < 2000 || seconds_left() < 2 && suspend(0);
-`destroy(max_object()) ! ANY';
+`recycle(max_object()) ! ANY';
 reset_max_object();
 endwhile
 boot_player(player);

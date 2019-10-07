@@ -99,7 +99,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        destroy(o)
+        recycle(o)
         assert_equal E_INVARG, add_verb(o, ['player', '', 'foobar'], ['this', 'none', 'this'])
       end
     end
@@ -191,7 +191,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        destroy(o)
+        recycle(o)
         assert_equal E_INVARG, delete_verb(o, 'foobar')
       end
     end
@@ -264,7 +264,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        destroy(o)
+        recycle(o)
         assert_equal E_INVARG, verb_info(o, 'foobar')
       end
     end
@@ -334,7 +334,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        destroy(o)
+        recycle(o)
         assert_equal E_INVARG, verb_args(o, 'foobar')
       end
     end
@@ -404,7 +404,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        destroy(o)
+        recycle(o)
         assert_equal E_INVARG, verb_code(o, 'foobar')
       end
     end
@@ -475,7 +475,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        destroy(o)
+        recycle(o)
         assert_equal E_INVARG, set_verb_info(o, 'foobar', [player, '', 'foobar'])
       end
     end
@@ -546,7 +546,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        destroy(o)
+        recycle(o)
         assert_equal E_INVARG, set_verb_args(o, 'foobar', ['any', 'any', 'any'])
       end
     end
@@ -617,7 +617,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        destroy(o)
+        recycle(o)
         assert_equal E_INVARG, set_verb_code(o, 'foobar', ['1;', '2;', '3;'])
       end
     end
@@ -688,7 +688,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        destroy(o)
+        recycle(o)
         assert_equal E_INVARG, verbs(o)
       end
     end
@@ -739,7 +739,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        destroy(o)
+        recycle(o)
         assert_equal E_INVARG, respond_to(o, 'foobar')
       end
     end
@@ -841,7 +841,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        destroy(o)
+        recycle(o)
         assert_equal E_INVARG, disassemble(o, 'foobar')
       end
     end
@@ -1080,7 +1080,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
           x = create(NOTHING)
           add_verb(x, [player, 'xd', 'x'], ['this', 'none', 'this'])
           set_verb_code(x, 'x') do |vc|
-            vc << %|destroy(create($nothing));|
+            vc << %|recycle(create($nothing));|
               vc << %|a = verb_cache_stats();|
               vc << %|#{a}:s();|
               vc << %|b = verb_cache_stats();|

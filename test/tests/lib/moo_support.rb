@@ -413,8 +413,8 @@ module MooSupport
     simplify command %Q|; return isa(#{obj_ref(object)}, #{obj_ref(parent)});|
   end
 
-  def destroy(object)
-    simplify command %Q|; return destroy(#{obj_ref(object)});|
+  def recycle(object)
+    simplify command %Q|; return recycle(#{obj_ref(object)});|
   end
 
   def max_object

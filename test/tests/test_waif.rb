@@ -122,37 +122,37 @@ class TestWaif < Test::Unit::TestCase
     end
   end
 
-  def test_that_losing_all_references_to_a_waif_calls_pre_destroy
+  def test_that_losing_all_references_to_a_waif_calls_recycle
     run_test_as('programmer') do
       a = create(:waif)
-      add_property(a, 'pre_destroy_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', ':pre_destroy'], ['this', 'none', 'this'])
-      set_verb_code(a, ':pre_destroy') do |vc|
+      add_property(a, 'recycle_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', ':recycle'], ['this', 'none', 'this'])
+      set_verb_code(a, ':recycle') do |vc|
         vc << %Q<typeof(this) == WAIF || raise(E_INVARG);>
-        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
+        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
       end
-      assert_equal 0, get(a, 'pre_destroy_called')
+      assert_equal 0, get(a, 'recycle_called')
       simplify(command("; #{a}:new();"))
-      assert_equal 1, get(a, 'pre_destroy_called')
+      assert_equal 1, get(a, 'recycle_called')
     end
   end
 
-  def test_that_losing_all_references_to_a_waif_calls_pre_destroy_once
+  def test_that_losing_all_references_to_a_waif_calls_recycle_once
     run_test_as('programmer') do
       a = create(:waif)
       add_property(a, 'reference', 0, [player, ''])
-      add_property(a, 'pre_destroy_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', ':pre_destroy'], ['this', 'none', 'this'])
-      set_verb_code(a, ':pre_destroy') do |vc|
+      add_property(a, 'recycle_called', 0, [player, ''])
+      add_verb(a, ['player', 'xd', ':recycle'], ['this', 'none', 'this'])
+      set_verb_code(a, ':recycle') do |vc|
         vc << %Q<typeof(this) == WAIF || raise(E_INVARG);>
-        vc << %Q<#{a}.pre_destroy_called = #{a}.pre_destroy_called + 1;>
+        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
         vc << %Q<#{a}.reference = this;>
       end
-      assert_equal 0, get(a, 'pre_destroy_called')
+      assert_equal 0, get(a, 'recycle_called')
       simplify(command("; #{a}:new();"))
-      assert_equal 1, get(a, 'pre_destroy_called')
+      assert_equal 1, get(a, 'recycle_called')
       simplify(command("; #{a}.reference = 0;"))
-      assert_equal 1, get(a, 'pre_destroy_called')
+      assert_equal 1, get(a, 'recycle_called')
     end
   end
 
@@ -171,7 +171,7 @@ class TestWaif < Test::Unit::TestCase
       add_verb(o, ['player', 'xd', 'go'], ['this', 'none', 'this'])
       set_verb_code(o, 'go') do |vc|
         vc << %Q|a = #{a}:new();|
-        vc << %Q|destroy(#{a});|
+        vc << %Q|recycle(#{a});|
         vc << %Q|return a.class == #-1;|
       end
       assert_equal 1, call(o, 'go')

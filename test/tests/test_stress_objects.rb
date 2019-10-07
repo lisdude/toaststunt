@@ -565,7 +565,7 @@ class TestStressObjects < Test::Unit::TestCase
 
         assert_equal [_(a), _(b), _(c)], parents(m)
 
-        destroy(b)
+        recycle(b)
 
         if typeof(m) == TYPE_OBJ
           assert_equal [_(a), _(c)], parents(m)
@@ -592,21 +592,21 @@ class TestStressObjects < Test::Unit::TestCase
 
         assert_equal [_(a), _(b), _(c), _(m)], parents(x)
 
-        destroy(b)
+        recycle(b)
         if typeof(x) == TYPE_OBJ
           assert_equal [_(a), _(c), _(m)], parents(x)
         else
           assert_equal false, valid(x)
         end
 
-        destroy(m)
+        recycle(m)
         if typeof(x) == TYPE_OBJ
           assert_equal [_(a), _(c), _(d), _(e)], parents(x)
         else
           assert_equal false, valid(x)
         end
 
-        destroy(e)
+        recycle(e)
         if typeof(x) == TYPE_OBJ
           assert_equal [_(a), _(c), _(d)], parents(x)
         else
@@ -635,8 +635,8 @@ class TestStressObjects < Test::Unit::TestCase
 
   def test_that_the_argument_to_object_bytes_must_be_valid
     run_test_as('wizard') do
-      assert_equal E_INVIND, simplify(command(%Q|; o = create($object, 0); destroy(o); object_bytes(o);|))
-      assert_equal E_INVIND, simplify(command(%Q|; o = create($anonymous, 1); destroy(o); object_bytes(o);|))
+      assert_equal E_INVIND, simplify(command(%Q|; o = create($object, 0); recycle(o); object_bytes(o);|))
+      assert_equal E_INVIND, simplify(command(%Q|; o = create($anonymous, 1); recycle(o); object_bytes(o);|))
     end
   end
 
@@ -649,7 +649,7 @@ class TestStressObjects < Test::Unit::TestCase
   end
 
   if @@options['ownership_quota']
-  def test_that_ownership_quota_is_changed_as_objects_are_created_and_destroyed
+  def test_that_ownership_quota_is_changed_as_objects_are_created_and_recycled
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         add_property(player, 'ownership_quota', 3, [player, ''])
@@ -665,12 +665,12 @@ class TestStressObjects < Test::Unit::TestCase
         d = create(*args)
         assert_equal E_QUOTA, d
 
-        # destroy
-        destroy(a)
+        # recycle
+        recycle(a)
         assert_equal 1, get(player, 'ownership_quota')
-        destroy(c)
+        recycle(c)
         assert_equal 2, get(player, 'ownership_quota')
-        destroy(b)
+        recycle(b)
         assert_equal 3, get(player, 'ownership_quota')
       end
     end

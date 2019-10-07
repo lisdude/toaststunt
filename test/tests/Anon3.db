@@ -104,8 +104,8 @@ suspend(0);
 try
 try
 l = {o = create(#-1, 1)};
-add_verb(o, {task_perms(), "xd", "pre_destroy"}, {"this", "none", "this"});
-set_verb_code(o, "pre_destroy", {"server_log(\"pre_destroy called\");"});
+add_verb(o, {task_perms(), "xd", "recycle"}, {"this", "none", "this"});
+set_verb_code(o, "recycle", {"server_log(\"recycle called\");"});
 except ex (ANY)
 server_log(toliteral(ex));
 endtry
