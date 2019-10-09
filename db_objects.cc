@@ -151,16 +151,6 @@ dbpriv_after_load(void)
 	    objects[i] = NULL;
 	}
     }
-    if (clear_last_move) {
-        oklog("Clearing last_move on objects...\n");
-            for (Objid oid = 0; oid < num_objects; oid++) {
-                Object *o = objects[oid];
-                if (o) {
-                    o->last_move = Var::new_int(0);
-                }
-            }
-        oklog("Clearing last_move on objects... finished.\n");
-    }
 }
 
 /* Both `dbpriv_new_object()' and `dbpriv_new_anonymous_object()'
@@ -216,7 +206,7 @@ db_init_object(Object *o)
     o->children = new_list(0);
 
     o->location = var_ref(nothing);
-    o->last_move = (clear_last_move ? Var::new_int(0) : new_map());
+    o->last_move = (clear_last_move ? var_ref(zero) : new_map());
     o->contents = new_list(0);
 
     o->propval = 0;
