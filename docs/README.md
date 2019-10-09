@@ -16,7 +16,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 
 ## Features
 
-- SQLite [functions: sqlite_open(), sqlite_close(), sqlite_handle(), sqlite_info(), sqlite_query(), sqlite_execute()]
+- SQLite [functions: sqlite_open(), sqlite_close(), sqlite_handle(), sqlite_info(), sqlite_query(), sqlite_execute(), sqlite_limit()].
 - Perl Compatible Regular Expressions (PCRE) [functions: pcre_match(), pcre_replace]
 - Simplex noise (implemented but never actually tested / used)
 - [Argon2id hashing](https://github.com/P-H-C/phc-winner-argon2) [functions: argon2(), argon2_verify()]
