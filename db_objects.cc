@@ -1045,6 +1045,9 @@ db_for_all_contents(Objid oid, int (*func) (void *, Objid), void *data)
 void
 db_change_location(Objid oid, Objid new_location, int position)
 {
+    static Var time_key = str_dup_to_var("time");
+    static Var source_key = str_dup_to_var("source");
+
     Var me = Var::new_obj(oid);
 
     Objid old_location = objects[oid]->location.v.obj;
@@ -1068,8 +1071,8 @@ db_change_location(Objid oid, Objid new_location, int position)
         }
 
     Var last_move = objects[oid]->last_move;
-    last_move = mapinsert(last_move, str_dup_to_var("time"), Var::new_int(time(0)));
-    last_move = mapinsert(last_move, str_dup_to_var("source"), Var::new_obj(old_location));
+    last_move = mapinsert(last_move, var_ref(time_key), Var::new_int(time(0)));
+    last_move = mapinsert(last_move, var_ref(source_key), Var::new_obj(old_location));
 
     objects[oid]->last_move = last_move;
     }
