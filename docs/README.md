@@ -112,7 +112,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - New argument to move() to effectively listinsert() the object into the destination's .contents
     - New argument to is_member() for controlling case sensitivity of equality comparisons. No third argument or a true value results in standard functionality; a false value as the third argument results in case not mattering at all
     - SIGUSR1 will close and reopen the logfile, allowing it to be rotated without restarting the server.
-
+    - '-m' command line option to clear all last_move properties in your database (and not set them again for the lifetime of the process).
 ## Build Instructions
 ### **Debian/Ubuntu**
 ```bash

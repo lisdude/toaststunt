@@ -25,6 +25,8 @@
 
 extern int waif_conversion_type;
 
+extern bool clear_last_move;
+
 /*********** Input ***********/
 
 extern DB_Version dbio_input_version;

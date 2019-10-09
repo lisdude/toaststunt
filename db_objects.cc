@@ -151,6 +151,16 @@ dbpriv_after_load(void)
 	    objects[i] = NULL;
 	}
     }
+    if (clear_last_move) {
+        oklog("Clearing last_move on objects...\n");
+            for (Objid oid = 0; oid < num_objects; oid++) {
+                Object *o = objects[oid];
+                if (o) {
+                    o->last_move = Var::new_int(0);
+                }
+            }
+        oklog("Clearing last_move on objects... finished.\n");
+    }
 }
 
 /* Both `dbpriv_new_object()' and `dbpriv_new_anonymous_object()'
@@ -206,7 +216,7 @@ db_init_object(Object *o)
     o->children = new_list(0);
 
     o->location = var_ref(nothing);
-    o->last_move = new_map();
+    o->last_move = (clear_last_move ? Var::new_int(0) : new_map());
     o->contents = new_list(0);
 
     o->propval = 0;
@@ -1060,18 +1070,19 @@ db_change_location(Objid oid, Objid new_location, int position)
     }
 
     free_var(objects[oid]->location);
-    if (objects[oid]->last_move.type != TYPE_MAP) {
-        free_var(objects[oid]->last_move);
-        objects[oid]->last_move = new_map();
-    }
-
     objects[oid]->location = Var::new_obj(new_location);
+    if (!clear_last_move) {
+        if (objects[oid]->last_move.type != TYPE_MAP) {
+            free_var(objects[oid]->last_move);
+            objects[oid]->last_move = new_map();
+        }
 
     Var last_move = objects[oid]->last_move;
     last_move = mapinsert(last_move, str_dup_to_var("time"), Var::new_int(time(0)));
     last_move = mapinsert(last_move, str_dup_to_var("source"), Var::new_obj(old_location));
 
     objects[oid]->last_move = last_move;
+    }
 
 }
 

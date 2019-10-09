@@ -86,6 +86,8 @@ static int checkpoint_finished = 0;	/* 1 = failure, 2 = success */
 
 static bool reopen_logfile_requested = false;
 
+bool clear_last_move = false;
+
 typedef struct shandle {
     struct shandle *next, **prev;
     network_handle nhandle;
@@ -1697,6 +1699,9 @@ main(int argc, char **argv)
         } else
             argc = 0;
         break;
+	case 'm':		/* clear last move */
+        clear_last_move = true;
+	    break;
     default:
 	    argc = 0;		/* Provoke usage message below */
 	}
@@ -1727,13 +1732,14 @@ main(int argc, char **argv)
     if ((emergency && (script_file || script_line))
 	|| !db_initialize(&argc, &argv)
 	|| !network_initialize(argc, argv, &desc)) {
-	fprintf(stderr, "Usage: %s [-e] [-f script-file] [-c script-line] [-l log-file] [-w waif-type] %s %s\n",
+	fprintf(stderr, "Usage: %s [-e] [-f script-file] [-c script-line] [-l log-file] [-m] [-w waif-type] %s %s\n",
 		this_program, db_usage_string(), network_usage_string());
 	fprintf(stderr, "Options:\n");
 	fprintf(stderr, "\t-e\t\temergency wizard mode\n");
 	fprintf(stderr, "\t-f\t\tfile to load and pass to `#0:do_start_script()'\n");
 	fprintf(stderr, "\t-c\t\tline to pass to `#0:do_start_script()'\n");
 	fprintf(stderr, "\t-l\t\toptional log file\n");
+    fprintf(stderr, "\t-m\t\tclear the last_move builtin property on all objects\n");
     fprintf(stderr, "\t-w\t\tconvert waifs from the specified type to the proper type (check with typeof(waif) in your MOO)\n\n");
 	fprintf(stderr, "The emergency mode switch (-e) may not be used with either the file (-f) or line (-c) options.\n\n");
 	fprintf(stderr, "Both the file and line options may be specified. Their order on the command line determines the order of their invocation.\n\n");
