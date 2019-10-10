@@ -77,7 +77,7 @@ bf_argon2(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
 #ifdef THREAD_ARGON2
-    char *human_string = 0;
+    char *human_string = nullptr;
     asprintf(&human_string, "argon2");
 
     return background_thread(argon2_thread_callback, &arglist, human_string);
@@ -115,7 +115,7 @@ bf_argon2_verify(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
 #ifdef THREAD_ARGON2
-    char *human_string = 0;
+    char *human_string = nullptr;
     asprintf(&human_string, "argon2_verify");
 
     return background_thread(argon2_verify_thread_callback, &arglist, human_string);

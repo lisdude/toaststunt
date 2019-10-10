@@ -999,7 +999,7 @@ void sort_callback(Var arglist, Var *ret)
     static package
 bf_sort(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    char *human_string = 0;
+    char *human_string = nullptr;
     asprintf(&human_string, "sorting %" PRIdN " element list", arglist.v.list[1].v.list[0].v.num);
 
     return background_thread(sort_callback, &arglist, human_string);
@@ -1020,7 +1020,7 @@ void all_members_thread_callback(Var arglist, Var *ret)
     static package
 bf_all_members(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    char *human_string = 0;
+    char *human_string = nullptr;
     asprintf(&human_string, "all_members in %" PRIdN " element list", arglist.v.list[2].v.list[0].v.num);
 
     return background_thread(all_members_thread_callback, &arglist, human_string);

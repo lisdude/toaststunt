@@ -1066,7 +1066,7 @@ bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    char *human_string = 0;
+    char *human_string = nullptr;
     asprintf(&human_string, "locate_by_name: \"%s\"", arglist.v.list[1].v.str);
 
     return background_thread(locate_by_name_thread_callback, &arglist, human_string);

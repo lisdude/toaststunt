@@ -249,7 +249,7 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-        char *human_string = 0;
+        char *human_string = nullptr;
         asprintf(&human_string, "sqlite_execute: %s", arglist.v.list[2].v.str);
 
         return background_thread(sqlite_execute_thread_callback, &arglist, human_string);
@@ -307,7 +307,7 @@ bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-        char *human_string = 0;
+        char *human_string = nullptr;
         asprintf(&human_string, "sqlite_query: %s", arglist.v.list[2].v.str);
 
         return background_thread(sqlite_query_thread_callback, &arglist, human_string);
