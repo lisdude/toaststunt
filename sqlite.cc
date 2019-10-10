@@ -1,6 +1,6 @@
 #include <unordered_map>
 
-#include "extension-sqlite.h"
+#include "sqlite.h"
 #include "extension-background.h"
 #include "functions.h"
 #include "numbers.h"
