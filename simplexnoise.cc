@@ -6,6 +6,7 @@
 #include "numbers.h"
 #include <math.h>
 #include "log.h"
+#include "simplexnoise.h"
 
 /* SimplexNoise1234, Simplex noise with true analytic
  * derivative in 1D to 4D.
@@ -35,9 +36,6 @@
  * This file has no dependencies on any other file, not even its own
  * header file. The header file is made for use by external code only.
  */
-
-// We don't really need to include this, but play nice and do it anyway.
-#include	"extension-simplexnoise.h"
 
 #define FASTFLOOR(x) ( ((int)(x)<=(x)) ? ((int)x) : (((int)x)-1) )
 

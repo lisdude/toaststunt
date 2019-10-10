@@ -55,7 +55,7 @@ CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
 	streams.cc str_intern.cc sym_table.cc system.cc tasks.cc \
 	timers.cc unparse.cc utils.cc verbs.cc version.cc \
 	sqlite.cc pcre.cc background.cc \
-	waif.cc extension-simplexnoise.cc argon2.cc \
+	waif.cc simplexnoise.cc argon2.cc \
 	spellcheck.cc
 
 OPT_NET_SRCS = net_single.cc net_multi.cc net_mp_selct.cc \
@@ -84,7 +84,7 @@ HDRS = ast.h base64.h bf_register.h code_gen.h collection.h crypto.h \
 	dependencies/yajl/yajl_parser.h dependencies/yajl/yajl_version.h \
 	fileio.h system.h dependencies/sosemanuk.h dependencies/linenoise.h \
 	sqlite.h background.h waif.h \
-	extension-simplexnoise.h dependencies/strnatcmp.h
+	simplexnoise.h dependencies/strnatcmp.h
 
 SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
 	my-poll.h my-signal.h my-socket.h my-stat.h my-stdarg.h my-stdio.h \
@@ -517,11 +517,11 @@ waif.o: waif.cc structures.h my-stdio.h config.h options.h storage.h \
  my-string.h bf_register.h functions.h execute.h db.h program.h version.h \
  opcode.h parse_cmd.h streams.h utils.h db_private.h db_io.h waif.h \
  list.h server.h network.h log.h map.h
-extension-simplexnoise.o: extension-simplexnoise.cc bf_register.h \
+simplexnoise.o: simplexnoise.cc bf_register.h \
  functions.h my-stdio.h config.h options.h execute.h db.h program.h \
  structures.h storage.h my-string.h version.h opcode.h parse_cmd.h \
  utils.h streams.h numbers.h dependencies/sosemanuk.h log.h \
- extension-simplexnoise.h
+ simplexnoise.h
 argon2.o: argon2.cc options.h config.h functions.h \
  my-stdio.h execute.h db.h program.h structures.h storage.h my-string.h \
  version.h opcode.h parse_cmd.h utils.h streams.h log.h map.h \
