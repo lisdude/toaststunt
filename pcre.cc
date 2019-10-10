@@ -1,6 +1,6 @@
 #include <ctype.h>
 
-#include "extension-pcre.h"
+#include "pcre.h"
 #include "functions.h"
 #include "list.h"
 #include "utils.h"
