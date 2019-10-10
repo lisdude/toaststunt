@@ -17,6 +17,9 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <algorithm> // std::sort
+#include "dependencies/strnatcmp.c" // natural sorting
+#include <vector>
 
 #include "my-ctype.h"
 #include "my-string.h"
@@ -37,6 +40,8 @@
 #include "unparse.h"
 #include "utils.h"
 #include "server.h"
+#include "extension-background.h"   // Threads
+#include "random.h"
 
 /* Bandaid: Something is killing all of our references to the
  * empty list, which is causing the server to crash. So this is
@@ -772,6 +777,256 @@ bf_equal(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+/* Return a list of substrings of an argument separated by a delimiter. */
+    static package
+bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    const int nargs = arglist.v.list[0].v.num;
+    const char *delim = (nargs > 1 ? arglist.v.list[2].v.str : " ");
+    const bool adjacent_delim = (nargs > 2 && is_true(arglist.v.list[3]));
+    char *found, *return_string, *freeme;
+    Var ret = new_list(0);
+
+    freeme = return_string = strdup(arglist.v.list[1].v.str);
+    free_var(arglist);
+
+    if (adjacent_delim) {
+        while ((found = strsep(&return_string, delim)) != NULL)
+            ret = listappend(ret, str_dup_to_var(found));
+    } else {
+        found = strtok(return_string, delim);
+        while (found != NULL) {
+            ret = listappend(ret, str_dup_to_var(found));
+            found = strtok(NULL, delim);
+        }
+    }
+    free(freeme);
+    return make_var_pack(ret);
+}
+
+    static package
+bf_reverse(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var ret;
+
+    if (arglist.v.list[1].type == TYPE_LIST) {
+        int elements = arglist.v.list[1].v.list[0].v.num;
+        ret = new_list(elements);
+
+        for (size_t x = elements, y = 1; x >= 1; x--, y++) {
+            ret.v.list[y] = var_ref(arglist.v.list[1].v.list[x]);
+        }
+    } else if (arglist.v.list[1].type == TYPE_STR) {
+        size_t len = memo_strlen(arglist.v.list[1].v.str);
+        if (len <= 1) {
+            ret = var_ref(arglist.v.list[1]);
+        } else {
+            char *new_str = (char *)mymalloc(len + 1, M_STRING);
+            for (size_t x = 0, y = len-1; x < len; x++, y--)
+                new_str[x] = arglist.v.list[1].v.str[y];
+            new_str[len] = '\0';
+            ret.type = TYPE_STR;
+            ret.v.str = new_str;
+        }
+    } else {
+        ret.type = TYPE_ERR;
+        ret.v.err = E_INVARG;
+    }
+
+    free_var(arglist);
+    return ret.type == TYPE_ERR ? make_error_pack(ret.v.err) : make_var_pack(ret);
+}
+
+static package
+bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var ret;
+    int nargs = arglist.v.list[0].v.num;
+    Var alist = arglist.v.list[1];
+    Var index = (nargs < 2 ? Var::new_int(1) : arglist.v.list[2]);
+
+    // Validate the types here since we used TYPE_ANY to allow lists and ints
+    if (nargs > 1 && index.type != TYPE_LIST && index.type != TYPE_INT && index.type != TYPE_STR) {
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
+    }
+
+    // Check that that index isn't an empty list and doesn't contain negative or zeroes
+    if (index.type == TYPE_LIST) {
+        if (index.v.list[0].v.num == 0) {
+            free_var(arglist);
+            return make_error_pack(E_RANGE);
+        }
+
+        for (int x = 1; x <= index.v.list[0].v.num; x++) {
+            if (index.v.list[x].type != TYPE_INT || index.v.list[x].v.num <= 0) {
+                free_var(arglist);
+                return make_error_pack((index.v.list[x].type != TYPE_INT ? E_INVARG : E_RANGE));
+            }
+        }
+    } else if (index.v.num <= 0) {
+        free_var(arglist);
+        return make_error_pack(E_RANGE);
+    }
+
+    /* Ideally, we could allocate the list with the number of elements in our first list.
+     * Unfortunately, if we need to return an error in the middle of setting elements in the return list,
+     * we can't free_var the entire list because some elements haven't been set yet. So instead we do it the
+     * old fashioned way unless/until somebody wants to refactor this to do all the error checking ahead of time. */
+    ret = new_list(0);
+
+    for (int x = 1; x <= alist.v.list[0].v.num; x++) {
+        Var element = alist.v.list[x];
+        if ((element.type != TYPE_LIST && element.type != TYPE_STR && element.type != TYPE_MAP)
+                || ((element.type == TYPE_MAP && index.type != TYPE_STR) || (index.type == TYPE_STR && element.type != TYPE_MAP))) {
+            free_var(arglist);
+            free_var(ret);
+            return make_error_pack(E_INVARG);
+        }
+        if (index.type == TYPE_STR) {
+            if (element.type != TYPE_MAP) {
+                free_var(arglist);
+                free_var(ret);
+                return make_error_pack(E_INVARG);
+            } else {
+                Var tmp;
+                if (maplookup(element, index, &tmp, 0) != NULL)
+                    ret = listappend(ret, var_ref(tmp));
+            }
+        } else if (index.type == TYPE_INT) {
+            if (index.v.num > (element.type == TYPE_STR ? memo_strlen(element.v.str) : element.v.list[0].v.num)) {
+                free_var(arglist);
+                free_var(ret);
+                return make_error_pack(E_RANGE);
+            } else {
+                ret = listappend(ret, (element.type == TYPE_STR ? substr(var_ref(element), index.v.num, index.v.num) : var_ref(element.v.list[index.v.num])));
+            }
+        } else if (index.type == TYPE_LIST) {
+            Var tmp = new_list(0);
+            for (int y = 1; y <= index.v.list[0].v.num; y++) {
+                if (index.v.list[y].v.num > (element.type == TYPE_STR ? memo_strlen(element.v.str) : element.v.list[0].v.num)) {
+                    free_var(arglist);
+                    free_var(ret);
+                    free_var(tmp);
+                    return make_error_pack(E_RANGE);
+                } else {
+                    tmp = listappend(tmp, (element.type == TYPE_STR ? substr(var_ref(element), index.v.list[y].v.num, index.v.list[y].v.num) : var_ref(element.v.list[index.v.list[y].v.num])));
+                }
+            }
+            ret = listappend(ret, tmp);
+        }
+    }
+    free_var(arglist);
+    return make_var_pack(ret);
+}
+
+/* Sorts various MOO types using std::sort.
+ * Args: LIST <values to sort>, [LIST <values to sort by>], [INT <natural sort ordering?>], [INT <reverse?>] */
+void sort_callback(Var arglist, Var *ret)
+{
+    int nargs = arglist.v.list[0].v.num;
+    int list_to_sort = (nargs >= 2 && arglist.v.list[2].v.list[0].v.num > 0 ? 2 : 1);
+    bool natural = (nargs >= 3 && is_true(arglist.v.list[3]));
+    bool reverse = (nargs >= 4 && is_true(arglist.v.list[4]));
+
+    if (arglist.v.list[list_to_sort].v.list[0].v.num == 0) {
+        *ret = new_list(0);
+        return;
+    } else if (list_to_sort == 2 && arglist.v.list[1].v.list[0].v.num != arglist.v.list[2].v.list[0].v.num) {
+        ret->type = TYPE_ERR;
+        ret->v.err = E_INVARG;
+        return;
+    }
+
+    // Create and sort a vector of indices rather than values. This makes it easier to sort a list by another list.
+    std::vector<size_t> s(arglist.v.list[list_to_sort].v.list[0].v.num);
+    var_type type_to_sort = arglist.v.list[list_to_sort].v.list[1].type;
+
+    for (int count = 1; count <= arglist.v.list[list_to_sort].v.list[0].v.num; count++)
+    {
+        var_type type = arglist.v.list[list_to_sort].v.list[count].type;
+        if (type != type_to_sort || type == TYPE_LIST || type == TYPE_MAP || type == TYPE_ANON || type == TYPE_WAIF)
+        {
+            ret->type = TYPE_ERR;
+            ret->v.err = E_TYPE;
+            return;
+        }
+        s[count-1] = count;
+    }
+
+    struct VarCompare {
+        VarCompare(const Var *Arglist, const bool Natural) : m_Arglist(Arglist), m_Natural(Natural) {}
+
+        bool operator()(size_t a, size_t b) const
+        {
+            Var lhs = m_Arglist[a];
+            Var rhs = m_Arglist[b];
+
+            switch (rhs.type) {
+                case TYPE_INT:
+                    return lhs.v.num < rhs.v.num;
+                case TYPE_FLOAT:
+                    return lhs.v.fnum < rhs.v.fnum;
+                case TYPE_OBJ:
+                    return lhs.v.obj < rhs.v.obj;
+                case TYPE_ERR:
+                    return ((int) lhs.v.err) < ((int) rhs.v.err);
+                case TYPE_STR:
+                    return (m_Natural ? strnatcasecmp(lhs.v.str, rhs.v.str) : strcasecmp(lhs.v.str, rhs.v.str)) < 0;
+                default:
+                    errlog("Unknown type in sort compare: %d\n", rhs.type);
+                    return 0;
+            }
+        }
+        const Var *m_Arglist;
+        const bool m_Natural;
+    };
+
+    std::sort(s.begin(), s.end(), VarCompare(arglist.v.list[list_to_sort].v.list, natural));
+
+    *ret = new_list(s.size());
+
+    if (reverse)
+    {
+        int moo_list_pos = 0;
+        for (auto it = s.rbegin(); it != s.rend(); ++it)
+            ret->v.list[++moo_list_pos] = var_ref(arglist.v.list[1].v.list[*it]);
+    } else {
+        for (size_t x = 0; x < s.size(); x++)
+            ret->v.list[x+1] = var_ref(arglist.v.list[1].v.list[s[x]]);
+    }
+}
+
+    static package
+bf_sort(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    char *human_string = 0;
+    asprintf(&human_string, "sorting %" PRIdN " element list", arglist.v.list[1].v.list[0].v.num);
+
+    return background_thread(sort_callback, &arglist, human_string);
+}
+
+void all_members_thread_callback(Var arglist, Var *ret)
+{
+    *ret = new_list(0);
+    Var data = arglist.v.list[1];
+    Var *thelist = arglist.v.list[2].v.list;
+
+    for (int x = 1, list_size = arglist.v.list[2].v.list[0].v.num; x <= list_size; x++)
+        if (equality(data, thelist[x], 0))
+            *ret = listappend(*ret, Var::new_int(x));
+}
+
+/* Return the indices of all elements of a value in a list. */
+    static package
+bf_all_members(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    char *human_string = 0;
+    asprintf(&human_string, "all_members in %" PRIdN " element list", arglist.v.list[2].v.list[0].v.num);
+
+    return background_thread(all_members_thread_callback, &arglist, human_string);
+}
+
 static package
 bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (source, what, with [, case-matters]) */
@@ -1352,6 +1607,135 @@ bf_chr(Var arglist, Byte next, void *vdata, Objid progr)
     return p;
 }
 
+    static package
+bf_parse_ansi(Var arglist, Byte next, void *vdata, Objid progr)
+{
+#define ANSI_TAG_TO_CODE(tag, code, case_matters)			\
+    {									\
+        stream_add_strsub(str, reset_stream(tmp), tag, code, case_matters); \
+        stream_add_string(tmp, reset_stream(str));				\
+    }
+
+    Var r;
+    r.type = TYPE_STR;
+
+    Stream *str = new_stream(50);
+    Stream *tmp = new_stream(50);
+    const char *random_codes[] = {"\e[31m", "\e[32m", "\e[33m", "\e[34m", "\e[35m", "\e[35m", "\e[36m"};
+
+    stream_add_string(tmp, arglist.v.list[1].v.str);
+    free_var(arglist);
+
+    ANSI_TAG_TO_CODE("[red]",        "\e[31m",   0);
+    ANSI_TAG_TO_CODE("[green]",      "\e[32m",   0);
+    ANSI_TAG_TO_CODE("[yellow]",     "\e[33m",   0);
+    ANSI_TAG_TO_CODE("[blue]",       "\e[34m",   0);
+    ANSI_TAG_TO_CODE("[purple]",     "\e[35m",   0);
+    ANSI_TAG_TO_CODE("[cyan]",       "\e[36m",   0);
+    ANSI_TAG_TO_CODE("[normal]",     "\e[0m",    0);
+    ANSI_TAG_TO_CODE("[inverse]",    "\e[7m",    0);
+    ANSI_TAG_TO_CODE("[underline]",  "\e[4m",    0);
+    ANSI_TAG_TO_CODE("[bold]",       "\e[1m",    0);
+    ANSI_TAG_TO_CODE("[bright]",     "\e[1m",    0);
+    ANSI_TAG_TO_CODE("[unbold]",     "\e[22m",   0);
+    ANSI_TAG_TO_CODE("[blink]",      "\e[5m",    0);
+    ANSI_TAG_TO_CODE("[unblink]",    "\e[25m",   0);
+    ANSI_TAG_TO_CODE("[magenta]",    "\e[35m",   0);
+    ANSI_TAG_TO_CODE("[unbright]",   "\e[22m",   0);
+    ANSI_TAG_TO_CODE("[white]",      "\e[37m",   0);
+    ANSI_TAG_TO_CODE("[gray]",       "\e[1;30m", 0);
+    ANSI_TAG_TO_CODE("[grey]",       "\e[1;30m", 0);
+    ANSI_TAG_TO_CODE("[beep]",       "\a",       0);
+    ANSI_TAG_TO_CODE("[black]",      "\e[30m",   0);
+    ANSI_TAG_TO_CODE("[b:black]",   "\e[40m",   0);
+    ANSI_TAG_TO_CODE("[b:red]",     "\e[41m",   0);
+    ANSI_TAG_TO_CODE("[b:green]",   "\e[42m",   0);
+    ANSI_TAG_TO_CODE("[b:yellow]",  "\e[43m",   0);
+    ANSI_TAG_TO_CODE("[b:blue]",    "\e[44m",   0);
+    ANSI_TAG_TO_CODE("[b:magenta]", "\e[45m",   0);
+    ANSI_TAG_TO_CODE("[b:purple]",  "\e[45m",   0);
+    ANSI_TAG_TO_CODE("[b:cyan]",    "\e[46m",   0);
+    ANSI_TAG_TO_CODE("[b:white]",   "\e[47m",   0);
+
+    char *t = reset_stream(tmp);
+    while (*t) {
+        if (!strncasecmp(t, "[random]", 8)) {
+            stream_add_string(str, random_codes[RANDOM() % 6]);
+            t += 8;
+        } else
+            stream_add_char(str, *t++);
+    }
+
+    stream_add_strsub(tmp, reset_stream(str), "[null]", "", 0);
+
+    ANSI_TAG_TO_CODE("[null]", "", 0);
+
+    r.v.str = str_dup(reset_stream(tmp));
+
+    free_stream(tmp);
+    free_stream(str);
+    return make_var_pack(r);
+
+#undef ANSI_TAG_TO_CODE
+}
+
+    static package
+bf_remove_ansi(Var arglist, Byte next, void *vdata, Objid progr)
+{
+
+#define MARK_FOR_REMOVAL(tag)					\
+    {								\
+        stream_add_strsub(tmp, reset_stream(tmp), tag, "", 0);	\
+    }
+    Var r;
+    Stream *tmp;
+
+    tmp = new_stream(50);
+    stream_add_string(tmp, arglist.v.list[1].v.str);
+    free_var(arglist);
+
+    MARK_FOR_REMOVAL("[red]");
+    MARK_FOR_REMOVAL("[green]");
+    MARK_FOR_REMOVAL("[yellow]");
+    MARK_FOR_REMOVAL("[blue]");
+    MARK_FOR_REMOVAL("[purple]");
+    MARK_FOR_REMOVAL("[cyan]");
+    MARK_FOR_REMOVAL("[normal]");
+    MARK_FOR_REMOVAL("[inverse]");
+    MARK_FOR_REMOVAL("[underline]");
+    MARK_FOR_REMOVAL("[bold]");
+    MARK_FOR_REMOVAL("[bright]");
+    MARK_FOR_REMOVAL("[unbold]");
+    MARK_FOR_REMOVAL("[blink]");
+    MARK_FOR_REMOVAL("[unblink]");
+    MARK_FOR_REMOVAL("[magenta]");
+    MARK_FOR_REMOVAL("[unbright]");
+    MARK_FOR_REMOVAL("[white]");
+    MARK_FOR_REMOVAL("[gray]");
+    MARK_FOR_REMOVAL("[grey]");
+    MARK_FOR_REMOVAL("[beep]");
+    MARK_FOR_REMOVAL("[black]");
+    MARK_FOR_REMOVAL("[b:black]");
+    MARK_FOR_REMOVAL("[b:red]");
+    MARK_FOR_REMOVAL("[b:green]");
+    MARK_FOR_REMOVAL("[b:yellow]");
+    MARK_FOR_REMOVAL("[b:blue]");
+    MARK_FOR_REMOVAL("[b:magenta]");
+    MARK_FOR_REMOVAL("[b:purple]");
+    MARK_FOR_REMOVAL("[b:cyan]");
+    MARK_FOR_REMOVAL("[b:white]");
+    MARK_FOR_REMOVAL("[random]");
+    MARK_FOR_REMOVAL("[null]");
+
+    r.type = TYPE_STR;
+    r.v.str = str_dup(reset_stream(tmp));
+
+    free_stream(tmp);
+    return make_var_pack(r);
+
+#undef MARK_FOR_REMOVAL
+}
+
 void
 register_list(void)
 {
@@ -1373,6 +1757,11 @@ register_list(void)
     register_function("listset", 3, 3, bf_listset,
 		      TYPE_LIST, TYPE_ANY, TYPE_INT);
     register_function("equal", 2, 2, bf_equal, TYPE_ANY, TYPE_ANY);
+    register_function("explode", 1, 3, bf_explode, TYPE_STR, TYPE_STR, TYPE_INT);
+    register_function("reverse", 1, 1, bf_reverse, TYPE_ANY);
+    register_function("slice", 1, 2, bf_slice, TYPE_LIST, TYPE_ANY);
+    register_function("sort", 1, 4, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_INT, TYPE_INT);
+    register_function("all_members", 2, 2, bf_all_members, TYPE_ANY, TYPE_LIST);
 
     /* string */
     register_function("tostr", 0, -1, bf_tostr);
@@ -1390,4 +1779,6 @@ register_list(void)
 		      TYPE_STR, TYPE_STR, TYPE_STR, TYPE_ANY);
     register_function("strtr", 3, 4, bf_strtr,
 		      TYPE_STR, TYPE_STR, TYPE_STR, TYPE_ANY);
+    register_function("parse_ansi", 1, 1, bf_parse_ansi, TYPE_STR);
+    register_function("remove_ansi", 1, 1, bf_remove_ansi, TYPE_STR);
 }

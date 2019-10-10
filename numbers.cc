@@ -22,11 +22,16 @@
 #include <random>
 #include <algorithm>
 #include <functional>
+#ifdef __MACH__
+#include <mach/clock.h>     // Millisecond time for macOS
+#include <mach/mach.h>
+#include <sys/sysctl.h>
+#endif
+
 #include "my-math.h"
 #include "my-stdlib.h"
 #include "my-string.h"
 #include "my-time.h"
-
 #include "config.h"
 #include "functions.h"
 #include "log.h"
@@ -37,6 +42,7 @@
 #include "streams.h"
 #include "structures.h"
 #include "utils.h"
+#include "list.h"
 
 sosemanuk_key_context key_context;
 sosemanuk_run_context run_context;
@@ -647,6 +653,51 @@ bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+#ifdef __FreeBSD__
+#define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
+#endif
+
+/* Returns a float of the time (including milliseconds)
+   Optional arguments specify monotonic time; 1: Monotonic. 2. Monotonic raw.
+   (seconds since an arbitrary period of time. More useful for timing
+   since its not affected by NTP or other time changes.) */
+    static package
+bf_ftime(Var arglist, Byte next, void *vdata, Objid progr)
+{
+#ifdef __MACH__
+    // macOS only provides SYSTEM_CLOCK for monotonic time, so our arguments don't matter.
+    clock_id_t clock_type = (arglist.v.list[0].v.num == 0 ? CALENDAR_CLOCK : SYSTEM_CLOCK);
+#else
+    // Other OSes provide MONOTONIC_RAW and MONOTONIC, so we'll check args for 2(raw) or 1.
+    clockid_t clock_type = 0;
+    if (arglist.v.list[0].v.num == 0)
+        clock_type = CLOCK_REALTIME;
+    else
+        clock_type = arglist.v.list[1].v.num == 2 ? CLOCK_MONOTONIC_RAW : CLOCK_MONOTONIC;
+#endif
+
+    struct timespec ts;
+
+#ifdef __MACH__
+    // macOS lacks clock_gettime, use clock_get_time instead
+    clock_serv_t cclock;
+    mach_timespec_t mts;
+    host_get_clock_service(mach_host_self(), clock_type, &cclock);
+    clock_get_time(cclock, &mts);
+    mach_port_deallocate(mach_task_self(), cclock);
+    ts.tv_sec = mts.tv_sec;
+    ts.tv_nsec = mts.tv_nsec;
+#else
+    clock_gettime(clock_type, &ts);
+#endif
+
+    Var r;
+    r.type = TYPE_FLOAT;
+    r.v.fnum = (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+
+    free_var(arglist);
+    return make_var_pack(r);
+}
 
 static package
 bf_random(Var arglist, Byte next, void *vdata, Objid progr)
@@ -676,6 +727,41 @@ bf_reseed_random(Var arglist, Byte next, void *vdata, Objid progr)
 
     reseed_rng();
     return no_var_pack();
+}
+
+/* Return a random floating point value between 0.0..args[1] or args[1]..args[2] */
+    static package
+bf_frandom(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    double fmin = (arglist.v.list[0].v.num > 1 ? arglist.v.list[1].v.fnum : 0.0);
+    double fmax = (arglist.v.list[0].v.num > 1 ? arglist.v.list[2].v.fnum : arglist.v.list[1].v.fnum);
+
+    free_var(arglist);
+
+    double f = (double)rand() / RAND_MAX;
+    f = fmin + f * (fmax - fmin);
+
+    Var ret;
+    ret.type = TYPE_FLOAT;
+    ret.v.fnum = f;
+
+    return make_var_pack(ret);
+
+}
+
+/* Round numbers to the nearest integer value to args[1] */
+    static package
+bf_round(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    double r = round((double)arglist.v.list[1].v.fnum);
+
+    free_var(arglist);
+
+    Var ret;
+    ret.type = TYPE_FLOAT;
+    ret.v.fnum = r;
+
+    return make_var_pack(ret);
 }
 
 #define TRY_STREAM enable_stream_exceptions()
@@ -756,6 +842,70 @@ bf_floatstr(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+/* Calculates the distance between two n-dimensional sets of coordinates. */
+    static package
+bf_distance(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    double ret = 0.0, tmp = 0.0;
+    int count;
+
+    for (count = 1; count <= arglist.v.list[1].v.list[0].v.num; count++)
+    {
+        if ((arglist.v.list[1].v.list[count].type != TYPE_INT && arglist.v.list[1].v.list[count].type != TYPE_FLOAT) || (arglist.v.list[2].v.list[count].type != TYPE_INT && arglist.v.list[2].v.list[count].type != TYPE_FLOAT))
+        {
+            free_var(arglist);
+            return make_error_pack(E_TYPE);
+        }
+        else
+        {
+            tmp = (arglist.v.list[2].v.list[count].type == TYPE_INT ? (double)arglist.v.list[2].v.list[count].v.num : arglist.v.list[2].v.list[count].v.fnum) - (arglist.v.list[1].v.list[count].type == TYPE_INT ? (double)arglist.v.list[1].v.list[count].v.num : arglist.v.list[1].v.list[count].v.fnum);
+            ret = ret + (tmp * tmp);
+        }
+    }
+
+    free_var(arglist);
+
+    Var s;
+    s.type = TYPE_FLOAT;
+    s.v.fnum = sqrt(ret);
+
+    return make_var_pack(s);
+}
+
+/* Calculates the bearing between two sets of three dimensional floating point coordinates. */
+    static package
+bf_relative_heading(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (arglist.v.list[1].v.list[1].type != TYPE_FLOAT || arglist.v.list[1].v.list[2].type != TYPE_FLOAT || arglist.v.list[1].v.list[3].type != TYPE_FLOAT || arglist.v.list[2].v.list[1].type != TYPE_FLOAT || arglist.v.list[2].v.list[2].type != TYPE_FLOAT || arglist.v.list[2].v.list[3].type != TYPE_FLOAT) {
+        free_var(arglist);
+        return make_error_pack(E_TYPE);
+    }
+
+    double dx = arglist.v.list[2].v.list[1].v.fnum - arglist.v.list[1].v.list[1].v.fnum;
+    double dy = arglist.v.list[2].v.list[2].v.fnum - arglist.v.list[1].v.list[2].v.fnum;
+    double dz = arglist.v.list[2].v.list[3].v.fnum - arglist.v.list[1].v.list[3].v.fnum;
+
+    double xy = 0.0;
+    double z = 0.0;
+
+    xy = atan2(dy, dx) * 57.2957795130823;
+
+    if (xy < 0.0)
+        xy = xy + 360.0;
+
+    z = atan2(dz, sqrt((dx * dx) + (dy * dy))) * 57.2957795130823;
+
+    Var s = new_list(2);
+    s.v.list[1].type = TYPE_INT;
+    s.v.list[1].v.num = (int)xy;
+    s.v.list[2].type = TYPE_INT;
+    s.v.list[2].v.num = (int)z;
+
+    free_var(arglist);
+
+    return make_var_pack(s);
+}
+
 Var zero;			/* useful constant */
 
 void
@@ -773,9 +923,12 @@ register_numbers(void)
     register_function("abs", 1, 1, bf_abs, TYPE_NUMERIC);
     register_function("random", 0, 2, bf_random, TYPE_INT, TYPE_INT);
     register_function("reseed_random", 0, 0, bf_reseed_random);
+    register_function("frandom", 1, 2, bf_frandom, TYPE_FLOAT, TYPE_FLOAT);
+    register_function("round", 1, 1, bf_round, TYPE_FLOAT);
     register_function("random_bytes", 1, 1, bf_random_bytes, TYPE_INT);
     register_function("time", 0, 0, bf_time);
     register_function("ctime", 0, 1, bf_ctime, TYPE_INT);
+    register_function("ftime", 0, 1, bf_ftime, TYPE_INT);
     register_function("floatstr", 2, 3, bf_floatstr,
 		      TYPE_FLOAT, TYPE_INT, TYPE_ANY);
 
@@ -795,4 +948,8 @@ register_numbers(void)
     register_function("ceil", 1, 1, bf_ceil, TYPE_FLOAT);
     register_function("floor", 1, 1, bf_floor, TYPE_FLOAT);
     register_function("trunc", 1, 1, bf_trunc, TYPE_FLOAT);
+
+    /* Possibly misplaced functions... */
+    register_function("distance", 2, 2, bf_distance, TYPE_LIST, TYPE_LIST);
+    register_function("relative_heading", 2, 2, bf_relative_heading, TYPE_LIST, TYPE_LIST);
 }

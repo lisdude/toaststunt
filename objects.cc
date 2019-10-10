@@ -30,6 +30,7 @@
 #include "structures.h"
 #include "utils.h"
 #include "log.h"
+#include "extension-background.h"   // Threads
 
 static int
 controls(Objid who, Objid what)
@@ -1025,7 +1026,126 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
     return ret;
 }
 
-static package
+/* Locate an object in the database by name more quickly than is possible in-DB.
+ * To avoid numerous list reallocations, we put everything in a vector and then
+ * transfer it over to a list when we know how many values we have. */
+void locate_by_name_thread_callback(Var arglist, Var *ret)
+{
+    Var name, object;
+    object.type = TYPE_OBJ;
+    std::vector<int> tmp;
+
+    int case_matters = arglist.v.list[0].v.num < 2 ? 0 : is_true(arglist.v.list[2]);
+    int string_length = memo_strlen(arglist.v.list[1].v.str);
+
+    for (int x = 1; x < db_last_used_objid(); x++)
+    {
+        if (!valid(x))
+            continue;
+
+        object.v.obj = x;
+        db_find_property(object, "name", &name);
+        if (strindex(name.v.str, memo_strlen(name.v.str), arglist.v.list[1].v.str, string_length, case_matters))
+            tmp.push_back(x);
+    }
+
+    *ret = new_list(tmp.size());
+    for (size_t x = 0; x < tmp.size(); x++) {
+        ret->v.list[x+1].type = TYPE_OBJ;
+        ret->v.list[x+1].v.obj = tmp[x];
+    }
+}
+
+    static package
+bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (!is_wizard(progr))
+    {
+        free_var(arglist);
+        return make_error_pack(E_PERM);
+    }
+
+    char *human_string = 0;
+    asprintf(&human_string, "locate_by_name: \"%s\"", arglist.v.list[1].v.str);
+
+    return background_thread(locate_by_name_thread_callback, &arglist, human_string);
+}
+
+static bool multi_parent_isa(const Var *object, const Var *parents)
+{
+    if (parents->type == TYPE_OBJ)
+        return db_object_isa(*object, *parents);
+
+    for (int y = 1; y <= parents->v.list[0].v.num; y++)
+        if (db_object_isa(*object, parents->v.list[y]))
+            return true;
+
+    return false;
+}
+
+/* Return a list of objects of parent, optionally with a player flag set.
+ * With only one argument, player flag is assumed to be the only condition.
+ * With two arguments, parent is the only condition.
+ * With three arguments, parent is checked first and then the player flag is checked.
+ * occupants(LIST objects, OBJ | LIST parent, ?INT player flag set)
+ */
+    static package
+bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (object) */
+    Var ret = new_list(0);
+    int nargs = arglist.v.list[0].v.num;
+    Var contents = arglist.v.list[1];
+    int content_length = contents.v.list[0].v.num;
+    bool check_parent = nargs == 1 ? false : true;
+    Var parent = check_parent ? arglist.v.list[2] : nothing;
+    bool check_player_flag = (nargs == 1 || (nargs > 2 && is_true(arglist.v.list[3])));
+
+    if (check_parent && !is_obj_or_list_of_objs(parent)) {
+        free_var(arglist);
+        return make_error_pack(E_TYPE);
+    }
+
+    for (int x = 1; x <= content_length; x++) {
+        Objid oid = contents.v.list[x].v.obj;
+        if (valid(oid)
+                && (!check_parent ? 1 : multi_parent_isa(&contents.v.list[x], &parent))
+                && (!check_player_flag || (check_player_flag && is_user(oid))))
+        {
+            ret = setadd(ret, contents.v.list[x]);
+        }
+    }
+
+    free_var(arglist);
+    return make_var_pack(ret);
+}
+
+/* Return a list of nested locations for an object
+ * For objects in $nothing (#-1), this returns an empty list.
+ * locations(OBJ object)
+ */
+    static package
+bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Objid what = arglist.v.list[1].v.obj;
+
+    free_var(arglist);
+
+    if (!valid(what))
+        return make_error_pack(E_INVIND);
+
+    Var locs = new_list(0);
+
+    Objid loc = db_object_location(what);
+
+    while (valid(loc)) {
+        locs = setadd(locs, Var::new_obj(loc));
+        loc = db_object_location(loc);
+    }
+
+    return make_var_pack(locs);
+}
+
+    static package
 bf_clear_ancestor_cache(Var arglist, Byte next, void *vdata, Objid progr)
 {
     free_var(arglist);
@@ -1125,6 +1245,9 @@ register_objects(void)
 				      bf_move_read, bf_move_write,
 				      TYPE_OBJ, TYPE_OBJ, TYPE_INT);
     register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_INT);
+    register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
+    register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_ANY, TYPE_INT);
+    register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
 #ifdef USE_ANCESTOR_CACHE
     register_function("clear_ancestor_cache", 0, 0, bf_clear_ancestor_cache);
 #endif
