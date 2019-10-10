@@ -398,8 +398,8 @@ list.o: list.cc dependencies/strnatcmp.c dependencies/strnatcmp.h \
  my-ctype.h config.h options.h my-string.h my-math.h bf_register.h \
  collection.h structures.h my-stdio.h storage.h functions.h execute.h \
  db.h program.h version.h opcode.h parse_cmd.h list.h streams.h log.h \
- map.h pattern.h unparse.h utils.h server.h network.h \
- background.h dependencies/thpool.h random.h
+ map.h pattern.h unparse.h utils.h server.h network.h background.h \
+ dependencies/thpool.h random.h
 log.o: log.cc my-stdarg.h config.h options.h my-stdio.h my-string.h \
  my-time.h my-unistd.h bf_register.h functions.h execute.h db.h program.h \
  structures.h storage.h version.h opcode.h parse_cmd.h log.h streams.h \
@@ -477,8 +477,7 @@ tasks.o: tasks.cc my-string.h config.h options.h my-time.h my-in.h \
  db_io.h decompile.h ast.h parser.h sym_table.h eval_env.h eval_vm.h \
  execute.h opcode.h parse_cmd.h functions.h http_parser.h list.h \
  streams.h log.h map.h match.h random.h server.h network.h tasks.h \
- utils.h verbs.h name_lookup.h background.h \
- dependencies/thpool.h
+ utils.h verbs.h name_lookup.h background.h dependencies/thpool.h
 timers.o: timers.cc my-signal.h config.h options.h my-stdlib.h \
  my-sys-time.h my-types.h my-time.h my-unistd.h timers.h
 unparse.o: unparse.cc my-ctype.h config.h options.h my-stdio.h ast.h \
@@ -498,38 +497,34 @@ version.o: version.cc config.h options.h version.h structures.h \
  my-stdio.h storage.h my-string.h list.h streams.h utils.h execute.h db.h \
  program.h opcode.h parse_cmd.h server.h network.h version_src.h \
  version_options.h
-sqlite.o: sqlite.cc sqlite.h structures.h \
- my-stdio.h config.h options.h storage.h my-string.h streams.h \
- background.h functions.h execute.h db.h program.h version.h \
- opcode.h parse_cmd.h dependencies/thpool.h numbers.h \
+sqlite.o: sqlite.cc sqlite.h structures.h my-stdio.h config.h options.h \
+ storage.h my-string.h streams.h background.h functions.h execute.h db.h \
+ program.h version.h opcode.h parse_cmd.h dependencies/thpool.h numbers.h \
  dependencies/sosemanuk.h utils.h list.h log.h server.h network.h map.h
-pcre.o: pcre.cc pcre.h structures.h \
- my-stdio.h config.h options.h storage.h my-string.h functions.h \
- execute.h db.h program.h version.h opcode.h parse_cmd.h list.h streams.h \
- utils.h log.h server.h network.h map.h dependencies/pcrs.h \
- dependencies/xtrapbits.h
-background.o: background.cc background.h \
- functions.h my-stdio.h config.h options.h execute.h db.h program.h \
- structures.h storage.h my-string.h version.h opcode.h parse_cmd.h \
- dependencies/thpool.h bf_register.h my-unistd.h tasks.h utils.h \
- streams.h server.h network.h list.h net_multi.h log.h
+pcre.o: pcre.cc pcre.h structures.h my-stdio.h config.h options.h \
+ storage.h my-string.h functions.h execute.h db.h program.h version.h \
+ opcode.h parse_cmd.h list.h streams.h utils.h log.h server.h network.h \
+ map.h dependencies/pcrs.h dependencies/xtrapbits.h
+background.o: background.cc background.h functions.h my-stdio.h config.h \
+ options.h execute.h db.h program.h structures.h storage.h my-string.h \
+ version.h opcode.h parse_cmd.h dependencies/thpool.h bf_register.h \
+ my-unistd.h tasks.h utils.h streams.h server.h network.h list.h \
+ net_multi.h log.h
 waif.o: waif.cc structures.h my-stdio.h config.h options.h storage.h \
  my-string.h bf_register.h functions.h execute.h db.h program.h version.h \
  opcode.h parse_cmd.h streams.h utils.h db_private.h db_io.h waif.h \
  list.h server.h network.h log.h map.h
-simplexnoise.o: simplexnoise.cc bf_register.h \
- functions.h my-stdio.h config.h options.h execute.h db.h program.h \
- structures.h storage.h my-string.h version.h opcode.h parse_cmd.h \
- utils.h streams.h numbers.h dependencies/sosemanuk.h log.h \
- simplexnoise.h
-argon2.o: argon2.cc options.h config.h functions.h \
+simplexnoise.o: simplexnoise.cc bf_register.h functions.h my-stdio.h \
+ config.h options.h execute.h db.h program.h structures.h storage.h \
+ my-string.h version.h opcode.h parse_cmd.h utils.h streams.h numbers.h \
+ dependencies/sosemanuk.h log.h simplexnoise.h
+argon2.o: argon2.cc options.h config.h functions.h my-stdio.h execute.h \
+ db.h program.h structures.h storage.h my-string.h version.h opcode.h \
+ parse_cmd.h utils.h streams.h log.h map.h background.h \
+ dependencies/thpool.h
+spellcheck.o: spellcheck.cc options.h config.h bf_register.h functions.h \
  my-stdio.h execute.h db.h program.h structures.h storage.h my-string.h \
- version.h opcode.h parse_cmd.h utils.h streams.h log.h map.h \
- background.h dependencies/thpool.h
-spellcheck.o: spellcheck.cc options.h config.h \
- bf_register.h functions.h my-stdio.h execute.h db.h program.h \
- structures.h storage.h my-string.h version.h opcode.h parse_cmd.h log.h \
- utils.h streams.h list.h
+ version.h opcode.h parse_cmd.h log.h utils.h streams.h list.h
 net_single.o: net_single.cc my-ctype.h config.h options.h my-fcntl.h \
  my-stdio.h my-unistd.h log.h structures.h storage.h my-string.h \
  network.h server.h streams.h db.h program.h version.h utils.h execute.h \
