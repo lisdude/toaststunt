@@ -753,11 +753,7 @@ bf_round(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
 
-    Var ret;
-    ret.type = TYPE_FLOAT;
-    ret.v.fnum = r;
-
-    return make_var_pack(ret);
+    return make_var_pack(Var::new_float(r));
 }
 
 #define TRY_STREAM enable_stream_exceptions()
