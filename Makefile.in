@@ -21,8 +21,9 @@ LIBRARIES = @LIBS@
 ELIBS=@ELIBS@
 YACC = @YACC@
 
-CFLAGS = -Wall -march=native -O3 -Wno-sign-compare -Wno-switch @CFLAGS@
-CXXFLAGS = $(CFLAGS) @CXXFLAGS@ -std=c++11
+SHAREDFLAGS = -Wall -Wno-unused-parameter -march=native -O3 -Wno-sign-compare -Wno-switch
+CFLAGS = -std=gnu99 $(SHAREDFLAGS) @CFLAGS@
+CXXFLAGS = -std=c++11 $(SHAREDFLAGS) @CXXFLAGS@
 
 MI_OPTS = --fill-column 79 --no-split
 
