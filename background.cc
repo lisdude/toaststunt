@@ -1,4 +1,4 @@
-#include "extension-background.h"
+#include "background.h"
 #include "bf_register.h"
 #include "my-unistd.h"                  // sleep()
 #include "storage.h"                    // myfree, mymalloc

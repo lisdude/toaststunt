@@ -1,7 +1,7 @@
 #include <unordered_map>
 
 #include "sqlite.h"
-#include "extension-background.h"
+#include "background.h"
 #include "functions.h"
 #include "numbers.h"
 #include "utils.h"

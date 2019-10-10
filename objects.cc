@@ -30,7 +30,7 @@
 #include "structures.h"
 #include "utils.h"
 #include "log.h"
-#include "extension-background.h"   // Threads
+#include "background.h"   // Threads
 
 static int
 controls(Objid who, Objid what)

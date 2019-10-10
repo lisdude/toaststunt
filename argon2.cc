@@ -8,7 +8,7 @@
 #include "utils.h"
 #include "log.h"
 #include "map.h"
-#include "extension-background.h"
+#include "background.h"
 
 /* Since threaded functions can only return Vars, not packages, we instead
  * create and return an 'error map'. Which is just a map with the keys:

@@ -51,7 +51,7 @@
 #include "verbs.h"
 #include "version.h"
 #include "name_lookup.h"
-#include "extension-background.h"
+#include "background.h"
 
 #define ROUND(tvp)	((tvp)->tv_sec + ((tvp)->tv_usec > 500000))
 

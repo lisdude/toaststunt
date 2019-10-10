@@ -40,7 +40,7 @@
 #include "unparse.h"
 #include "utils.h"
 #include "server.h"
-#include "extension-background.h"   // Threads
+#include "background.h"   // Threads
 #include "random.h"
 
 /* Bandaid: Something is killing all of our references to the

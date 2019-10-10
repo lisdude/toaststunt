@@ -44,7 +44,7 @@
 #include "utils.h"
 #include "waif.h"
 #include "version.h"
-#include "extension-background.h"
+#include "background.h"
 
 /* the following globals are the guts of the virtual machine: */
 static activation *activ_stack = 0;

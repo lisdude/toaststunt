@@ -1,9 +1,10 @@
 # ToastStunt ChangeLog
 
 ## 2.5.13 (Oct 5, 2019) (In Progress)
--Add a `sqlite_limit()` builtin.
+- Add a `sqlite_limit()` builtin.
 - Replace `destroy` with `recycle` in tests.
 - Add the `-m` command line option for clearing the last_move builtin property on all objects in the database (and not setting it again for the lifetime of the server process).
+- Move user-visible threading options into `options.h`.
 
 ## 2.5.12 (Oct 3, 2019)
 - The `chr()` function can now accept any number of arguments, similar to how `encode_binary()` works.

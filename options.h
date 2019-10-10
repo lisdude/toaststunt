@@ -496,6 +496,21 @@
 */
 /* #define THREAD_ARGON2 */
 
+/******************************************************************************
+ * Configurable options for the background subsystem.
+ * TOTAL_BACKGROUND_THREADS is the total number of pthreads that will be created
+ * at runtime to process background MOO tasks.
+ * DEFAULT_THREAD_MODE dictates the default behavior of threaded MOO functions
+ * without a call to set_thread_mode. When set to true, the default behavior is
+ * to thread these functions, requiring a call to set_thread_mode(0) to disable.
+ * When false, the default behavior is unthreaded and requires a call to
+ * set_thread_mode(1) to enable threading for the functions in that verb.
+ ******************************************************************************
+ */
+
+#define TOTAL_BACKGROUND_THREADS    1
+#define DEFAULT_THREAD_MODE         true
+
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/
