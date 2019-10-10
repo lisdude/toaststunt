@@ -24,6 +24,10 @@
 #if !defined(__FreeBSD__) && !defined(__MACH__)
 #include <sys/sysinfo.h>    // CPU usage
 #endif
+#ifdef __MACH__
+#include <mach/mach.h>
+#include <sys/sysctl.h>
+#endif
 
 #include <string>
 #include <sstream>
