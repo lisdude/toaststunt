@@ -8,6 +8,7 @@
 #include "list.h"                       // listappend
 #include "net_multi.h"                  // network_fd shenanigans
 #include "log.h"                        // errlog
+#include "map.h"
 
 /*
   A general-purpose extension for doing work in separate threads. The entrypoint (background_thread)
@@ -171,6 +172,22 @@ void deallocate_background_waiter(background_waiter *waiter)
         next_background_handle = 1;
 }
 
+/* Since threaded functions can only return Vars, not packages, we instead
+ * create and return an 'error map'. Which is just a map with the keys:
+ * error, which is an error type, and message, which is the error string. */
+void make_error_map(enum error error_type, const char *msg, Var *ret)
+{
+    static Var error_key = str_dup_to_var("error");
+    static Var message_key = str_dup_to_var("message");
+
+    Var err;
+    err.type = TYPE_ERR;
+    err.v.err = error_type;
+
+    *ret = new_map();
+    *ret = mapinsert(*ret, var_ref(error_key), err);
+    *ret = mapinsert(*ret, var_ref(message_key), str_dup_to_var(msg));
+}
 /********************************************************************************************************/
 
 static package
