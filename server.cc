@@ -71,6 +71,7 @@
 #include "version.h"
 #include "net_multi.h"  /* rewrite connection name */
 #include "waif.h" /* destroyed_waifs */
+#include "curl.h" /* curl shutdown */
 
 extern "C" {
 #include "dependencies/linenoise.h"
@@ -1824,6 +1825,7 @@ main(int argc, char **argv)
 
     db_clear_ancestor_cache();
     sqlite_shutdown();
+    curl_shutdown();
 
     free_str(this_program);
 

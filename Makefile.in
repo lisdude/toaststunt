@@ -56,7 +56,7 @@ CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
 	timers.cc unparse.cc utils.cc verbs.cc version.cc \
 	sqlite.cc pcre.cc background.cc \
 	waif.cc simplexnoise.cc argon2.cc \
-	spellcheck.cc
+	spellcheck.cc curl.cc
 
 OPT_NET_SRCS = net_single.cc net_multi.cc net_mp_selct.cc \
 	net_mp_poll.cc net_mp_fake.cc net_tcp.cc net_bsd_tcp.cc \
@@ -391,9 +391,9 @@ json.o: json.cc my-string.h config.h options.h my-stdlib.h functions.h \
  dependencies/yajl/yajl_gen.h dependencies/yajl/yajl_common.h \
  dependencies/yajl/yajl_lex.h dependencies/yajl/yajl_parse.h
 keywords.o: keywords.cc my-string.h config.h options.h keywords.h \
- structures.h my-stdio.h storage.h version.h tokens.h ast.h parser.h \
- program.h sym_table.h y.tab.h utils.h execute.h db.h opcode.h \
- parse_cmd.h streams.h
+structures.h my-stdio.h storage.h version.h tokens.h ast.h parser.h \
+program.h sym_table.h y.tab.h utils.h execute.h db.h opcode.h \
+parse_cmd.h streams.h
 list.o: list.cc dependencies/strnatcmp.c dependencies/strnatcmp.h \
  my-ctype.h config.h options.h my-string.h my-math.h bf_register.h \
  collection.h structures.h my-stdio.h storage.h functions.h execute.h \
@@ -457,7 +457,7 @@ server.o: server.cc my-types.h config.h options.h my-signal.h my-stdarg.h \
  opcode.h parse_cmd.h functions.h garbage.h list.h streams.h log.h \
  network.h server.h numbers.h dependencies/sosemanuk.h parser.h quota.h \
  random.h tasks.h timers.h my-time.h unparse.h utils.h net_multi.h waif.h \
- db_private.h dependencies/linenoise.h
+ db_private.h curl.h dependencies/linenoise.h
 storage.o: storage.cc my-stdlib.h config.h options.h my-string.h list.h \
  structures.h my-stdio.h storage.h streams.h server.h network.h db.h \
  program.h version.h utils.h execute.h opcode.h parse_cmd.h
@@ -509,7 +509,7 @@ background.o: background.cc background.h functions.h my-stdio.h config.h \
  options.h execute.h db.h program.h structures.h storage.h my-string.h \
  version.h opcode.h parse_cmd.h dependencies/thpool.h bf_register.h \
  my-unistd.h tasks.h utils.h streams.h server.h network.h list.h \
- net_multi.h log.h
+ net_multi.h log.h map.h
 waif.o: waif.cc structures.h my-stdio.h config.h options.h storage.h \
  my-string.h bf_register.h functions.h execute.h db.h program.h version.h \
  opcode.h parse_cmd.h streams.h utils.h db_private.h db_io.h waif.h \
@@ -525,6 +525,7 @@ argon2.o: argon2.cc options.h config.h functions.h my-stdio.h execute.h \
 spellcheck.o: spellcheck.cc options.h config.h bf_register.h functions.h \
  my-stdio.h execute.h db.h program.h structures.h storage.h my-string.h \
  version.h opcode.h parse_cmd.h log.h utils.h streams.h list.h
+curl.o: curl.cc options.h config.h
 net_single.o: net_single.cc my-ctype.h config.h options.h my-fcntl.h \
  my-stdio.h my-unistd.h log.h structures.h storage.h my-string.h \
  network.h server.h streams.h db.h program.h version.h utils.h execute.h \

@@ -278,6 +278,15 @@ dnl ***************************************************************************
 	fi
 
  dnl ***************************************************************************
+    AC_CHECK_HEADER([curl/curl.h], [found_curl=yes], [found_curl=no])
+    if test "$found_curl" != "yes" ; then
+        AC_MSG_WARN([Curl could not be found.])
+    else
+        AC_DEFINE(HAS_CURL)
+        ELIBS="${ELIBS} -lcurl"
+    fi
+
+ dnl ***************************************************************************
     AC_CHECK_HEADER([nettle/md5.h], [found_nettle=yes], [found_nettle=no])
     if test "$found_nettle" != "yes" ; then
         AC_MSG_ERROR([Nettle could not be found.])

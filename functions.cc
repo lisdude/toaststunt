@@ -73,7 +73,8 @@ static registry bi_function_registries[] =
     register_waif,
     register_simplexnoise,
     register_argon2,
-    register_spellcheck
+    register_spellcheck,
+    register_curl
 };
 
 void
