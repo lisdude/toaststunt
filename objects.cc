@@ -1131,11 +1131,11 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
     static package
 bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Objid what = arglist.v.list[1].v.obj;
-    int nargs = arglist.v.list[0].v.num;
-    Objid base_obj = (nargs > 1 ? arglist.v.list[2].v.obj : 0);
-    Var base_obj_var = Var::new_obj(base_obj);
-    bool check_parent = (nargs > 2 ? is_true(arglist.v.list[3]) : false);
+    const Objid what = arglist.v.list[1].v.obj;
+    const int nargs = arglist.v.list[0].v.num;
+    const Objid base_obj = (nargs > 1 ? arglist.v.list[2].v.obj : 0);
+    const Var base_obj_var = Var::new_obj(base_obj);
+    const bool check_parent = (nargs > 2 ? is_true(arglist.v.list[3]) : false);
 
     free_var(arglist);
 
@@ -1147,7 +1147,7 @@ bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
     Objid loc = db_object_location(what);
 
     while (valid(loc)) {
-        Var loc_var = Var::new_obj(loc);
+        const Var loc_var = Var::new_obj(loc);
         if (base_obj && (check_parent ? db_object_isa(loc_var, base_obj_var) : loc == base_obj))
             break;
         locs = setadd(locs, loc_var);
