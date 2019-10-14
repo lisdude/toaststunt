@@ -1128,6 +1128,7 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
 bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Objid what = arglist.v.list[1].v.obj;
+    Objid base_obj = (arglist.v.list[0].v.num > 1 ? arglist.v.list[2].v.obj : 0);
 
     free_var(arglist);
 
@@ -1141,6 +1142,8 @@ bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
     while (valid(loc)) {
         locs = setadd(locs, Var::new_obj(loc));
         loc = db_object_location(loc);
+        if (base_obj && loc == base_obj)
+            break;
     }
 
     return make_var_pack(locs);
@@ -1248,7 +1251,7 @@ register_objects(void)
     register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_INT);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_ANY, TYPE_INT);
-    register_function("locations", 1, 1, bf_locations, TYPE_OBJ);
+    register_function("locations", 1, 2, bf_locations, TYPE_OBJ, TYPE_OBJ);
 #ifdef USE_ANCESTOR_CACHE
     register_function("clear_ancestor_cache", 0, 0, bf_clear_ancestor_cache);
 #endif
