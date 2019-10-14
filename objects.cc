@@ -1140,10 +1140,10 @@ bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
     Objid loc = db_object_location(what);
 
     while (valid(loc)) {
-        locs = setadd(locs, Var::new_obj(loc));
-        loc = db_object_location(loc);
         if (base_obj && loc == base_obj)
             break;
+        locs = setadd(locs, Var::new_obj(loc));
+        loc = db_object_location(loc);
     }
 
     return make_var_pack(locs);
