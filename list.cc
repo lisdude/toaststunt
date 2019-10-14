@@ -782,8 +782,10 @@ bf_equal(Var arglist, Byte next, void *vdata, Objid progr)
 bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
 {
     const int nargs = arglist.v.list[0].v.num;
-    const char *delim = (nargs > 1 ? arglist.v.list[2].v.str : " ");
     const bool adjacent_delim = (nargs > 2 && is_true(arglist.v.list[3]));
+    char delim[2];
+    delim[0] = (nargs > 1 && memo_strlen(arglist.v.list[2].v.str) > 0) ? arglist.v.list[2].v.str[0] : ' ';
+    delim[1] = '\0';
     char *found, *return_string, *freeme;
     Var ret = new_list(0);
 
