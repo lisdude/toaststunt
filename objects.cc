@@ -1120,15 +1120,22 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ret);
 }
 
-/* Return a list of nested locations for an object
- * For objects in $nothing (#-1), this returns an empty list.
- * locations(OBJ object)
+/* Return a list of nested locations for an object.
+ * If base_object is specified, locations will stop at that object. Otherwise,
+ *   stop at $nothing (#-1).
+ * If check_parent is true, the base_object is assumed to be a parent and an
+ *   isa() check is performed.
+ * For objects in base_parent, this returns an empty list.
+ * locations(OBJ object, ?base_object, ?check_parent)
  */
     static package
 bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Objid what = arglist.v.list[1].v.obj;
-    Objid base_obj = (arglist.v.list[0].v.num > 1 ? arglist.v.list[2].v.obj : 0);
+    int nargs = arglist.v.list[0].v.num;
+    Objid base_obj = (nargs > 1 ? arglist.v.list[2].v.obj : 0);
+    Var base_obj_var = Var::new_obj(base_obj);
+    bool check_parent = (nargs > 2 ? is_true(arglist.v.list[3]) : false);
 
     free_var(arglist);
 
@@ -1140,9 +1147,10 @@ bf_locations(Var arglist, Byte next, void *vdata, Objid progr)
     Objid loc = db_object_location(what);
 
     while (valid(loc)) {
-        if (base_obj && loc == base_obj)
+        Var loc_var = Var::new_obj(loc);
+        if (base_obj && (check_parent ? db_object_isa(loc_var, base_obj_var) : loc == base_obj))
             break;
-        locs = setadd(locs, Var::new_obj(loc));
+        locs = setadd(locs, loc_var);
         loc = db_object_location(loc);
     }
 
@@ -1251,7 +1259,7 @@ register_objects(void)
     register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_INT);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
     register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_ANY, TYPE_INT);
-    register_function("locations", 1, 2, bf_locations, TYPE_OBJ, TYPE_OBJ);
+    register_function("locations", 1, 3, bf_locations, TYPE_OBJ, TYPE_OBJ, TYPE_INT);
 #ifdef USE_ANCESTOR_CACHE
     register_function("clear_ancestor_cache", 0, 0, bf_clear_ancestor_cache);
 #endif
