@@ -1,10 +1,13 @@
 # ToastStunt ChangeLog
 
-## 2.5.13 (In Progress)
+## 2.5.13 (Oct 14, 2019)
 - Add a `sqlite_limit()` builtin to limit the size of various SQLite constructs. [More information](https://www.sqlite.org/c3ref/c_limit_attached.html)
 - Add the `-m` command line option for clearing the last_move builtin property on all objects in the database (and not setting it again for the lifetime of the server process).
 - Move user-visible threading options into `options.h`.
 - Add a `curl(<url>, <?include headers>)` function to easily return a webpage as a string.
+- Fix a security oversight where the `chr()` function would allow non-wizards to produce telnet IAC characters.
+- The `explode()` function now only considers the first character of the delimiter to more closely match the LambdaCore behavior.
+- Add a second argument to the `locations()` function to indicate an alternate stopping point. If no such point exists, it falls back to $nothing.
 
 ## 2.5.12 (Oct 3, 2019)
 - The `chr()` function can now accept any number of arguments, similar to how `encode_binary()` works.
