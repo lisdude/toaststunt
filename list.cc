@@ -1526,13 +1526,13 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static int
-encode_binary(Stream * s, Var v, int restriction)
+encode_binary(Stream * s, Var v, int minimum, int maximum)
 {
     int i;
 
     switch (v.type) {
     case TYPE_INT:
-	if (v.v.num < restriction || v.v.num >= 256)
+	if (v.v.num < minimum || v.v.num > maximum)
 	    return 0;
 	stream_add_char(s, (char) v.v.num);
 	break;
@@ -1541,7 +1541,7 @@ encode_binary(Stream * s, Var v, int restriction)
 	break;
     case TYPE_LIST:
 	for (i = 1; i <= v.v.list[0].v.num; i++)
-	    if (!encode_binary(s, v.v.list[i], restriction))
+	    if (!encode_binary(s, v.v.list[i], minimum, maximum))
 		return 0;
 	break;
     default:
@@ -1561,7 +1561,7 @@ bf_encode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 
     TRY_STREAM;
     try {
-	if (encode_binary(s, arglist, 0)) {
+	if (encode_binary(s, arglist, 0, 255)) {
 	    stream_add_raw_bytes_to_binary(
 		s2, stream_contents(s), stream_length(s));
 	    r.type = TYPE_STR;
@@ -1590,7 +1590,7 @@ bf_chr(Var arglist, Byte next, void *vdata, Objid progr)
 
     TRY_STREAM;
     try {
-    int encoded = (!is_wizard(progr) ? encode_binary(s, arglist, 32) : encode_binary(s, arglist, 0));
+    int encoded = (!is_wizard(progr) ? encode_binary(s, arglist, 32, 254) : encode_binary(s, arglist, 0, 255));
 	if (encoded) {
 	    r.type = TYPE_STR;
 	    r.v.str = str_dup(stream_contents(s));
