@@ -1952,7 +1952,7 @@ bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
     for (x = 1; x <= 3; x++)
         cpu.v.list[x] = Var::new_int(0); //initialize to all 0
 
-#if defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && !defined(__MACH__)
     struct sysinfo sys_info;
     int info_ret = sysinfo(&sys_info);
 
