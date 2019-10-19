@@ -664,4 +664,8 @@ extern void db_delete_verb(db_verb_handle);
 				 * this call returns.
 				 */
 
+extern void db_fixup_owners(const Objid obj);
+                /* Find all objects, verbs, and properties
+                 * owned by obj and set them to NOTHING. */
+
 #endif				/* !DB_h */

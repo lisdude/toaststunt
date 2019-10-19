@@ -497,6 +497,17 @@
 /* #define THREAD_ARGON2 */
 
 /******************************************************************************
+ * This option controls whether or not the server will fix object ownership
+ * when calling recycle().
+ * When enabled, any object, property, or verb owned by the recycled object
+ * will be chowned to $nothing. This incurs a slight speed reduction compared
+ * to traditional recycling. If you carefully manage ownership in your database,
+ * you can disable this option for a speed boost in larger databases.
+ ******************************************************************************
+*/
+//#define SAFE_RECYCLE
+
+/******************************************************************************
  * Configurable options for the background subsystem.
  * TOTAL_BACKGROUND_THREADS is the total number of pthreads that will be created
  * at runtime to process background MOO tasks.

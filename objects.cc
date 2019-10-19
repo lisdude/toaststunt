@@ -861,6 +861,10 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 
 	    db_change_parents(obj, nothing, none);
 
+#ifdef SAFE_RECYCLE
+        db_fixup_owners(obj.v.obj);
+#endif
+
 	    incr_quota(db_object_owner(oid));
 
 	    db_destroy_object(oid);

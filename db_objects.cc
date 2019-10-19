@@ -1192,6 +1192,30 @@ db_object_isa(Var object, Var parent)
 }
 
 void
+db_fixup_owners(const Objid obj)
+{
+    for (Objid oid = 0; oid < num_objects; oid++) {
+        Object *o = objects[oid];
+        Pval *p;
+
+        if (!o)
+            continue;
+
+        if (o->owner == obj)
+            o->owner = NOTHING;
+
+        for (Verbdef *v = o->verbdefs; v; v = v->next)
+            if (v->owner == obj)
+                v->owner = NOTHING;
+
+        p = o->propval;
+        for (int i = 0, count = o->nval; i < count; i++)
+            if (p[i].owner == obj)
+                p[i].owner = NOTHING;
+    }
+}
+
+void
 db_clear_ancestor_cache(void)
 {
 #ifdef USE_ANCESTOR_CACHE /*Just in case */

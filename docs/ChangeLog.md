@@ -1,5 +1,9 @@
 # ToastStunt ChangeLog
 
+## 2.6.0 (In Progress)
+- Add an `owned_objects(OBJ <who>)` builtin to return a list of valid objects owned by who.
+- Fix a security oversight where `recreate()` could allow the recreation of an object that already owns other objects, verbs, or properties. Now the `recycle()` function will correct ownership of anything owned by the object being recycled, though at a slight cost to speed on larger databases. If the speed hit proves to be too much and you know what you're doing, you can disable the `SAFE_RECYCLE` option in options.h.
+
 ## 2.5.13 (Oct 14, 2019)
 - Add a `sqlite_limit()` builtin to limit the size of various SQLite constructs. [More information](https://www.sqlite.org/c3ref/c_limit_attached.html)
 - Add the `-m` command line option for clearing the last_move builtin property on all objects in the database (and not setting it again for the lifetime of the server process).

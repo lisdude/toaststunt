@@ -72,6 +72,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - THREAD_ARGON2 (enable threading of Argon2 functions)
     - TOTAL_BACKGROUND_THREADS (number of threads created at runtime)
     - DEFAULT_THREAD_MODE (default mode of threaded functions)
+    - SAFE_RECYCLE (change ownership of everything an object owns before recycling it)
 
 - Additional builtins:
     - frandom (random floats)
@@ -97,6 +98,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - reverse (reverse lists)
     - all_members (return the indices of all instances of a type in a list)
     - curl (return webpage as string)
+    - owned_objects (returns all valid objects owned by an object)
 
 - Miscellaneous changes:
     - Numeric IP addresses in connection_name
