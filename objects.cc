@@ -1212,6 +1212,33 @@ bf_next_recycled_object(Var arglist, Byte next, void *vdata, Objid progr)
     return ret;
 }
 
+/* Return a list of all objects in the database owned by who. */
+    static package
+bf_owned_objects(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Objid who = arglist.v.list[1].v.obj;
+    free_var(arglist);
+
+    if (!valid(who))
+        return make_error_pack(E_INVIND);
+
+    std::vector<Objid> tmp;
+    Objid max_obj = db_last_used_objid();
+
+    for (Objid x = 0; x <= max_obj; x++) {
+        if (valid(x) && who == db_object_owner(x))
+            tmp.push_back(x);
+    }
+
+    Var ret = new_list(tmp.size());
+    for (size_t x = 1; x <= tmp.size(); x++) {
+        ret.v.list[x].type = TYPE_OBJ;
+        ret.v.list[x].v.obj = tmp[x-1];
+    }
+
+    return make_var_pack(ret);
+}
+
 Var nothing;		/* useful constant */
 Var clear;			/* useful constant */
 Var none;			/* useful constant */
@@ -1265,4 +1292,5 @@ register_objects(void)
 #endif
     register_function("recycled_objects", 0, 0, bf_recycled_objects);
     register_function("next_recycled_object", 0, 1, bf_next_recycled_object, TYPE_OBJ);
+    register_function("owned_objects", 1, 1, bf_owned_objects, TYPE_OBJ);
 }
