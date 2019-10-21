@@ -73,9 +73,9 @@
 # endif
 #endif
 
-#cmakedefine01 ARGON2_FOUND @ARGON2_FOUND@
-#cmakedefine01 ASPELL_FOUND @ASPELL_FOUND@
-#cmakedefine01 CURL_FOUND @CURL_FOUND@
-#cmakedefine01 PCRE_FOUND @PCRE_FOUND@
-#cmakedefine01 SQLITE3_FOUND @SQLITE3_FOUND@
-#cmakedefine01 USING_REL
+#cmakedefine ARGON2_FOUND
+#cmakedefine ASPELL_FOUND
+#cmakedefine CURL_FOUND
+#cmakedefine PCRE_FOUND
+#cmakedefine SQLITE3_FOUND
+#cmakedefine USING_REL
