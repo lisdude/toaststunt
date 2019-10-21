@@ -13,6 +13,7 @@
 #    define SCNu32 "u"
 #    define SCNx32 "x"
 #else
+#if !defined(__MACH__)
 #    define PRId64 "ld"
 #    define PRIi64 "li"
 #    define PRIo64 "lo"
@@ -24,6 +25,19 @@
 #    define SCNo64 "lo"
 #    define SCNu64 "lu"
 #    define SCNx64 "lx"
+#else
+#    define PRId64 "lld"
+#    define PRIi64 "lli"
+#    define PRIo64 "llo"
+#    define PRIu64 "llu"
+#    define PRIx64 "llx"
+#    define PRIX64 "llX"
+#    define SCNd64 "lld"
+#    define SCNi64 "lli"
+#    define SCNo64 "llo"
+#    define SCNu64 "llu"
+#    define SCNx64 "llx"
+#endif
 #endif
 
 #cmakedefine VERSION_MAJOR @VERSION_MAJOR@
