@@ -20,6 +20,6 @@
 #include "ast.h"
 #include "structures.h"
 
-#include "y.tab.h"
+#include "parser.hh"
 
 #endif

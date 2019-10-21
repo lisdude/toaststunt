@@ -15,7 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
-#include "dependencies/sosemanuk.h"
+#include "sosemanuk.h"
 #include "structures.h"
 
 extern int parse_number(const char *str, Num *result, int try_floating_point);

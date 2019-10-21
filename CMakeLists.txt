@@ -1,0 +1,202 @@
+cmake_minimum_required(VERSION 2.8.12)
+project(TOASTSTUNT)
+SET(VERSION_MAJOR 2)
+SET(VERSION_MINOR 6)
+SET(VERSION_RELEASE 0)
+
+# CMake Includes and Modules
+INCLUDE(${CMAKE_SOURCE_DIR}/CMakeModules/AddCCompilerFlag.cmake)
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
+
+# Header Files
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/include)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/dependencies)
+INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
+
+# Compile Options
+SET(ONLY_32_BITS OFF CACHE BOOL "Use 32-bit integers instead of 64-bit.")
+
+# Compiler Flags
+ADD_C_COMPILER_FLAG(-Wall)
+ADD_C_COMPILER_FLAG(-Wno-unused-parameter)
+ADD_C_COMPILER_FLAG(-march=native)
+ADD_C_COMPILER_FLAG(-O3)
+ADD_C_COMPILER_FLAG(-Wno-sign-compare)
+ADD_C_COMPILER_FLAG(-Wno-switch)
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SHARED_FLAGS} -std=c++11")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SHARED_FLAGS} -std=gnu99")
+
+# clang doesn't print colored diagnostics when invoked from Ninja
+IF (UNIX AND
+    CMAKE_C_COMPILER_ID STREQUAL "Clang" AND
+    CMAKE_GENERATOR STREQUAL "Ninja")
+  SET(CMAKE_C_FLAGS "-fcolor-diagnostics ${CMAKE_C_FLAGS}")
+ENDIF()
+
+# Variables
+SET(MOO_LIBRARIES -lcrypt -lm  -lsqlite3 -lpthread -largon2 -laspell -lpcre -lcurl -lnettle)
+
+# Compatibility Checks Galore
+INCLUDE(CheckStructHasMember)
+INCLUDE(CheckSymbolExists)
+INCLUDE(CheckIncludeFile)
+INCLUDE(CheckFunctionExists)
+INCLUDE(CheckTypeSize)
+
+CHECK_TYPE_SIZE("long" SIZEOF_LONG)
+CHECK_TYPE_SIZE("float" SIZEOF_FLOAT)
+
+CHECK_INCLUDE_FILE(unistd.h HAVE_UNISTD_H)
+CHECK_INCLUDE_FILE(stdlib.h HAVE_STDLIB_H)
+
+CHECK_FUNCTION_EXISTS(getrusage HAVE_GETRUSAGE)
+#CHECK_FUNCTION_EXISTS(gettimeofday HAVE_GETTIMEOFDAY)
+#CHECK_FUNCTION_EXISTS(inet_aton HAVE_INET_ATON)
+#CHECK_FUNCTION_EXISTS(rint HAVE_RINT)
+#CHECK_FUNCTION_EXISTS(strcspn HAVE_STRCSPN)
+CHECK_FUNCTION_EXISTS(strerror HAVE_STRERROR)
+CHECK_FUNCTION_EXISTS(strftime HAVE_STRFTIME)
+CHECK_FUNCTION_EXISTS(crypt HAVE_CRYPT)
+CHECK_FUNCTION_EXISTS(mkfifo HAVE_MKFIFO)
+CHECK_FUNCTION_EXISTS(remove HAVE_REMOVE)
+CHECK_FUNCTION_EXISTS(rename HAVE_RENAME)
+CHECK_FUNCTION_EXISTS(select HAVE_SELECT)
+CHECK_FUNCTION_EXISTS(strtoul HAVE_STRTOUL)
+CHECK_FUNCTION_EXISTS(lrand48 HAVE_LRAND48)
+CHECK_FUNCTION_EXISTS(random HAVE_RANDOM)
+CHECK_FUNCTION_EXISTS(waitpid HAVE_WAITPID)
+CHECK_FUNCTION_EXISTS(wait2 HAVE_WAIT2)
+CHECK_FUNCTION_EXISTS(wait3 HAVE_WAIT3)
+CHECK_FUNCTION_EXISTS(sigemptyset HAVE_SIGEMPTYSET)
+CHECK_FUNCTION_EXISTS(sigprocmask HAVE_SIGPROCMASK)
+CHECK_FUNCTION_EXISTS(sigrelse HAVE_SIGRELSE)
+CHECK_FUNCTION_EXISTS(fstat FSTAT_WORKS_ON_FIFOS)
+CHECK_FUNCTION_EXISTS(poll POLL_WORKS_ON_FIFOS)
+CHECK_FUNCTION_EXISTS(select SELECT_WORKS_ON_FIFOS)
+CHECK_FUNCTION_EXISTS(strtoimax HAVE_STRTOIMAX)
+
+CHECK_SYMBOL_EXISTS(tzname time.h HAVE_TZNAME)
+CHECK_STRUCT_HAS_MEMBER("struct tm"  tm_zone  time.h  HAVE_TM_ZONE)
+
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/include/config.h.cmake
+               ${CMAKE_SOURCE_DIR}/src/include/config.h)
+
+UNSET(PCRE_LIBRARY CACHE)
+FIND_PACKAGE(PCRE REQUIRED)
+    include_directories(${PCRE_INCLUDE_DIRS})
+    SET(MOO_LIBRARIES ${MOO_LIBRARIES} ${PCRE_LIBRARIES})
+
+# Yacc (-d is a default flag on my bison)
+FIND_PACKAGE(BISON REQUIRED)
+BISON_TARGET(MOOParser src/parser.y ${CMAKE_BINARY_DIR}/parser.cc COMPILE_FLAGS "-y -v")
+message(STATUS ${BISON_MOOParser_OUTPUTS})
+
+# Keywords
+SET(KEYWORDS ${CMAKE_BINARY_DIR}/keywords.cc)
+ADD_CUSTOM_COMMAND(
+    OUTPUT ${KEYWORDS}
+    COMMAND gperf --language=C++ --ignore-case --readonly-tables --struct-type --omit-struct-type --key-positions=1,3,$$ ${CMAKE_SOURCE_DIR}/src/keywords.gperf | sed -e 's/\#include <ctype.h>/\#include \"my-ctype.h\"/' > ${CMAKE_BINARY_DIR}/keywords.cc
+    COMMENT "Generating keywords.cc"
+)
+
+# Version_src is generated with a Perl script, but also pulled in by other things. So...
+file(TOUCH ${CMAKE_BINARY_DIR}/version_src.h)
+
+# Millions of source files
+SET(src_CSRCS
+    src/dependencies/thpool.c
+    src/dependencies/sosemanuk.c
+    src/dependencies/linenoise.c
+    src/dependencies/pcrs.c
+    src/dependencies/strnatcmp.c
+    src/http_parser.c
+    src/regexpr.c)
+
+SET(src_YAJL
+    src/dependencies/yajl/yajl.c
+    src/dependencies/yajl/yajl_alloc.c
+    src/dependencies/yajl/yajl_buf.c
+    src/dependencies/yajl/yajl_encode.c
+    src/dependencies/yajl/yajl_gen.c
+    src/dependencies/yajl/yajl_lex.c
+    src/dependencies/yajl/yajl_parser.c
+    src/dependencies/yajl/yajl_version.c)
+
+SET(src_CRYPT
+    src/dependencies/crypt/crypt_blowfish.c
+    src/dependencies/crypt/crypt_gensalt.c)
+
+SET(src_CXXSRCS
+    src/ast.cc
+    src/base64.cc
+    src/code_gen.cc
+    src/collection.cc
+    src/crypto.cc
+    src/db_file.cc
+    src/db_io.cc
+    src/db_objects.cc
+    src/db_properties.cc
+    src/db_verbs.cc
+    src/decompile.cc
+    src/disassemble.cc
+    src/eval_env.cc
+    src/eval_vm.cc
+    src/exec.cc
+    src/execute.cc
+    src/extensions.cc
+    src/fileio.cc
+    src/functions.cc
+    src/garbage.cc
+    src/json.cc
+    ${KEYWORDS}
+    src/log.cc
+    src/list.cc
+    src/map.cc
+    src/match.cc
+    src/name_lookup.cc
+    src/network.cc
+    src/net_mplex.cc
+    src/net_mplex.cc
+    src/net_proto.cc
+    src/numbers.cc
+    src/objects.cc
+    src/parse_cmd.cc
+    src/pattern.cc
+    src/program.cc
+    src/property.cc
+    src/quota.cc
+    src/server.cc
+    src/storage.cc
+    src/streams.cc
+    src/str_intern.cc
+    src/sym_table.cc
+    src/system.cc
+    src/tasks.cc
+    src/timers.cc
+    src/unparse.cc
+    src/utils.cc
+    src/verbs.cc
+    src/version.cc
+    src/sqlite.cc
+    src/moo_pcre.cc
+    src/background.cc
+    src/waif.cc
+    src/simplexnoise.cc
+    src/argon2.cc
+    src/spellcheck.cc
+    src/curl.cc)
+
+SET(src_GRAMMAR
+    ${BISON_MOOParser_OUTPUTS})
+
+SET(src_SERVER
+    ${src_GRAMMAR}
+    ${src_YAJL}
+    ${src_CRYPT}
+    ${src_CSRCS}
+    ${src_CXXSRCS})
+
+# Build it!
+LINK_DIRECTORIES(${CMAKE_BINARY_DIR})
+ADD_EXECUTABLE(moo ${src_SERVER})
+TARGET_LINK_LIBRARIES(moo ${MOO_LIBRARIES})

@@ -140,6 +140,8 @@ struct WaifPropdefs;
 #define WAIF_MAPSZ	3
 #endif
 
+    Var str_dup_to_var(const char *s);
+    Var str_ref_to_var(const char *s);
 typedef struct Waif {
     Objid			        _class;
     Objid			        owner;
@@ -153,7 +155,7 @@ typedef struct Waif {
 #endif
 } Waif;
 
-struct Var {
+    struct Var {
     union {
 	const char *str;	/* STR */
 	Num num;		/* NUM, CATCH, FINALLY */
@@ -167,9 +169,6 @@ struct Var {
     Waif *waif;         /* WAIF */
     } v;
     var_type type;
-
-    friend Var str_dup_to_var(const char *s);
-    friend Var str_ref_to_var(const char *s);
 
     bool
     is_complex() {

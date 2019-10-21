@@ -4,7 +4,7 @@
 #include <map>
 
 #include "functions.h"
-#include "dependencies/thpool.h"        // thread pool
+#include "thpool.h"        // thread pool
 
 #define THREAD_MOO_VERSION      "2.5"   // Version of our MOO threading library.
 #define MAX_BACKGROUND_THREADS  20      /* The total number threads allowed to be run from within the MOO.

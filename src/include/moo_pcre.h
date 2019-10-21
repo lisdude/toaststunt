@@ -1,7 +1,9 @@
 #ifndef EXTENSION_PCRE_H
 #define EXTENSION_PCRE_H
 
+#ifndef _PCRE_H
 #include <pcre.h>
+#endif
 
 #include "structures.h"
 

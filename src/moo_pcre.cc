@@ -1,6 +1,6 @@
 #include <ctype.h>
 
-#include "pcre.h"
+#include "moo_pcre.h"
 #include "functions.h"
 #include "list.h"
 #include "utils.h"
