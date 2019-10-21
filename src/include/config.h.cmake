@@ -1,35 +1,18 @@
-#include <limits.h>
+#cmakedefine ONLY_32_BITS @ONLY_32_BITS@
 
-#ifdef @ONLY_32_BITS@
-#  if INT_MAX == 2147483647
-// TODO: ^^ Replace with SIZEOF_LONG
-#    define PRId64 "d"
-#    define PRIi64 "i"
-#    define PRIo64 "o"
-#    define PRIu64 "u"
-#    define PRIx64 "x"
-#    define PRIX64 "X"
-#    define SCNd64 "d"
-#    define SCNi64 "i"
-#    define SCNo64 "o"
-#    define SCNu64 "u"
-#    define SCNx64 "x"
-#  elif LONG_MAX == 2147483647
-#    define PRId64 "ld"
-#    define PRIi64 "li"
-#    define PRIo64 "lo"
-#    define PRIu64 "lu"
-#    define PRIx64 "lx"
-#    define PRIX64 "lX"
-#    define SCNd64 "ld"
-#    define SCNi64 "li"
-#    define SCNo64 "lo"
-#    define SCNu64 "lu"
-#    define SCNx64 "lx"
-#   endif
-
+#ifdef ONLY_32_BITS
+#    define PRId32 "d"
+#    define PRIi32 "i"
+#    define PRIo32 "o"
+#    define PRIu32 "u"
+#    define PRIx32 "x"
+#    define PRIX32 "X"
+#    define SCNd32 "d"
+#    define SCNi32 "i"
+#    define SCNo32 "o"
+#    define SCNu32 "u"
+#    define SCNx32 "x"
 #else
-
 #    define PRId64 "lld"
 #    define PRIi64 "lli"
 #    define PRIo64 "llo"

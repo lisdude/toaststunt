@@ -14,7 +14,7 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/dependencies)
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
 
 # Compile Options
-SET(ONLY_32_BITS OFF CACHE BOOL "Use 32-bit integers instead of 64-bit.")
+OPTION(ONLY_32_BITS "Use 32-bit integers instead of 64-bit." OFF)
 
 # Compiler Flags
 ADD_C_COMPILER_FLAG(-Wall)
@@ -26,14 +26,7 @@ ADD_C_COMPILER_FLAG(-Wno-switch)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SHARED_FLAGS} -std=c++11")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SHARED_FLAGS} -std=gnu99")
 
-# clang doesn't print colored diagnostics when invoked from Ninja
-IF (UNIX AND
-    CMAKE_C_COMPILER_ID STREQUAL "Clang" AND
-    CMAKE_GENERATOR STREQUAL "Ninja")
-  SET(CMAKE_C_FLAGS "-fcolor-diagnostics ${CMAKE_C_FLAGS}")
-ENDIF()
-
-# Variables
+# Linker Variable
 SET(MOO_LIBRARIES -lcrypt -lm  -lsqlite3 -lpthread -largon2 -laspell -lpcre -lcurl -lnettle)
 
 # Compatibility Checks Galore
@@ -50,10 +43,6 @@ CHECK_INCLUDE_FILE(unistd.h HAVE_UNISTD_H)
 CHECK_INCLUDE_FILE(stdlib.h HAVE_STDLIB_H)
 
 CHECK_FUNCTION_EXISTS(getrusage HAVE_GETRUSAGE)
-#CHECK_FUNCTION_EXISTS(gettimeofday HAVE_GETTIMEOFDAY)
-#CHECK_FUNCTION_EXISTS(inet_aton HAVE_INET_ATON)
-#CHECK_FUNCTION_EXISTS(rint HAVE_RINT)
-#CHECK_FUNCTION_EXISTS(strcspn HAVE_STRCSPN)
 CHECK_FUNCTION_EXISTS(strerror HAVE_STRERROR)
 CHECK_FUNCTION_EXISTS(strftime HAVE_STRFTIME)
 CHECK_FUNCTION_EXISTS(crypt HAVE_CRYPT)
@@ -76,6 +65,7 @@ CHECK_FUNCTION_EXISTS(select SELECT_WORKS_ON_FIFOS)
 CHECK_FUNCTION_EXISTS(strtoimax HAVE_STRTOIMAX)
 
 CHECK_SYMBOL_EXISTS(tzname time.h HAVE_TZNAME)
+
 CHECK_STRUCT_HAS_MEMBER("struct tm"  tm_zone  time.h  HAVE_TM_ZONE)
 
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/include/config.h.cmake
@@ -88,8 +78,7 @@ FIND_PACKAGE(PCRE REQUIRED)
 
 # Yacc (-d is a default flag on my bison)
 FIND_PACKAGE(BISON REQUIRED)
-BISON_TARGET(MOOParser src/parser.y ${CMAKE_BINARY_DIR}/parser.cc COMPILE_FLAGS "-y -v")
-message(STATUS ${BISON_MOOParser_OUTPUTS})
+BISON_TARGET(MOOParser src/parser.y ${CMAKE_BINARY_DIR}/parser.cc COMPILE_FLAGS "-y")
 
 # Keywords
 SET(KEYWORDS ${CMAKE_BINARY_DIR}/keywords.cc)
@@ -197,6 +186,5 @@ SET(src_SERVER
     ${src_CXXSRCS})
 
 # Build it!
-LINK_DIRECTORIES(${CMAKE_BINARY_DIR})
 ADD_EXECUTABLE(moo ${src_SERVER})
 TARGET_LINK_LIBRARIES(moo ${MOO_LIBRARIES})

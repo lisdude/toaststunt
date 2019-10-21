@@ -52,11 +52,6 @@
  */
 
 #include "version_src.h"
-#ifndef VERSION_MAJOR
-#  define VERSION_MAJOR 2
-#  define VERSION_MINOR 5
-#  define VERSION_RELEASE 13
-#endif
 #ifndef VERSION_EXT
 #  define VERSION_EXT ""
 #endif
