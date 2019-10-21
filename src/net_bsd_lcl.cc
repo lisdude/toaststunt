@@ -19,13 +19,13 @@
  */
 
 #include <errno.h>		/* EMFILE */
-#include "my-socket.h"		/* socket(), AF_UNIX, SOCK_STREAM,
+#include <sys/socket.h>		/* socket(), AF_UNIX, SOCK_STREAM,
 				   * bind(), struct sockaddr, accept(),
 				   * shutdown(), connect() */
-#include "my-stdio.h"		/* remove() */
-#include "my-string.h"		/* strcpy() */
+#include <stdio.h>		/* remove() */
+#include <string.h>		/* strcpy() */
 #include <sys/un.h>		/* struct sockaddr_un */
-#include "my-unistd.h"		/* close() */
+#include <unistd.h>		/* close() */
 
 #include "config.h"
 #include "log.h"

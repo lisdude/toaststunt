@@ -27,7 +27,7 @@
 #include "db_private.h"
 #include "db_io.h"
 #include "waif.h"
-#include "my-string.h"
+#include <string.h>
 #include "list.h" 		// FOR_EACH
 #include "server.h" 	// panic
 #include "db.h" 		// valid

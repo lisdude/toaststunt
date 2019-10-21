@@ -26,7 +26,7 @@
 #include "str_intern.h"
 #include "utils.h"
 #include "version.h"
-#include "my-stdlib.h"
+#include <stdlib.h>
 
 /*** The reader will likely find it useful to consult the file
  *** `MOOCodeSequences.txt' in this directory while reading the code in this

@@ -16,11 +16,11 @@
  *****************************************************************************/
 
 #include <errno.h>
-#include "my-stdarg.h"
-#include "my-stdio.h"
-#include "my-string.h"
-#include "my-time.h"
-#include "my-unistd.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "bf_register.h"
 #include "config.h"

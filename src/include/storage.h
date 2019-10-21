@@ -18,7 +18,7 @@
 #ifndef Storage_h
 #define Storage_h 1
 
-#include "my-string.h"
+#include <string.h>
 
 #include "options.h"
 

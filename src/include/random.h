@@ -23,7 +23,7 @@ extern void srand48(long);
 #    define RANDOM	lrand48
 #    define SRANDOM	srand48
 #else
-#  include "my-stdlib.h"
+#  include <stdlib.h>
 #  if HAVE_RANDOM
 #    define RANDOM	random
 #    define SRANDOM 	srandom

@@ -18,7 +18,7 @@
 #ifndef Utils_h
 #define Utils_h 1
 
-#include "my-stdio.h"
+#include <stdio.h>
 
 #include "config.h"
 #include "execute.h"

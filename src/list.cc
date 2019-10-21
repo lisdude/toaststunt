@@ -21,8 +21,8 @@
 #include "dependencies/strnatcmp.c" // natural sorting
 #include <vector>
 
-#include "my-ctype.h"
-#include "my-string.h"
+#include <ctype.h>
+#include <string.h>
 #include "my-math.h"
 
 #include "bf_register.h"

@@ -17,9 +17,9 @@
 
 /* Multiplexing wait implementation using fstat (only works for FIFOs) */
 
-#include "my-types.h"
+#include <sys/types.h>
 #include "my-stat.h"
-#include "my-unistd.h"		/* sleep() */
+#include <unistd.h>		/* sleep() */
 
 #include "net_mplex.h"
 #include "options.h"

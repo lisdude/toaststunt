@@ -68,12 +68,12 @@
  */
 
 #include <errno.h>		/* EMFILE */
-#include "my-fcntl.h"		/* open(), O_RDONLY, O_WRONLY, NONBLOCK_FLAG */
+#include <fcntl.h>		/* open(), O_RDONLY, O_WRONLY, NONBLOCK_FLAG */
 #include <pwd.h>		/* struct passwd, getpwuid() */
 #include "my-stat.h"		/* S_IFIFO, fstat(), mkfifo() */
-#include "my-stdio.h"		/* remove() */
-#include "my-stdlib.h"		/* exit() */
-#include "my-unistd.h"		/* chmod(), close(), pipe(), read(), write() */
+#include <stdio.h>		/* remove() */
+#include <stdlib.h>		/* exit() */
+#include <unistd.h>		/* chmod(), close(), pipe(), read(), write() */
 
 #include "config.h"
 #include "list.h"

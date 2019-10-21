@@ -18,7 +18,7 @@
 #ifndef Timers_H
 #define Timers_H 1
 
-#include "my-time.h"
+#include <time.h>
 
 typedef int Timer_ID;
 typedef void *Timer_Data;

@@ -20,11 +20,11 @@
  *****************************************************************************/
 
 #include "config.h"
-#include "my-ctype.h"
+#include <ctype.h>
 #include <float.h>
-#include "my-stdarg.h"
-#include "my-stdio.h"
-#include "my-stdlib.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "db.h"
 #include "db_io.h"

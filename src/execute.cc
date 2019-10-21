@@ -16,7 +16,7 @@
  *****************************************************************************/
 
 #include <chrono>
-#include "my-string.h"
+#include <string.h>
 
 #include "collection.h"
 #include "config.h"

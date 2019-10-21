@@ -21,11 +21,10 @@
 /*       parser.o dependency line in the Makefile.                       */
 /*************************************************************************/
 
-#include "my-ctype.h"
+#include <ctype.h>
 #include "my-math.h"
-#include "my-stdlib.h"
-#include "my-string.h"
-
+#include <stdlib.h>
+#include <string.h>
 #include "ast.h"
 #include "code_gen.h"
 #include "config.h"

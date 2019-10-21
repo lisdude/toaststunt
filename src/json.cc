@@ -30,8 +30,8 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include "my-string.h"
-#include "my-stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 
 #include "functions.h"
 #include "json.h"

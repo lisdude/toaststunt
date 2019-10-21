@@ -22,8 +22,8 @@
 #include <assert.h>
 #include <ctype.h>
 
-#include "my-stdlib.h"
-#include "my-string.h"
+#include <stdlib.h>
+#include <string.h>
 
 #include "config.h"
 #include "db.h"

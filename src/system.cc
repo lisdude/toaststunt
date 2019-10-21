@@ -27,8 +27,8 @@
   policies, either expressed or implied, of Todd Sundsted.
  *****************************************************************************/
 
-#include "my-stdlib.h"
-#include "my-string.h"
+#include <stdlib.h>
+#include <string.h>
 
 #include "functions.h"
 #include "storage.h"

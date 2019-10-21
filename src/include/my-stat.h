@@ -19,14 +19,6 @@
 
 #include <sys/stat.h>
 
-#if NDECL_FSTAT
-#include "my-types.h"
-
-extern int stat(const char *, struct stat *);
-extern int fstat(int, struct stat *);
-extern int mkfifo(const char *, mode_t);
-#endif
-
 #if !HAVE_MKFIFO
 extern int mknod(const char *file, mode_t mode, dev_t dev);
 #define mkfifo(path, mode)	mknod(path, S_IFIFO | (mode), 0)

@@ -15,7 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
-#include "my-stdarg.h"
+#include <stdarg.h>
 
 #include "bf_register.h"
 #include "config.h"

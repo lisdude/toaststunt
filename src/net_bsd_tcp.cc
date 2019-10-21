@@ -19,18 +19,18 @@
 
 /* Multi-user networking protocol implementation for TCP/IP on BSD UNIX */
 
-#include "my-inet.h"		/* inet_addr() */
+#include <arpa/inet.h>		/* inet_addr() */
 #include <errno.h>		/* EMFILE, EADDRNOTAVAIL, ECONNREFUSED,
 				   * ENETUNREACH, ETIMEOUT */
-#include "my-in.h"		/* struct sockaddr_in, INADDR_ANY, htons(),
+#include <netinet/in.h>		/* struct sockaddr_in, INADDR_ANY, htons(),
 				   * htonl(), ntohl(), struct in_addr */
-#include "my-socket.h"		/* socket(), AF_INET, SOCK_STREAM,
+#include <sys/socket.h>		/* socket(), AF_INET, SOCK_STREAM,
 				   * setsockopt(), SOL_SOCKET, SO_REUSEADDR,
 				   * bind(), struct sockaddr, accept(),
 				   * connect() */
-#include "my-stdlib.h"		/* strtoul() */
-#include "my-string.h"		/* memcpy() */
-#include "my-unistd.h"		/* close() */
+#include <stdlib.h>		/* strtoul() */
+#include <string.h>		/* memcpy() */
+#include <unistd.h>		/* close() */
 
 #include "config.h"
 #include "list.h"

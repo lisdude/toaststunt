@@ -12,9 +12,9 @@
 /* some things are not defined in stdio on all systems -- AAB 06/03/97 */
 #include <sys/types.h>
 #include <errno.h>
-#include "my-unistd.h"
-#include "my-ctype.h"
-#include "my-string.h"
+#include <unistd.h>
+#include <ctype.h>
+#include <string.h>
 #include "structures.h"
 #include "bf_register.h"
 #include "functions.h"

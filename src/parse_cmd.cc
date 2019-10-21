@@ -15,11 +15,11 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
-#include "my-ctype.h"
-#include "my-stdio.h"
-#include "my-stdlib.h"
-#include "my-string.h"
-#include "my-time.h"
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #include "config.h"
 #include "db.h"

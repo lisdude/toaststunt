@@ -29,11 +29,11 @@
 
 #define PROTO(x) x
 
-#include "my-stdio.h"
+#include <stdio.h>
 #include <assert.h>
 #include "regexpr.h"
-#include "my-stdlib.h"
-#include "my-string.h"
+#include <stdlib.h>
+#include <string.h>
 
 #define MACRO_BEGIN do {
 #define MACRO_END } while (0)

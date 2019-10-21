@@ -15,7 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
-#include "my-stdio.h"
+#include <stdio.h>
 
 #include "program.h"
 

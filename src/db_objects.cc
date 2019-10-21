@@ -19,7 +19,7 @@
  * Routines for manipulating DB objects
  *****************************************************************************/
 
-#include "my-string.h"
+#include <string.h>
 
 #include <ctime>
 #include "config.h"

@@ -21,9 +21,9 @@
 #include <math.h>
 #include <arpa/inet.h>
 
-#include "my-string.h"
-#include "my-time.h"
-#include "my-in.h"
+#include <string.h>
+#include <time.h>
+#include <netinet/in.h>
 
 #include "config.h"
 #include "db.h"

@@ -29,7 +29,7 @@
 
 #include <assert.h>
 
-#include "my-string.h"
+#include <string.h>
 
 #include "functions.h"
 #include "list.h"

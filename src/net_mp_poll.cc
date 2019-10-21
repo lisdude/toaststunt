@@ -18,7 +18,7 @@
 /* Multiplexing wait implementation using the System V poll() system call. */
 
 #include <errno.h>
-#include "my-poll.h"
+#include <poll.h>
 
 #include "log.h"
 #include "net_mplex.h"

@@ -30,11 +30,11 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#include "my-fcntl.h"
-#include "my-signal.h"
-#include "my-stdlib.h"
-#include "my-string.h"
-#include "my-unistd.h"
+#include <fcntl.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "net_multi.h"
 
@@ -279,7 +279,7 @@ set_nonblocking(int fd)
     int flags;
 
     if ((flags = fcntl(fd, F_GETFL, 0)) < 0
-	|| fcntl(fd, F_SETFL, flags | NONBLOCK_FLAG) < 0)
+	|| fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
 	return 0;
     else
 	return 1;

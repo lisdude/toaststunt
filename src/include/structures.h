@@ -21,7 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "my-stdio.h"
+#include <stdio.h>
 
 #include "config.h"
 

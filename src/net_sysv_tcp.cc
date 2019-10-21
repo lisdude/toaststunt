@@ -33,19 +33,19 @@
 
 #include <stdexcept>
 
-#include "my-inet.h"		/* inet_addr() */
+#include <arpa/inet.h>		/* inet_addr() */
 #include <errno.h>		/* EMFILE */
-#include "my-fcntl.h"		/* O_RDWR */
-#include "my-in.h"		/* struct sockaddr_in, INADDR_ANY, htonl(),
+#include <fcntl.h>		/* O_RDWR */
+#include <netinet/in.h>		/* struct sockaddr_in, INADDR_ANY, htonl(),
 				   * htons(), ntohl(), struct in_addr */
-#include "my-ioctl.h"		/* ioctl() */
-#include "my-socket.h"		/* AF_INET */
-#include "my-stdlib.h"		/* strtoul() */
-#include "my-string.h"		/* memcpy() */
-#include "my-stropts.h"		/* I_POP, I_PUSH */
+#include <sys/ioctl.h>		/* ioctl() */
+#include <sys/socket.h>		/* AF_INET */
+#include <stdlib.h>		/* strtoul() */
+#include <string.h>		/* memcpy() */
+#include <stropts.h>		/* I_POP, I_PUSH */
 #include <sys/conf.h>		/* FMNAMESZ */
-#include "my-tiuser.h"		/* t_open(), t_bind(), t_alloc(), t_accept() */
-#include "my-unistd.h"		/* close() */
+#include <tiuser.h>		/* t_open(), t_bind(), t_alloc(), t_accept() */
+#include <unistd.h>		/* close() */
 
 #include "config.h"
 #include "log.h"

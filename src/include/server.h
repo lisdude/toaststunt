@@ -26,7 +26,7 @@
 #ifndef Server_H
 #define Server_H 1
 
-#include "my-stdio.h"
+#include <stdio.h>
 
 #include "config.h"
 

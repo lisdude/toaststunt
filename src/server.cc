@@ -34,14 +34,14 @@
 #include <fstream>
 #include <vector>
 
-#include "my-types.h"		/* must be first on some systems */
-#include "my-signal.h"
-#include "my-stdarg.h"
-#include "my-stdio.h"
-#include "my-stdlib.h"
-#include "my-string.h"
-#include "my-unistd.h"
-#include "my-wait.h"
+#include <sys/types.h>		/* must be first on some systems */
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include "config.h"
 #include "db.h"

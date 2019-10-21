@@ -20,9 +20,9 @@
  *****************************************************************************/
 
 #include "my-stat.h"
-#include "my-unistd.h"
-#include "my-stdio.h"
-#include "my-stdlib.h"
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "collection.h"
 #include "config.h"

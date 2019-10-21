@@ -15,15 +15,15 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
-#include "my-ctype.h"
+#include <ctype.h>
 #include <errno.h>
-#include "my-fcntl.h"
-#include "my-ioctl.h"
-#include "my-signal.h"
-#include "my-stdio.h"
-#include "my-stdlib.h"
-#include "my-string.h"
-#include "my-unistd.h"
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "config.h"
 #include "list.h"
