@@ -20,11 +20,6 @@
 
 #include "config.h"
 
-#if TIME_H_NEEDS_HELP
-/* Some systems' time.h does not include time_t or clock_t */
-#include "my-types.h"
-#endif
-
 #include <time.h>
 
 #if NDECL_TIME

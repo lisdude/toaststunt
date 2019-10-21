@@ -17,13 +17,6 @@
 
 #include "config.h"
 
-#if SYS_SOCKET_H_NEEDS_HELP
-/* Some systems aren't sufficiently careful about headers including the other
- * headers that they depend upon...
- */
-#include "my-types.h"
-#endif
-
 #include <sys/socket.h>
 
 #if NDECL_ACCEPT

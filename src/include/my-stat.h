@@ -17,10 +17,6 @@
 
 #include "config.h"
 
-#if SYS_STAT_H_NEEDS_HELP
-#  include "my-types.h"
-#endif
-
 #include <sys/stat.h>
 
 #if NDECL_FSTAT

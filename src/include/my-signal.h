@@ -17,11 +17,6 @@
 
 #include "config.h"
 
-#if SIGNAL_H_NEEDS_HELP
-/* Some systems' headers don't include all of the headers they need. */
-#include <sys/types.h>
-#endif
-
 #include <signal.h>
 
 #if NDECL_KILL
