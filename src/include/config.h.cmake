@@ -13,17 +13,17 @@
 #    define SCNu32 "u"
 #    define SCNx32 "x"
 #else
-#    define PRId64 "lld"
-#    define PRIi64 "lli"
-#    define PRIo64 "llo"
-#    define PRIu64 "llu"
-#    define PRIx64 "llx"
-#    define PRIX64 "llX"
-#    define SCNd64 "lld"
-#    define SCNi64 "lli"
-#    define SCNo64 "llo"
-#    define SCNu64 "llu"
-#    define SCNx64 "llx"
+#    define PRId64 "ld"
+#    define PRIi64 "li"
+#    define PRIo64 "lo"
+#    define PRIu64 "lu"
+#    define PRIx64 "lx"
+#    define PRIX64 "lX"
+#    define SCNd64 "ld"
+#    define SCNi64 "li"
+#    define SCNo64 "lo"
+#    define SCNu64 "lu"
+#    define SCNx64 "lx"
 #endif
 
 #cmakedefine VERSION_MAJOR @VERSION_MAJOR@
@@ -36,6 +36,7 @@
 
 #cmakedefine01 HAVE_UNISTD_H
 #cmakedefine01 HAVE_STDLIB_H
+#cmakedefine01 HAVE_MACHINE_ENDIAN_H
 #cmakedefine01 HAVE_STRFTIME
 #cmakedefine01 HAVE_STRERROR
 #cmakedefine01 HAVE_TM_ZONE
@@ -59,8 +60,6 @@
 #cmakedefine01 POLL_WORKS_ON_FIFOS
 #cmakedefine01 SELECT_WORKS_ON_FIFOS
 
-
-
 //#cmakedefine01 HAVE_RANDOM_DEVICE
 //#cmakedefine01 RANDOM_DEVICE
 
@@ -74,8 +73,9 @@
 # endif
 #endif
 
-
-#cmakedefine01 HAS_ARGON2
-#cmakedefine01 HAS_ASPELL
-#cmakedefine01 HAS_CURL
+#cmakedefine01 ARGON2_FOUND @ARGON2_FOUND@
+#cmakedefine01 ASPELL_FOUND @ASPELL_FOUND@
+#cmakedefine01 CURL_FOUND @CURL_FOUND@
+#cmakedefine01 PCRE_FOUND @PCRE_FOUND@
+#cmakedefine01 SQLITE3_FOUND @SQLITE3_FOUND@
 #cmakedefine01 USING_REL

@@ -1,6 +1,6 @@
 #include "options.h"
 
-#ifdef HAS_ASPELL
+#ifdef ASPELL_FOUND
 
 #include "bf_register.h"
 #include "functions.h"
@@ -75,6 +75,6 @@ void register_spellcheck(void)
     register_function("spellcheck", 1, 1, bf_spellcheck, TYPE_STR);
 }
 
-#else /* HAS_ASPELL */
+#else /* ASPELL_FOUND */
 void register_spellcheck(void) { }
-#endif /* HAS_ASPELL */
+#endif /* ASPELL_FOUND */

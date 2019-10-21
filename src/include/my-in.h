@@ -23,9 +23,9 @@
 #include "my-types.h"
 #include <netinet/in.h>
 
-#if HAVE_MACHINE_ENDIAN_H
+#ifdef HAVE_MACHINE_ENDIAN_H
 
-#  include <machine/endian.h>
+#  include <endian.h>
 
 #else
 

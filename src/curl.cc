@@ -1,6 +1,6 @@
 #include "options.h"
 
-#ifdef HAS_CURL
+#ifdef CURL_FOUND
 
 #include <curl/curl.h>
 
@@ -94,7 +94,7 @@ register_curl(void)
     register_function("curl", 1, 2, bf_curl, TYPE_STR, TYPE_ANY);
 }
 
-#else /* HAS_CURL */
+#else /* CURL_FOUND */
 void register_curl(void) { }
 void curl_shutdown(void) { }
-#endif /* HAS_CURL */
+#endif /* CURL_FOUND */

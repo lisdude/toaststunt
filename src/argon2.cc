@@ -1,6 +1,6 @@
 #include "options.h"
 
-#ifdef HAS_ARGON2
+#ifdef ARGON2_FOUND
 
 #include <argon2.h>
 
@@ -120,6 +120,6 @@ register_argon2(void)
     register_function("argon2_verify", 2, 2, bf_argon2_verify, TYPE_STR, TYPE_STR);
 }
 
-#else /* HAS_ARGON2 */
+#else /* ARGON2_FOUND */
 void register_argon2(void) { }
-#endif /* HAS_ARGON2 */
+#endif /* ARGON2_FOUND */

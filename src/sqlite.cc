@@ -1,3 +1,7 @@
+#include "options.h"
+
+#ifdef SQLITE3_FOUND
+
 #include <unordered_map>
 
 #include "sqlite.h"
@@ -602,3 +606,7 @@ register_sqlite() {
     register_function("sqlite_last_insert_row_id", 1, 1, bf_sqlite_last_insert_row_id, TYPE_INT);
     register_function("sqlite_limit", 3, 3, bf_sqlite_limit, TYPE_INT, TYPE_ANY, TYPE_INT);
 }
+
+#else /* SQLITE3_FOUND */
+void register_sqlite(void) { }
+#endif

@@ -1,6 +1,10 @@
+#include "options.h"
+
+#ifdef PCRE_FOUND
+
 #include <ctype.h>
 
-#include "moo_pcre.h"
+#include "pcre_moo.h"
 #include "functions.h"
 #include "list.h"
 #include "utils.h"
@@ -298,4 +302,8 @@ register_pcre() {
     register_function("pcre_match", 2, 4, bf_pcre_match, TYPE_STR, TYPE_STR, TYPE_INT, TYPE_INT);
     register_function("pcre_replace", 2, 2, bf_pcre_replace, TYPE_STR, TYPE_STR);
 }
+
+#else /* PCRE_FOUND */
+void register_pcre(void) { }
+#endif /* PCRE_FOUND */
 
