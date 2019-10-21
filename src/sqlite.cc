@@ -609,4 +609,5 @@ register_sqlite() {
 
 #else /* SQLITE3_FOUND */
 void register_sqlite(void) { }
+void sqlite_shutdown(void) { }
 #endif

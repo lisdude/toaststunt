@@ -36,7 +36,7 @@
 
 #cmakedefine01 HAVE_UNISTD_H
 #cmakedefine01 HAVE_STDLIB_H
-#cmakedefine01 HAVE_MACHINE_ENDIAN_H
+#cmakedefine HAVE_MACHINE_ENDIAN_H
 #cmakedefine01 HAVE_STRFTIME
 #cmakedefine01 HAVE_STRERROR
 #cmakedefine01 HAVE_TM_ZONE
@@ -63,7 +63,7 @@
 //#cmakedefine01 HAVE_RANDOM_DEVICE
 //#cmakedefine01 RANDOM_DEVICE
 
-#ifndef HAVE_STRTOIMAX
+#if @HAVE_STRTOIMAX@
 # ifdef HAVE_LONG_LONG
 #  define strtoimax strtoll
 #  define strtoumax strtoull

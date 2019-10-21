@@ -67,7 +67,7 @@ CHECK_SYMBOL_EXISTS(tzname time.h HAVE_TZNAME)
 CHECK_STRUCT_HAS_MEMBER("struct tm"  tm_zone  time.h  HAVE_TM_ZONE)
 
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/include/config.h.cmake
-               ${CMAKE_SOURCE_DIR}/src/include/config.h)
+               ${CMAKE_BINARY_DIR}/config.h)
 
 # Yacc (-d is a default flag on my bison)
 FIND_PACKAGE(BISON REQUIRED)
@@ -80,6 +80,8 @@ ADD_CUSTOM_COMMAND(
     COMMAND gperf --language=C++ --ignore-case --readonly-tables --struct-type --omit-struct-type --key-positions=1,3,$$ ${CMAKE_SOURCE_DIR}/src/keywords.gperf | sed -e 's/\#include <ctype.h>/\#include \"my-ctype.h\"/' > ${CMAKE_BINARY_DIR}/keywords.cc
     COMMENT "Generating keywords.cc"
 )
+
+EXECUTE_PROCESS(COMMAND ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
 
 # Version_src is generated with a Perl script, but also pulled in by other things. So...
 file(TOUCH ${CMAKE_BINARY_DIR}/version_src.h)
