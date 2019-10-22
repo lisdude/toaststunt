@@ -23,7 +23,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 - [Argon2id hashing](https://github.com/P-H-C/phc-winner-argon2) [functions: argon2(), argon2_verify()]
 - 32-bit and 64-bit versions ($maxint and $minint set automatically)
 
-- Waifs
+- Waifs:
     - Call :recycle on waifs when they're destroyed
     - A WAIF type (so typeof(some_waif) == WAIF)
     - Waif dict patch (so waif[x] and waif[x] = y will call the :_index and :_set_index verbs on the waif)
@@ -53,10 +53,10 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 - Primitive types:
     - Support calling verbs on an object prototype ($obj_proto). Counterintuitively, this will only work for types of OBJ that are invalid. This can come in useful for un-logged-in connections (i.e. creating a set of convenient utilities for dealing with negative connections in-MOO).
 
-- Maps
+- Maps:
     - maphaskey() (check if a key exists in a map. Looks nicer than `!(x in mapkeys(map))` and is faster when not dealing with hundreds of keys)
 
-- Profiling
+- Profiling:
     - finished_tasks() (returns a list of the last X tasks to finish executing, including their total execution time) [see options.h below]
     - Set a maximum lag threshold (can be overridden with $server_options.task_lag_threshold) that, when exceeded, will make a note in the server log and call #0:handle_lagging_task with arguments: {callers, execution time}
 
@@ -117,6 +117,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - Support object lists in isa() as well as an optional third argument to return the matching parent rather than simply true or false
     - New argument to move() to effectively listinsert() the object into the destination's .contents
     - New argument to is_member() for controlling case sensitivity of equality comparisons. No third argument or a true value results in standard functionality; a false value as the third argument results in case not mattering at all
+    - Update random() to accept a second optional argument for setting the maximum value returned. Including the second argument will treat the first argument as the minimum.
     - SIGUSR1 will close and reopen the logfile, allowing it to be rotated without restarting the server.
     - '-m' command line option to clear all last_move properties in your database (and not set them again for the lifetime of the process).
     - Build system is now CMake
@@ -178,6 +179,7 @@ Many distributions do not include [Libargon2](https://github.com/P-H-C/phc-winne
 4. Install it on your system: `make install PREFIX=/usr`
 
 **NOTE**: macOS users should instead use `make install PREFIX=/usr/local` in step 4.
+
 **NOTE**: FreeBSD users should use `gmake`.
 
 ### CMake Build Options
