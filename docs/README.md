@@ -178,6 +178,7 @@ Many distributions do not include [Libargon2](https://github.com/P-H-C/phc-winne
 4. Install it on your system: `make install PREFIX=/usr`
 
 **NOTE**: macOS users should instead use `make install PREFIX=/usr/local` in step 4.
+**NOTE**: FreeBSD users should use `gmake`.
 
 ### Stuck seeding from /dev/random
 It can take some time to seed if your system is low on entropy. If you find startup hangs here, there are a couple of options:
