@@ -4,6 +4,10 @@ SET(VERSION_MAJOR 2)
 SET(VERSION_MINOR 6)
 SET(VERSION_RELEASE 0)
 
+# Don't bother if we don't have these
+FIND_PACKAGE(BISON REQUIRED)
+FIND_PACKAGE(Perl REQUIRED)
+
 # CMake Includes and Modules
 INCLUDE(${CMAKE_SOURCE_DIR}/CMakeModules/AddCCompilerFlag.cmake)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
@@ -56,7 +60,6 @@ CHECK_SYMBOL_EXISTS(tzname time.h HAVE_TZNAME)
 CHECK_STRUCT_HAS_MEMBER("struct tm"  tm_zone  time.h  HAVE_TM_ZONE)
 
 # Yacc (-d is a default flag on my bison)
-FIND_PACKAGE(BISON REQUIRED)
 BISON_TARGET(MOOParser src/parser.y ${CMAKE_BINARY_DIR}/parser.cc COMPILE_FLAGS "-y")
 
 # Keywords
@@ -67,12 +70,10 @@ ADD_CUSTOM_COMMAND(
     COMMENT "Generating keywords.cc"
 )
 
-# This should really only happen if options.h changes...
-FIND_PACKAGE(Perl REQUIRED)
-EXECUTE_PROCESS(COMMAND perl ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
-
-# Version_src is generated with a Perl script, but also pulled in by other things. So...
-file(TOUCH ${CMAKE_BINARY_DIR}/version_src.h)
+# Run these every time we build
+ADD_CUSTOM_TARGET(other_files ALL
+    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/version_src.h
+    COMMAND perl ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
 
 # Millions of source files
 SET(src_CSRCS
