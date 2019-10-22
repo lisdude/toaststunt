@@ -48,7 +48,9 @@ set(CMAKE_CXX_FLAGS_WARN "${CMAKE_C_FLAGS_WARN}")
 # Check for memory leaks: Minimal optimizations, debug enabled, and sanitize address
 set(CMAKE_C_FLAGS_LEAKCHECK   "-O1 -g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 set(CMAKE_CXX_FLAGS_LEAKCHECK "${CMAKE_C_FLAGS_LEAKCHECK}")
-set(EXTRA_LINKER_FLAGS "-fsanitize=address")
+if(CMAKE_BUILD_TYPE EQUAL "LeakCheck")
+    set(EXTRA_LINKER_FLAGS "-fsanitize=address")
+endif()
 
 # Compatibility Checks Galore
 include(CheckStructHasMember)
