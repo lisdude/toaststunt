@@ -70,10 +70,15 @@ ADD_CUSTOM_COMMAND(
     COMMENT "Generating keywords.cc"
 )
 
-# Run these every time we build
-ADD_CUSTOM_TARGET(other_files ALL
-    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/version_src.h
-    COMMAND perl ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
+# version_options.h
+EXECUTE_PROCESS(COMMAND perl ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
+
+# Ubuntu hates file(touch), macOS hates cmake_command -E. This should make both happy.
+IF(APPLE)
+    file(TOUCH ${CMAKE_BINARY_DIR}/version_src.h)
+ELSE()
+    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/version_src.h)
+ENDIF()
 
 # Millions of source files
 SET(src_CSRCS
