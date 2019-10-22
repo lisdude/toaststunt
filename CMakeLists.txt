@@ -68,7 +68,8 @@ ADD_CUSTOM_COMMAND(
 )
 
 # This should really only happen if options.h changes...
-EXECUTE_PROCESS(COMMAND ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
+FIND_PACKAGE(Perl REQUIRED)
+EXECUTE_PROCESS(COMMAND perl ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
 
 # Version_src is generated with a Perl script, but also pulled in by other things. So...
 file(TOUCH ${CMAKE_BINARY_DIR}/version_src.h)
@@ -171,12 +172,9 @@ ADD_EXECUTABLE(moo ${src_SERVER})
 
 # Requiredish packages
 FIND_PACKAGE(Threads REQUIRED)
-    if(THREADS_HAVE_PTHREAD_ARG)
-        TARGET_COMPILE_OPTIONS(moo PUBLIC "-pthread")
-    endif()
-    if(CMAKE_THREAD_LIBS_INIT)
-        TARGET_LINK_LIBRARIES(moo "${CMAKE_THREAD_LIBS_INIT}")
-    endif()
+IF(Threads_FOUND)
+    TARGET_LINK_LIBRARIES(moo "${CMAKE_THREAD_LIBS_INIT}")
+ENDIF()
 
 FIND_PACKAGE(PCRE)
 IF(PCRE_FOUND)
@@ -206,8 +204,8 @@ FIND_PACKAGE(Argon2 REQUIRED)
 
 FIND_PACKAGE(SQLite3)
 IF(SQLITE3_FOUND)
-    INCLUDE_DIRECTORIES(${SQLite3_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(moo ${SQLite3_LIBRARIES})
+    INCLUDE_DIRECTORIES(${SQLITE3_INCLUDE_DIRS})
+    TARGET_LINK_LIBRARIES(moo ${SQLITE3_LIBRARIES})
 ENDIF()
 
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/include/config.h.cmake
