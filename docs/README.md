@@ -8,6 +8,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
   * [Debian/Ubuntu](#debian-ubuntu)
   * [REL/CentOS](#rel-centos)
   * [Gentoo](#gentoo)
+  * [FreeBSD](#freebsd)
   * [macOS](#macos)
 * [Function Documentation](https://github.com/lisdude/toaststunt-documentation)
 * [ToastCore](https://github.com/lisdude/toastcore)
@@ -118,14 +119,15 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - New argument to is_member() for controlling case sensitivity of equality comparisons. No third argument or a true value results in standard functionality; a false value as the third argument results in case not mattering at all
     - SIGUSR1 will close and reopen the logfile, allowing it to be rotated without restarting the server.
     - '-m' command line option to clear all last_move properties in your database (and not set them again for the lifetime of the process).
+    - Build system is now CMake
 
 ## Build Instructions
 ### **Debian/Ubuntu**
 ```bash
-apt install build-essential bison gperf autoconf libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++
-autoconf
-./configure
-make
+apt install build-essential bison gperf libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ cmake
+mkdir build && cd build
+cmake ../
+make -j2
 ```
 
 ### **REL/CentOS**
@@ -133,18 +135,25 @@ make
 yum group install -y "Development Tools"
 yum install -y sqlite-devel pcre-devel aspell-devel nettle-devel gperf centos-release-scl
 yum install -y devtoolset-7
-scl enable devtoolset-7 bash
-autoconf
-./configure
-make
+mkdir build && cd build
+cmake ../
+make -j2
 ```
 
 ### **Gentoo**
 ```bash
-emerge dev-db/sqlite app-text/aspell app-crypt/argon2
-autoconf
-./configure
-make
+emerge dev-db/sqlite app-text/aspell app-crypt/argon2 cmake
+mkdir build && cd build
+cmake ../
+make -j2
+```
+
+### **FreeBSD**
+```bash
+pkg install git bison gperf gcc cmake sqlite3 aspell pcre nettle
+mkdir build && cd build
+cmake ../
+make -j2
 ```
 
 ### **macOS**
@@ -153,10 +162,10 @@ Installing dependencies requires [Homebrew](https://brew.sh/).
 Follow the instructions in the notes section below to compile and install Argon2. **NOTE**: In the last step, the install prefix should be changed to `/usr/local`
 
 ```bash
-brew install autoconf pcre aspell nettle
-autoconf
-./configure
-make
+brew install pcre aspell nettle cmake
+mkdir build && cd build
+cmake ../
+make -j2
 ```
 
 ## **Notes**
