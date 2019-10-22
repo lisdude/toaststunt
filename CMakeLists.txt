@@ -1,87 +1,106 @@
-cmake_minimum_required(VERSION 2.8.12)
-project(TOASTSTUNT LANGUAGES CXX C)
-SET(VERSION_MAJOR 2)
-SET(VERSION_MINOR 6)
-SET(VERSION_RELEASE 0)
+cmake_minimum_required(VERSION 3.2)
+set(VERSION_MAJOR 2)
+set(VERSION_MINOR 6)
+set(VERSION_RELEASE 0)
+project(ToastStunt VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_RELEASE} LANGUAGES CXX C)
 
 # Don't bother if we don't have these
-FIND_PACKAGE(BISON REQUIRED)
-FIND_PACKAGE(Perl REQUIRED)
+find_package(BISON REQUIRED)
+find_package(Perl REQUIRED)
 
-# CMake Includes and Modules
-INCLUDE(${CMAKE_SOURCE_DIR}/CMakeModules/AddCCompilerFlag.cmake)
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
+# Where to find header files
+include_directories(${CMAKE_SOURCE_DIR}/src/include)
+include_directories(${CMAKE_SOURCE_DIR}/src/dependencies)
+include_directories(${CMAKE_BINARY_DIR})
 
-# Header Files
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/include)
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/dependencies)
-INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
+# CMake configuration / build types
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
+
+if(CMAKE_CONFIGURATION_TYPES)
+    list(APPEND CMAKE_CONFIGURATION_TYPES Warn)
+    list(APPEND CMAKE_CONFIGURATION_TYPES LeakCheck)
+else()
+    set(allowableBuildTypes Release Debug Warn LeakCheck)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${allowableBuildTypes}")
+    if(NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+    endif()
+endif()
 
 # Compile Options
-OPTION(ONLY_32_BITS "Use 32-bit integers instead of 64-bit." OFF)
+option(ONLY_32_BITS "Use 32-bit integers instead of 64-bit." OFF)
 
 # Compiler Flags
-ADD_C_COMPILER_FLAG(-Wall)
-ADD_C_COMPILER_FLAG(-Wno-unused-parameter)
-ADD_C_COMPILER_FLAG(-march=native)
-ADD_C_COMPILER_FLAG(-O3)
-ADD_C_COMPILER_FLAG(-Wno-sign-compare)
-ADD_C_COMPILER_FLAG(-Wno-switch)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 99)
 
+# These flags are shared by the RELEASE and WARN build types.
+set(SHARED_COMPILE_FLAGS "-march=native -O3")
+
+# The default for non-developers: Optimization enabled and all warnings silenced.
+set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} ${SHARED_COMPILE_FLAGS} -w")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${SHARED_COMPILE_FLAGS} -w")
+
+# The normal LambdaMOO way: Optimizations and warnings enabled
+set(CMAKE_C_FLAGS_WARN   "${SHARED_COMPILE_FLAGS} -Wall -Wno-unused-parameter -Wno-sign-compare -Wno-switch")
+set(CMAKE_CXX_FLAGS_WARN "${CMAKE_C_FLAGS_WARN}")
+
+# Check for memory leaks: Minimal optimizations, debug enabled, and sanitize address
+set(CMAKE_C_FLAGS_LEAKCHECK   "-O1 -g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+set(CMAKE_CXX_FLAGS_LEAKCHECK "${CMAKE_C_FLAGS_LEAKCHECK}")
+set(EXTRA_LINKER_FLAGS "-fsanitize=address")
+
 # Compatibility Checks Galore
-INCLUDE(CheckStructHasMember)
-INCLUDE(CheckSymbolExists)
-INCLUDE(CheckIncludeFile)
-INCLUDE(CheckFunctionExists)
-INCLUDE(CheckTypeSize)
-INCLUDE(CheckLibraryExists)
+include(CheckStructHasMember)
+include(CheckSymbolExists)
+include(CheckIncludeFile)
+include(CheckFunctionExists)
+include(CheckTypeSize)
+include(CheckLibraryExists)
 
-CHECK_TYPE_SIZE("long" SIZEOF_LONG)
-CHECK_TYPE_SIZE("float" SIZEOF_FLOAT)
-CHECK_FUNCTION_EXISTS(waitpid HAVE_WAITPID)
-CHECK_FUNCTION_EXISTS(wait2 HAVE_WAIT2)
-CHECK_FUNCTION_EXISTS(wait3 HAVE_WAIT3)
-CHECK_FUNCTION_EXISTS(strftime HAVE_STRFTIME)
-CHECK_FUNCTION_EXISTS(sigemptyset HAVE_SIGEMPTYSET)
-CHECK_FUNCTION_EXISTS(sigrelse HAVE_SIGRELSE)
-CHECK_FUNCTION_EXISTS(lrand48 HAVE_LRAND48)
-CHECK_FUNCTION_EXISTS(random HAVE_RANDOM)
-CHECK_FUNCTION_EXISTS(mkfifo HAVE_MKFIFO)
-CHECK_FUNCTION_EXISTS(select HAVE_SELECT)
-CHECK_FUNCTION_EXISTS(poll POLL_WORKS_ON_FIFOS)
-CHECK_FUNCTION_EXISTS(fstat FSTAT_WORKS_ON_FIFOS)
-CHECK_FUNCTION_EXISTS(select SELECT_WORKS_ON_FIFOS)
-CHECK_FUNCTION_EXISTS(strtoimax HAVE_STRTOIMAX)
+check_type_size("long" SIZEOF_LONG)
+check_type_size("float" SIZEOF_FLOAT)
+check_function_exists(waitpid HAVE_WAITPID)
+check_function_exists(wait2 HAVE_WAIT2)
+check_function_exists(wait3 HAVE_WAIT3)
+check_function_exists(strftime HAVE_STRFTIME)
+check_function_exists(sigemptyset HAVE_SIGEMPTYset)
+check_function_exists(sigrelse HAVE_SIGRELSE)
+check_function_exists(lrand48 HAVE_LRAND48)
+check_function_exists(random HAVE_RANDOM)
+check_function_exists(mkfifo HAVE_MKFIFO)
+check_function_exists(select HAVE_SELECT)
+check_function_exists(poll POLL_WORKS_ON_FIFOS)
+check_function_exists(fstat FSTAT_WORKS_ON_FIFOS)
+check_function_exists(select SELECT_WORKS_ON_FIFOS)
+check_function_exists(strtoimax HAVE_STRTOIMAX)
 
-CHECK_SYMBOL_EXISTS(tzname time.h HAVE_TZNAME)
+check_symbol_exists(tzname time.h HAVE_TZNAME)
 
-CHECK_STRUCT_HAS_MEMBER("struct tm"  tm_zone  time.h  HAVE_TM_ZONE)
+check_struct_has_member("struct tm"  tm_zone  time.h  HAVE_TM_ZONE)
 
 # Yacc (-d is a default flag on my bison)
-BISON_TARGET(MOOParser src/parser.y ${CMAKE_BINARY_DIR}/parser.cc COMPILE_FLAGS "-y")
+bison_target(MOOParser src/parser.y ${CMAKE_BINARY_DIR}/parser.cc COMPILE_FLAGS "-y")
 
-# Keywords
-SET(KEYWORDS ${CMAKE_BINARY_DIR}/keywords.cc)
-ADD_CUSTOM_COMMAND(
+# Keywords.cc
+set(KEYWORDS ${CMAKE_BINARY_DIR}/keywords.cc)
+add_custom_command(
     OUTPUT ${KEYWORDS}
     COMMAND gperf --language=C++ --ignore-case --readonly-tables --struct-type --omit-struct-type --key-positions=1,3,$$ ${CMAKE_SOURCE_DIR}/src/keywords.gperf  > ${CMAKE_BINARY_DIR}/keywords.cc
-    COMMENT "Generating keywords.cc"
-)
+    COMMENT "Generating keywords.cc")
 
 # version_options.h
-EXECUTE_PROCESS(COMMAND perl ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
+execute_process(COMMAND perl ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
 
 # Ubuntu hates file(touch), macOS hates cmake_command -E. This should make both happy.
-IF(APPLE)
+if(APPLE)
     file(TOUCH ${CMAKE_BINARY_DIR}/version_src.h)
 ELSE()
-    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/version_src.h)
-ENDIF()
+    execute_process(COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/version_src.h)
+endif()
 
 # Millions of source files
-SET(src_CSRCS
+set(src_CSRCS
     src/dependencies/thpool.c
     src/dependencies/sosemanuk.c
     src/dependencies/linenoise.c
@@ -90,7 +109,7 @@ SET(src_CSRCS
     src/http_parser.c
     src/regexpr.c)
 
-SET(src_YAJL
+set(src_YAJL
     src/dependencies/yajl/yajl.c
     src/dependencies/yajl/yajl_alloc.c
     src/dependencies/yajl/yajl_buf.c
@@ -100,11 +119,11 @@ SET(src_YAJL
     src/dependencies/yajl/yajl_parser.c
     src/dependencies/yajl/yajl_version.c)
 
-SET(src_CRYPT
+set(src_CRYPT
     src/dependencies/crypt/crypt_blowfish.c
     src/dependencies/crypt/crypt_gensalt.c)
 
-SET(src_CXXSRCS
+set(src_CXXSRCS
     src/ast.cc
     src/base64.cc
     src/code_gen.cc
@@ -164,61 +183,68 @@ SET(src_CXXSRCS
     src/spellcheck.cc
     src/curl.cc)
 
-SET(src_GRAMMAR
+set(src_GRAMMAR
     ${BISON_MOOParser_OUTPUTS})
 
-SET(src_SERVER
+set(src_SERVER
     ${src_GRAMMAR}
     ${src_YAJL}
     ${src_CRYPT}
     ${src_CSRCS}
     ${src_CXXSRCS})
 
-ADD_EXECUTABLE(moo ${src_SERVER})
+add_executable(moo ${src_SERVER})
 
-# Requiredish packages
-FIND_PACKAGE(Threads REQUIRED)
-IF(Threads_FOUND)
-    TARGET_LINK_LIBRARIES(moo "${CMAKE_THREAD_LIBS_INIT}")
-ENDIF()
+# Make sure we have the packages we need
+find_package(Threads REQUIRED)
+if(Threads_FOUND)
+    target_link_libraries(moo "${CMAKE_THREAD_LIBS_INIT}")
+endif()
 
-FIND_PACKAGE(PCRE)
-IF(PCRE_FOUND)
-    INCLUDE_DIRECTORIES(${PCRE_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(moo ${PCRE_LIBRARIES})
-ENDIF()
+find_package(PCRE)
+if(PCRE_FOUND)
+    include_directories(${PCRE_INCLUDE_DIRS})
+    target_link_libraries(moo ${PCRE_LIBRARIES})
+endif()
 
-FIND_PACKAGE(Nettle REQUIRED)
-    INCLUDE_DIRECTORIES(${NETTLE_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(moo ${NETTLE_LIBRARIES})
+find_package(Nettle REQUIRED)
+include_directories(${NETTLE_INCLUDE_DIRS})
+target_link_libraries(moo ${NETTLE_LIBRARIES})
 
-FIND_PACKAGE(CURL)
-IF(CURL_FOUND)
-    INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(moo ${CURL_LIBRARIES})
-ENDIF()
+find_package(CURL)
+if(CURL_FOUND)
+    include_directories(${CURL_INCLUDE_DIRS})
+    target_link_libraries(moo ${CURL_LIBRARIES})
+endif()
 
-FIND_PACKAGE(ASPELL)
-IF(ASPELL_FOUND)
-    INCLUDE_DIRECTORIES(${ASPELL_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(moo ${ASPELL_LIBRARIES})
-ENDIF()
+find_package(ASPELL)
+if(ASPELL_FOUND)
+    include_directories(${ASPELL_INCLUDE_DIRS})
+    target_link_libraries(moo ${ASPELL_LIBRARIES})
+endif()
 
-FIND_PACKAGE(Argon2 REQUIRED)
-    INCLUDE_DIRECTORIES(${ARGON2_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(moo ${ARGON2_LIBRARIES})
+find_package(Argon2 REQUIRED)
+include_directories(${ARGON2_INCLUDE_DIRS})
+target_link_libraries(moo ${ARGON2_LIBRARIES})
 
-FIND_PACKAGE(SQLite3)
-IF(SQLITE3_FOUND)
-    INCLUDE_DIRECTORIES(${SQLITE3_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(moo ${SQLITE3_LIBRARIES})
-ENDIF()
+find_package(SQLite3)
+if(SQLITE3_FOUND)
+    include_directories(${SQLITE3_INCLUDE_DIRS})
+    target_link_libraries(moo ${SQLITE3_LIBRARIES})
+endif()
 
+# Setup #defines as needed
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/include/config.h.cmake
-               ${CMAKE_BINARY_DIR}/config.h)
+    ${CMAKE_BINARY_DIR}/config.h)
 
-TARGET_LINK_LIBRARIES(moo -lm)
+# Configure linker flags
+target_link_libraries(moo -lm ${EXTRA_LINKER_FLAGS})
 
-IF(NOT APPLE)
-    TARGET_LINK_LIBRARIES(moo -lcrypt)
-ENDIF()
+if(NOT APPLE)
+    target_link_libraries(moo -lcrypt ${EXTRA_LINKER_FLAGS})
+endif()
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
+message(STATUS "C flags: ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+message(STATUS "CXX flags: ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
