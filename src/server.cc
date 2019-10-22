@@ -1669,6 +1669,9 @@ main(int argc, char **argv)
     while (argc > 0 && argv[0][0] == '-') {
 	/* Deal with any command-line options */
 	switch (argv[0][1]) {
+    case 'v': /* Version */
+        fprintf(stderr, "ToastStunt version %s\n", server_version);
+        exit(1);
 	case 'e':		/* Emergency wizard mode */
 	    emergency = 1;
 	    break;
@@ -1736,7 +1739,7 @@ main(int argc, char **argv)
     applog(LOG_INFO1, "( `^` ))  ___________  /_____  _________ __  /_\n");
     applog(LOG_INFO1, "|     ||   __  ___/_  __/_  / / /__  __ \\_  __/\n");
     applog(LOG_INFO1, "|     ||   _(__  ) / /_  / /_/ / _  / / // /_\n");
-    applog(LOG_INFO1, "'-----'`   /____/  \\__/  \\__,_/  /_/ /_/ \\__/\n");
+    applog(LOG_INFO1, "'-----'`   /____/  \\__/  \\__,_/  /_/ /_/ \\__/   v%s\n", server_version);
     applog(LOG_INFO1, "\n");
 
     if ((emergency && (script_file || script_line))
@@ -1745,6 +1748,7 @@ main(int argc, char **argv)
 	fprintf(stderr, "Usage: %s [-e] [-f script-file] [-c script-line] [-l log-file] [-m] [-w waif-type] %s %s\n",
 		this_program, db_usage_string(), network_usage_string());
 	fprintf(stderr, "Options:\n");
+    fprintf(stderr, "\t-v\t\tcurrent version\n");
 	fprintf(stderr, "\t-e\t\temergency wizard mode\n");
 	fprintf(stderr, "\t-f\t\tfile to load and pass to `#0:do_start_script()'\n");
 	fprintf(stderr, "\t-c\t\tline to pass to `#0:do_start_script()'\n");
