@@ -1109,6 +1109,10 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
         free_var(arglist);
         return make_error_pack(E_TYPE);
     }
+    else if (!is_list_of_objs(contents) || !all_valid(contents)) {
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
+    }
 
     for (int x = 1; x <= content_length; x++) {
         Objid oid = contents.v.list[x].v.obj;
