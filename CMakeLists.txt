@@ -4,18 +4,19 @@ set(VERSION_MINOR 6)
 set(VERSION_RELEASE 0)
 project(ToastStunt VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_RELEASE} LANGUAGES CXX C)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
+
 # Don't bother if we don't have these
 find_package(BISON REQUIRED)
 find_package(Perl REQUIRED)
+find_package(gperf REQUIRED)
 
 # Where to find header files
 include_directories(${CMAKE_SOURCE_DIR}/src/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/dependencies)
 include_directories(${CMAKE_BINARY_DIR})
 
-# CMake configuration / build types
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
-
+# Build types
 if(CMAKE_CONFIGURATION_TYPES)
     list(APPEND CMAKE_CONFIGURATION_TYPES Warn)
     list(APPEND CMAKE_CONFIGURATION_TYPES LeakCheck)
@@ -88,11 +89,11 @@ bison_target(MOOParser src/parser.y ${CMAKE_BINARY_DIR}/parser.cc COMPILE_FLAGS 
 set(KEYWORDS ${CMAKE_BINARY_DIR}/keywords.cc)
 add_custom_command(
     OUTPUT ${KEYWORDS}
-    COMMAND gperf --language=C++ --ignore-case --readonly-tables --struct-type --omit-struct-type --key-positions=1,3,$$ ${CMAKE_SOURCE_DIR}/src/keywords.gperf  > ${CMAKE_BINARY_DIR}/keywords.cc
+    COMMAND ${gperf_EXECUTABLE} --language=C++ --ignore-case --readonly-tables --struct-type --omit-struct-type --key-positions=1,3,$$ ${CMAKE_SOURCE_DIR}/src/keywords.gperf  > ${CMAKE_BINARY_DIR}/keywords.cc
     COMMENT "Generating keywords.cc")
 
 # version_options.h
-execute_process(COMMAND perl ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
+execute_process(COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
 
 # Ubuntu hates file(touch), macOS hates cmake_command -E. This should make both happy.
 if(APPLE)
