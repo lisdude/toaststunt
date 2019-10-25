@@ -400,8 +400,12 @@ update_waif_propdefs(Waif *waif)
 			myfree(waif->propvals, M_WAIF_XTRA);
 			waif->propvals = NULL;
 		}
+        waif_class_count[waif->_class]--;
+        if (waif_class_count[waif->_class] <= 0)
+            waif_class_count.erase(waif->_class);
         waif->_class = NOTHING;
-		return;
+        waif_class_count[waif->_class]++;
+        return;
 	}
 
 	/* Compare pointers to see if we're in sync.  Changes to the
