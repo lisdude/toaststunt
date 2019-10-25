@@ -44,9 +44,9 @@ public:
 
     stream_too_big() throw() {}
 
-    virtual ~stream_too_big() throw() {}
+    ~stream_too_big() throw() override {}
 
-    virtual const char* what() const throw() {
+    const char* what() const throw() override {
         return "stream too big";
     }
 };

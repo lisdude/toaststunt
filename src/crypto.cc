@@ -271,7 +271,7 @@ bf_salt(Var arglist, Byte next, void *vdata, Objid progr)
 
     const char *random = binary_to_raw_bytes(input, &random_length);
 
-    if (NULL == random) {
+    if (nullptr == random) {
 	p = make_raise_pack(E_INVARG, "Invalid binary input", var_ref(arglist.v.list[2]));
 	free_var(arglist);
 	return p;

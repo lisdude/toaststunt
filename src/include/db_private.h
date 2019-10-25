@@ -217,9 +217,9 @@ public:
 
     dbpriv_dbio_failed() throw() {}
 
-    virtual ~dbpriv_dbio_failed() throw() {}
+    ~dbpriv_dbio_failed() throw() override {}
 
-    virtual const char* what() const throw() {
+    const char* what() const throw() override {
 	return "dbio failed";
     }
 };

@@ -109,8 +109,8 @@ init_gstate(GState * gstate)
     gstate->total_var_refs = 0;
     gstate->num_literals = gstate->num_fork_vectors = 0;
     gstate->max_literals = gstate->max_fork_vectors = 0;
-    gstate->fork_vectors = 0;
-    gstate->literals = 0;
+    gstate->fork_vectors = nullptr;
+    gstate->literals = nullptr;
 }
 
 static void
@@ -1146,7 +1146,7 @@ generate_stmt(Stmt * stmt, State * state)
 	case STMT_CONTINUE:
 	    {
 		int i;
-		Loop *loop = 0;	/* silence warnings */
+		Loop *loop = nullptr;	/* silence warnings */
 
 		if (stmt->s.exit == -1) {
 		    emit_extended_byte(EOP_EXIT, state);
@@ -1405,7 +1405,7 @@ generate_code(Stmt * stmt, DB_Version version)
 	for (i = 0; i < gstate.num_literals; i++)
 	    prog->literals[i] = gstate.literals[i];
     } else {
-	prog->literals = 0;
+	prog->literals = nullptr;
 	prog->num_literals = 0;
     }
 
@@ -1419,7 +1419,7 @@ generate_code(Stmt * stmt, DB_Version version)
 	for (i = 0; i < gstate.num_fork_vectors; i++)
 	    prog->fork_vectors[i] = gstate.fork_vectors[i];
     } else {
-	prog->fork_vectors = 0;
+	prog->fork_vectors = nullptr;
 	prog->fork_vectors_size = 0;
     }
 

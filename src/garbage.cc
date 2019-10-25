@@ -61,9 +61,9 @@ struct pending_recycle {
     Var v;
 };
 
-static struct pending_recycle *pending_free = 0;
-static struct pending_recycle *pending_head = 0;
-static struct pending_recycle *pending_tail = 0;
+static struct pending_recycle *pending_free = nullptr;
+static struct pending_recycle *pending_head = nullptr;
+static struct pending_recycle *pending_tail = nullptr;
 
 #define FOR_EACH_ROOT(v, head, last)			\
     for (last = NULL, head = pending_head;		\
@@ -118,14 +118,14 @@ gc_add_root(Var v)
 {
     if (!pending_free) {
 	pending_free = (struct pending_recycle *)mymalloc(sizeof(struct pending_recycle), M_STRUCT);
-	pending_free->next = NULL;
+	pending_free->next = nullptr;
     }
 
     struct pending_recycle *next = pending_free;
     pending_free = next->next;
 
     next->v = v;
-    next->next = NULL;
+    next->next = nullptr;
 
     if (pending_tail) {
 	pending_tail->next = next;

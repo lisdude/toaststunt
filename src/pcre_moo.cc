@@ -21,22 +21,22 @@ get_pcre(const char *string, unsigned char options) {
     char buf[256];
 
     pcre_cache_entry *entry = (pcre_cache_entry*)malloc(sizeof(pcre_cache_entry));
-    entry->error = NULL;
-    entry->re = NULL;
+    entry->error = nullptr;
+    entry->re = nullptr;
     entry->captures = 0;
-    entry->extra = NULL;
+    entry->extra = nullptr;
 
-    entry->re = pcre_compile(string, options, &err, &eos, NULL);
-    if (entry->re == NULL) {
+    entry->re = pcre_compile(string, options, &err, &eos, nullptr);
+    if (entry->re == nullptr) {
         sprintf(buf, "PCRE compile error at offset %d: %s", eos, err);
         entry->error = str_dup(buf);
     } else {
-        const char *error = NULL;
+        const char *error = nullptr;
         entry->extra = pcre_study(entry->re, 0, &error);
-        if (error != NULL)
+        if (error != nullptr)
             entry->error = str_dup(error);
         else 
-            (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
+            (void)pcre_fullinfo(entry->re, nullptr, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
     }
 
     return entry;
@@ -78,7 +78,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     /* Compile the pattern */
     struct pcre_cache_entry *entry = get_pcre(pattern, options);
 
-    if (entry->error != NULL)
+    if (entry->error != nullptr)
     {
         package r = make_raise_pack(E_INVARG, entry->error, var_ref(zero));
         free_entry(entry);
@@ -141,15 +141,15 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             static unsigned char *bit_array;
             bit_array = (unsigned char *)mymalloc(rc * sizeof(unsigned char), M_ARRAY);
             memset(bit_array, 0, rc);
-            (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMECOUNT, &named_substrings);
+            (void)pcre_fullinfo(entry->re, nullptr, PCRE_INFO_NAMECOUNT, &named_substrings);
 
             if (named_substrings > 0)
             {
                 unsigned char *name_table, *tabptr;
                 int name_entry_size;
 
-                (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMETABLE, &name_table);
-                (void)pcre_fullinfo(entry->re, NULL, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size);
+                (void)pcre_fullinfo(entry->re, nullptr, PCRE_INFO_NAMETABLE, &name_table);
+                (void)pcre_fullinfo(entry->re, nullptr, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size);
 
                 tabptr = name_table;
                 for (int i = 0; i < named_substrings; i++)
@@ -218,13 +218,13 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
 
 void free_entry(pcre_cache_entry *entry)
 {
-    if (entry->re != NULL)
+    if (entry->re != nullptr)
         pcre_free(entry->re);
 
-    if (entry->error != NULL)
+    if (entry->error != nullptr)
         free_str(entry->error);
 
-    if(entry->extra != NULL) {
+    if(entry->extra != nullptr) {
 #ifdef PCRE_CONFIG_JIT
         pcre_free_study(entry->extra);
 #else
@@ -255,7 +255,7 @@ bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr) {
     int err;
     pcrs_job *job = pcrs_compile_command(pattern, &err);
 
-    if (job == NULL)
+    if (job == nullptr)
     {
         free_var(arglist);
         char error_msg[255];

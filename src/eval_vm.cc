@@ -117,7 +117,7 @@ read_vm(int task_id)
 	    : (max = DEFAULT_MAX_STACK_DEPTH, c != '\n'))) {
 	free_var(local);
 	errlog("READ_VM: Bad vm header\n");
-	return 0;
+	return nullptr;
     }
     the_vm = new_vm(task_id, local, top + 1);
     the_vm->max_stack_size = max;
@@ -129,7 +129,7 @@ read_vm(int task_id)
 	if (!read_activ(&the_vm->activ_stack[i],
 			i == 0 ? vector : MAIN_VECTOR)) {
 	    errlog("READ_VM: Bad activ number %d\n", i);
-	    return 0;
+	    return nullptr;
 	}
     return the_vm;
 }

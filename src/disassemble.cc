@@ -483,7 +483,7 @@ bf_disassemble(Var arglist, Byte next, void *vdata, Objid progr)
     if (!db_verb_allows(h, progr, VF_READ))
 	return make_error_pack(E_PERM);
 
-    data.lines = 0;
+    data.lines = nullptr;
     data.used = data.max = 0;
     disassemble(db_verb_program(h), add_line, &data);
     r = new_list(data.used);

@@ -117,7 +117,7 @@ str_dup(const char *s)
 {
     char *r;
 
-    if (s == 0 || *s == '\0') {
+    if (s == nullptr || *s == '\0') {
 	static char *emptystring;
 
 	if (!emptystring) {

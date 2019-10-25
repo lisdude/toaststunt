@@ -60,7 +60,7 @@ Object *
 dbpriv_find_object(Objid oid)
 {
     if (oid < 0 || oid >= max_objects)
-	return 0;
+	return nullptr;
     else
 	return objects[oid];
 }
@@ -68,7 +68,7 @@ dbpriv_find_object(Objid oid)
 int
 valid(Objid oid)
 {
-    return dbpriv_find_object(oid) != 0;
+    return dbpriv_find_object(oid) != nullptr;
 }
 
 Objid
@@ -148,7 +148,7 @@ dbpriv_after_load(void)
     for (i = num_objects; i < max_objects; i++) {
 	if (objects[i]) {
 	    dbpriv_assign_nonce(objects[i]);
-	    objects[i] = NULL;
+	    objects[i] = nullptr;
 	}
     }
 }
@@ -171,7 +171,7 @@ dbpriv_new_object(Num new_objid)
 
     o = objects[new_objid] = (Object *)mymalloc(sizeof(Object), M_OBJECT);
     o->id = new_objid;
-    o->waif_propdefs = NULL;
+    o->waif_propdefs = nullptr;
 
     return o;
 }
@@ -209,14 +209,14 @@ db_init_object(Object *o)
     o->last_move = (clear_last_move ? var_ref(zero) : new_map());
     o->contents = new_list(0);
 
-    o->propval = 0;
+    o->propval = nullptr;
     o->nval = 0;
 
     o->propdefs.max_length = 0;
     o->propdefs.cur_length = 0;
-    o->propdefs.l = 0;
+    o->propdefs.l = nullptr;
 
-    o->verbdefs = 0;
+    o->verbdefs = nullptr;
 }
 
 Objid
@@ -290,7 +290,7 @@ db_destroy_object(Objid oid)
     }
 
     myfree(objects[oid], M_OBJECT);
-    objects[oid] = 0;
+    objects[oid] = nullptr;
 }
 
 Var
@@ -301,7 +301,7 @@ db_read_anonymous()
 
     if ((oid = dbio_read_num()) == NOTHING) {
 	r.type = TYPE_ANON;
-	r.v.anon = NULL;
+	r.v.anon = nullptr;
     } else if (max_objects && (oid < max_objects && objects[oid])) {
 	r.type = TYPE_ANON;
 	r.v.anon = objects[oid];
@@ -362,7 +362,7 @@ db_make_anonymous(Objid oid, Objid last)
 	FOR_EACH(parent, old_parents, i, c)
 	    objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, me);
 
-    objects[oid] = 0;
+    objects[oid] = nullptr;
     db_set_last_used_objid(last);
 
     o->id = NOTHING;
@@ -390,7 +390,7 @@ db_destroy_anonymous_object(void *obj)
     int i;
 
     free_str(o->name);
-    o->name = NULL;
+    o->name = nullptr;
 
     free_var(o->parents);
 
@@ -473,10 +473,10 @@ db_renumber_object(Objid old)
 #endif /* USE_ANCESTOR_CACHE */
 
     for (_new = 0; _new < old; _new++) {
-	if (objects[_new] == NULL) {
+	if (objects[_new] == nullptr) {
 	    /* Change the identity of the object. */
 	    o = objects[_new] = objects[old];
-	    objects[old] = 0;
+	    objects[old] = nullptr;
 	    objects[_new]->id = _new;
 
 	    /* Fix up the parents/children hierarchy and the
@@ -924,7 +924,7 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
 
     Object *o = dbpriv_dereference(obj);
 
-    if (o->verbdefs == NULL
+    if (o->verbdefs == nullptr
         && listlength(o->children) == 0
         && (TYPE_LIST != anon_kids.type || listlength(anon_kids) == 0)) {
 	/* Since this object has no children and no verbs, we know that it
@@ -1071,7 +1071,7 @@ db_change_location(Objid oid, Objid new_location, int position)
         }
 
     Var last_move = objects[oid]->last_move;
-    last_move = mapinsert(last_move, var_ref(time_key), Var::new_int(time(0)));
+    last_move = mapinsert(last_move, var_ref(time_key), Var::new_int(time(nullptr)));
     last_move = mapinsert(last_move, var_ref(source_key), Var::new_obj(old_location));
 
     objects[oid]->last_move = last_move;

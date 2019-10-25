@@ -40,7 +40,7 @@ background_enumerator(task_closure closure, void *data)
     {
         if (it.second->active)
         {
-            char *thread_name = 0;
+            char *thread_name = nullptr;
             asprintf(&thread_name, "waiting on thread %d", it.first);
             task_enum_action tea = (*closure) (it.second->the_vm, thread_name, data);
             free(thread_name);
@@ -91,7 +91,7 @@ background_suspender(vm the_vm, void *data)
     w->active = true;
 
     // Register so we can write to the pipe and resume the main loop if the MOO is idle
-    network_register_fd(w->fd[0], network_callback, NULL, data);
+    network_register_fd(w->fd[0], network_callback, nullptr, data);
 
     thpool_add_work(background_pool, run_callback, data);
 

@@ -93,10 +93,10 @@ malloc_task_waiting_on_exec()
 {
     task_waiting_on_exec *tw =
 	(task_waiting_on_exec *)mymalloc(sizeof(task_waiting_on_exec), M_TASK);
-    tw->cmd = NULL;
-    tw->args = NULL;
-    tw->in = NULL;
-    tw->env = NULL;
+    tw->cmd = nullptr;
+    tw->args = nullptr;
+    tw->in = nullptr;
+    tw->env = nullptr;
     tw->status = TWS_CONTINUE;
     tw->code = 0;
     tw->sout = new_stream(1000);
@@ -295,7 +295,7 @@ exec_waiter_suspender(vm the_vm, void *data)
 
     int i;
     for (i = 0; i < EXEC_MAX_PROCESSES; i++) {
-	if (process_table[i] == NULL) {
+	if (process_table[i] == nullptr) {
 	    process_table[i] = tw;
 	    break;
 	}
@@ -330,8 +330,8 @@ exec_waiter_suspender(vm the_vm, void *data)
 
     close(tw->fin);
 
-    network_register_fd(tw->fout, stdout_readable, NULL, tw);
-    network_register_fd(tw->ferr, stderr_readable, NULL, tw);
+    network_register_fd(tw->fout, stdout_readable, nullptr, tw);
+    network_register_fd(tw->ferr, stderr_readable, nullptr, tw);
 
     tw->the_vm = the_vm;
 
@@ -343,7 +343,7 @@ exec_waiter_suspender(vm the_vm, void *data)
     close(tw->fin);
 
  clear_process_slot:
-    process_table[i] = NULL;
+    process_table[i] = nullptr;
 
  free_task_waiting_on_exec:
     free_task_waiting_on_exec(tw);
@@ -358,11 +358,11 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 {
     package pack;
 
-    const char *cmd = 0;
-    const char **args = 0;
-    const char **env = 0;
-    task_waiting_on_exec *tw = 0;
-    const char *in = 0;
+    const char *cmd = nullptr;
+    const char **args = nullptr;
+    const char **env = nullptr;
+    task_waiting_on_exec *tw = nullptr;
+    const char *in = nullptr;
     int len;
 
     /* The first argument must be a list of strings.  The first string
@@ -408,10 +408,10 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     cmd = str_dup(reset_stream(s));
 
     /* clean input */
-    in = NULL;
+    in = nullptr;
     len = 0;
     if (listlength(arglist) > 1) {
-	if ((in = binary_to_raw_bytes(arglist.v.list[2].v.str, &len)) == NULL) {
+	if ((in = binary_to_raw_bytes(arglist.v.list[2].v.str, &len)) == nullptr) {
 	    pack = make_error_pack(E_INVARG);
 	    goto free_cmd;
 	}
@@ -438,7 +438,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     args = (const char **)mymalloc(sizeof(const char *) * i, M_ARRAY);
     FOR_EACH(v, arglist.v.list[1], i, c)
 	args[i - 1] = str_dup(v.v.str);
-    args[i - 1] = NULL;
+    args[i - 1] = nullptr;
 
 
     env = (const char **)mymalloc(sizeof(const char *) * ((arglist.v.list[0].v.num >= 3 ? arglist.v.list[3].v.num : 0) + 1), M_ARRAY);
@@ -446,9 +446,9 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     if (arglist.v.list[0].v.num >= 3) {
         FOR_EACH(v, arglist.v.list[3], i, c)
             env[i] = str_dup(v.v.str);
-        env[i] = NULL;
+        env[i] = nullptr;
     } else {
-        env[1] = NULL;
+        env[1] = nullptr;
     }
 
     tw = malloc_task_waiting_on_exec();
@@ -483,7 +483,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 pid_t
 exec_complete(pid_t pid, int code)
 {
-    task_waiting_on_exec *tw = NULL;
+    task_waiting_on_exec *tw = nullptr;
 
     int i;
     for (i = 0; i < EXEC_MAX_PROCESSES; i++)
@@ -523,7 +523,7 @@ deal_with_child_exit(void)
 
     sigchild_interrupt = 0;
 
-    task_waiting_on_exec *tw = NULL;
+    task_waiting_on_exec *tw = nullptr;
 
     int i;
     for (i = 0; i < EXEC_MAX_PROCESSES; i++) {
@@ -544,7 +544,7 @@ deal_with_child_exit(void)
 	}
 	if (tw && TWS_CONTINUE != tw->status) {
 	    free_task_waiting_on_exec(tw);
-	    process_table[i] = NULL;
+	    process_table[i] = nullptr;
 	}
     }
 

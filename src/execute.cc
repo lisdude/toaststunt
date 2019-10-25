@@ -47,7 +47,7 @@
 #include "background.h"
 
 /* the following globals are the guts of the virtual machine: */
-static activation *activ_stack = 0;
+static activation *activ_stack = nullptr;
 static Num max_stack_size = 0;
 static unsigned top_activ_stack;	/* points to top-of-stack
 					   (last-occupied-slot),
@@ -251,7 +251,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 
     for (;;) {			/* loop over activations */
 	activation *a = &(activ_stack[top_activ_stack]);
-	void *bi_func_data = 0;
+	void *bi_func_data = nullptr;
 	int bi_func_pc;
 	unsigned bi_func_id = 0;
 	Var v, *goal = a->base_rt_stack;
@@ -564,7 +564,7 @@ abort_task(enum abort_reason reason)
 	/* fall through */
 
     case ABORT_KILL:
-	(void) unwind_stack(FIN_ABORT, zero, 0);
+	(void) unwind_stack(FIN_ABORT, zero, nullptr);
     }
 }
 
@@ -1470,7 +1470,7 @@ do {								\
 		    PUSH_ERROR(E_TYPE);
 		} else if (list.type == TYPE_MAP) {
 		    Var value;
-		    if (maplookup(list, index, &value, 0) == NULL) {
+		    if (maplookup(list, index, &value, 0) == nullptr) {
 			free_var(index);
 			free_var(list);
 			PUSH_ERROR(E_RANGE);
@@ -1773,7 +1773,7 @@ do {								\
 		    enum error err = E_NONE;
 		    Objid progr = RUN_ACTIV.progr;
 
-		    h = db_find_property(obj, propname.v.str, 0);
+		    h = db_find_property(obj, propname.v.str, nullptr);
 		    built_in = db_is_property_built_in(h);
 		    if (!h.ptr)
 			err = E_PROPNF;
@@ -1999,7 +1999,7 @@ MATCH_TYPE(OBJ, obj)
 		    package p;
 
 		    STORE_STATE_VARIABLES();
-		    p = call_bi_func(func_id, args, 1, RUN_ACTIV.progr, 0);
+		    p = call_bi_func(func_id, args, 1, RUN_ACTIV.progr, nullptr);
 		    LOAD_STATE_VARIABLES();
 
 		    switch (p.kind) {
@@ -2008,7 +2008,7 @@ MATCH_TYPE(OBJ, obj)
 			break;
 		    case package::BI_RAISE:
 			if (RUN_ACTIV.debug) {
-			    if (raise_error(p, 0))
+			    if (raise_error(p, nullptr))
 				return OUTCOME_ABORTED;
 			    else
 				LOAD_STATE_VARIABLES();
@@ -2386,7 +2386,7 @@ MATCH_TYPE(OBJ, obj)
 			v.v.list[2].type = TYPE_INT;
 			v.v.list[2].v.num = READ_BYTES(bv, bc.numbytes_label);
 			STORE_STATE_VARIABLES();
-			(void) unwind_stack(FIN_EXIT, v, 0);
+			(void) unwind_stack(FIN_EXIT, v, nullptr);
 			LOAD_STATE_VARIABLES();
 		    }
 		    break;
@@ -2783,7 +2783,7 @@ static Timer_ID
 setup_task_execution_limits(int seconds, int ticks)
 {
     task_alarm_id = set_virtual_timer(seconds < 1 ? 1 : seconds,
-				      task_timeout, 0);
+				      task_timeout, nullptr);
     task_timed_out = 0;
     ticks_remaining = (ticks < 100 ? 100 : ticks);
     return task_alarm_id;
@@ -2813,7 +2813,7 @@ run_interpreter(char raise, enum error e,
 	/* handler_verb_* is garbage/unreferenced outside of run()
      * and this is the only place run() is called. */
 	handler_verb_args = zero;
-	handler_verb_name = 0;
+	handler_verb_name = nullptr;
 
 #ifdef SAVE_FINISHED_TASKS
 	Var postmortem = new_map();
@@ -2853,7 +2853,7 @@ run_interpreter(char raise, enum error e,
 			Var lag_info = new_list(2);
 			lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, 0, root_activ_vector, 1, RUN_ACTIV.progr);
 			lag_info.v.list[2] = total_cputime;
-			do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task", lag_info, handle, activ_stack[0].player, "", NULL, 0);
+			do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task", lag_info, handle, activ_stack[0].player, "", nullptr, 0);
 		}
 	}
 
@@ -2971,12 +2971,12 @@ resume_from_previous_vm(vm the_vm, Var v)
     free_vm(the_vm, 0);
 
     if (v.type == TYPE_ERR)
-	return run_interpreter(1, v.v.err, 0, 0/*bg*/, 1/*traceback*/);
+	return run_interpreter(1, v.v.err, nullptr, 0/*bg*/, 1/*traceback*/);
     else {
 	/* PUSH_REF(v) */
 	*(RUN_ACTIV.top_rt_stack++) = var_ref(v);
 
-	return run_interpreter(0, E_NONE, 0, 0/*bg*/, 1/*traceback*/);
+	return run_interpreter(0, E_NONE, nullptr, 0/*bg*/, 1/*traceback*/);
     }
 }
 
@@ -3076,7 +3076,7 @@ do_input_task(Objid user, Parsed_Command * pc, Objid recv, db_verb_handle vh)
     set_rt_env_str(env, SLOT_VERB, str_ref(pc->verb));
     set_rt_env_var(env, SLOT_ARGS, var_ref(pc->args));
 
-    return do_task(prog, MAIN_VECTOR, 0, 1/*fg*/, 1/*traceback*/);
+    return do_task(prog, MAIN_VECTOR, nullptr, 1/*fg*/, 1/*traceback*/);
 }
 
 enum outcome
@@ -3088,7 +3088,7 @@ do_forked_task(Program * prog, Var * rt_env, activation a, int f_id)
     RUN_ACTIV = a;
     RUN_ACTIV.rt_env = rt_env;
 
-    return do_task(prog, f_id, 0, 0/*bg*/, 1/*traceback*/);
+    return do_task(prog, f_id, nullptr, 0/*bg*/, 1/*traceback*/);
 }
 
 /* this is called from bf_eval to set up stack for an eval call */
@@ -3200,7 +3200,7 @@ bf_call_function_read(void)
 	else if (read_bi_func_data(s->fnum, &s->data, pc_for_bi_func_data()))
 	    return s;
     }
-    return 0;
+    return nullptr;
 }
 
 static package
@@ -3227,7 +3227,7 @@ bf_raise(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_suspend(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    static double seconds, *secondsp = NULL;
+    static double seconds, *secondsp = nullptr;
     int nargs = arglist.v.list[0].v.num;
 
     if (nargs >= 1) {
@@ -3236,7 +3236,7 @@ bf_suspend(Var arglist, Byte next, void *vdata, Objid progr)
 				arglist.v.list[1].v.fnum;
 	secondsp = &seconds;
     } else {
-	secondsp = NULL;
+	secondsp = nullptr;
     }
     free_var(arglist);
 
@@ -3256,7 +3256,7 @@ bf_suspend(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_yield_if_needed(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    static double seconds, *secondsp = NULL;
+    static double seconds, *secondsp = nullptr;
     int min_ticks, min_seconds;
     int nargs = arglist.v.list[0].v.num;
 
@@ -3734,7 +3734,7 @@ read_activ(activation * a, int which_vector)
 	return 0;
     }
     if (!(a->prog = dbio_read_program(version,
-				      0, (void *) "suspended task"))) {
+				      nullptr, (void *) "suspended task"))) {
 	errlog("READ_ACTIV: Malformed program\n");
 	return 0;
     }

@@ -170,7 +170,7 @@ waif_rename_propdef(Object *o, const char *old, const char *_new)
 	 * or removal.
 	 */
 	free_waif_propdefs(wpd);
-	o->waif_propdefs = NULL;
+	o->waif_propdefs = nullptr;
 }
 
 /* Figure out how many actual propvals are allocated for a waif, if any.
@@ -213,7 +213,7 @@ alloc_waif_propvals(Waif *w, int clear)
 
 	cnt = count_waif_propvals(w);
 	if (cnt == 0)
-		return NULL;
+		return nullptr;
 
 	p = (Var *)mymalloc(cnt * sizeof(Var), M_WAIF_XTRA);
 	if (clear)
@@ -393,12 +393,12 @@ update_waif_propdefs(Waif *waif)
 	if (!classp) {
 		cnt = count_waif_propvals(waif);
 		free_waif_propdefs(waif->propdefs);
-		waif->propdefs = NULL;
+		waif->propdefs = nullptr;
 		for (i = 0; i < cnt; ++i)
 			free_var(waif->propvals[i]);
 		if (waif->propvals) {
 			myfree(waif->propvals, M_WAIF_XTRA);
-			waif->propvals = NULL;
+			waif->propvals = nullptr;
 		}
         waif_class_count[waif->_class]--;
         if (waif_class_count[waif->_class] <= 0)
@@ -584,7 +584,7 @@ dup_waif(Waif *waif)
 {
 	update_waif_propdefs(waif);
 	panic_moo("can't dup waif yet");
-	return NULL;
+	return nullptr;
 }
 
 static package
@@ -681,7 +681,7 @@ waif_get_prop(Waif *w, const char *name, Var *prop, Objid progr)
 	 * this property.  This will tell us more quickly if it doesn't
 	 * exist.
 	 */
-	idx = find_propval_offset(w, name, NULL);
+	idx = find_propval_offset(w, name, nullptr);
 	switch (idx) {
 	case -2:
 		return E_PROPNF;
@@ -699,7 +699,7 @@ waif_get_prop(Waif *w, const char *name, Var *prop, Objid progr)
 	 * the waif's value is clear.
 	 */
 	h = db_find_property(Var::new_obj(w->_class), name,
-		prop->type == TYPE_CLEAR ? prop : NULL);
+		prop->type == TYPE_CLEAR ? prop : nullptr);
 	if (!h.ptr)
 		panic_moo("waif propdef update failed in waif_get_prop");
 	else if (h.built_in != BP_NONE)
@@ -761,7 +761,7 @@ waif_put_prop(Waif *w, const char *name, Var val, Objid progr)
 		 * would be cleaner to do it here but we could still fail
 		 * with E_PERM so let's hold off.
 		 */
-		dest = NULL;
+		dest = nullptr;
 		break;
 	default:
 		dest = &w->propvals[idx];
@@ -771,7 +771,7 @@ waif_put_prop(Waif *w, const char *name, Var val, Objid progr)
 	/* If it exists, we have to find the class's def of it to get
 	 * flags and owner.
 	 */
-	h = db_find_property(Var::new_obj(w->_class), name, NULL);
+	h = db_find_property(Var::new_obj(w->_class), name, nullptr);
 	if (!h.ptr)
 		panic_moo("waif propdef update failed in waif_put_prop");
 	else if (h.built_in != BP_NONE)
@@ -976,7 +976,7 @@ read_waif()
 	res.type = TYPE_WAIF;
 	res.v.waif = (Waif *) mymalloc(sizeof(Waif), M_WAIF);
 	saved_waifs[waif_count++] = w = res.v.waif;
-	res.v.waif->propdefs = NULL;
+	res.v.waif->propdefs = nullptr;
 	res.v.waif->_class = dbio_read_objid();
 	res.v.waif->owner = dbio_read_objid();
 	for (i = 0; i < WAIF_MAPSZ; ++i)

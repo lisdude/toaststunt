@@ -117,14 +117,14 @@ static void
 dbv4_new_recycled_object(void)
 {
     dbv4_ensure_new_object();
-    objects[num_objects++] = 0;
+    objects[num_objects++] = nullptr;
 }
 
 static Object4 *
 dbv4_find_object(Objid oid)
 {
     if (oid < 0 || oid >= num_objects)
-	return 0;
+	return nullptr;
     else
 	return objects[oid];
 }
@@ -173,8 +173,8 @@ read_verbdef(Verbdef * v)
     v->owner = dbio_read_objid();
     v->perms = dbio_read_num();
     v->prep = dbio_read_num();
-    v->next = 0;
-    v->program = 0;
+    v->next = nullptr;
+    v->program = nullptr;
 }
 
 static void
@@ -253,7 +253,7 @@ v4_read_object(void)
     o->child = dbio_read_objid();
     o->sibling = dbio_read_objid();
 
-    o->verbdefs = 0;
+    o->verbdefs = nullptr;
     prevv = &(o->verbdefs);
     for (i = dbio_read_num(); i > 0; i--) {
 	v = (Verbdef *)mymalloc(sizeof(Verbdef), M_VERBDEF);
@@ -264,7 +264,7 @@ v4_read_object(void)
 
     o->propdefs.cur_length = 0;
     o->propdefs.max_length = 0;
-    o->propdefs.l = 0;
+    o->propdefs.l = nullptr;
     if ((i = dbio_read_num()) != 0) {
 	o->propdefs.l = (Propdef *)mymalloc(i * sizeof(Propdef), M_PROPDEF);
 	o->propdefs.cur_length = i;
@@ -282,7 +282,7 @@ v4_read_object(void)
     if (nprops)
 	o->propval = (Pval *)mymalloc(nprops * sizeof(Pval), M_PVAL);
     else
-	o->propval = 0;
+	o->propval = nullptr;
 
     for (i = 0; i < nprops; i++) {
 	read_propval(o->propval + i);
@@ -346,7 +346,7 @@ ng_read_object(int anonymous)
     o->parents = dbio_read_var();
     o->children = dbio_read_var();
 
-    o->verbdefs = 0;
+    o->verbdefs = nullptr;
     prevv = &(o->verbdefs);
     for (i = dbio_read_num(); i > 0; i--) {
 	v = (Verbdef *)mymalloc(sizeof(Verbdef), M_VERBDEF);
@@ -357,7 +357,7 @@ ng_read_object(int anonymous)
 
     o->propdefs.cur_length = 0;
     o->propdefs.max_length = 0;
-    o->propdefs.l = 0;
+    o->propdefs.l = nullptr;
     if ((i = dbio_read_num()) != 0) {
 	o->propdefs.l = (Propdef *)mymalloc(i * sizeof(Propdef), M_PROPDEF);
 	o->propdefs.cur_length = i;
@@ -375,7 +375,7 @@ ng_read_object(int anonymous)
     if (nprops)
 	o->propval = (Pval *)mymalloc(nprops * sizeof(Pval), M_PVAL);
     else
-	o->propval = 0;
+	o->propval = nullptr;
 
     for (i = 0; i < nprops; i++) {
 	read_propval(o->propval + i);
@@ -797,7 +797,7 @@ v4_upgrade_objects()
     for (oid = 0; oid < size; oid++) {
 	if (objects[oid]) {
 	    myfree(objects[oid], M_OBJECT);
-	    objects[oid] = 0;
+	    objects[oid] = nullptr;
 	}
     }
 
@@ -813,7 +813,7 @@ static const char *
 fmt_verb_name(void *data)
 {
     db_verb_handle *h = (db_verb_handle *)data;
-    static Stream *s = 0;
+    static Stream *s = nullptr;
 
     if (!s)
 	s = new_stream(40);
@@ -1146,7 +1146,7 @@ dump_database(Dump_Reason reason)
 #endif
 
     success = 1;
-    if ((f = fopen(temp_name, "w")) != 0) {
+    if ((f = fopen(temp_name, "w")) != nullptr) {
 	dbpriv_set_dbio_output(f);
 	if (!write_db_file(reason_names[reason])) {
 	    log_perror("Trying to dump database");

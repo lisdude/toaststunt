@@ -248,7 +248,7 @@ bf_move_read()
 		   &data->what, &data->where, &data->position) == 3)
 	return data;
     else
-	return 0;
+	return nullptr;
 }
 
 static package
@@ -533,7 +533,7 @@ bf_create_read(void)
     if (dbio_scanf("bf_create data: oid = %" PRIdN "\n", data) == 1)
 	return data;
     else
-	return 0;
+	return nullptr;
 }
 
 static package
@@ -921,7 +921,7 @@ bf_recycle_read(void)
 		   data, &dummy) == 2)
 	return data;
     else
-	return 0;
+	return nullptr;
 }
 
 static package

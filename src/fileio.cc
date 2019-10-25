@@ -44,8 +44,8 @@ struct fileio_file_type {
   const char* (*out_filter)(const char *data, int *buflen);
 };
 
-file_type file_type_binary = NULL;
-file_type file_type_text = NULL;
+file_type file_type_binary = nullptr;
+file_type file_type_text = nullptr;
 
 #define FILE_O_READ       1
 #define FILE_O_WRITE      2
@@ -188,13 +188,13 @@ const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode
   }
 
   if (strlen(s) != 4)
-	 return 0;
+	 return nullptr;
 
   if (s[0] == 'r')           m |= FILE_O_READ;
   else if (s[0] == 'w')      m |= FILE_O_WRITE;
   else if (s[0] == 'a')      m |= FILE_O_WRITE;
   else
-	 return NULL;
+	 return nullptr;
 
   buffer[p++] = s[0];
 
@@ -202,7 +202,7 @@ const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode
 	 m |= (s[0] == 'r') ? FILE_O_WRITE : FILE_O_READ;
 	 buffer[p++] = '+';
   } else if (s[1] != '-') {
-	 return NULL;
+	 return nullptr;
   }
 
   if (s[2] == 't')            t = file_type_text;
@@ -210,11 +210,11 @@ const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode
 	 t = file_type_binary;
 	 buffer[p++] = 'b';
   } else
-	 return NULL;
+	 return nullptr;
 
   if (s[3] == 'f')            m |= FILE_O_FLUSH;
   else if (s[3] != 'n')
-	 return NULL;
+	 return nullptr;
 
   *type = t;    *mode = m;
   buffer[p] = 0;
@@ -301,14 +301,14 @@ int file_verify_path(const char *pathname) {
 
 FILE *file_handle_file_safe(Var handle) {
   if (!file_handle_valid(handle))
-	 return NULL;
+	 return nullptr;
   else
 	 return file_handle_file(handle);
 }
 
 const char *file_handle_name_safe(Var handle) {
   if (!file_handle_valid(handle))
-	 return NULL;
+	 return nullptr;
   else
 	 return file_handle_name(handle);
 }
@@ -319,13 +319,13 @@ const char *file_handle_name_safe(Var handle) {
  ***************************************************************/
 
 const char *file_resolve_path(const char *pathname) {
-  static Stream *s = 0;
+  static Stream *s = nullptr;
 
   if (!s)
 	 s = new_stream(strlen(pathname) + strlen(FILE_SUBDIR) + 1);
 
   if (!file_verify_path(pathname))
-	 return NULL;
+	 return nullptr;
 
   stream_add_string(s, FILE_SUBDIR);
   if (pathname[0] == '/')
@@ -385,13 +385,13 @@ bf_file_open(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr))
 	 r = file_raise_notokcall("file_open", progr);
-  else if ((real_filename = file_resolve_path(filename)) == NULL)
+  else if ((real_filename = file_resolve_path(filename)) == nullptr)
 	 r = file_raise_notokfilename("file_open", filename);
-  else if ((fmode = file_modestr_to_mode(mode, &type, &rmode)) == NULL)
+  else if ((fmode = file_modestr_to_mode(mode, &type, &rmode)) == nullptr)
 	 r = make_raise_pack(E_INVARG, "Invalid mode string", var_ref(arglist.v.list[2]));
   else if ((fhandle = file_handle_new(filename, type, rmode)).v.num < 0)
 	 r = make_raise_pack(E_QUOTA, "Too many files open", zero);
-  else if ((f = fopen(real_filename, fmode)) == NULL) {
+  else if ((f = fopen(real_filename, fmode)) == nullptr) {
 	 file_handle_destroy(fhandle);
 	 r = file_raise_errno("file_open");
   } else {
@@ -418,7 +418,7 @@ bf_file_close(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr))
 	 r = file_raise_notokcall("file_close", progr);
-  else if ((f = file_handle_file_safe(fhandle)) == NULL)
+  else if ((f = file_handle_file_safe(fhandle)) == nullptr)
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   else {
 	 fclose(f);
@@ -443,7 +443,7 @@ bf_file_name(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_name", progr);
-  } else if ((name = file_handle_name_safe(fhandle)) == NULL) {
+  } else if ((name = file_handle_name_safe(fhandle)) == nullptr) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else {
 	 rv.type = TYPE_STR;
@@ -518,7 +518,7 @@ static const char *file_get_line(Var fhandle, int *count)
     if (read == -1)
     {
         *count = 0;
-        return NULL;
+        return nullptr;
     }
 
     *count = read;
@@ -549,7 +549,7 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
   } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_READ))
 	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else {
-	 if ((line = file_get_line(fhandle, &len)) == NULL)
+	 if ((line = file_get_line(fhandle, &len)) == nullptr)
 		r = file_raise_errno("readline");
 	 else {
 		rv.type = TYPE_STR;
@@ -579,7 +579,7 @@ void free_line_buffer(line_buffer *head, int strings_too) {
 	 next = head->next;
 	 myfree(head, M_STRUCT);
 	 head = next;
-	 while(head != NULL) {
+	 while(head != nullptr) {
 		next = head->next;
 		if(strings_too)
 		  free_str(head->line);
@@ -592,7 +592,7 @@ void free_line_buffer(line_buffer *head, int strings_too) {
 line_buffer *new_line_buffer(char *line) {
   line_buffer *p = (line_buffer *)mymalloc(sizeof(line_buffer), M_STRUCT);
   p->line = line;
-  p->next = NULL;
+  p->next = nullptr;
   return p;
 }
 
@@ -607,9 +607,9 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
   file_mode mode;
   Var rv;
   int current_line = 0, len = 0, i = 0;
-  const char *line = NULL;
+  const char *line = nullptr;
   FILE *f;
-  line_buffer *linebuf_head = NULL, *linebuf_cur = NULL;
+  line_buffer *linebuf_head = nullptr, *linebuf_cur = nullptr;
 
   errno = 0;
 
@@ -617,7 +617,7 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 	 return make_error_pack(E_INVARG);
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_readlines", progr);
-  } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
+  } else if ((f = file_handle_file_safe(fhandle)) == nullptr) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_READ))
 	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
@@ -631,10 +631,10 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 	 /* "seek" to that line */
 	 begin--;
 	 while ((current_line != begin)
-			 && ((line = file_get_line(fhandle, &len)) != NULL))
+			 && ((line = file_get_line(fhandle, &len)) != nullptr))
 		current_line++;
 
-	 if (((begin != 0) && (line == NULL)) || ((begin_loc = ftell(f)) == -1))
+	 if (((begin != 0) && (line == nullptr)) || ((begin_loc = ftell(f)) == -1))
 		r = file_raise_errno("read_line");
 	 else {
 		/*
@@ -642,10 +642,10 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 		 * and seek to EOF or to the end_line, whichever comes first
 		 */
 
-		linebuf_head = linebuf_cur = new_line_buffer(NULL);
+		linebuf_head = linebuf_cur = new_line_buffer(nullptr);
 
 		while ((current_line != end)
-				&& ((line = file_get_line(fhandle, &len)) != NULL)) {
+				&& ((line = file_get_line(fhandle, &len)) != nullptr)) {
 #ifndef UNSAFE_FIO
 		  linebuf_cur->next = new_line_buffer(str_dup((type->in_filter)(line, len)));
 #else
@@ -671,7 +671,7 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 		} else {
 		  rv = new_list(linecount);
 		  i = 1;
-		  while (linebuf_cur != NULL) {
+		  while (linebuf_cur != nullptr) {
 			 rv.v.list[i].type = TYPE_STR;
 			 rv.v.list[i].v.str = linebuf_cur->line;
 			 linebuf_cur = linebuf_cur->next;
@@ -707,13 +707,13 @@ bf_file_writeline(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_writeline", progr);
-  } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
+  } else if ((f = file_handle_file_safe(fhandle)) == nullptr) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_WRITE))
 	 r = make_raise_pack(E_INVARG, "File is open read-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
-	 if ((rawbuffer = (type->out_filter)(buffer, &len)) == NULL)
+	 if ((rawbuffer = (type->out_filter)(buffer, &len)) == nullptr)
 		r = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(fhandle));
 	 else if((fputs(rawbuffer, f) == EOF) || (fputc('\n', f) != '\n'))
 		r = file_raise_errno(file_handle_name(fhandle));
@@ -751,7 +751,7 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
 
   Var rv;
 
-  static Stream *str = 0;
+  static Stream *str = nullptr;
   int len = 0, read = 0;
 
   FILE *f;
@@ -760,12 +760,12 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
 
   read_length = (record_length > sizeof(buffer)) ? sizeof(buffer) : record_length;
 
-  if (str == 0)
+  if (str == nullptr)
 	 str = new_stream(FILE_IO_BUFFER_LENGTH);
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_read", progr);
-  } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
+  } else if ((f = file_handle_file_safe(fhandle)) == nullptr) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_READ))
 	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
@@ -822,7 +822,7 @@ bf_file_flush(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_flush", progr);
-  } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
+  } else if ((f = file_handle_file_safe(fhandle)) == nullptr) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else {
 	 if (fflush(f))
@@ -856,13 +856,13 @@ bf_file_write(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_write", progr);
-  } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
+  } else if ((f = file_handle_file_safe(fhandle)) == nullptr) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_WRITE))
 	 r = make_raise_pack(E_INVARG, "File is open read-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
-	 if ((rawbuffer = (type->out_filter)(buffer, &len)) == NULL)
+	 if ((rawbuffer = (type->out_filter)(buffer, &len)) == nullptr)
 		r = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(fhandle));
 	 else if (!(written = fwrite(rawbuffer, sizeof(char), len, f)))
 		r = file_raise_errno(file_handle_name(fhandle));
@@ -911,7 +911,7 @@ bf_file_seek(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_seek", progr);
-  } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
+  } else if ((f = file_handle_file_safe(fhandle)) == nullptr) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else if (!whence_ok) {
 	 r = make_raise_pack(E_INVARG, "Invalid whence", zero);
@@ -941,7 +941,7 @@ bf_file_tell(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_tell", progr);
-  } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
+  } else if ((f = file_handle_file_safe(fhandle)) == nullptr) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else {
 	 rv.type = TYPE_INT;
@@ -970,7 +970,7 @@ bf_file_eof(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_eof", progr);
-  } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
+  } else if ((f = file_handle_file_safe(fhandle)) == nullptr) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else {
 	 rv.type = TYPE_INT;
@@ -998,7 +998,7 @@ int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
 	 const char *filename = filespec.v.str;
 	 const char *real_filename;
 
-	 if ((real_filename = file_resolve_path(filename)) == NULL) {
+	 if ((real_filename = file_resolve_path(filename)) == nullptr) {
 		*r =  file_raise_notokfilename("file_stat", filename);
 	 } else {
 		if (stat(real_filename, buf) != 0)
@@ -1009,7 +1009,7 @@ int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
 	 }
   } else {
 	 FILE *f;
-	 if ((f = file_handle_file_safe(filespec)) == NULL)
+	 if ((f = file_handle_file_safe(filespec)) == nullptr)
 		*r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(filespec));
 	 else {
 		if (fstat(fileno(f), buf) != 0)
@@ -1038,7 +1038,7 @@ const char *file_type_string(mode_t st_mode) {
 }
 
 const char *file_mode_string(mode_t st_mode) {
-  static Stream *s = 0;
+  static Stream *s = nullptr;
   if (!s)
 	 s = new_stream(4);
   stream_printf(s, "%03o", st_mode & 0777);
@@ -1249,7 +1249,7 @@ bf_file_list(Var arglist, Byte next, void *vdata, Objid progr)
 
     if (!file_verify_caller(progr)) {
         r = file_raise_notokcall("file_list", progr);
-    } else if((real_pathname = file_resolve_path(pathspec)) == NULL) {
+    } else if((real_pathname = file_resolve_path(pathspec)) == nullptr) {
         r =  file_raise_notokfilename("file_list", pathspec);
     } else {
         DIR *curdir;
@@ -1263,7 +1263,7 @@ bf_file_list(Var arglist, Byte next, void *vdata, Objid progr)
 		r = file_raise_errno(pathspec);
 	else {
 		rv = new_list(0);
-		while ( (curfile = readdir(curdir)) != 0 ) {
+		while ( (curfile = readdir(curdir)) != nullptr ) {
 		    if (strncmp(curfile->d_name, ".", 2) != 0 && strncmp(curfile->d_name, "..", 3) != 0) {
 			if (detailed) {
 				stream_add_string(s, real_pathname);
@@ -1317,7 +1317,7 @@ bf_file_mkdir(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_mkdir", progr);
-  } else if ((real_pathname = file_resolve_path(pathspec)) == NULL) {
+  } else if ((real_pathname = file_resolve_path(pathspec)) == nullptr) {
 	 r =  file_raise_notokfilename("file_mkdir", pathspec);
   } else {
 	 if (mkdir(real_pathname, 0777) != 0)
@@ -1343,7 +1343,7 @@ bf_file_rmdir(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_rmdir", progr);
-  } else if ((real_pathname = file_resolve_path(pathspec)) == NULL) {
+  } else if ((real_pathname = file_resolve_path(pathspec)) == nullptr) {
 	 r =  file_raise_notokfilename("file_rmdir", pathspec);
   } else {
 	 if (rmdir(real_pathname) != 0)
@@ -1369,7 +1369,7 @@ bf_file_remove(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_remove", progr);
-  } else if ((real_pathname = file_resolve_path(pathspec)) == NULL) {
+  } else if ((real_pathname = file_resolve_path(pathspec)) == nullptr) {
 	 r =  file_raise_notokfilename("file_remove", pathspec);
   } else {
 	 if (remove(real_pathname) != 0)
@@ -1391,14 +1391,14 @@ bf_file_rename(Var arglist, Byte next, void *vdata, Objid progr)
   package r;
   const char *fromspec = arglist.v.list[1].v.str;
   const char *tospec = arglist.v.list[2].v.str;
-  char *real_fromspec = NULL;
+  char *real_fromspec = nullptr;
   const char *real_tospec;
 
   if (!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_rename", progr);
-  } else if ((real_fromspec = str_dup(file_resolve_path(fromspec))) == NULL) {
+  } else if ((real_fromspec = str_dup(file_resolve_path(fromspec))) == nullptr) {
 	 r =  file_raise_notokfilename("file_rename", fromspec);
-  } else if ((real_tospec = file_resolve_path(tospec)) == NULL) {
+  } else if ((real_tospec = file_resolve_path(tospec)) == nullptr) {
 	 r =  file_raise_notokfilename("file_rename", tospec);
   } else {
 	 if (rename(real_fromspec, real_tospec) != 0)
@@ -1453,7 +1453,7 @@ bf_file_chmod(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = file_raise_notokcall("file_chmod", progr);
   } else if (!file_chmodstr_to_mode(modespec, &newmode)) {
 	 r = make_raise_pack(E_INVARG, "Invalid mode string", zero);
-  } else if ((real_filename = file_resolve_path(pathspec)) == NULL) {
+  } else if ((real_filename = file_resolve_path(pathspec)) == nullptr) {
 	 r =  file_raise_notokfilename("file_chmod", pathspec);
   } else {
 	 if (chmod(real_filename, newmode) != 0)
@@ -1492,7 +1492,7 @@ bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
   Var fhandle = arglist.v.list[1];
   int len;
   file_mode mode;
-  const char *line = NULL;
+  const char *line = nullptr;
   int line_num = 0;
   int match_all = 0;
   int arg_length = 0;
@@ -1516,7 +1516,7 @@ bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
 
     rewind(file_handle_file_safe(fhandle));
 
-    while ((line = file_get_line(fhandle, &len)) != NULL)
+    while ((line = file_get_line(fhandle, &len)) != nullptr)
     {
       line_num++;
       if (len > 0 && strindex(line, len, arglist.v.list[2].v.str, arg_length, 0))
@@ -1571,7 +1571,7 @@ bf_file_count_lines(Var arglist, Byte next, void *vdata, Objid progr)
     rewind(fp);
 
     long count = 0;
-    while (file_get_line(fhandle, &throwaway) != NULL)
+    while (file_get_line(fhandle, &throwaway) != nullptr)
       count++;
 
     rv.type = TYPE_INT;

@@ -79,7 +79,7 @@ bf_prop_info(Var arglist, Byte next, void *vdata, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    h = db_find_property(obj, pname, 0);
+    h = db_find_property(obj, pname, nullptr);
     free_var(arglist);
 
     if (!h.ptr || db_is_property_built_in(h))
@@ -141,7 +141,7 @@ validate_prop_info(Var v, Objid * owner, unsigned *flags, const char **name)
     }
 
     if (len == 2)
-	*name = 0;
+	*name = nullptr;
     else
 	*name = v.v.list[3].v.str;
 
@@ -167,7 +167,7 @@ set_prop_info(Var obj, const char *pname, Var info, Objid progr)
     if (e != E_NONE)
 	return e;
 
-    h = db_find_property(obj, pname, 0);
+    h = db_find_property(obj, pname, nullptr);
 
     if (!h.ptr || db_is_property_built_in(h))
 	return E_PROPNF;
@@ -179,7 +179,7 @@ set_prop_info(Var obj, const char *pname, Var info, Objid progr)
 	if (!db_rename_propdef(obj, pname, new_name))
 	    return E_INVARG;
 
-	h = db_find_property(obj, new_name, 0);
+	h = db_find_property(obj, new_name, nullptr);
     }
     db_set_property_owner(h, new_owner);
     db_set_property_flags(h, new_flags);
@@ -273,7 +273,7 @@ bf_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
     else if (!is_valid(obj))
 	e = E_INVARG;
     else {
-	h = db_find_property(obj, pname, 0);
+	h = db_find_property(obj, pname, nullptr);
 	if (!h.ptr)
 	    e = E_PROPNF;
 	else if (db_is_property_built_in(h) || !db_property_allows(h, progr, PF_WRITE))
@@ -309,7 +309,7 @@ bf_is_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
     else if (!is_valid(obj))
 	e = E_INVARG;
     else {
-	h = db_find_property(obj, pname, 0);
+	h = db_find_property(obj, pname, nullptr);
 	if (!h.ptr)
 	    e = E_PROPNF;
 	else if (!db_is_property_built_in(h) && !db_property_allows(h, progr, PF_READ))

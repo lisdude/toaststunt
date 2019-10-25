@@ -55,7 +55,7 @@ static int ewouldblock = EWOULDBLOCK;
 static int ewouldblock = -1;
 #endif
 
-static int *pocket_descriptors = 0;	/* fds we keep around in case we need
+static int *pocket_descriptors = nullptr;	/* fds we keep around in case we need
 					 * one and no others are left... */
 
 typedef struct text_block {
@@ -83,7 +83,7 @@ typedef struct nhandle {
 #endif
 } nhandle;
 
-static nhandle *all_nhandles = 0;
+static nhandle *all_nhandles = nullptr;
 
 typedef struct nlistener {
     struct nlistener *next, **prev;
@@ -92,7 +92,7 @@ typedef struct nlistener {
     const char *name;
 } nlistener;
 
-static nlistener *all_nlisteners = 0;
+static nlistener *all_nlisteners = nullptr;
 
 
 typedef struct {
@@ -102,7 +102,7 @@ typedef struct {
     void *data;
 } fd_reg;
 
-static fd_reg *reg_fds = 0;
+static fd_reg *reg_fds = nullptr;
 static int max_reg_fds = 0;
 
 void
@@ -236,7 +236,7 @@ push_output(nhandle * h)
 	else
 	    return count >= 0 || errno == eagain || errno == ewouldblock;
     }
-    while ((b = h->output_head) != 0) {
+    while ((b = h->output_head) != nullptr) {
 	count = write(h->wfd, b->start, b->length);
 	if (count < 0)
 	    return (errno == eagain || errno == ewouldblock);
@@ -249,7 +249,7 @@ push_output(nhandle * h)
 	    b->length -= count;
 	}
     }
-    if (h->output_head == 0)
+    if (h->output_head == nullptr)
 	h->output_tail = &(h->output_head);
     return 1;
 }
@@ -336,9 +336,9 @@ new_nhandle(int rfd, int wfd, const char *local_name, const char *remote_name,
 	    int outbound)
 {
     nhandle *h;
-    static Stream *s = 0;
+    static Stream *s = nullptr;
 
-    if (s == 0)
+    if (s == nullptr)
 	s = new_stream(100);
 
     if (!network_set_nonblocking(rfd)
@@ -358,7 +358,7 @@ new_nhandle(int rfd, int wfd, const char *local_name, const char *remote_name,
     h->input = new_stream(100);
     h->last_input_was_CR = 0;
     h->input_suspended = 0;
-    h->output_head = 0;
+    h->output_head = nullptr;
     h->output_tail = &(h->output_head);
     h->output_length = 0;
     h->output_lines_flushed = 0;
@@ -494,7 +494,7 @@ enqueue_output(network_handle nh, const char *line, int line_length,
 	    h->output_head = b->next;
 	    free_text_block(b);
 	}
-	if (h->output_head == 0)
+	if (h->output_head == nullptr)
 	    h->output_tail = &(h->output_head);
     }
     buffer = (char *) mymalloc(length * sizeof(char), M_NETWORK);
@@ -504,7 +504,7 @@ enqueue_output(network_handle nh, const char *line, int line_length,
 	memcpy(buffer + line_length, proto.eol_out_string, eol_length);
     block->buffer = block->start = buffer;
     block->length = length;
-    block->next = 0;
+    block->next = nullptr;
     *(h->output_tail) = block;
     h->output_tail = &(block->next);
     h->output_length += length;

@@ -76,7 +76,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 {
     struct sockaddr_in address;
     int s, port, option = 1;
-    static Stream *st = 0;
+    static Stream *st = nullptr;
 
     if (!st)
 	st = new_stream(20);
@@ -144,7 +144,7 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
     int fd;
     struct sockaddr_in address;
     socklen_t addr_length = sizeof(address);
-    static Stream *s = 0;
+    static Stream *s = nullptr;
 
     if (!s)
         s = new_stream(100);
@@ -198,9 +198,9 @@ class timeout_exception: public std::exception
 public:
     timeout_exception() throw() {}
 
-    virtual ~timeout_exception() throw() {}
+    ~timeout_exception() throw() override {}
 
-    virtual const char* what() const throw() {
+    const char* what() const throw() override {
 	return "timeout";
     }
 };
@@ -226,7 +226,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     int s, result;
     int timeout = server_int_option("name_lookup_timeout", 5);
     static struct sockaddr_in addr;
-    static Stream *st1 = 0, *st2 = 0;
+    static Stream *st1 = nullptr, *st2 = nullptr;
 
     if (!outbound_network_enabled)
 	return E_PERM;
@@ -277,7 +277,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     }	 
     try {
 	id = set_timer(server_int_option("outbound_connect_timeout", 5),
-		       timeout_proc, 0);
+		       timeout_proc, nullptr);
 	result = connect(s, (struct sockaddr *) &addr, sizeof(addr));
 	cancel_timer(id);
     }

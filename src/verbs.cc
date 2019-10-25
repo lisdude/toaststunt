@@ -625,7 +625,7 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 	    if (program) {
 		free_var(errors);
 		if (setup_activ_for_eval(program))
-		    p = make_call_pack(2, 0);
+		    p = make_call_pack(2, nullptr);
 		else {
 		    free_program(program);
 		    p = make_error_pack(E_MAXREC);

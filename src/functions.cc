@@ -111,7 +111,7 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
 {
     int va_index;
     int num_arg_types = maxargs == -1 ? minargs : maxargs;
-    static Stream *s = 0;
+    static Stream *s = nullptr;
 
     if (!s)
 	s = new_stream(30);
@@ -136,7 +136,7 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
 	bf_table[top_bf_table].prototype =
 	    (var_type *)mymalloc(num_arg_types * sizeof(var_type), M_PROTOTYPE);
     else
-	bf_table[top_bf_table].prototype = 0;
+	bf_table[top_bf_table].prototype = nullptr;
     for (va_index = 0; va_index < num_arg_types; va_index++)
 	bf_table[top_bf_table].prototype[va_index] = (var_type)va_arg(args, int);
 
@@ -151,7 +151,7 @@ register_function(const char *name, int minargs, int maxargs,
     unsigned ans;
 
     va_start(args, func);
-    ans = register_common(name, minargs, maxargs, func, 0, 0, args);
+    ans = register_common(name, minargs, maxargs, func, nullptr, nullptr, args);
     va_end(args);
     return ans;
 }
@@ -294,17 +294,17 @@ read_bi_func_data(Byte f_id, void **bi_func_state, Byte * bi_func_pc)
 
     if (f_id >= top_bf_table) {
 	errlog("READ_BI_FUNC_DATA: Unknown function number: %d\n", f_id);
-	*bi_func_state = 0;
+	*bi_func_state = nullptr;
 	return 0;
     } else if (bf_table[f_id].read) {
 	*bi_func_state = (*(bf_table[f_id].read)) ();
-	if (*bi_func_state == 0) {
+	if (*bi_func_state == nullptr) {
 	    errlog("READ_BI_FUNC_DATA: Can't read data for %s()\n",
 		   bf_table[f_id].name);
 	    return 0;
 	}
     } else {
-	*bi_func_state = 0;
+	*bi_func_state = nullptr;
 	/* The following code checks for the easily-detectable case of the
 	 * bug described in the Version 1.8.0p4 entry in ChangeLog.txt.
 	 */
@@ -383,7 +383,7 @@ make_call_pack(Byte pc, void *data)
 package
 tail_call_pack(void)
 {
-    return make_call_pack(0, 0);
+    return make_call_pack(0, nullptr);
 }
 
 package

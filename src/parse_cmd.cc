@@ -33,7 +33,7 @@
 char **
 parse_into_words(char *input, int *nwords)
 {
-    static char **words = 0;
+    static char **words = nullptr;
     static int max_words = 0;
     int in_quotes = 0;
     char *ptr = input;
@@ -180,7 +180,7 @@ parse_command(const char *command, Objid user)
 
     if (argc == 0) {
 	free_str(buf);
-	return 0;
+	return nullptr;
     }
     pc.verb = str_dup(argv[0]);
     pc.argstr = str_dup(argstr);

@@ -599,7 +599,7 @@ bf_time(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
     r.type = TYPE_INT;
-    r.v.num = time(0);
+    r.v.num = time(nullptr);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -615,13 +615,13 @@ bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
     if (arglist.v.list[0].v.num == 1) {
 	c = arglist.v.list[1].v.num;
     } else {
-	c = time(0);
+	c = time(nullptr);
     }
 
     free_var(arglist);
 
     t = localtime(&c);
-    if (t == 0)
+    if (t == nullptr)
         return make_error_pack(E_INVARG);
 
     {				/* Format the time, including a timezone name */

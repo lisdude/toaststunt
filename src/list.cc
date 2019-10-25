@@ -56,8 +56,8 @@ new_list(int size)
 
     if (size == 0) {
 
-	if (emptylist.v.list == NULL) {
-	    if ((ptr = (Var *)mymalloc(1 * sizeof(Var), M_LIST)) == NULL)
+	if (emptylist.v.list == nullptr) {
+	    if ((ptr = (Var *)mymalloc(1 * sizeof(Var), M_LIST)) == nullptr)
 		panic_moo("EMPTY_LIST: mymalloc failed");
 
 	    emptylist.type = TYPE_LIST;
@@ -75,7 +75,7 @@ new_list(int size)
 	return emptylist;
     }
 
-    if ((ptr = (Var *)mymalloc((size + 1) * sizeof(Var), M_LIST)) == NULL)
+    if ((ptr = (Var *)mymalloc((size + 1) * sizeof(Var), M_LIST)) == nullptr)
 	panic_moo("EMPTY_LIST: mymalloc failed");
 
     list.type = TYPE_LIST;
@@ -410,7 +410,7 @@ value2str(Var value)
 	return str_ref(value.v.str);
     }
     else {
-	static Stream *s = 0;
+	static Stream *s = nullptr;
 	if (!s)
 	    s = new_stream(32);
 	stream_add_tostr(s, value);
@@ -793,13 +793,13 @@ bf_explode(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     if (adjacent_delim) {
-        while ((found = strsep(&return_string, delim)) != NULL)
+        while ((found = strsep(&return_string, delim)) != nullptr)
             ret = listappend(ret, str_dup_to_var(found));
     } else {
         found = strtok(return_string, delim);
-        while (found != NULL) {
+        while (found != nullptr) {
             ret = listappend(ret, str_dup_to_var(found));
-            found = strtok(NULL, delim);
+            found = strtok(nullptr, delim);
         }
     }
     free(freeme);
@@ -892,7 +892,7 @@ bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
                 return make_error_pack(E_INVARG);
             } else {
                 Var tmp;
-                if (maplookup(element, index, &tmp, 0) != NULL)
+                if (maplookup(element, index, &tmp, 0) != nullptr)
                     ret = listappend(ret, var_ref(tmp));
             }
         } else if (index.type == TYPE_INT) {
@@ -1210,13 +1210,13 @@ setup_pattern_cache()
     int i;
 
     for (i = 0; i < PATTERN_CACHE_SIZE; i++) {
-	pat_cache_entries[i].string = 0;
-	pat_cache_entries[i].pattern.ptr = 0;
+	pat_cache_entries[i].string = nullptr;
+	pat_cache_entries[i].pattern.ptr = nullptr;
     }
 
     for (i = 0; i < PATTERN_CACHE_SIZE - 1; i++)
 	pat_cache_entries[i].next = &(pat_cache_entries[i + 1]);
-    pat_cache_entries[PATTERN_CACHE_SIZE - 1].next = 0;
+    pat_cache_entries[PATTERN_CACHE_SIZE - 1].next = nullptr;
 
     pat_cache = &(pat_cache_entries[0]);
 }
@@ -1246,7 +1246,7 @@ get_pattern(const char *string, int case_matters)
 	    entry->pattern = new_pattern(string, case_matters);
 	    entry->case_matters = case_matters;
 	    if (!entry->pattern.ptr)
-		entry->string = 0;
+		entry->string = nullptr;
 	    else
 		entry->string = str_dup(string);
 	    break;

@@ -156,7 +156,7 @@ static void
 lookup(int to_intermediary, int from_intermediary)
 {
     struct request req;
-    static char *buffer = 0;
+    static char *buffer = nullptr;
     static int buflen = 0;
     Timer_ID id;
     struct hostent *e;
@@ -175,7 +175,7 @@ lookup(int to_intermediary, int from_intermediary)
 		!= req.u.length)
 		_exit(1);
 	    buffer[req.u.length] = 0;
-	    id = set_timer(req.timeout, timeout_proc, 0);
+	    id = set_timer(req.timeout, timeout_proc, nullptr);
 	    e = gethostbyname(buffer);
 	    cancel_timer(id);
 	    if (e && e->h_length == sizeof(uint32_t))
@@ -189,8 +189,8 @@ lookup(int to_intermediary, int from_intermediary)
     } else {
         const char *host_name;
         int length;
-        id = set_timer(req.timeout, timeout_proc, 0);
-        if (getnameinfo((struct sockaddr *)&req.u.address, sizeof(req.u.address), hbuf, sizeof(hbuf), NULL, 0, 0) == 0)
+        id = set_timer(req.timeout, timeout_proc, nullptr);
+        if (getnameinfo((struct sockaddr *)&req.u.address, sizeof(req.u.address), hbuf, sizeof(hbuf), nullptr, 0, 0) == 0)
             host_name = hbuf;
         else
             host_name = "";
@@ -230,7 +230,7 @@ static void
 intermediary(int to_server, int from_server)
 {
     struct request req;
-    static char *buffer = 0;
+    static char *buffer = nullptr;
     static int buflen = 0;
     int len;
     uint32_t addr;
@@ -311,7 +311,7 @@ const char *
 lookup_name_from_addr(struct sockaddr_in *addr, unsigned timeout)
 {
     struct request req;
-    static char *buffer = 0;
+    static char *buffer = nullptr;
     static int buflen = 0;
     int len;
 

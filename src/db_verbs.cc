@@ -107,7 +107,7 @@ dbpriv_build_prep_table(void)
 
 	    current_alias = (struct pt_entry *)mymalloc(sizeof(struct pt_entry), M_PREP);
 	    current_alias->nwords = nwords;
-	    current_alias->next = 0;
+	    current_alias->next = nullptr;
 	    for (j = 0; j < nwords; j++)
 		current_alias->words[j] = str_dup(words[j]);
 	    *prev = current_alias;
@@ -121,7 +121,7 @@ db_find_prep(int argc, char *argv[], int *first, int *last)
 {
     pt_entry *alias;
     int i, j, k;
-    int exact_match = (first == 0 || last == 0);
+    int exact_match = (first == nullptr || last == nullptr);
 
     for (i = 0; i < argc; i++) {
 	for (j = 0; j < NPREPS; j++) {
@@ -170,11 +170,11 @@ db_match_prep(const char *prepname)
 	    return prep;
     }
     ptr = strchr(s, '/');
-    if (ptr != NULL)
+    if (ptr != nullptr)
 	*ptr = '\0';
 
     argv = parse_into_words(s, &argc);
-    prep = db_find_prep(argc, argv, 0, 0);
+    prep = db_find_prep(argc, argv, nullptr, nullptr);
     free_str(s);
     return prep;
 }
@@ -213,8 +213,8 @@ db_add_verb(Var obj, const char *vnames, Objid owner, unsigned flags,
     newv->owner = owner;
     newv->perms = flags | (dobj << DOBJSHIFT) | (iobj << IOBJSHIFT);
     newv->prep = prep;
-    newv->next = 0;
-    newv->program = 0;
+    newv->next = nullptr;
+    newv->program = nullptr;
     if (o->verbdefs) {
 	for (v = o->verbdefs, count = 2; v->next; v = v->next, ++count);
 	v->next = newv;
@@ -338,7 +338,7 @@ db_find_command_verb(Objid oid, const char *verb,
 
     free_var(ancestors);
 
-    vh.ptr = 0;
+    vh.ptr = nullptr;
 
     return vh;
 }
@@ -363,7 +363,7 @@ struct vc_entry {
     struct vc_entry *next;
 };
 
-static vc_entry **vc_table = NULL;
+static vc_entry **vc_table = nullptr;
 static int vc_size = 0;
 
 #define DEFAULT_VC_SIZE 7507
@@ -374,7 +374,7 @@ db_priv_affected_callable_verb_lookup(void)
     int i;
     vc_entry *vc, *vc_next;
 
-    if (vc_table == NULL)
+    if (vc_table == nullptr)
 	return;
 
     db_verb_generation++;
@@ -387,7 +387,7 @@ db_priv_affected_callable_verb_lookup(void)
 	    myfree(vc, M_VC_ENTRY);
 	    vc = vc_next;
 	}
-	vc_table[i] = NULL;
+	vc_table[i] = nullptr;
     }
 }
 
@@ -399,7 +399,7 @@ make_vc_table(int size)
     vc_size = size;
     vc_table = (vc_entry **)mymalloc(size * sizeof(vc_entry *), M_VC_TABLE);
     for (i = 0; i < size; i++) {
-	vc_table[i] = NULL;
+	vc_table[i] = nullptr;
     }
 }
 
@@ -484,10 +484,10 @@ struct verbdef_definer_data {
 static struct verbdef_definer_data
 find_callable_verbdef(Object *start, const char *verb)
 {
-    Object *o = NULL;
-    Verbdef *v = NULL;
+    Object *o = nullptr;
+    Verbdef *v = nullptr;
 
-    if ((v = find_verbdef_by_name(start, verb, 1)) != NULL) {
+    if ((v = find_verbdef_by_name(start, verb, 1)) != nullptr) {
 	struct verbdef_definer_data data;
 	data.o = start;
 	data.v = v;
@@ -507,7 +507,7 @@ find_callable_verbdef(Object *start, const char *verb)
 	if (!o) /* if it's invalid, AKA $nothing */
 	    continue;
 
-	if ((v = find_verbdef_by_name(o, verb, 1)) != NULL)
+	if ((v = find_verbdef_by_name(o, verb, 1)) != nullptr)
 	    break;
 
 	if (TYPE_OBJ == o->parents.type)
@@ -559,7 +559,7 @@ db_find_callable_verb(Var recv, const char *verb)
 
 	if (top.is_object() && is_valid(top)) {
 	    o = dbpriv_dereference(top);
-	    if (o->verbdefs == NULL) {
+	    if (o->verbdefs == nullptr) {
 		/* keep looking */
 		stack = (TYPE_OBJ == o->parents.type)
 		        ? listinsert(stack, var_ref(o->parents), 1)
@@ -576,7 +576,7 @@ db_find_callable_verb(Var recv, const char *verb)
 
 	free_var(top);
 
-	assert(o != NULL);
+	assert(o != nullptr);
 
 	unsigned long first_parent_with_verbs = (unsigned long)o;
 
@@ -584,7 +584,7 @@ db_find_callable_verb(Var recv, const char *verb)
 	unsigned int hash, bucket;
 	vc_entry *vc;
 
-	if (vc_table == NULL)
+	if (vc_table == nullptr)
 	    make_vc_table(DEFAULT_VC_SIZE);
 
 	hash = str_hash(verb) ^ (~first_parent_with_verbs);	/* ewww, but who cares */
@@ -599,7 +599,7 @@ db_find_callable_verb(Var recv, const char *verb)
 		    vh.ptr = &vc->h;
 		} else {
 		    verbcache_neg_hit++;
-		    vh.ptr = 0;
+		    vh.ptr = nullptr;
 		}
 		if (vh.ptr) {
 		    free_var(stack);
@@ -631,13 +631,13 @@ db_find_callable_verb(Var recv, const char *verb)
 	new_vc->hash = hash;
 	new_vc->object = o;
 	new_vc->verbname = str_dup(verb);
-	new_vc->h.verbdef = NULL;
+	new_vc->h.verbdef = nullptr;
 	new_vc->next = vc_table[bucket];
 	vc_table[bucket] = new_vc;
 #endif
 
 	struct verbdef_definer_data data = find_callable_verbdef(o, verb);
-	if (data.o != NULL && data.v != NULL) {
+	if (data.o != nullptr && data.v != nullptr) {
 
 #ifdef VERB_CACHE
 	    free_var(stack);
@@ -663,7 +663,7 @@ db_find_callable_verb(Var recv, const char *verb)
      * note that the verbcache has cleared h.verbdef, so it defaults to a
      * "miss" cache if the for loop doesn't win
      */
-    vh.ptr = 0;
+    vh.ptr = nullptr;
 
     return vh;
 }
@@ -694,7 +694,7 @@ db_find_defined_verb(Var obj, const char *vname, int allow_numbers)
 
 	return vh;
     }
-    vh.ptr = 0;
+    vh.ptr = nullptr;
 
     return vh;
 }
@@ -716,7 +716,7 @@ db_find_indexed_verb(Var obj, unsigned index)
 
 	    return vh;
 	}
-    vh.ptr = 0;
+    vh.ptr = nullptr;
 
     return vh;
 }
@@ -752,7 +752,7 @@ db_verb_names(db_verb_handle vh)
 	return h->verbdef->name;
 
     panic_moo("DB_VERB_NAMES: Null handle!");
-    return 0;
+    return nullptr;
 }
 
 void
@@ -830,7 +830,7 @@ db_verb_program(db_verb_handle vh)
 	return p ? p : null_program();
     }
     panic_moo("DB_VERB_PROGRAM: Null handle!");
-    return 0;
+    return nullptr;
 }
 
 void

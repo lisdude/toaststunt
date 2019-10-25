@@ -76,7 +76,7 @@ new_builtin_names(DB_Version version)
 {
     static Names *builtins[Num_DB_Versions];
 
-    if (builtins[version] == 0) {
+    if (builtins[version] == nullptr) {
 	Names *bi = new_names(first_user_slot(version));
 
 	builtins[version] = bi;

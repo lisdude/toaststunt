@@ -31,7 +31,7 @@ struct intern_entry_hunk {
     struct intern_entry_hunk *next;
 };
 
-static struct intern_entry_hunk *intern_alloc = NULL;
+static struct intern_entry_hunk *intern_alloc = nullptr;
 
 static struct intern_entry_hunk *
 new_intern_entry_hunk(int size) 
@@ -42,7 +42,7 @@ new_intern_entry_hunk(int size)
     _new->size = size;
     _new->handout = 0;
     _new->contents = (struct intern_entry *)mymalloc(sizeof(struct intern_entry) * size, M_INTERN_ENTRY);
-    _new->next = NULL;
+    _new->next = nullptr;
     
     return _new;
 }
@@ -54,7 +54,7 @@ new_intern_entry_hunk(int size)
 static struct intern_entry *
 allocate_intern_entry(void)
 {
-    if (intern_alloc == NULL) {
+    if (intern_alloc == nullptr) {
         intern_alloc = new_intern_entry_hunk(INTERN_ENTRY_HUNK_SIZE);
     }
     
@@ -85,7 +85,7 @@ free_intern_entry_hunks(void)
         myfree(h, M_INTERN_HUNK);
     }
     
-    intern_alloc = NULL;
+    intern_alloc = nullptr;
 }
 
 /**********************/
@@ -106,7 +106,7 @@ make_intern_table(int size) {
 
     table = (intern_entry **)mymalloc(sizeof(struct intern_entry *) * size, M_INTERN_POINTER);
     for (i = 0; i < size; i++) {
-        table[i] = NULL;
+        table[i] = nullptr;
     }
     
     return table;
@@ -143,7 +143,7 @@ str_intern_close(void)
     }
     
     myfree(intern_table, M_INTERN_POINTER);
-    intern_table = NULL;
+    intern_table = nullptr;
     
     free_intern_entry_hunks();
     
@@ -165,7 +165,7 @@ find_interned_string(const char *s, unsigned hash)
         }
     }
     
-    return NULL;
+    return nullptr;
 }
 
 /* Caller must addref s */
@@ -229,12 +229,12 @@ str_intern(const char *s)
     unsigned hash;
     const char *r;
     
-    if (s == NULL || *s == '\0') {
+    if (s == nullptr || *s == '\0') {
         /* str_dup already has a canonical empty string */
         return str_dup(s);
     }
     
-    if (intern_table == NULL) {
+    if (intern_table == nullptr) {
         return str_dup(s);
     }
     
@@ -242,7 +242,7 @@ str_intern(const char *s)
     
     e = find_interned_string(s, hash);
     
-    if (e != NULL) {
+    if (e != nullptr) {
         intern_allocations_saved++;
         intern_bytes_saved += memo_strlen(e->s);
         return str_ref(e->s);

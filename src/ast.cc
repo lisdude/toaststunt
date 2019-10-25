@@ -50,7 +50,7 @@ end_code_allocation(int aborted)
 	int i;
 
 	for (i = 0; i < next_pool_slot; i++) {
-	    if (pool[i].ptr != 0)
+	    if (pool[i].ptr != nullptr)
 		myfree(pool[i].ptr, pool[i].type);
 	}
     }
@@ -84,7 +84,7 @@ deallocate(void *ptr)
     for (i = 0; i < next_pool_slot; i++) {
 	if (ptr == pool[i].ptr) {
 	    myfree(ptr, pool[i].type);
-	    pool[i].ptr = 0;
+	    pool[i].ptr = nullptr;
 	    return;
 	}
     }
@@ -119,7 +119,7 @@ alloc_stmt(enum Stmt_Kind kind)
     Stmt *result = (Stmt *)allocate(sizeof(Stmt), M_AST);
 
     result->kind = kind;
-    result->next = 0;
+    result->next = nullptr;
     return result;
 }
 
@@ -130,7 +130,7 @@ alloc_cond_arm(Expr * condition, Stmt * stmt)
 
     result->condition = condition;
     result->stmt = stmt;
-    result->next = 0;
+    result->next = nullptr;
     return result;
 }
 
@@ -143,7 +143,7 @@ alloc_except(int id, Arg_List * codes, Stmt * stmt)
     result->codes = codes;
     result->stmt = stmt;
     result->label = 0;
-    result->next = 0;
+    result->next = nullptr;
     return result;
 }
 
@@ -193,7 +193,7 @@ alloc_map_list(Expr * key, Expr * value)
 
     result->key = key;
     result->value = value;
-    result->next = 0;
+    result->next = nullptr;
     return result;
 }
 
@@ -204,7 +204,7 @@ alloc_arg_list(enum Arg_Kind kind, Expr * expr)
 
     result->kind = kind;
     result->expr = expr;
-    result->next = 0;
+    result->next = nullptr;
     return result;
 }
 
@@ -216,7 +216,7 @@ alloc_scatter(enum Scatter_Kind kind, int id, Expr * expr)
     sc->kind = kind;
     sc->id = id;
     sc->expr = expr;
-    sc->next = 0;
+    sc->next = nullptr;
     sc->label = sc->next_label = 0;
 
     return sc;

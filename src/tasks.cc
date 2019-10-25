@@ -107,7 +107,7 @@ double_to_start_tv(double after_seconds)
 {
 	struct timeval now, delta, when;
 
-	gettimeofday(&now, NULL);
+	gettimeofday(&now, nullptr);
 	delta.tv_sec = floor(after_seconds);
 	delta.tv_usec = 1000000. * (after_seconds - delta.tv_sec);
 	timeradd(&now, &delta, &when);
@@ -233,9 +233,9 @@ typedef struct ext_queue {
 
 Var current_local;
 int current_task_id;
-static tqueue *idle_tqueues = 0, *active_tqueues = 0;
-static task *waiting_tasks = 0;	/* forked and suspended tasks */
-static ext_queue *external_queues = 0;
+static tqueue *idle_tqueues = nullptr, *active_tqueues = nullptr;
+static task *waiting_tasks = nullptr;	/* forked and suspended tasks */
+static ext_queue *external_queues = nullptr;
 #ifdef SAVE_FINISHED_TASKS
 Var finished_tasks = new_list(0);
 #endif
@@ -400,7 +400,7 @@ activate_tqueue(tqueue * tq)
 	qq = &((*qq)->next);
 
     tq->next = *qq;
-    tq->prev = 0;
+    tq->prev = nullptr;
     *qq = tq;
 }
 
@@ -425,7 +425,7 @@ default_flush_command(void)
 {
     const char *str = server_string_option("default_flush_command", ".flush");
 
-    return (str && str[0] != '\0') ? str_dup(str) : 0;
+    return (str && str[0] != '\0') ? str_dup(str) : nullptr;
 }
 
 static tqueue *
@@ -442,7 +442,7 @@ find_tqueue(Objid player, int create_if_not_found)
 	    return tq;
 
     if (!create_if_not_found)
-	return 0;
+	return nullptr;
 
     tq = (tqueue *)mymalloc(sizeof(tqueue), M_TASK);
 
@@ -452,15 +452,15 @@ find_tqueue(Objid player, int create_if_not_found)
     tq->handler = 0;
     tq->connected = 0;
 
-    tq->first_input = tq->first_itail = tq->first_bg = 0;
+    tq->first_input = tq->first_itail = tq->first_bg = nullptr;
     tq->last_input = &(tq->first_input);
     tq->last_itail = &(tq->first_itail);
     tq->last_bg = &(tq->first_bg);
     tq->total_input_length = tq->input_suspended = 0;
 
-    tq->output_prefix = tq->output_suffix = 0;
+    tq->output_prefix = tq->output_suffix = nullptr;
     tq->flush_cmd = default_flush_command();
-    tq->program_stream = 0;
+    tq->program_stream = nullptr;
 
     tq->reading = 0;
     tq->parsing = 0;
@@ -470,7 +470,7 @@ find_tqueue(Objid player, int create_if_not_found)
     tq->num_bg_tasks = 0;
     tq->last_input_task_id = 0;
 
-    tq->parsing_state = NULL;
+    tq->parsing_state = nullptr;
 
     return tq;
 }
@@ -507,7 +507,7 @@ enqueue_bg_task(tqueue * tq, task * t)
 {
     *(tq->last_bg) = t;
     tq->last_bg = &(t->next);
-    t->next = 0;
+    t->next = nullptr;
 }
 
 static task *
@@ -517,10 +517,10 @@ dequeue_bg_task(tqueue * tq)
 
     if (t) {
 	tq->first_bg = t->next;
-	if (t->next == 0)
+	if (t->next == nullptr)
 	    tq->last_bg = &(tq->first_bg);
 	else
-	    t->next = 0;
+	    t->next = nullptr;
 	tq->num_bg_tasks--;
     }
     return t;
@@ -539,12 +539,12 @@ dequeue_input_task(tqueue * tq, enum dequeue_how how)
 
     if (tq->disable_oob) {
 	if (how == DQ_OOB)
-	    return 0;
+	    return nullptr;
 	how = DQ_FIRST;
     }
 
     if (!tq->first_input)
-	return 0;
+	return nullptr;
     else if (how == (tq->first_input->kind == TASK_OOB)) {
 	pt     = &(tq->first_itail->next);
 	pitail = &(tq->first_itail->t.input.next_itail);
@@ -557,18 +557,18 @@ dequeue_input_task(tqueue * tq, enum dequeue_how how)
 
     if (t) {
 	*pt = t->next;
-	if (t->next == 0)
+	if (t->next == nullptr)
 	    tq->last_input = pt;
 	else
-	    t->next = 0;
+	    t->next = nullptr;
 
 	if (t == *pitail) {
-	    *pitail = 0;
+	    *pitail = nullptr;
 	    if (t->t.input.next_itail) {
 		tq->first_itail = t->t.input.next_itail;
-		t->t.input.next_itail = 0;
+		t->t.input.next_itail = nullptr;
 	    }
-	    if (*(tq->last_itail) == 0)
+	    if (*(tq->last_itail) == nullptr)
 		tq->last_itail = &(tq->first_itail);
 	}
 
@@ -689,7 +689,7 @@ my_getc(void *data)
 }
 
 static Parser_Client client =
-{my_error, 0, my_getc};
+{my_error, nullptr, my_getc};
 
 static void
 end_programming(tqueue * tq)
@@ -732,7 +732,7 @@ end_programming(tqueue * tq)
 
     free_str(tq->program_verb);
     free_stream(tq->program_stream);
-    tq->program_stream = 0;
+    tq->program_stream = nullptr;
 }
 
 static void
@@ -741,7 +741,7 @@ set_delimiter(char **slot, const char *string)
     if (*slot)
 	free_str(*slot);
     if (*string == '\0')
-	*slot = 0;
+	*slot = nullptr;
     else
 	*slot = str_dup(string);
 }
@@ -761,7 +761,7 @@ find_verb_on(Objid oid, Parsed_Command * pc, db_verb_handle * vh)
 				: pc->iobj == NOTHING ? ASPEC_NONE
 				: ASPEC_ANY));
 
-    return vh->ptr != 0;
+    return vh->ptr != nullptr;
 }
 
 static int
@@ -902,15 +902,15 @@ do_login_task(tqueue * tq, char *command)
         /* Detect and parse incoming localhost proxies. This allows us to have an SSL presence and keep the originating IP. */
         if (strlen(command) >= 5 && strncmp(command, "PROXY", 5) == 0) {
             applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
-            char *source = NULL;
-            char *source_port = NULL;
-            char *destination_port = NULL;
+            char *source = nullptr;
+            char *source_port = nullptr;
+            char *destination_port = nullptr;
             char *split = strtok(command, " ");
 
             int x = 0;
             for (x = 1; x <= 6; x++) {
                 // Just in case something goes horribly wrong...
-                if (split == NULL) {
+                if (split == nullptr) {
                     errlog("PROXY: Proxy command parsing failed!\n");
                     break;
                 }
@@ -927,10 +927,10 @@ do_login_task(tqueue * tq, char *command)
                     default:
                         break;
                 }
-                split = strtok(NULL, " ");
+                split = strtok(nullptr, " ");
             }
 
-            static Stream *new_connection_name = 0;
+            static Stream *new_connection_name = nullptr;
 
             if (!new_connection_name)
                 new_connection_name = new_stream(100);
@@ -971,17 +971,17 @@ do_login_task(tqueue * tq, char *command)
 	    tqueue *old_tq = find_tqueue(old_player, 1);
 
 	    old_tq->num_bg_tasks = tq->num_bg_tasks;
-	    while ((t = dequeue_bg_task(tq)) != 0)
+	    while ((t = dequeue_bg_task(tq)) != nullptr)
 		enqueue_bg_task(old_tq, t);
 	    tq->num_bg_tasks = 0;
 	}
 	if (dead_tq) {
 	    /* Copy over tasks from old queue for player */
 	    tq->num_bg_tasks = dead_tq->num_bg_tasks;
-	    while ((t = dequeue_input_task(dead_tq, DQ_FIRST)) != 0) {
+	    while ((t = dequeue_input_task(dead_tq, DQ_FIRST)) != nullptr) {
 		free_task(t, 0);
 	    }
-	    while ((t = dequeue_bg_task(dead_tq)) != 0) {
+	    while ((t = dequeue_bg_task(dead_tq)) != nullptr) {
 		enqueue_bg_task(tq, t);
 	    }
 	    dead_tq->player = NOTHING;	/* it'll be freed by run_ready_tasks */
@@ -1009,7 +1009,7 @@ static void
 do_out_of_band_command(tqueue * tq, char *command)
 {
     run_server_task(tq->player, Var::new_obj(tq->handler), "do_out_of_band_command",
-		    parse_into_wordlist(command), command, 0);
+		    parse_into_wordlist(command), command, nullptr);
 }
 
 static int
@@ -1133,7 +1133,7 @@ enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary, boo
     t->t.input.string = str_dup(input);
     tq->total_input_length += (t->t.input.length = strlen(input));
 
-    t->t.input.next_itail = 0;
+    t->t.input.next_itail = nullptr;
     if (at_front && tq->first_input) {	/* if nothing there, front == back */
 	if ((tq->first_input->kind == TASK_OOB) != (t->kind == TASK_OOB)) {
 	    t->t.input.next_itail = tq->first_itail;
@@ -1152,7 +1152,7 @@ enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary, boo
 
 	*(tq->last_input) = t;
 	tq->last_input = &(t->next);
-	t->next = 0;
+	t->next = nullptr;
     }
 
     /* Anything to do with this line? */
@@ -1183,14 +1183,14 @@ static void
 flush_input(tqueue * tq, int show_messages)
 {
     if (tq->first_input) {
-	Stream *s = 0;
+	Stream *s = nullptr;
 	task *t;
 
 	if (show_messages) {
 	    notify(tq->player, ">> Flushing the following pending input:");
 	    s = new_stream(100);
 	}
-	while ((t = dequeue_input_task(tq, DQ_FIRST)) != 0) {
+	while ((t = dequeue_input_task(tq, DQ_FIRST)) != nullptr) {
 	    /* TODO*** flush only non-TASK_OOB tasks ??? */
 	    if (show_messages) {
 		stream_printf(s, ">>     %s", t->t.input.string);
@@ -1259,8 +1259,8 @@ enqueue_forked(Program * program, activation a, Var * rt_env,
      */
     a.rt_env = rt_env;
     a.prog = program;
-    a.base_rt_stack = NULL;
-    a.top_rt_stack = NULL;
+    a.base_rt_stack = nullptr;
+    a.top_rt_stack = nullptr;
     t->t.forked.a = a;
     t->t.forked.rt_env = rt_env;
     t->t.forked.f_index = f_index;
@@ -1431,7 +1431,7 @@ make_http_task(vm the_vm, Objid player, int request)
 	tq->reading = 1;
 	tq->parsing = 1;
 	tq->reading_vm = the_vm;
-	if (tq->parsing_state == NULL) {
+	if (tq->parsing_state == nullptr) {
 	    tq->parsing_state =
 		(http_parsing_state *)mymalloc(sizeof(struct http_parsing_state), M_STRUCT);
 	    init_http_parsing_state(tq->parsing_state);
@@ -1474,13 +1474,13 @@ next_task_start(void)
     tqueue *tq;
 
     for (tq = active_tqueues; tq; tq = tq->next)
-	if (tq->first_input != 0 || tq->first_bg != 0)
+	if (tq->first_input != nullptr || tq->first_bg != nullptr)
 	    return 0;
 
-    if (waiting_tasks != 0) {
+    if (waiting_tasks != nullptr) {
 	struct timeval *tvp, now, delta;
 
-	gettimeofday(&now, NULL);
+	gettimeofday(&now, nullptr);
 	tvp = GET_START_TIME(waiting_tasks);
 	timersub(tvp, &now, &delta);
 	if (delta.tv_sec < 0 || delta.tv_usec < 0)
@@ -1495,7 +1495,7 @@ next_task_start(void)
 static Var
 create_or_extend(Var in, const char *_new, int newlen)
 {
-    static Stream *s = NULL;
+    static Stream *s = nullptr;
     if (!s)
 	s = new_stream(100);
 
@@ -1671,7 +1671,7 @@ run_ready_tasks(void)
     struct timeval now;
     tqueue *tq, *next_tq;
 
-    gettimeofday(&now, NULL);
+    gettimeofday(&now, nullptr);
     for (t = waiting_tasks; t && timercmp(GET_START_TIME(t), &now, <=); t = next_t) {
 	Objid progr = (t->kind == TASK_FORKED
 		       ? t->t.forked.a.progr
@@ -1686,7 +1686,7 @@ run_ready_tasks(void)
 
     {
 	int did_one = 0;
-	time_t start = time(0);
+	time_t start = time(nullptr);
 
 	/* Loop over tqueues, looking for a task */
 	while (active_tqueues && !did_one) {
@@ -1697,7 +1697,7 @@ run_ready_tasks(void)
 
 		tq->reading = 0;
 		tq->parsing = 0;
-		if (tq->parsing_state != NULL)
+		if (tq->parsing_state != nullptr)
 		    reset_http_parsing_state(tq->parsing_state);
 		current_task_id = tq->reading_vm->task_id;
 		current_local = var_ref(tq->reading_vm->local);
@@ -1733,7 +1733,7 @@ run_ready_tasks(void)
 			int done = 0;
 			int len;
 			const char *binary = binary_to_raw_bytes(t->t.input.string, &len);
-			if (binary == NULL) {
+			if (binary == nullptr) {
 			    /* This can happen if someone forces an
 			     * invalid binary string as input on this
 			     * connection!
@@ -1841,7 +1841,7 @@ run_ready_tasks(void)
 
 	    if (did_one) {
 		/* Bump the usage level of this tqueue */
-		time_t end = time(0);
+		time_t end = time(nullptr);
 
 		tq->usage += end - start;
 		activate_tqueue(tq);
@@ -1867,7 +1867,7 @@ run_server_task(Objid player, Var what, const char *verb, Var args,
 {
     enum outcome ret = run_server_task_setting_id(player, what, verb,
                                                   args, argstr,
-                                                  result, 0);
+                                                  result, nullptr);
 
     current_task_id = -1;
     free_var(current_local);
@@ -2097,7 +2097,7 @@ read_task_queue(void)
 	    return 0;
 	}
 	if (!(program = dbio_read_program(dbio_input_version,
-					  0, (void *) "forked task"))) {
+					  nullptr, (void *) "forked task"))) {
 	    errlog("READ_TASK_QUEUE: Bad program, count = %d.\n", count);
 	    return 0;
 	}
@@ -2167,7 +2167,7 @@ read_task_queue(void)
 		   interrupted_count);
 	    return 0;
 	}
-	if ((status = dbio_read_string()) == NULL) {
+	if ((status = dbio_read_string()) == nullptr) {
 	    errlog("READ_TASK_QUEUE: Bad interrupted task status, count = %d\n",
 		   interrupted_count);
 	    return 0;
@@ -2205,13 +2205,13 @@ find_verb_for_programming(Objid player, const char *verbref,
     char *obj;
     Objid oid;
     db_verb_handle h;
-    static Stream *str = 0;
+    static Stream *str = nullptr;
     Var desc;
 
     if (!str)
 	str = new_stream(100);
 
-    h.ptr = 0;
+    h.ptr = nullptr;
 
     if (!colon || colon[1] == '\0') {
 	free_str(copy);
@@ -2254,7 +2254,7 @@ find_verb_for_programming(Objid player, const char *verbref,
 	     || (server_flag_option("protect_set_verb_code", 0)
 		 && !is_wizard(player))) {
 	*message = "Permission denied.";
-	h.ptr = 0;
+	h.ptr = nullptr;
     } else {
 	stream_printf(str, "Now programming %s:%s.  Use \".\" to end.",
 		      db_object_name(oid), db_verb_names(h));
@@ -2630,7 +2630,7 @@ find_suspended_task(int id)
 	    return fdata.the_vm;
 	}
 
-    return 0;
+    return nullptr;
 }
 
 struct kcl_data {
@@ -2692,7 +2692,7 @@ kill_task(int id, Objid owner)
 	    free_vm(tq->reading_vm, 1);
 	    tq->reading = 0;
 	    tq->parsing = 0;
-	    if (tq->parsing_state != NULL)
+	    if (tq->parsing_state != nullptr)
 		reset_http_parsing_state(tq->parsing_state);
 	    return E_NONE;
 	}
@@ -2706,7 +2706,7 @@ kill_task(int id, Objid owner)
 	    free_vm(tq->reading_vm, 1);
 	    tq->reading = 0;
 	    tq->parsing = 0;
-	    if (tq->parsing_state != NULL)
+	    if (tq->parsing_state != nullptr)
 		reset_http_parsing_state(tq->parsing_state);
 	    return E_NONE;
 	}
@@ -2719,7 +2719,7 @@ kill_task(int id, Objid owner)
 		if (!is_wizard(owner) && owner != tq->player)
 		    return E_PERM;
 		*tt = t->next;
-		if (t->next == 0)
+		if (t->next == nullptr)
 		    tq->last_bg = tt;
 		tq->num_bg_tasks--;
 		free_task(t, 1);
@@ -2781,7 +2781,7 @@ do_resume(int id, Var value, Objid progr)
 
 	if (!is_wizard(progr) && progr != owner)
 	    return E_PERM;
-	gettimeofday(&t->t.suspended.start_tv, NULL);	/* runnable now */
+	gettimeofday(&t->t.suspended.start_tv, nullptr);	/* runnable now */
 	free_var(t->t.suspended.value);
 	t->t.suspended.value = value;
 	tq = find_tqueue(owner, 1);
@@ -2967,17 +2967,17 @@ bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
 	tqueue *old_tq = find_tqueue(old_player, 1);
 
 	old_tq->num_bg_tasks = tq->num_bg_tasks;
-	while ((t = dequeue_bg_task(tq)) != 0)
+	while ((t = dequeue_bg_task(tq)) != nullptr)
 	    enqueue_bg_task(old_tq, t);
 	tq->num_bg_tasks = 0;
     }
     if (dead_tq) {
 	/* Copy over tasks from old queue for player */
 	tq->num_bg_tasks = dead_tq->num_bg_tasks;
-	while ((t = dequeue_input_task(dead_tq, DQ_FIRST)) != 0) {
+	while ((t = dequeue_input_task(dead_tq, DQ_FIRST)) != nullptr) {
 	    free_task(t, 0);
 	}
-	while ((t = dequeue_bg_task(dead_tq)) != 0) {
+	while ((t = dequeue_bg_task(dead_tq)) != nullptr) {
 	    enqueue_bg_task(tq, t);
 	}
 	dead_tq->player = NOTHING;	/* it'll be freed by run_ready_tasks */

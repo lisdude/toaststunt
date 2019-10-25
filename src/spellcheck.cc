@@ -26,7 +26,7 @@ bf_spellcheck(Var arglist, Byte next, void *vdata, Objid progr) {
     {
         possible_err = new_aspell_speller(spell_config);
     }
-    static AspellSpeller *spell_checker = 0;
+    static AspellSpeller *spell_checker = nullptr;
     if (aspell_error_number(possible_err) != 0)
     {
         free_var(arglist);
@@ -50,7 +50,7 @@ bf_spellcheck(Var arglist, Byte next, void *vdata, Objid progr) {
         const AspellWordList *suggestions = aspell_speller_suggest(spell_checker, word, word_size);
         AspellStringEnumeration *elements = aspell_word_list_elements(suggestions);
         const char *word_suggestion;
-        while ((word_suggestion = aspell_string_enumeration_next(elements)) != NULL)
+        while ((word_suggestion = aspell_string_enumeration_next(elements)) != nullptr)
         {
             s.v.str = str_dup(word_suggestion);
             r = listappend(r, s);

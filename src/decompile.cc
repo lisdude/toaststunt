@@ -143,9 +143,9 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
     int asgn_hot = 0;
 
     if (stmt_sink)
-	*stmt_sink = 0;
+	*stmt_sink = nullptr;
     if (arm_sink)
-	*arm_sink = 0;
+	*arm_sink = nullptr;
 
     while (ptr < end) {
 	int op_hot = (ptr == hot_byte);
@@ -186,7 +186,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		int jump_hot;
 
 		s = alloc_stmt(STMT_COND);
-		DECOMPILE(bc, ptr, bc.vector + next - jump_len, &arm_stmts, 0);
+		DECOMPILE(bc, ptr, bc.vector + next - jump_len, &arm_stmts, nullptr);
 		arm = s->s.cond.arms = alloc_cond_arm(condition, arm_stmts);
 		HOT_OP1(condition, arm);
 		done = READ_JUMP(jump_hot);
@@ -206,7 +206,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		unsigned done;
 		int jump_hot;
 
-		DECOMPILE(bc, ptr, bc.vector + next - jump_len, &arm_stmts, 0);
+		DECOMPILE(bc, ptr, bc.vector + next - jump_len, &arm_stmts, nullptr);
 		ADD_ARM(arm = alloc_cond_arm(condition, arm_stmts));
 		HOT_OP1(condition, arm);
 		done = READ_JUMP(jump_hot);
@@ -230,7 +230,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		s->s.range.from = from;
 		s->s.range.to = to;
 		DECOMPILE(bc, ptr, bc.vector + done - jump_len,
-			  &(s->s.range.body), 0);
+			  &(s->s.range.body), nullptr);
 		if (top != READ_JUMP(jump_hot))
 		    panic_moo("FOR_RANGE jumps to wrong place in DECOMPILE!");
 		HOT_BOTTOM(jump_hot, s);
@@ -249,7 +249,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 
 		s->s.loop.condition = condition;
 		DECOMPILE(bc, ptr, bc.vector + done - jump_len,
-			  &(s->s.loop.body), 0);
+			  &(s->s.loop.body), nullptr);
 		if (top != READ_JUMP(jump_hot))
 		    panic_moo("WHILE jumps to wrong place in DECOMPILE!");
 		HOT_BOTTOM(jump_hot, s);
@@ -269,7 +269,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		s->s.fork.id = id;
 		s->s.fork.time = time;
 		(void) decompile(fbc, fbc.vector, fbc.vector + fbc.size,
-				 &(s->s.fork.body), 0);
+				 &(s->s.fork.body), nullptr);
 		HOT_BOTTOM(hot_byte == fbc.vector + fbc.size - 1, s);
 		ADD_STMT((Stmt *)HOT_OP1(time, s));
 	    }
@@ -282,7 +282,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 	case OP_RETURN:
 	case OP_RETURN0:
 	    s = alloc_stmt(STMT_RETURN);
-	    e = s->s.expr = (op == OP_RETURN ? pop_expr() : 0);
+	    e = s->s.expr = (op == OP_RETURN ? pop_expr() : nullptr);
 	    ADD_STMT((Stmt *)HOT(op_hot || (e && e == hot_node), s));
 	    break;
 	case OP_DONE:
@@ -305,7 +305,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		unsigned done = READ_LABEL();
 
 		e = pop_expr();
-		DECOMPILE(bc, ptr, bc.vector + done, 0, 0);
+		DECOMPILE(bc, ptr, bc.vector + done, nullptr, nullptr);
 		if (ptr != bc.vector + done)
 		    panic_moo("AND/OR jumps to wrong place in DECOMPILE!");
 		e = alloc_binary(op == OP_AND ? EXPR_AND : EXPR_OR,
@@ -411,10 +411,10 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 
 		e = alloc_expr(EXPR_COND);
 		e->e.cond.condition = pop_expr();
-		DECOMPILE(bc, ptr, bc.vector + label - jump_len, 0, 0);
+		DECOMPILE(bc, ptr, bc.vector + label - jump_len, nullptr, nullptr);
 		label = READ_JUMP(jump_hot);
 		e->e.cond.consequent = pop_expr();
-		DECOMPILE(bc, ptr, bc.vector + label, 0, 0);
+		DECOMPILE(bc, ptr, bc.vector + label, nullptr, nullptr);
 		if (ptr != bc.vector + label)
 		    panic_moo("THEN jumps to wrong place in DECOMPILE!");
 		e->e.cond.alternate = pop_expr();
@@ -471,7 +471,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 	    break;
 	case OP_MAP_CREATE:
 	    e = alloc_expr(EXPR_MAP);
-	    e->e.map = 0;
+	    e->e.map = nullptr;
 	    push_expr((Expr *)HOT_OP(e));
 	    break;
 	case OP_MAP_INSERT:
@@ -493,7 +493,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 	    break;
 	case OP_MAKE_EMPTY_LIST:
 	    e = alloc_expr(EXPR_LIST);
-	    e->e.list = 0;
+	    e->e.list = nullptr;
 	    push_expr((Expr *)HOT_OP(e));
 	    break;
 	case OP_MAKE_SINGLETON_LIST:
@@ -566,7 +566,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			Scatter *sc, **scp;
 			int nargs = *ptr++;
 			int rest = (ptr++, *ptr++);	/* skip nreq */
-			int *next_label = 0;
+			int *next_label = nullptr;
 			int i, done, is_hot = op_hot;
 
 			for (i = 1, scp = &sc;
@@ -578,7 +578,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			    *scp = alloc_scatter(i == rest ? SCAT_REST :
 					       label == 0 ? SCAT_REQUIRED
 						 : SCAT_OPTIONAL,
-						 id, 0);
+						 id, nullptr);
 			    if (label > 1) {
 				(*scp)->label = label;
 				if (next_label)
@@ -600,7 +600,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 				    panic_moo("Misplaced default in DECOMPILE!");
 				DECOMPILE(bc, ptr,
 					  bc.vector + sc->next_label - 1,
-					  0, 0);
+					  nullptr, nullptr);
 				defallt = pop_expr();
 				HOT1(is_hot, defallt, e);
 				if (defallt->kind != EXPR_ASGN
@@ -629,8 +629,8 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		    {
 			Expr *label_expr = pop_expr();
 			Expr *codes = pop_expr();
-			Expr *try_expr, *default_expr = 0;
-			Arg_List *a = 0;	/* silence warning */
+			Expr *try_expr, *default_expr = nullptr;
+			Arg_List *a = nullptr;	/* silence warning */
 			int label, done;
 			int is_hot = op_hot;
 
@@ -644,11 +644,11 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			else if (codes->kind == EXPR_VAR
 				 && codes->e.var.type == TYPE_INT
 				 && codes->e.var.v.num == 0)
-			    a = 0;
+			    a = nullptr;
 			else
 			    panic_moo("Not a codes expression in DECOMPILE!");
 			dealloc_node(codes);
-			DECOMPILE(bc, ptr, end, 0, 0);
+			DECOMPILE(bc, ptr, end, nullptr, nullptr);
 			is_hot = (is_hot || ptr++ == hot_byte);
 			if (*ptr++ != EOP_END_CATCH)
 			    panic_moo("Missing END_CATCH in DECOMPILE!");
@@ -663,10 +663,10 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			    is_hot = (is_hot || ptr == hot_byte);
 			    if (*ptr++ != OP_REF)
 				panic_moo("Missing REF in DECOMPILE!");
-			    default_expr = 0;
+			    default_expr = nullptr;
 			} else if (op == OP_POP) {
 			    /* There's a default expression */
-			    DECOMPILE(bc, ptr, bc.vector + done, 0, 0);
+			    DECOMPILE(bc, ptr, bc.vector + done, nullptr, nullptr);
 			    default_expr = pop_expr();
 			} else
 			    panic_moo("Bad default expression in DECOMPILE!");
@@ -689,12 +689,12 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		    {
 			Expr *label_expr;
 			Except_Arm *ex;
-			Arg_List *a = 0;	/* silence warning */
+			Arg_List *a = nullptr;	/* silence warning */
 			int count = *ptr++, label;
 			unsigned done;
 
 			s = (Stmt *)HOT_OP(alloc_stmt(STMT_TRY_EXCEPT));
-			s->s._catch.excepts = 0;
+			s->s._catch.excepts = nullptr;
 			while (count--) {
 			    label_expr = pop_expr();
 			    if (label_expr->kind != EXPR_VAR
@@ -708,17 +708,17 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			    else if (e->kind == EXPR_VAR
 				     && e->e.var.type == TYPE_INT
 				     && e->e.var.v.num == 0)
-				a = 0;
+				a = nullptr;
 			    else
 				panic_moo("Not a codes expression in DECOMPILE!");
 			    dealloc_node(e);
-			    ex = alloc_except(-1, a, 0);
+			    ex = alloc_except(-1, a, nullptr);
 			    ex->label = label;
 			    ex->next = s->s._catch.excepts;
 			    HOT2(0, label_expr, e, ex);
 			    s->s._catch.excepts = ex;
 			}
-			DECOMPILE(bc, ptr, end, &(s->s._catch.body), 0);
+			DECOMPILE(bc, ptr, end, &(s->s._catch.body), nullptr);
 			HOT_POS(ptr++ == hot_byte, s, ENDBODY);
 			if (*ptr++ != EOP_END_EXCEPT)
 			    panic_moo("Missing END_EXCEPT in DECOMPILE!");
@@ -745,7 +745,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 				stop = bc.vector + ex->next->label - jump_len;
 			    else
 				stop = bc.vector + done;
-			    DECOMPILE(bc, ptr, stop, &(ex->stmt), 0);
+			    DECOMPILE(bc, ptr, stop, &(ex->stmt), nullptr);
 			    if (ex->next && READ_JUMP(jump_hot) != done)
 				panic_moo("EXCEPT jumps to wrong place in "
 				      "DECOMPILE!");
@@ -764,14 +764,14 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			int label = READ_LABEL();
 
 			s = (Stmt *)HOT_OP(alloc_stmt(STMT_TRY_FINALLY));
-			DECOMPILE(bc, ptr, end, &(s->s.finally.body), 0);
+			DECOMPILE(bc, ptr, end, &(s->s.finally.body), nullptr);
 			HOT_POS(ptr++ == hot_byte, s, ENDBODY);
 			if (*ptr++ != EOP_END_FINALLY)
 			    panic_moo("Missing END_FINALLY in DECOMPILE!");
 			if (ptr - bc.vector != label)
 			    panic_moo("FINALLY handler in wrong place in "
 				  "DECOMPILE!");
-			DECOMPILE(bc, ptr, end, &(s->s.finally.handler), 0);
+			DECOMPILE(bc, ptr, end, &(s->s.finally.handler), nullptr);
 			HOT_BOTTOM(ptr++ == hot_byte, s);
 			if (*ptr++ != EOP_CONTINUE)
 			    panic_moo("Missing CONTINUE in DECOMPILE!");
@@ -818,7 +818,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			s->s.list.index = -1;
 			s->s.list.expr = list;
 			DECOMPILE(bc, ptr, bc.vector + done - jump_len,
-				  &(s->s.list.body), 0);
+				  &(s->s.list.body), nullptr);
 			if (top != READ_JUMP(jump_hot))
 			    panic_moo("FOR_LIST_1 jumps to wrong place in DECOMPILE!");
 			HOT_BOTTOM(jump_hot, s);
@@ -846,7 +846,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			s->s.list.index = index;
 			s->s.list.expr = list;
 			DECOMPILE(bc, ptr, bc.vector + done - jump_len,
-				  &(s->s.list.body), 0);
+				  &(s->s.list.body), nullptr);
 			if (top != READ_JUMP(jump_hot))
 			    panic_moo("FOR_LIST_2 jumps to wrong place in DECOMPILE!");
 			HOT_BOTTOM(jump_hot, s);
@@ -909,13 +909,13 @@ program_to_tree(Program * prog, int vector, int pc_vector, int pc)
 	  : program->fork_vectors[pc_vector]);
 
     if (pc < 0)
-	hot_byte = 0;
+	hot_byte = nullptr;
     else if (pc < bc.size)
 	hot_byte = bc.vector + pc;
     else
 	panic_moo("Illegal PC in FIND_LINE_NUMBER!");
 
-    hot_node = 0;
+    hot_node = nullptr;
     hot_position = (pc == bc.size - 1 ? DONE : TOP);
 
     sum = program->main_vector.max_stack;
@@ -929,7 +929,7 @@ program_to_tree(Program * prog, int vector, int pc_vector, int pc)
 	  : program->fork_vectors[vector]);
 
     begin_code_allocation();
-    decompile(bc, bc.vector, bc.vector + bc.size, &result, 0);
+    decompile(bc, bc.vector, bc.vector + bc.size, &result, nullptr);
     end_code_allocation(0);
 
     myfree(expr_stack, M_DECOMPILE);

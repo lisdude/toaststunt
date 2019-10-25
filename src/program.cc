@@ -40,7 +40,7 @@ new_program(void)
 Program *
 null_program(void)
 {
-    static Program *p = 0;
+    static Program *p = nullptr;
     Var code, errors;
 
     if (!p) {

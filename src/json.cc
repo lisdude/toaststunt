@@ -125,7 +125,7 @@ struct generate_context {
 static const char *
 value_to_literal(Var v)
 {
-    static Stream *s = NULL;
+    static Stream *s = nullptr;
     if (!s)
 	s = new_stream(100);
     unparse_value(s, v);
@@ -161,8 +161,8 @@ valid_type(const char **val, size_t *len)
 static const char *
 append_type(const char *str, var_type type)
 {
-    static Stream *stream = NULL;
-    if (NULL == stream)
+    static Stream *stream = nullptr;
+    if (nullptr == stream)
 	stream = new_stream(20);
     stream_add_string(stream, str);
     switch (type) {
@@ -220,7 +220,7 @@ handle_number(void *ctx, const char *numberVal, unsigned int numberLen, yajl_tok
 	long int i = 0;
 
 	errno = 0;
-	i = strtol(numberVal, NULL, 10);
+	i = strtol(numberVal, nullptr, 10);
 
 	if (0 == errno && (i >= MININT && i <= MAXINT)) {
 	    v = Var::new_int(i);
@@ -232,7 +232,7 @@ handle_number(void *ctx, const char *numberVal, unsigned int numberLen, yajl_tok
     double d = 0.0;
 
     errno = 0;
-    d = strtod(numberVal, NULL);
+    d = strtod(numberVal, nullptr);
 
     if (0 == errno) {
         v.type = TYPE_FLOAT;
@@ -494,8 +494,8 @@ generate(yajl_gen g, Var v, void *ctx)
 static yajl_callbacks callbacks = {
     handle_null,
     handle_boolean,
-    NULL,
-    NULL,
+    nullptr,
+    nullptr,
     handle_number,
     handle_string,
     handle_start_map,
@@ -538,7 +538,7 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
 	}
     }
 
-    hand = yajl_alloc(&callbacks, &cfg, NULL, (void *)&pctx);
+    hand = yajl_alloc(&callbacks, &cfg, nullptr, (void *)&pctx);
 
     while (!done) {
 	if (len == 0)
@@ -599,7 +599,7 @@ bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
 	}
     }
 
-    g = yajl_gen_alloc(&cfg, NULL);
+    g = yajl_gen_alloc(&cfg, nullptr);
 
     if (yajl_gen_status_ok == generate(g, arglist.v.list[1], &gctx)) {
 	yajl_gen_get_buf(g, (const unsigned char **)&buf, &len);

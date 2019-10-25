@@ -111,7 +111,7 @@ typedef struct shandle {
     int print_messages;
 } shandle;
 
-static shandle *all_shandles = 0;
+static shandle *all_shandles = nullptr;
 
 typedef struct slistener {
     struct slistener *next, **prev;
@@ -122,18 +122,18 @@ typedef struct slistener {
     const char *name;
 } slistener;
 
-static slistener *all_slisteners = 0;
+static slistener *all_slisteners = nullptr;
 
-server_listener null_server_listener = {0};
+server_listener null_server_listener = {nullptr};
 
 struct pending_recycle {
     struct pending_recycle *next;
     Var v;
 };
 
-static struct pending_recycle *pending_free = 0;
-static struct pending_recycle *pending_head = 0;
-static struct pending_recycle *pending_tail = 0;
+static struct pending_recycle *pending_free = nullptr;
+static struct pending_recycle *pending_head = nullptr;
+static struct pending_recycle *pending_tail = nullptr;
 static unsigned int pending_count = 0;
 
 /* used once when the server loads the database */
@@ -167,7 +167,7 @@ new_slistener(Objid oid, Var desc, int print_messages, enum error *ee)
 
     if (e != E_NONE) {
 	myfree(l, M_NETWORK);
-	return 0;
+	return nullptr;
     }
     l->oid = oid;
     l->print_messages = print_messages;
@@ -334,7 +334,7 @@ call_checkpoint_notifier(int successful)
     args = new_list(1);
     args.v.list[1].type = TYPE_INT;
     args.v.list[1].v.num = successful;
-    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_finished", args, "", 0);
+    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_finished", args, "", nullptr);
 }
 
 static void
@@ -408,7 +408,7 @@ checkpoint_timer(Timer_ID id, Timer_Data data)
 static void
 set_checkpoint_timer(int first_time)
 {
-    int interval, now = time(0);
+    int interval, now = time(nullptr);
     static Timer_ID last_checkpoint_timer;
 
    interval = server_int_option("dump_interval", 3600);
@@ -418,13 +418,13 @@ set_checkpoint_timer(int first_time)
 
     if (!first_time)
 	cancel_timer(last_checkpoint_timer);
-    last_checkpoint_timer = set_timer(interval, checkpoint_timer, 0);
+    last_checkpoint_timer = set_timer(interval, checkpoint_timer, nullptr);
 }
 
 static const char *
 object_name(Objid oid)
 {
-    static Stream *s = 0;
+    static Stream *s = nullptr;
 
     if (!s)
 	s = new_stream(30);
@@ -445,7 +445,7 @@ call_notifier(Objid player, Objid handler, const char *verb_name)
     args = new_list(1);
     args.v.list[1].type = TYPE_OBJ;
     args.v.list[1].v.obj = player;
-    run_server_task(player, Var::new_obj(handler), verb_name, args, "", 0);
+    run_server_task(player, Var::new_obj(handler), verb_name, args, "", nullptr);
 }
 
 int
@@ -482,7 +482,7 @@ send_message(Objid listener, network_handle nh, const char *msg_name,...)
 		    network_send_line(nh, msg.v.list[i].v.str, 1, 1);
 	}
     } else			/* Use default message */
-	while ((line = va_arg(args, const char *)) != 0)
+	while ((line = va_arg(args, const char *)) != nullptr)
 	    network_send_line(nh, line, 1, 1);
 
     va_end(args);
@@ -520,7 +520,7 @@ queue_anonymous_object(Var v)
 
     if (!pending_free) {
 	pending_free = (struct pending_recycle *)mymalloc(sizeof(struct pending_recycle), M_STRUCT);
-	pending_free->next = NULL;
+	pending_free->next = nullptr;
     }
 
     struct pending_recycle *next = pending_free;
@@ -543,7 +543,7 @@ recycle_anonymous_objects(void)
 	return;
 
     struct pending_recycle *next, *head = pending_head;
-    pending_head = pending_tail = NULL;
+    pending_head = pending_tail = nullptr;
     pending_count = 0;
 
     while (head) {
@@ -562,7 +562,7 @@ recycle_anonymous_objects(void)
 	db_set_object_flag2(v, FLAG_RECYCLED);
 
         /* the best approximation I could think of */
-	run_server_task(-1, v, "recycle", new_list(0), "", 0);
+	run_server_task(-1, v, "recycle", new_list(0), "", nullptr);
 
 	/* We'd like to run `db_change_parents()' to be consistent
 	 * with the pattern laid out in `bf_recycle()', but we can't
@@ -584,7 +584,7 @@ recycle_waifs(void)
 {
     /* This seems like a lot of work to go through just to get a destroy verb name.
      * Maybe it should just be a #define in waif.h? Ah well.*/
-    static char *waif_recycle_verb = NULL;
+    static char *waif_recycle_verb = nullptr;
     if (!waif_recycle_verb) {
         waif_recycle_verb = (char *)mymalloc(13, M_STRING);
         waif_recycle_verb[0] = WAIF_VERB_PREFIX;
@@ -594,7 +594,7 @@ recycle_waifs(void)
     std::vector<Waif*> removals;
     for (auto &x: destroyed_waifs) {
         if (destroyed_waifs[x.first] == false) {
-            run_server_task(-1, Var::new_waif(x.first), waif_recycle_verb, new_list(0), "", 0);
+            run_server_task(-1, Var::new_waif(x.first), waif_recycle_verb, new_list(0), "", nullptr);
             destroyed_waifs[x.first] = true;
             /* Flag it as destroyed. Now we just wait for the refcount to hit zero so we can free it. */
         }
@@ -671,7 +671,7 @@ main_loop(void)
 	/* in practice this will be an anonymous object... */
 	assert(TYPE_ANON == v.type);
 
-	if (v.v.anon != NULL)
+	if (v.v.anon != nullptr)
 	    queue_anonymous_object(var_ref(v));
     }
     free_var(pending_list);
@@ -687,7 +687,7 @@ main_loop(void)
     free_var(checkpointed_connections);
 
     /* Third, run #0:server_started() */
-    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "server_started", new_list(0), "", 0);
+    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "server_started", new_list(0), "", nullptr);
     set_checkpoint_timer(1);
 
     /* Now, we enter the main server loop */
@@ -727,7 +727,7 @@ main_loop(void)
 		oklog("CHECKPOINTING due to remote request signal.\n");
 	    checkpoint_requested = CHKPT_OFF;
 	    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_started",
-			    new_list(0), "", 0);
+			    new_list(0), "", nullptr);
 	    network_process_io(0);
 #ifdef UNFORKED_CHECKPOINTS
 	    call_checkpoint_notifier(db_flush(FLUSH_ALL_NOW));
@@ -755,7 +755,7 @@ main_loop(void)
 	deal_with_child_exit();
 
 	{			/* Get rid of old un-logged-in or useless connections */
-	    int now = time(0);
+	    int now = time(nullptr);
 
 	    for (h = all_shandles; h; h = nexth) {
 		Var v;
@@ -816,7 +816,7 @@ find_shandle(Objid player)
 	if (h->player == player)
 	    return h;
 
-    return 0;
+    return nullptr;
 }
 
 static char *cmdline_buffer;
@@ -868,7 +868,7 @@ server_connection_options(shandle * h, Var list)
 static const char *
 read_stdin_line(const char *prompt)
 {
-    static Stream *s = 0;
+    static Stream *s = nullptr;
 
     if (!s)
 	s = new_stream(100);
@@ -1252,7 +1252,7 @@ init_random(void)
 
     oklog("RANDOM: seeding from internal sources\n");
 
-    time_t time_now = time(0);
+    time_t time_now = time(nullptr);
 
     sha256_update(&context, sizeof(time_now), (const unsigned char *)&time_now);
     sha256_update(&context, sizeof(parent_pid), (const unsigned char *)&parent_pid);
@@ -1268,7 +1268,7 @@ init_random(void)
 
     sosemanuk_schedule(&key_context, output, sizeof(output));
 
-    sosemanuk_init(&run_context, &key_context, NULL, 0);
+    sosemanuk_init(&run_context, &key_context, nullptr, 0);
 
     sosemanuk_prng(&run_context, (unsigned char *)&seed, sizeof(seed));
 
@@ -1341,7 +1341,7 @@ server_string_option(const char *name, const char *defallt)
     Var v;
 
     if (get_server_option(SYSTEM_OBJECT, name, &v))
-	return (v.type == TYPE_STR ? v.v.str : 0);
+	return (v.type == TYPE_STR ? v.v.str : nullptr);
     else
 	return defallt;
 }
@@ -1363,7 +1363,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
 
     h->nhandle = nh;
     h->connection_time = 0;
-    h->last_activity_time = time(0);
+    h->last_activity_time = time(nullptr);
     h->player = next_unconnected_player--;
     h->listener = l ? l->oid : SYSTEM_OBJECT;
     h->tasks = new_task_queue(h->player, h->listener);
@@ -1411,7 +1411,7 @@ server_receive_line(server_handle sh, const char *line, bool out_of_band)
 {
     shandle *h = (shandle *) sh.ptr;
 
-    h->last_activity_time = time(0);
+    h->last_activity_time = time(nullptr);
     new_input_task(h->tasks, line, h->binary, out_of_band);
 }
 
@@ -1455,7 +1455,7 @@ player_connected_silent(Objid old_id, Objid new_id)
 	panic_moo("Non-existent shandle connected");
 
     new_h->player = new_id;
-    new_h->connection_time = time(0);
+    new_h->connection_time = time(nullptr);
 
     if (existing_h) {
 	/* network_connection_name is allowed to reuse the same string
@@ -1482,7 +1482,7 @@ char
 is_localhost(Objid connection)
 {
     shandle *existing_h = find_shandle(connection);
-    if (existing_h && strstr(network_connection_name(existing_h->nhandle), "[127.0.0.1]") != NULL)
+    if (existing_h && strstr(network_connection_name(existing_h->nhandle), "[127.0.0.1]") != nullptr)
         return 1;
     else
         return 0;
@@ -1506,7 +1506,7 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 	panic_moo("Non-existent shandle connected");
 
     new_h->player = new_id;
-    new_h->connection_time = time(0);
+    new_h->connection_time = time(nullptr);
 
     if (existing_h) {
 	/* we now have two shandles with the same player value while
@@ -1654,9 +1654,9 @@ int
 main(int argc, char **argv)
 {
     char *this_program = str_dup(argv[0]);
-    const char *log_file = 0;
-    const char *script_file = 0;
-    const char *script_line = 0;
+    const char *log_file = nullptr;
+    const char *script_file = nullptr;
+    const char *script_line = nullptr;
     int script_file_first = 0;
     int emergency = 0;
     Var desc;
@@ -1781,7 +1781,7 @@ main(int argc, char **argv)
 
     register_bi_functions();
 
-    l = new_slistener(SYSTEM_OBJECT, desc, 1, 0);
+    l = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr);
     if (!l) {
 	errlog("Can't create initial connection point!\n");
 	exit(1);
@@ -2023,7 +2023,7 @@ static package
 bf_shutdown(Var arglist, Byte next, void *vdata, Objid progr)
 {
     int nargs = arglist.v.list[0].v.num;
-    const char *message = (nargs >= 1 ? arglist.v.list[1].v.str : 0);
+    const char *message = (nargs >= 1 ? arglist.v.list[1].v.str : nullptr);
 
     if (!is_wizard(progr)) {
 	free_var(arglist);
@@ -2073,7 +2073,7 @@ find_slistener_by_oid(Objid obj)
 	if (l->oid == obj)
 	    return l;
 
-    return 0;
+    return nullptr;
 }
 #endif /* OUTBOUND_NETWORK */
 
@@ -2111,7 +2111,7 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
 	    sl.ptr = &l;
 	}
     } else {
-	sl.ptr = NULL;
+	sl.ptr = nullptr;
     }
 
     e = network_open_connection(arglist, sl);
@@ -2179,7 +2179,7 @@ bf_connected_seconds(Var arglist, Byte next, void *vdata, Objid progr)
 
     r.type = TYPE_INT;
     if (h && h->connection_time != 0 && !h->disconnect_me)
-	r.v.num = time(0) - h->connection_time;
+	r.v.num = time(nullptr) - h->connection_time;
     else
 	r.v.num = -1;
     free_var(arglist);
@@ -2197,7 +2197,7 @@ bf_idle_seconds(Var arglist, Byte next, void *vdata, Objid progr)
 
     r.type = TYPE_INT;
     if (h && !h->disconnect_me)
-	r.v.num = time(0) - h->last_activity_time;
+	r.v.num = time(nullptr) - h->last_activity_time;
     else
 	r.v.num = -1;
     free_var(arglist);
@@ -2218,7 +2218,7 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
     if (h && !h->disconnect_me)
 	conn_name = network_connection_name(h->nhandle);
     else
-	conn_name = 0;
+	conn_name = nullptr;
 
     free_var(arglist);
     if (!is_wizard(progr) && progr != who)
@@ -2315,7 +2315,7 @@ bf_connection_options(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (conn [, opt-name]) */
     Objid oid = arglist.v.list[1].v.obj;
     int nargs = arglist.v.list[0].v.num;
-    const char *oname = (nargs >= 2 ? arglist.v.list[2].v.str : 0);
+    const char *oname = (nargs >= 2 ? arglist.v.list[2].v.str : nullptr);
     shandle *h = find_shandle(oid);
     Var ans;
 
@@ -2353,7 +2353,7 @@ find_slistener(Var desc)
 	if (equality(desc, l->desc, 0))
 	    return l;
 
-    return 0;
+    return nullptr;
 }
 
 static package
@@ -2364,7 +2364,7 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
     int nargs = arglist.v.list[0].v.num;
     int print_messages = nargs >= 3 && is_true(arglist.v.list[3]);
     enum error e;
-    slistener *l = 0;
+    slistener *l = nullptr;
 
     if (!is_wizard(progr))
 	e = E_PERM;
@@ -2386,7 +2386,7 @@ bf_unlisten(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (desc) */
     Var desc = arglist.v.list[1];
     enum error e = E_NONE;
-    slistener *l = 0;
+    slistener *l = nullptr;
 
     if (!is_wizard(progr))
 	e = E_PERM;

@@ -38,9 +38,9 @@ struct Timer_Entry {
     Timer_ID id;
 };
 
-static Timer_Entry *active_timers = 0;
-static Timer_Entry *free_timers = 0;
-static Timer_Entry *virtual_timer = 0;
+static Timer_Entry *active_timers = nullptr;
+static Timer_Entry *free_timers = nullptr;
+static Timer_Entry *virtual_timer = nullptr;
 static Timer_ID next_id = 0;
 
 static Timer_Entry *
@@ -89,7 +89,7 @@ virtual_wakeup_call(int signo)
     Timer_ID id = _this->id;
     Timer_Data data = _this->data;
 
-    virtual_timer = 0;
+    virtual_timer = nullptr;
     free_timer(_this);
     if (proc)
 	(*proc) (id, data);
@@ -125,7 +125,7 @@ static void
 restart_timers()
 {
     if (active_timers) {
-	time_t now = time(0);
+	time_t now = time(nullptr);
 
 	signal(SIGALRM, wakeup_call);
 
@@ -147,7 +147,7 @@ restart_timers()
 	    itimer.it_interval.tv_sec = 0;
 	    itimer.it_interval.tv_usec = 0;
 
-	    setitimer(ITIMER_VIRTUAL, &itimer, 0);
+	    setitimer(ITIMER_VIRTUAL, &itimer, nullptr);
 	} else
 	    kill(getpid(), SIGVTALRM);
     }
@@ -161,7 +161,7 @@ set_timer(unsigned seconds, Timer_Proc proc, Timer_Data data)
     Timer_Entry **t;
 
     _this->id = next_id++;
-    _this->when = time(0) + seconds;
+    _this->when = time(nullptr) + seconds;
     _this->proc = proc;
     _this->data = data;
 
@@ -232,7 +232,7 @@ timer_wakeup_interval(Timer_ID id)
 
     for (t = active_timers; t; t = t->next)
 	if (t->id == id)
-	    return t->when - time(0);;
+	    return t->when - time(nullptr);;
 
     return 0;
 }
@@ -240,7 +240,7 @@ timer_wakeup_interval(Timer_ID id)
 void
 timer_sleep(unsigned seconds)
 {
-    set_timer(seconds, 0, 0);
+    set_timer(seconds, nullptr, nullptr);
     pause();
 }
 
@@ -254,7 +254,7 @@ cancel_timer(Timer_ID id)
 
     if (virtual_timer && virtual_timer->id == id) {
 	free_timer(virtual_timer);
-	virtual_timer = 0;
+	virtual_timer = nullptr;
 	found = 1;
     } else {
 	while (*t) {

@@ -499,7 +499,7 @@ strtr(const char *source, int source_len,
 {
     int i;
     char temp[128];
-    static Stream *str = 0;
+    static Stream *str = nullptr;
 
     if (!str)
 	str = new_stream(100);
@@ -635,7 +635,7 @@ stream_add_raw_bytes_to_clean(Stream *s, const char *buffer, int buflen)
 const char *
 raw_bytes_to_clean(const char *buffer, int buflen)
 {
-    static Stream *s = 0;
+    static Stream *s = nullptr;
 
     if (!s)
 	s = new_stream(buflen+1);
@@ -670,7 +670,7 @@ stream_add_raw_bytes_to_binary(Stream *s, const char *buffer, int buflen)
 const char *
 raw_bytes_to_binary(const char *buffer, int buflen)
 {
-    static Stream *s = 0;
+    static Stream *s = nullptr;
 
     if (!s)
 	s = new_stream(100);
@@ -683,7 +683,7 @@ raw_bytes_to_binary(const char *buffer, int buflen)
 const char *
 binary_to_raw_bytes(const char *binary, int *buflen)
 {
-    static Stream *s = 0;
+    static Stream *s = nullptr;
     const char *ptr = binary;
 
     if (!s)
@@ -705,7 +705,7 @@ binary_to_raw_bytes(const char *binary, int *buflen)
 		if (('0' <= c && c <= '9') || ('A' <= c && c <= 'F'))
 		    cc = cc * 16 + (c <= '9' ? c - '0' : c - 'A' + 10);
 		else
-		    return 0;
+		    return nullptr;
 	    }
 
 	    stream_add_char(s, cc);
@@ -729,7 +729,7 @@ anonymizing_var_ref(Var v, Objid progr)
 	return var_ref(v);
 
     r.type = TYPE_ANON;
-    r.v.anon = NULL;
+    r.v.anon = nullptr;
 
     return r;
 }

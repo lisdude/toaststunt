@@ -79,7 +79,7 @@ const char *operating_system_name()
     return os_name;
 }
 
-static Var *version_structure = 0;
+static Var *version_structure = nullptr;
 
 static void init_version_structure()
 {

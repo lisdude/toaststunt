@@ -112,11 +112,11 @@ dbio_read_objid(void)
 const char *
 dbio_read_string(void)
 {
-    static Stream *str = 0;
+    static Stream *str = nullptr;
     static char buffer[1024];
     int len, used_stream = 0;
 
-    if (str == 0)
+    if (str == nullptr)
 	str = new_stream(1024);
 
   try_again:
@@ -310,7 +310,7 @@ dbio_write_num(Num n)
 void
 dbio_write_float(double d)
 {
-    static const char *fmt = 0;
+    static const char *fmt = nullptr;
     static char buffer[10];
 
     if (!fmt) {
@@ -375,7 +375,7 @@ dbio_write_var(Var v)
 	break;
     case TYPE_MAP:
         dbio_write_num(maplength(v));
-        mapforeach(v, dbio_write_map, NULL);
+        mapforeach(v, dbio_write_map, nullptr);
         break;
     case TYPE_LIST:
 	dbio_write_num(v.v.list[0].v.num);
@@ -403,13 +403,13 @@ receiver(void *data, const char *line)
 void
 dbio_write_program(Program * program)
 {
-    unparse_program(program, receiver, 0, 1, 0, MAIN_VECTOR);
+    unparse_program(program, receiver, nullptr, 1, 0, MAIN_VECTOR);
     dbio_printf(".\n");
 }
 
 void
 dbio_write_forked_program(Program * program, int f_index)
 {
-    unparse_program(program, receiver, 0, 1, 0, f_index);
+    unparse_program(program, receiver, nullptr, 1, 0, f_index);
     dbio_printf(".\n");
 }

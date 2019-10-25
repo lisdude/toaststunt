@@ -31,8 +31,8 @@
 #include "streams.h"
 #include "utils.h"
 
-static FILE *log_file = 0;
-static const char *log_file_name = 0;
+static FILE *log_file = nullptr;
+static const char *log_file_name = nullptr;
 
 void
 set_log_file(FILE * f)
@@ -62,7 +62,7 @@ int log_pcount = 5000;
 static time_t log_prev = 0;
 int log_report_progress_cktime()
 {
-    time_t now = time(0);
+    time_t now = time(nullptr);
     log_pcount = 5000;
     return ((now >= log_prev + 2) && (log_prev = now, 1));
 }
@@ -71,9 +71,9 @@ static void
 do_log(const int severity, const char *fmt, va_list args)
 {
     FILE *f;
-    char *nowstr = 0;
+    char *nowstr = nullptr;
 
-    log_prev = time(0);
+    log_prev = time(nullptr);
     log_pcount = 5000;
 
     if (log_file) {

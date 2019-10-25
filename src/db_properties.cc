@@ -121,7 +121,7 @@ insert_prop2(Var obj, int pos, Pval pval)
     new_propval = (Pval *)mymalloc(nprops * sizeof(Pval), M_PVAL);
 
 	free_waif_propdefs((WaifPropdefs*)o->waif_propdefs);
-	o->waif_propdefs = NULL;
+	o->waif_propdefs = nullptr;
 
     dbpriv_assign_nonce(o);
 
@@ -183,7 +183,7 @@ db_add_propdef(Var obj, const char *pname, Var value, Objid owner,
 
     o = dbpriv_dereference(obj);
 
-    h = db_find_property(obj, pname, 0);
+    h = db_find_property(obj, pname, nullptr);
 
     if (h.ptr || property_defined_at_or_below(pname, str_hash(pname), o))
 	return 0;
@@ -251,7 +251,7 @@ db_rename_propdef(Var obj, const char *old, const char *_new)
 	p = props->l[i];
 	if (p.hash == hash && !strcasecmp(p.name, old)) {
 	    if (strcasecmp(old, _new) != 0) {	/* not changing just the case */
-		h = db_find_property(obj, _new, 0);
+		h = db_find_property(obj, _new, nullptr);
 		if (h.ptr || property_defined_at_or_below(_new, str_hash(_new), o))
 		    return 0;
 	    }
@@ -279,7 +279,7 @@ remove_prop2(Var obj, int pos)
     dbpriv_assign_nonce(o);
 
 	free_waif_propdefs((WaifPropdefs *)o->waif_propdefs);
-	o->waif_propdefs = NULL;
+	o->waif_propdefs = nullptr;
 
     free_var(o->propval[pos].var);	/* free deleted property */
 
@@ -290,7 +290,7 @@ remove_prop2(Var obj, int pos)
 	for (i = pos; i < nprops; i++)
 	    new_propval[i] = o->propval[i + 1];
     } else
-	new_propval = 0;
+	new_propval = nullptr;
 
     if (o->propval)
 	myfree(o->propval, M_PVAL);
@@ -505,8 +505,8 @@ db_find_property(Var obj, const char *name, Var *value)
 	ptable_init = 1;
     }
 
-    h.definer = 0;
-    h.ptr = 0;
+    h.definer = nullptr;
+    h.ptr = nullptr;
 
     for (i = 0; i < Arraysize(ptable); i++) {
 	if (ptable[i].hash == hash && !strcasecmp(name, ptable[i].name)) {
@@ -920,7 +920,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
 	new_offsets[i1 - 1] = offset;
 	offset += o->propdefs.cur_length;
 	free_waif_propdefs((WaifPropdefs*)o->waif_propdefs);
-	o->waif_propdefs = NULL;
+	o->waif_propdefs = nullptr;
     }
     new_count = new_offsets[i1 - 1] = offset;
 
@@ -931,7 +931,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
      * remaining property values.
      */
     Object *me = dbpriv_dereference(obj);
-    Pval *new_propval = NULL;
+    Pval *new_propval = nullptr;
 
     assert(old_count == me->nval);
 

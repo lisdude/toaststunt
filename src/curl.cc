@@ -22,7 +22,7 @@ CurlWriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
     CurlMemoryStruct *mem = (CurlMemoryStruct *)userp;
 
     char *ptr = (char*)realloc(mem->result, mem->size + realsize + 1);
-    if (ptr == NULL) {
+    if (ptr == nullptr) {
         /* out of memory! */
         errlog("not enough memory for curl (realloc returned NULL)\n");
         return 0;

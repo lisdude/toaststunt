@@ -42,7 +42,7 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
     /* NOTE: This relies on having FileIO. If you don't, you'll need
      *       a function to resolve a SAFE path. */
     const char *path = file_resolve_path(arglist.v.list[1].v.str);
-    if (path == NULL)
+    if (path == nullptr)
     {
         free_var(arglist);
         return make_error_pack(E_INVARG);
@@ -171,7 +171,7 @@ void sqlite_execute_thread_callback(Var args, Var *r)
     sqlite_conn *handle = &sqlite_connections[index];
     sqlite3_stmt *stmt;
 
-    int rc = sqlite3_prepare_v2(handle->id, query, -1, &stmt, 0);
+    int rc = sqlite3_prepare_v2(handle->id, query, -1, &stmt, nullptr);
     if (rc != SQLITE_OK)
     {
         const char *err = sqlite3_errmsg(handle->id);
@@ -189,7 +189,7 @@ void sqlite_execute_thread_callback(Var args, Var *r)
         switch (args.v.list[3].v.list[x].type)
         {
             case TYPE_STR:
-                sqlite3_bind_text(stmt, x, args.v.list[3].v.list[x].v.str, -1, NULL);
+                sqlite3_bind_text(stmt, x, args.v.list[3].v.list[x].v.str, -1, nullptr);
                 break;
             case TYPE_INT:
                 sqlite3_bind_int(stmt, x, args.v.list[3].v.list[x].v.num);
@@ -198,7 +198,7 @@ void sqlite_execute_thread_callback(Var args, Var *r)
                 sqlite3_bind_double(stmt, x, args.v.list[3].v.list[x].v.fnum);
                 break;
             case TYPE_OBJ:
-                sqlite3_bind_text(stmt, x, str_dup(reset_stream(object_to_string(&args.v.list[3].v.list[x]))),  -1, NULL);
+                sqlite3_bind_text(stmt, x, str_dup(reset_stream(object_to_string(&args.v.list[3].v.list[x]))),  -1, nullptr);
                 break;
         }
     }
@@ -274,7 +274,7 @@ void sqlite_query_thread_callback(Var args, Var *r)
     }
 
     const char *query = args.v.list[2].v.str;
-    char *err_msg = 0;
+    char *err_msg = nullptr;
 
     sqlite_result *thread_handle = (sqlite_result*)mymalloc(sizeof(sqlite_result), M_STRUCT);
     thread_handle->connection = &sqlite_connections[index];
@@ -439,7 +439,7 @@ int allocate_handle()
     next_sqlite_handle++;
 
     sqlite_conn connection;
-    connection.path = NULL;
+    connection.path = nullptr;
     connection.options = SQLITE_PARSE_TYPES | SQLITE_PARSE_OBJECTS;
     connection.locks = 0;
 
@@ -454,7 +454,7 @@ void deallocate_handle(int handle, bool shutdown)
     sqlite_conn conn = sqlite_connections[handle];
 
     sqlite3_close(conn.id);
-    if (conn.path != NULL)
+    if (conn.path != nullptr)
         free_str(conn.path);
     if (!shutdown)
         sqlite_connections.erase(handle);
@@ -470,7 +470,7 @@ int database_already_open(const char *path)
 {
     for (auto &it : sqlite_connections)
     {
-        if (it.second.path != NULL && strcmp(it.second.path, path) == 0)
+        if (it.second.path != nullptr && strcmp(it.second.path, path) == 0)
             return it.first;
     }
 
@@ -533,7 +533,7 @@ Var string_to_moo_type(char* str, bool parse_objects, bool sanitize_string)
 {
     Var s;
 
-    if (str == NULL)
+    if (str == nullptr)
     {
         s.type = TYPE_STR;
         s.v.str = str_dup("NULL");
@@ -568,7 +568,7 @@ Var string_to_moo_type(char* str, bool parse_objects, bool sanitize_string)
  * tostr(#xxx) */
 Stream* object_to_string(Var *thing)
 {
-    static Stream *s = 0;
+    static Stream *s = nullptr;
 
     if (!s)
         s = new_stream(11);

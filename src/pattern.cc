@@ -48,7 +48,7 @@ translate_pattern(const char *pattern, int *tpatlen)
      * just involves converting from `%' escapes into `\' escapes.
      */
 
-    static Stream *s = 0;
+    static Stream *s = nullptr;
     const char *p = pattern;
     char c;
 
@@ -103,7 +103,7 @@ translate_pattern(const char *pattern, int *tpatlen)
 
   fail:
     reset_stream(s);
-    return 0;
+    return nullptr;
 }
 
 #define MOO_SYNTAX	(RE_CONTEXT_INDEP_OPS)
@@ -118,9 +118,9 @@ new_pattern(const char *pattern, int case_matters)
 
     init_casefold_once();
 
-    buf->buffer = 0;
+    buf->buffer = nullptr;
     buf->allocated = 0;
-    buf->translate = case_matters ? 0 : casefold;
+    buf->translate = case_matters ? nullptr : casefold;
     re_set_syntax(MOO_SYNTAX);
 
     if (tpattern
@@ -132,7 +132,7 @@ new_pattern(const char *pattern, int case_matters)
 	if (buf->buffer)
 	    free(buf->buffer);
 	myfree(buf, M_PATTERN);
-	p.ptr = 0;
+	p.ptr = nullptr;
     }
 
     return p;

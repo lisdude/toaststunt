@@ -23,7 +23,7 @@ proto_usage_string(void)
 static int
 tcp_arguments(int argc, char **argv, int *pport)
 {
-    char *p = 0;
+    char *p = nullptr;
 
     for ( ; argc > 0; argc--, argv++) {
 	if (argc > 0
@@ -51,7 +51,7 @@ tcp_arguments(int argc, char **argv, int *pport)
 	    oklog("CMDLINE: Source address restricted to %s\n", argv[0]);
         }
         else {
-            if (p != 0) /* strtoul always sets p */
+            if (p != nullptr) /* strtoul always sets p */
                 return 0;
             if (0 == strcmp(argv[0],"-p")) {
                 if (argc <= 1)

@@ -51,7 +51,7 @@ bf_getenv(Var arglist, Byte next, void *vdata, Objid progr)
     else {
 	const char *str;
 
-	if ((str = getenv(arglist.v.list[1].v.str)) != NULL) {
+	if ((str = getenv(arglist.v.list[1].v.str)) != nullptr) {
 	    pack = make_var_pack(str_dup_to_var(raw_bytes_to_binary(str, strlen(str))));
 	} else {
 	    pack = no_var_pack();
