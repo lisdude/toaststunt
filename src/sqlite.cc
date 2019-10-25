@@ -383,10 +383,10 @@ bf_sqlite_limit(Var arglist, Byte next, void *vdata, Objid progr)
     int new_value = arglist.v.list[3].v.num;
 
     if (arglist.v.list[2].type == TYPE_STR) {
-        const char *cat_str = arglist.v.list[2].v.str;
-        for (int x = 0; x < max_categories; ++x)
-            if (!strcmp(cat_str, categories[x].str)) {
-                category = categories[x].value;
+        const char *player_category = arglist.v.list[2].v.str;
+        for (auto category_name : categories)
+            if (!strcmp(player_category, category_name.str)) {
+                category = category_name.value;
                 break;
             }
     } else if (arglist.v.list[2].type == TYPE_INT) {
