@@ -237,7 +237,7 @@ class TestWaif < Test::Unit::TestCase
       end
       call(a, 'go')
       call(a, 'gc')
-      assert_equal({"pending_destroy" => 0, "total" => 0}, simplify(command(";; return waif_stats();")))
+      assert_equal({"pending_recycle" => 0, "total" => 0}, simplify(command(";; return waif_stats();")))
     end
   end
 
