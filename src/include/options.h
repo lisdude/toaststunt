@@ -522,6 +522,15 @@
 #define TOTAL_BACKGROUND_THREADS    1
 #define DEFAULT_THREAD_MODE         true
 
+/******************************************************************************
+ * Normally, DNS name lookups take place in a forked process. If you intend to
+ * use in-database DNS lookups, or just always want numeric IP addresses, you
+ * can disable the forked process here.
+ ******************************************************************************
+ */
+
+/* #define NO_FORKED_LOOKUP */
+
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/

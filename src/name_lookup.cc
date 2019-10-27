@@ -25,12 +25,45 @@
 
 #if NETWORK_PROTOCOL == NP_TCP	/* Skip almost entire file otherwise... */
 
+#include <stdio.h>         /* sprintf */
+#include <arpa/inet.h>		/* inet_addr() */
+#include <netinet/in.h>		/* struct sockaddr_in, INADDR_ANY, htons(),
+        				     * htonl(), ntohl(), struct in_addr */
+
+#ifdef NO_FORKED_LOOKUP
+int initialize_name_lookup(void)
+{
+    /* Nothing needs done. That was exciting! */
+    return 1;
+}
+
+uint32_t lookup_addr_from_name(const char *name, unsigned timeout)
+{
+    uint32_t addr = 0;
+
+	addr = inet_addr(name);
+
+    return addr == 0xffffffff ? 0 : addr;
+}
+
+extern const char *lookup_name_from_addr(struct sockaddr_in *addr, unsigned timeout)
+{
+	static char decimal[43];
+	uint32_t a = ntohl(addr->sin_addr.s_addr);
+
+	sprintf(decimal, "%u.%u.%u.%u [%u.%u.%u.%u]",
+		(unsigned) (a >> 24) & 0xff, (unsigned) (a >> 16) & 0xff,
+		(unsigned) (a >> 8) & 0xff, (unsigned) a & 0xff,
+		(unsigned) (a >> 24) & 0xff, (unsigned) (a >> 16) & 0xff,
+		(unsigned) (a >> 8) & 0xff, (unsigned) a & 0xff);
+	return decimal;
+}
+
+#else /* NO_FORKED_LOOKUP */
+
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <arpa/inet.h>		/* inet_addr() */
-#include <netinet/in.h>		/* struct sockaddr_in, INADDR_ANY, htons(),
-				   * htonl(), ntohl(), struct in_addr */
 #include <netdb.h>		/* struct hostent, gethostbyaddr() */
 #include <sys/socket.h>		/* AF_INET */
 #include <sys/wait.h>
@@ -378,4 +411,5 @@ lookup_addr_from_name(const char *name, unsigned timeout)
     return addr == 0xffffffff ? 0 : addr;
 }
 
+#endif              /* NO_FORKED_LOOKUP */
 #endif				/* NETWORK_PROTOCOL == NP_TCP */
