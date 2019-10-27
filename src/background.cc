@@ -1,6 +1,6 @@
 #include "background.h"
 #include "bf_register.h"
-#include <unistd.h>                  // sleep()
+#include <unistd.h>                     // sleep()
 #include "storage.h"                    // myfree, mymalloc
 #include "tasks.h"                      // TEA
 #include "utils.h"                      // var_dup
@@ -110,7 +110,7 @@ background_thread(void (*callback)(Var, Var*), Var* data, char *human_title)
         return make_error_pack(E_QUOTA);
     }
 
-    if (!threading_enabled)
+    if (!threading_enabled || background_pool == nullptr)
     {
         Var r;
         callback(*data, &r);
