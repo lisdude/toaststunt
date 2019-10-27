@@ -448,6 +448,9 @@ void name_lookup_callback(Var arglist, Var *ret)
 static package
 bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
 {
+    if (!is_wizard(progr))
+        return make_error_pack(E_PERM);
+
     char *human_string = nullptr;
     asprintf(&human_string, "name_lookup for %s", arglist.v.list[1].v.str);
     return background_thread(name_lookup_callback, &arglist, human_string, &dns_pool);
