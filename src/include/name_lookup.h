@@ -25,6 +25,7 @@
 #define Name_Lookup_H 1
 
 #include "config.h"
+#include "thpool.h"
 
 extern int initialize_name_lookup(void);
 				/* Initialize the module, returning true iff
@@ -48,4 +49,6 @@ extern const char *lookup_name_from_addr(struct sockaddr_in *addr,
 				 * form.
 				 */
 
+extern threadpool *dns_threadpool();
+                /* Return a pointer to the DNS threadpool. */
 #endif				/* Name_Lookup_H */

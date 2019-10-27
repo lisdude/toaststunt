@@ -35,6 +35,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - background.cc (a library, of sorts, to make it easier to thread builtins)
     - Threaded builtins: sqlite_query, sqlite_execute, locate_by_name, sort, slice, argon2, argon2_verify
     - set_thread_mode (an argument of 0 will disable threading for all builtins in the current verb, 1 will re-enable, and no arguments will print the current mode)
+    - thread_pool() (database control over the the thread pools)
 
 - FileIO improvements:
     - Faster reading
@@ -74,6 +75,8 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - TOTAL_BACKGROUND_THREADS (number of threads created at runtime)
     - DEFAULT_THREAD_MODE (default mode of threaded functions)
     - SAFE_RECYCLE (change ownership of everything an object owns before recycling it)
+    - NO_FORKED_LOOKUP (disable forking a separate thread for DNS lookups)
+    - TOTAL_DNS_THREADS (number of threads created at runtime for the name_lookup function)
 
 - Additional builtins:
     - frandom (random floats)
@@ -100,6 +103,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - all_members (return the indices of all instances of a type in a list)
     - curl (return webpage as string)
     - owned_objects (returns all valid objects owned by an object)
+    - name_lookup (perform a DNS name lookup)
 
 - Miscellaneous changes:
     - Numeric IP addresses in connection_name

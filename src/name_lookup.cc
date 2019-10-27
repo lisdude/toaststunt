@@ -25,10 +25,20 @@
 
 #if NETWORK_PROTOCOL == NP_TCP	/* Skip almost entire file otherwise... */
 
-#include <stdio.h>         /* sprintf */
+#include <stdio.h>          /* sprintf */
 #include <arpa/inet.h>		/* inet_addr() */
 #include <netinet/in.h>		/* struct sockaddr_in, INADDR_ANY, htons(),
-        				     * htonl(), ntohl(), struct in_addr */
+        	                 * htonl(), ntohl(), struct in_addr */
+#include "background.h"
+#include "functions.h"
+#include "utils.h"
+
+threadpool dns_pool;
+
+threadpool *dns_threadpool()
+{
+    return &dns_pool;
+}
 
 #ifdef NO_FORKED_LOOKUP
 int initialize_name_lookup(void)
@@ -412,4 +422,42 @@ lookup_addr_from_name(const char *name, unsigned timeout)
 }
 
 #endif              /* NO_FORKED_LOOKUP */
+
+/************* Threaded builtins *************
+ * These functions don't utilize the forked
+ * name lookup task, so they will function
+ * even when it's disabled.
+ *********************************************/
+
+
+void name_lookup_callback(Var arglist, Var *ret)
+{
+    struct sockaddr_in address;
+    address.sin_family = AF_INET;
+    inet_pton(AF_INET, arglist.v.list[1].v.str, &address.sin_addr);
+    char host[NI_MAXHOST];
+
+    int result = getnameinfo((struct sockaddr*)&address, sizeof address, host, sizeof host, nullptr, 0, 0);
+
+    if (result)
+        make_error_map(E_INVARG, gai_strerror(result), ret);
+    else
+        *ret = str_dup_to_var(host);
+}
+
+static package
+bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    char *human_string = nullptr;
+    asprintf(&human_string, "name_lookup for %s", arglist.v.list[1].v.str);
+    return background_thread(name_lookup_callback, &arglist, human_string, &dns_pool);
+}
+
+void
+register_name_lookup()
+{
+    dns_pool = thpool_init(TOTAL_DNS_THREADS);
+    register_function("name_lookup", 1, 1, bf_name_lookup, TYPE_STR);
+}
+
 #endif				/* NETWORK_PROTOCOL == NP_TCP */

@@ -9,6 +9,7 @@
 #include "net_multi.h"                  // network_fd shenanigans
 #include "log.h"                        // errlog
 #include "map.h"
+#include "name_lookup.h"                // dns_threadpool
 
 /*
   A general-purpose extension for doing work in separate threads. The entrypoint (background_thread)
@@ -27,7 +28,6 @@
      - Resuming tasks with data from external threads
 */
 
-static threadpool background_pool;
 static std::map <int, background_waiter*> background_process_table;
 static int next_background_handle = 1;
 
@@ -93,7 +93,7 @@ background_suspender(vm the_vm, void *data)
     // Register so we can write to the pipe and resume the main loop if the MOO is idle
     network_register_fd(w->fd[0], network_callback, nullptr, data);
 
-    thpool_add_work(background_pool, run_callback, data);
+    thpool_add_work(*(w->pool), run_callback, data);
 
     return E_NONE;
 }
@@ -101,7 +101,7 @@ background_suspender(vm the_vm, void *data)
 /* Create a new background thread, supplying a callback function, a Var of data, and a string of explanatory text for what the thread is.
  * If threading has been disabled for the current verb, this function will invoke the callback immediately. */
 package
-background_thread(void (*callback)(Var, Var*), Var* data, char *human_title)
+background_thread(void (*callback)(Var, Var*), Var* data, char *human_title, threadpool *the_pool)
 {
     bool threading_enabled = get_thread_mode();
     if (threading_enabled && !can_create_thread())
@@ -110,7 +110,7 @@ background_thread(void (*callback)(Var, Var*), Var* data, char *human_title)
         return make_error_pack(E_QUOTA);
     }
 
-    if (!threading_enabled || background_pool == nullptr)
+    if (!threading_enabled || *the_pool == nullptr)
     {
         Var r;
         callback(*data, &r);
@@ -123,6 +123,7 @@ background_thread(void (*callback)(Var, Var*), Var* data, char *human_title)
         w->callback = callback;
         w->data = *data;
         w->human_title = human_title;
+        w->pool = the_pool;
         if (pipe(w->fd) == -1)
         {
             errlog("Failed to create pipe for background thread\n");
@@ -229,6 +230,54 @@ bf_thread_info(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ret);
 }
 
+static threadpool *thread_pool_by_name(const char* pool)
+{
+    if (!strcmp(pool, "MAIN"))
+        return &background_pool;
+    else if (!strcmp(pool, "DNS"))
+        return dns_threadpool();
+
+    return nullptr;
+}
+
+/* Allows the database to control the thread pools. It's entirely possible
+ * that this function is intentionally obtuse to discourage casual usage.
+ * bf_thread_pool(STR <function>, STR <pool> [, INT value])
+ * Function is one of: INIT
+ * Pool is one of: MAIN, DNS
+ */
+static package bf_thread_pool(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    const int nargs = arglist.v.list[0].v.num;
+    const char* func = arglist.v.list[1].v.str;
+    const char* pool = arglist.v.list[2].v.str;
+    const int value = (nargs > 2 ? arglist.v.list[3].v.num : 0);
+    free_var(arglist);
+
+    if (!is_wizard(progr))
+        return make_error_pack(E_PERM);
+
+    threadpool *the_pool = thread_pool_by_name(pool);
+    if (the_pool == nullptr)
+        return make_raise_pack(E_INVARG, "Invalid thread pool", str_dup_to_var(pool));
+
+    if (!strcmp(func, "INIT")) {
+        if (value < 0)
+            return make_raise_pack(E_INVARG, "Invalid number of threads", Var::new_int(value));
+        thpool_destroy(*the_pool);
+        if (value <= 0)
+            *the_pool = nullptr;
+        else
+            *the_pool = thpool_init(value);
+        return make_var_pack(Var::new_int(1));
+    } else {
+        return make_raise_pack(E_INVARG, "Invalid function", str_dup_to_var(func));
+    }
+
+    return no_var_pack();
+}
+
+
 /********************************************************************************************************/
 
 #ifdef BACKGROUND_TEST
@@ -265,6 +314,7 @@ register_background()
     background_pool = thpool_init(TOTAL_BACKGROUND_THREADS);
     register_function("threads", 0, 0, bf_threads);
     register_function("thread_info", 1, 1, bf_thread_info, TYPE_INT);
+    register_function("thread_pool", 2, 3, bf_thread_pool, TYPE_STR, TYPE_STR, TYPE_INT);
 #ifdef BACKGROUND_TEST
     register_function("background_test", 0, 2, bf_background_test, TYPE_STR, TYPE_INT);
 #endif

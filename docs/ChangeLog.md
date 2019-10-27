@@ -3,6 +3,10 @@
 ## 2.6.0 (In Progress)
 - Add an `owned_objects(OBJ <who>)` builtin to return a list of valid objects owned by who.
 - Fix a security oversight where `recreate()` could allow the recreation of an object that already owns other objects, verbs, or properties. Now the `recycle()` function will correct ownership of anything owned by the object being recycled, though at a slight cost to speed on larger databases. If the speed hit proves to be too much and you know what you're doing, you can disable the `SAFE_RECYCLE` option in options.h.
+- Add the `NO_FORKED_LOOKUP` option to options.h. When enabled, the server won't spawn a separate name lookup task, nor will it do any DNS name lookups at all.
+- Add the `name_lookup(<IP address>)` function to perform a DNS lookup on an IP address in the background. Note that this function implicitly suspends, so if you use it in do_login_command you'll also need to use `switch_player()` to work around the no-suspend-at-login rule.
+- Add the `TOTAL_DNS_THREADS` option to options.h to control how many threads are given to `name_lookup()` at runtime.
+- Add a `thread_pool(<function>, <pool> [, <value>])` function that allows control over the thread pools from within the database.
 
 ## 2.5.13 (Oct 14, 2019)
 - Add a `sqlite_limit()` builtin to limit the size of various SQLite constructs. [More information](https://www.sqlite.org/c3ref/c_limit_attached.html)
