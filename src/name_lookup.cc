@@ -29,6 +29,7 @@
 #include <arpa/inet.h>		/* inet_addr() */
 #include <netinet/in.h>		/* struct sockaddr_in, INADDR_ANY, htons(),
         	                 * htonl(), ntohl(), struct in_addr */
+#include <netdb.h>		/* struct hostent, gethostbyaddr() */
 #include "background.h"
 #include "functions.h"
 #include "utils.h"
@@ -74,7 +75,6 @@ extern const char *lookup_name_from_addr(struct sockaddr_in *addr, unsigned time
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <netdb.h>		/* struct hostent, gethostbyaddr() */
 #include <sys/socket.h>		/* AF_INET */
 #include <sys/wait.h>
 #include <string.h>
