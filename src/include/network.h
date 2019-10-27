@@ -166,6 +166,11 @@ extern const char *network_connection_name(network_handle nh);
 				 * into the phrase 'Connection accepted: %s'.
 				 */
 
+extern const char *network_ip_address(network_handle nh);
+				/* Return the numeric IP address for
+                 * the connection.
+				 */
+
 extern Var network_connection_options(network_handle nh,
 				      Var list);
 				/* Add the current option settings for the

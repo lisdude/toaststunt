@@ -42,6 +42,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <netinet/in.h>
 
 #include "config.h"
 #include "db.h"
@@ -1489,11 +1490,11 @@ is_localhost(Objid connection)
 }
 
 void
-proxy_connected(Objid connection, Stream *new_connection_name)
+proxy_connected(Objid connection, Stream *new_connection_name, struct in_addr ip_addr)
 {
     shandle *existing_h = find_shandle(connection);
     if (existing_h)
-        rewrite_connection_name(existing_h->nhandle, new_connection_name);
+        rewrite_connection_name(existing_h->nhandle, new_connection_name, ip_addr);
 }
 
 void
@@ -2212,22 +2213,23 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (player) */
     Objid who = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(who);
-    const char *conn_name;
     Var r;
 
+    r.type = TYPE_STR;
+    r.v.str = nullptr;
+
     if (h && !h->disconnect_me)
-	conn_name = network_connection_name(h->nhandle);
-    else
-	conn_name = nullptr;
+        if (arglist.v.list[0].v.num == 1)
+            r.v.str = str_dup(network_connection_name(h->nhandle));
+        else
+            r.v.str = network_ip_address(h->nhandle);
 
     free_var(arglist);
     if (!is_wizard(progr) && progr != who)
 	return make_error_pack(E_PERM);
-    else if (!conn_name)
+    else if (!r.v.str)
 	return make_error_pack(E_INVARG);
     else {
-	r.type = TYPE_STR;
-	r.v.str = str_dup(conn_name);
 	return make_var_pack(r);
     }
 }
@@ -2500,7 +2502,7 @@ register_server(void)
     register_function("connected_seconds", 1, 1, bf_connected_seconds,
 		      TYPE_OBJ);
     register_function("idle_seconds", 1, 1, bf_idle_seconds, TYPE_OBJ);
-    register_function("connection_name", 1, 1, bf_connection_name, TYPE_OBJ);
+    register_function("connection_name", 1, 2, bf_connection_name, TYPE_OBJ, TYPE_INT);
     register_function("notify", 2, 4, bf_notify, TYPE_OBJ, TYPE_STR, TYPE_ANY, TYPE_ANY);
     register_function("boot_player", 1, 1, bf_boot_player, TYPE_OBJ);
     register_function("set_connection_option", 3, 3, bf_set_connection_option,

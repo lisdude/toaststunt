@@ -265,7 +265,7 @@ timeout_proc(Timer_ID id, Timer_Data data)
 
 enum error
 proto_open_connection(Var arglist, int *read_fd, int *write_fd,
-		      const char **local_name, const char **remote_name)
+		      const char **local_name, const char **remote_name, struct in_addr *ip_addr)
 {
     /* These are `static' rather than `volatile' because I can't cope with
      * getting all those nasty little parameter-passing rules right.  This
@@ -367,6 +367,8 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 
     stream_printf(st2, "%s, port %d", host_name, port);
     *remote_name = reset_stream(st2);
+
+    *ip_addr = addr;
 
     return E_NONE;
 }

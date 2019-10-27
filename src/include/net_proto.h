@@ -105,7 +105,7 @@ enum proto_accept_error {
 extern enum proto_accept_error
  proto_accept_connection(int listener_fd,
 			 int *read_fd, int *write_fd,
-			 const char **name);
+			 const char **name, struct in_addr *ip_addr);
 				/* Accept a new connection on LISTENER_FD,
 				 * returning PA_OKAY if successful, PA_FULL if
 				 * unsuccessful only because there aren't
@@ -117,8 +117,10 @@ extern enum proto_accept_error
 				 * successful return, *READ_FD and *WRITE_FD
 				 * should be file descriptors on which input
 				 * and output for the new connection can be
-				 * done, and *NAME should be a human-readable
-				 * string identifying this connection.
+				 * done, *NAME should be a human-readable
+				 * string identifying this connection, and
+                 * *IP_ADDR should be an in_addr struct of
+                 * the original IP address.
 				 */
 
 #ifdef OUTBOUND_NETWORK
@@ -126,7 +128,8 @@ extern enum proto_accept_error
 extern enum error proto_open_connection(Var arglist,
 					int *read_fd, int *write_fd,
 					const char **local_name,
-					const char **remote_name);
+					const char **remote_name,
+                    struct in_addr *ip_addr);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be opened.  If the arguments are OK for

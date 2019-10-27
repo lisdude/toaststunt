@@ -943,7 +943,7 @@ do_login_task(tqueue * tq, char *command)
 
             stream_printf(new_connection_name, "port %s from %s, port %s", destination_port, lookup_name_from_addr(&address, timeout), source_port);
 
-            proxy_connected(tq->player, new_connection_name);
+            proxy_connected(tq->player, new_connection_name, address.sin_addr);
             /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */
             clear_command = true;
         }
