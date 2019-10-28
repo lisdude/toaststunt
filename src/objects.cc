@@ -1012,6 +1012,9 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
 
     package ret = make_var_pack(return_obj ? Var::new_obj(NOTHING) : Var::new_int(0));
 
+    if (object.type == TYPE_WAIF)
+        object = Var::new_obj(object.v.waif->_class);
+
     if (!is_valid(object)) {
         // Do nothing
     } else if (parent.type == TYPE_LIST) {
