@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "my-stat.h"
+#include <sys/stat.h>
 #include <dirent.h>
 /* some things are not defined in stdio on all systems -- AAB 06/03/97 */
 #include <sys/types.h>

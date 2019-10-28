@@ -51,7 +51,6 @@
 #cmakedefine01 HAVE_STRFTIME
 #cmakedefine01 HAVE_TM_ZONE
 #cmakedefine01 HAVE_TZNAME
-#cmakedefine01 HAVE_MKFIFO
 #cmakedefine01 HAVE_SELECT
 #cmakedefine01 HAVE_RANDOM
 #cmakedefine01 HAVE_LRAND48
@@ -60,10 +59,6 @@
 #cmakedefine01 HAVE_WAIT3
 #cmakedefine01 HAVE_SIGEMPTYSET
 #cmakedefine01 HAVE_SIGRELSE
-#cmakedefine01 FSTAT_WORKS_ON_FIFOS
-#cmakedefine01 POLL_WORKS_ON_FIFOS
-#define HAVE_POLL @POLL_WORKS_ON_FIFOS@
-#cmakedefine01 SELECT_WORKS_ON_FIFOS
 
 //#cmakedefine01 HAVE_RANDOM_DEVICE
 //#cmakedefine01 RANDOM_DEVICE
