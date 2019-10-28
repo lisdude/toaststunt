@@ -36,7 +36,6 @@ my @options =
 	      [MPLEX_STYLE =>
 	       qw(MP_SELECT
 		  MP_POLL
-		  MP_FAKE
 		)],
 	      [OUTBOUND_NETWORK =>
 	       { qw(0 OFF

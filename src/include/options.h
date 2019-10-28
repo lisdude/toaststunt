@@ -557,7 +557,6 @@
 
 #define MP_SELECT	1
 #define MP_POLL		2
-#define MP_FAKE		3
 
 #include "config.h"
 
@@ -599,8 +598,7 @@
 
 #if defined(MPLEX_STYLE) 	\
     && MPLEX_STYLE != MP_SELECT \
-    && MPLEX_STYLE != MP_POLL \
-    && MPLEX_STYLE != MP_FAKE
+    && MPLEX_STYLE != MP_POLL
 #  error Illegal value for "MPLEX_STYLE"
 #endif
 

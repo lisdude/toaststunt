@@ -24,7 +24,3 @@
 #  if MPLEX_STYLE == MP_POLL
 #    include "net_mp_poll.cc"
 #  endif
-
-#  if MPLEX_STYLE == MP_FAKE
-#    include "net_mp_fake.cc"
-#  endif
