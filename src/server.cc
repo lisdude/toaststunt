@@ -586,7 +586,7 @@ recycle_waifs(void)
      * Maybe it should just be a #define in waif.h? Ah well.*/
     static char *waif_recycle_verb = nullptr;
     if (!waif_recycle_verb) {
-        waif_recycle_verb = (char *)mymalloc(13, M_STRING);
+        waif_recycle_verb = (char *)mymalloc(9, M_STRING);
         waif_recycle_verb[0] = WAIF_VERB_PREFIX;
         strcpy(waif_recycle_verb + 1, "recycle");
     }
