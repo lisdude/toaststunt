@@ -140,23 +140,15 @@
  *		server itself.
  * NP_TCP	The server will use TCP/IP protocols, such as are used by the
  *		Internet `telnet' command.
- * NP_LOCAL	The server will use a non-networking mechanism, entirely local
- *		to the machine on which the server is running.  Depending on
- *		the value of NETWORK_STYLE, below, this will be either UNIX-
- *		domain sockets (NS_BSD) or named pipes (NS_SYSV).
  *
  * If NP_TCP is selected, then DEFAULT_PORT is the TCP port number on which the
  * server listens when no port argument is given on the command line.
  *
- * If NP_LOCAL is selected, then DEFAULT_CONNECT_FILE is the name of the UNIX
- * pseudo-file through which the server will listen for connections when no
- * file name is given on the command line.
  */
 
 #define NETWORK_PROTOCOL 	NP_TCP
 
 #define DEFAULT_PORT 		7777
-#define DEFAULT_CONNECT_FILE	"/tmp/.MOO-server"
 
 /******************************************************************************
  * If NETWORK_PROTOCOL is not defined as NP_SINGLE, then NETWORK_STYLE must be
@@ -175,12 +167,7 @@
  * defined as one of the following:
  *
  * MP_SELECT	The server will assume that the select() system call exists.
- * MP_POLL	The server will assume that the poll() system call exists and
- *		that, if NETWORK_PROTOCOL is NP_LOCAL above, it works for
- *		named pipes (FIFOs).
- * MP_FAKE	The server will use a nasty trick that works only if you've
- *		defined NETWORK_PROTOCOL as NP_LOCAL and NETWORK_STYLE as
- *		NS_SYSV above.
+ * MP_POLL	    The server will assume that the poll() system call exists.
  *
  * Usually, it works best to leave MPLEX_STYLE undefined and let the code at
  * the bottom of this file pick the right value.
@@ -204,8 +191,7 @@
  * *** THINK VERY HARD BEFORE ENABLING THIS FUNCTION ***
  * In some contexts, this could represent a serious breach of security.  
  *
- * Note: OUTBOUND_NETWORK may not be defined if NETWORK_PROTOCOL is either
- *	 NP_SINGLE or NP_LOCAL.
+ * Note: OUTBOUND_NETWORK may not be defined if NETWORK_PROTOCOL is NP_SINGLE.
  */
 
 /* disable by default, +O enables: */
@@ -565,7 +551,6 @@
 
 #define NP_SINGLE	1
 #define NP_TCP		2
-#define NP_LOCAL	3
 
 #define NS_BSD		1
 #define NS_SYSV		2
@@ -584,31 +569,15 @@
        #error You cannot use BSD sockets without having select()!
 #    endif
 #  else				/* NETWORK_STYLE == NS_SYSV */
-#    if NETWORK_PROTOCOL == NP_LOCAL
-#      if SELECT_WORKS_ON_FIFOS
-#        define MPLEX_STYLE MP_SELECT
-#      else
-#        if POLL_WORKS_ON_FIFOS
-#	   define MPLEX_STYLE MP_POLL
-#	 else
-#	   if FSTAT_WORKS_ON_FIFOS
-#	     define MPLEX_STYLE MP_FAKE
-#	   else
-	     #error I need to be able to do a multiplexing wait on FIFOs!
-#	   endif
-#	 endif
-#      endif
-#    else			/* It's a TLI-based networking protocol */
 #      if HAVE_POLL
 #        define MPLEX_STYLE MP_POLL
 #      else
          #error You cannot use TLI without having poll()!
 #      endif
-#    endif
 #  endif
 #endif
 
-#if (NETWORK_PROTOCOL == NP_LOCAL || NETWORK_PROTOCOL == NP_SINGLE) && defined(OUTBOUND_NETWORK)
+#if (NETWORK_PROTOCOL == NP_SINGLE) && defined(OUTBOUND_NETWORK)
 #  error You cannot define "OUTBOUND_NETWORK" with that "NETWORK_PROTOCOL"
 #endif
 
@@ -620,7 +589,7 @@
 #endif
 
 
-#if NETWORK_PROTOCOL != NP_LOCAL && NETWORK_PROTOCOL != NP_SINGLE && NETWORK_PROTOCOL != NP_TCP
+#if NETWORK_PROTOCOL != NP_SINGLE && NETWORK_PROTOCOL != NP_TCP
 #  error Illegal value for "NETWORK_PROTOCOL"
 #endif
 

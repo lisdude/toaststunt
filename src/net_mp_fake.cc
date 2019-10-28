@@ -25,7 +25,7 @@
 #include "options.h"
 #include "storage.h"
 
-#if (NETWORK_PROTOCOL != NP_LOCAL) || (NETWORK_STYLE != NS_SYSV)
+#if (NETWORK_STYLE != NS_SYSV)
  #error Configuration Error: this code can only be used with the FIFO protocol
 #endif
 

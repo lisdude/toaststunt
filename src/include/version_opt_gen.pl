@@ -28,7 +28,6 @@ my @options =
    _DENUM => [[NETWORK_PROTOCOL =>
 	       { NP_SINGLE => [],
 		 NP_TCP    => [_DINT => [qw(DEFAULT_PORT)]],
-		 NP_LOCAL  => [_DSTR => [qw(DEFAULT_CONNECT_FILE)]],
 	       }],
 	      [NETWORK_STYLE =>
 	       qw(NS_BSD

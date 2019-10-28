@@ -691,11 +691,7 @@ network_set_connection_binary(network_handle nh, int do_binary)
     h->binary = do_binary;
 }
 
-#if NETWORK_PROTOCOL == NP_LOCAL
-#  define NETWORK_CO_TABLE(DEFINE, nh, value, _)
-       /* No network-specific connection options */
-
-#elif NETWORK_PROTOCOL == NP_TCP
+#if NETWORK_PROTOCOL == NP_TCP
 #  define NETWORK_CO_TABLE(DEFINE, nh, value, _)		\
        DEFINE(client-echo, _, TYPE_INT, num,			\
 	      ((nhandle *)nh.ptr)->client_echo,			\
