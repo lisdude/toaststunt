@@ -228,14 +228,7 @@ lookup(int to_intermediary, int from_intermediary)
 			int e = getaddrinfo(buffer, nullptr, &hints, &res);
 			cancel_timer(id);
 			if (e == 0) {
-				void *addr;
-				if (res->ai_family == AF_INET) {	// IPv4
-					struct sockaddr_in *ipv4 = (struct sockaddr_in *)res[0].ai_addr;
-					addr = &(ipv4->sin_addr);
-				} else {	// IPv6
-					struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)res[0].ai_addr;
-					addr = &(ipv6->sin6_addr);
-				}
+				void *addr = get_in_addr(res->ai_addr);
 				write(to_intermediary, addr, sizeof addr);
                 freeaddrinfo(res);
 			} else {

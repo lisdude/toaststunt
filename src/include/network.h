@@ -249,4 +249,10 @@ extern void network_shutdown(void);
 				 * never make another call on the network.
 				 */
 
+extern void *get_in_addr(struct sockaddr *sa);
+extern unsigned short int get_in_port(struct sockaddr *sa);
+                /* These functions allow us to extract
+                 * information from a sockaddr struct without
+                 * knowing the exact protocol being used. */
+
 #endif				/* Network_H */

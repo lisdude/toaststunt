@@ -130,13 +130,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
                 return E_QUOTA;
             }
             canon->type = TYPE_INT;
-            if (p->ai_family == AF_INET) {    // IPv4
-                struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
-                canon->v.num = ntohs(ipv4->sin_port);
-            } else {    // IPv6
-                struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)p->ai_addr;
-                canon->v.num = ntohs(ipv6->sin6_port);
-            }
+            canon->v.num = ntohs(get_in_port(p->ai_addr));
         } else {
             *canon = var_ref(desc);
         }
@@ -221,6 +215,24 @@ void
 proto_close_listener(int fd)
 {
     close(fd);
+}
+
+void *get_in_addr(struct sockaddr *sa)
+{
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in*)sa)->sin_addr);
+    } else {
+        return &(((struct sockaddr_in6*)sa)->sin6_addr);
+    }
+}
+
+unsigned short int get_in_port(struct sockaddr *sa)
+{
+    if (sa->sa_family == AF_INET) {
+        return ((struct sockaddr_in*)sa)->sin_port;
+    } else {
+        return ((struct sockaddr_in6*)sa)->sin6_port;
+    }
 }
 
 #ifdef OUTBOUND_NETWORK
