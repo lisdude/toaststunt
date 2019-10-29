@@ -153,7 +153,7 @@ free_shandle(shandle * h)
 }
 
 static slistener *
-new_slistener(Objid oid, Var desc, int print_messages, enum error *ee)
+new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_ipv6)
 {
     slistener *l = (slistener *)mymalloc(sizeof(slistener), M_NETWORK);
     server_listener sl;
@@ -161,7 +161,7 @@ new_slistener(Objid oid, Var desc, int print_messages, enum error *ee)
     const char *name;
 
     sl.ptr = l;
-    e = network_make_listener(sl, desc, &(l->nlistener), &(l->desc), &name);
+    e = network_make_listener(sl, desc, &(l->nlistener), &(l->desc), &name, use_ipv6);
 
     if (ee)
 	*ee = e;
@@ -1661,7 +1661,7 @@ main(int argc, char **argv)
     int script_file_first = 0;
     int emergency = 0;
     Var desc;
-    slistener *l;
+    slistener *lv4, *lv6;
 
     init_cmdline(argc, argv);
 
@@ -1782,8 +1782,10 @@ main(int argc, char **argv)
 
     register_bi_functions();
 
-    l = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr);
-    if (!l) {
+    // Listen on both IPv4 and IPv6
+    lv4 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, false);
+    lv6 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, true);
+    if (!lv4 && !lv6) {
 	errlog("Can't create initial connection point!\n");
 	exit(1);
     }
@@ -1816,7 +1818,7 @@ main(int argc, char **argv)
     }
 
     if (!emergency || emergency_mode()) {
-	if (!start_listener(l))
+	if (!start_listener(lv4) && !start_listener(lv6))
 	    exit(1);
 
 	main_loop();
@@ -2365,6 +2367,7 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
     Var desc = arglist.v.list[2];
     int nargs = arglist.v.list[0].v.num;
     int print_messages = nargs >= 3 && is_true(arglist.v.list[3]);
+    bool ipv6 = nargs >= 4 && is_true(arglist.v.list[4]);
     enum error e;
     slistener *l = nullptr;
 
@@ -2372,7 +2375,7 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
 	e = E_PERM;
     else if (!valid(oid) || find_slistener(desc))
 	e = E_INVARG;
-    else if (!(l = new_slistener(oid, desc, print_messages, &e)));	/* Do nothing; e is already set */
+    else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6)));	/* Do nothing; e is already set */
     else if (!start_listener(l))
 	e = E_QUOTA;
 

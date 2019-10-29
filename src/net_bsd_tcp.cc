@@ -73,20 +73,17 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 }
 
 enum error
-proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
+proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_ipv6)
 {
     int s, port, option = 1;
     static Stream *st = nullptr;
-    static struct addrinfo *hints = nullptr;
+    struct addrinfo hints;
     struct addrinfo *servinfo, *p;
 
-    if (hints == nullptr) {
-        hints = (struct addrinfo*)malloc(sizeof(struct addrinfo));
-        memset(hints, 0, sizeof(struct addrinfo));
-        hints->ai_family = AF_UNSPEC;
-        hints->ai_socktype = SOCK_STREAM;
-        hints->ai_flags = AI_PASSIVE;        // use our IP
-    }
+        memset(&hints, 0, sizeof hints);
+        hints.ai_family = use_ipv6 ? AF_INET6 : AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_PASSIVE;        // use our IP
 
     if (!st)
         st = new_stream(20);
@@ -98,7 +95,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
     char *port_str = nullptr;
     asprintf(&port_str, "%d", port);
 
-    int rv = getaddrinfo(nullptr, port_str, hints, &servinfo);
+    int rv = getaddrinfo(nullptr, port_str, &hints, &servinfo);
     if (rv != 0) {
         log_perror(gai_strerror(rv));
         return E_QUOTA;

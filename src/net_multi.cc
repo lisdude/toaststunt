@@ -551,10 +551,10 @@ network_initialize(int argc, char **argv, Var * desc)
 
 enum error
 network_make_listener(server_listener sl, Var desc,
-		   network_listener * nl, Var * canon, const char **name)
+		   network_listener * nl, Var * canon, const char **name, bool use_ipv6)
 {
     int fd;
-    enum error e = proto_make_listener(desc, &fd, canon, name);
+    enum error e = proto_make_listener(desc, &fd, canon, name, use_ipv6);
     nlistener *l;
 
     if (e == E_NONE) {

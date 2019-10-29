@@ -68,7 +68,7 @@ extern int proto_initialize(struct proto *proto, Var * desc,
 				 */
 
 extern enum error proto_make_listener(Var desc, int *fd, Var * canon,
-				      const char **name);
+				      const char **name, bool use_ipv6);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
 				 * be used as a specification of a new local

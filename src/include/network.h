@@ -62,7 +62,7 @@ extern int network_initialize(int argc, char **argv,
 
 extern enum error network_make_listener(server_listener sl, Var desc,
 					network_listener * nl,
-					Var * canon, const char **name);
+					Var * canon, const char **name, bool use_ipv6);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
 				 * be used as a specification of a new local
