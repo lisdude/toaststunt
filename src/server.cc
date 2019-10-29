@@ -117,9 +117,10 @@ static shandle *all_shandles = nullptr;
 typedef struct slistener {
     struct slistener *next, **prev;
     network_listener nlistener;
-    Objid oid;			/* listen(OID, DESC, PRINT_MESSAGES) */
+    Objid oid;			/* listen(OID, DESC, PRINT_MESSAGES, IPV6) */
     Var desc;
     int print_messages;
+    bool ipv6;
     const char *name;
 } slistener;
 
@@ -173,6 +174,7 @@ new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_
     l->oid = oid;
     l->print_messages = print_messages;
     l->name = str_dup(name);
+    l->ipv6 = use_ipv6;
 
     l->next = all_slisteners;
     l->prev = &all_slisteners;
@@ -187,10 +189,10 @@ static int
 start_listener(slistener * l)
 {
     if (network_listen(l->nlistener)) {
-	oklog("LISTEN: #%" PRIdN " now listening on %s\n", l->oid, l->name);
+	oklog("LISTEN: #%" PRIdN " now listening on %s %s\n", l->oid, l->ipv6 ? "IPv6" : "IPv4", l->name);
 	return 1;
     } else {
-	errlog("LISTEN: Can't start #%d listening on %s!\n", l->oid, l->name);
+	errlog("LISTEN: Can't start #%" PRIdN " listening on %s %s!\n", l->oid, l->ipv6 ? "IPv6" : "IPv4", l->name);
 	return 0;
     }
 }
@@ -1818,8 +1820,11 @@ main(int argc, char **argv)
     }
 
     if (!emergency || emergency_mode()) {
-	if (!start_listener(lv4) && !start_listener(lv6))
-	    exit(1);
+        int lv4_status = start_listener(lv4);
+        int lv6_status = start_listener(lv6);
+
+        if (!lv4_status && !lv6_status)
+        exit(1);
 
 	main_loop();
 
@@ -2349,12 +2354,12 @@ bf_connection_options(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static slistener *
-find_slistener(Var desc)
+find_slistener(Var desc, bool use_ipv6)
 {
     slistener *l;
 
     for (l = all_slisteners; l; l = l->next)
-	if (equality(desc, l->desc, 0))
+	if (equality(desc, l->desc, 0) && l->ipv6 == use_ipv6)
 	    return l;
 
     return nullptr;
@@ -2373,7 +2378,7 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
 
     if (!is_wizard(progr))
 	e = E_PERM;
-    else if (!valid(oid) || find_slistener(desc))
+    else if (!valid(oid) || find_slistener(desc, ipv6))
 	e = E_INVARG;
     else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6)));	/* Do nothing; e is already set */
     else if (!start_listener(l))
@@ -2390,12 +2395,13 @@ static package
 bf_unlisten(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (desc) */
     Var desc = arglist.v.list[1];
+    bool ipv6 = arglist.v.list[0].v.num >= 2 && is_true(arglist.v.list[1]);
     enum error e = E_NONE;
     slistener *l = nullptr;
 
     if (!is_wizard(progr))
 	e = E_PERM;
-    else if (!(l = find_slistener(desc)))
+    else if (!(l = find_slistener(desc, ipv6)))
 	e = E_INVARG;
 
     free_var(arglist);
@@ -2514,7 +2520,7 @@ register_server(void)
 		      TYPE_OBJ, TYPE_STR);
     register_function("connection_options", 1, 1, bf_connection_options,
 		      TYPE_OBJ);
-    register_function("listen", 2, 3, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY);
+    register_function("listen", 2, 4, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function("unlisten", 1, 1, bf_unlisten, TYPE_ANY);
     register_function("listeners", 0, 0, bf_listeners);
     register_function("buffered_output_length", 0, 1,

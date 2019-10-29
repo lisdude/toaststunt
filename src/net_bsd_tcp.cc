@@ -81,9 +81,9 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
     struct addrinfo *servinfo, *p;
 
         memset(&hints, 0, sizeof hints);
-        hints.ai_family = use_ipv6 ? AF_INET6 : AF_UNSPEC;
+        hints.ai_family = use_ipv6 ? AF_INET6 : AF_INET;
         hints.ai_socktype = SOCK_STREAM;
-        hints.ai_flags = AI_PASSIVE;        // use our IP
+        hints.ai_flags = AI_PASSIVE;        // use all the IPs
 
     if (!st)
         st = new_stream(20);
@@ -149,6 +149,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
     *name = reset_stream(st);
 
     *fd = s;
+    
     return E_NONE;
 }
 
@@ -218,8 +219,10 @@ void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {
         return &(((struct sockaddr_in*)sa)->sin_addr);
-    } else {
+    } else if (sa->sa_family == AF_INET6) {
         return &(((struct sockaddr_in6*)sa)->sin6_addr);
+    } else {
+        return nullptr;
     }
 }
 
@@ -227,8 +230,37 @@ unsigned short int get_in_port(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {
         return ((struct sockaddr_in*)sa)->sin_port;
-    } else {
+    } else if (sa->sa_family == AF_INET6) {
         return ((struct sockaddr_in6*)sa)->sin6_port;
+    } else {
+        return 0;
+    }
+}
+
+const char *get_ntop(struct sockaddr *sa)
+{
+    if (sa->sa_family == AF_INET) {
+        char ip4[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(((struct sockaddr_in*)sa)->sin_addr), ip4, INET_ADDRSTRLEN);
+        return ip4;
+    } else if (sa->sa_family == AF_INET6) {
+        char ip6[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, &(((struct sockaddr_in6*)sa)->sin6_addr), ip6, INET6_ADDRSTRLEN);
+        return ip6;
+    } else {
+        return "unknown";
+    }
+}
+
+char *get_ipver(struct sockaddr *sa)
+{
+    switch (sa->sa_family) {
+        case AF_INET:
+        return "IPv4";
+        case AF_INET6:
+        return "IPv6";
+        default:
+        return "unknown";
     }
 }
 

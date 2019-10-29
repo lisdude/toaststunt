@@ -251,6 +251,8 @@ extern void network_shutdown(void);
 
 extern void *get_in_addr(struct sockaddr *sa);
 extern unsigned short int get_in_port(struct sockaddr *sa);
+extern const char *get_ntop(struct sockaddr *sa);
+extern char *get_ipver(struct sockaddr *sa);
                 /* These functions allow us to extract
                  * information from a sockaddr struct without
                  * knowing the exact protocol being used. */
