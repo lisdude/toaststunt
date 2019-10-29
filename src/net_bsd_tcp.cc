@@ -149,7 +149,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
     *name = reset_stream(st);
 
     *fd = s;
-    
+   
     return E_NONE;
 }
 
@@ -239,28 +239,27 @@ unsigned short int get_in_port(struct sockaddr *sa)
 
 const char *get_ntop(struct sockaddr *sa)
 {
-    if (sa->sa_family == AF_INET) {
-        char ip4[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(((struct sockaddr_in*)sa)->sin_addr), ip4, INET_ADDRSTRLEN);
-        return ip4;
-    } else if (sa->sa_family == AF_INET6) {
-        char ip6[INET6_ADDRSTRLEN];
-        inet_ntop(AF_INET6, &(((struct sockaddr_in6*)sa)->sin6_addr), ip6, INET6_ADDRSTRLEN);
-        return ip6;
-    } else {
-        return "unknown";
-    }
-}
-
-char *get_ipver(struct sockaddr *sa)
-{
     switch (sa->sa_family) {
         case AF_INET:
-        return "IPv4";
+            char ip4[INET_ADDRSTRLEN];
+            return inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), ip4, INET_ADDRSTRLEN);
         case AF_INET6:
-        return "IPv6";
+            char ip6[INET6_ADDRSTRLEN];
+            return inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr), ip6, INET6_ADDRSTRLEN);
         default:
-        return "unknown";
+            return ">>unknown address<<";
+        }
+}
+
+const char *get_ipver(struct sockaddr *sa)
+{
+    switch (sa->sa_family) {
+    case AF_INET:
+        return "IPv4";
+    case AF_INET6:
+        return "IPv6";
+    default:
+        return ">>unknown protocol<<";
     }
 }
 
