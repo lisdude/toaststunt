@@ -21,3 +21,4 @@ xcode
 Makefile.in.bak
 keywords.cc
 build
+.vscode
