@@ -45,6 +45,7 @@
 
 #include "net_tcp.cc"
 #include <netinet/tcp.h>
+#include <netdb.h>
 
 const char *
 proto_name(void)
@@ -74,52 +75,84 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 enum error
 proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 {
-    struct sockaddr_in address;
     int s, port, option = 1;
     static Stream *st = nullptr;
+    static struct addrinfo *hints = nullptr;
+    struct addrinfo *servinfo, *p;
+
+    if (hints == nullptr) {
+        hints = (struct addrinfo*)malloc(sizeof(struct addrinfo));
+        memset(hints, 0, sizeof(struct addrinfo));
+        hints->ai_family = AF_UNSPEC;
+        hints->ai_socktype = SOCK_STREAM;
+        hints->ai_flags = AI_PASSIVE;        // use our IP
+    }
 
     if (!st)
-	st = new_stream(20);
+        st = new_stream(20);
 
     if (desc.type != TYPE_INT)
-	return E_TYPE;
+        return E_TYPE;
 
     port = desc.v.num;
-    s = socket(AF_INET, SOCK_STREAM, 0);
-    if (s < 0) {
-	log_perror("Creating listening socket");
-	return E_QUOTA;
-    }
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
-		   (char *) &option, sizeof(option)) < 0) {
-	log_perror("Setting listening socket options");
-	close(s);
-	return E_QUOTA;
-    }
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = bind_local_ip;
-    address.sin_port = htons(port);
-    if (bind(s, (struct sockaddr *) &address, sizeof(address)) < 0) {
-	enum error e = E_QUOTA;
+    char *port_str = nullptr;
+    asprintf(&port_str, "%d", port);
 
-	log_perror("Binding listening socket");
-	if (errno == EACCES)
-	    e = E_PERM;
-	close(s);
-	return e;
+    int rv = getaddrinfo(nullptr, port_str, hints, &servinfo);
+    if (rv != 0) {
+        log_perror(gai_strerror(rv));
+        return E_QUOTA;
     }
-    if (port == 0) {
-	socklen_t length = sizeof(address);
 
-	if (getsockname(s, (struct sockaddr *) &address, &length) < 0) {
-	    log_perror("Discovering local port number");
-	    close(s);
-	    return E_QUOTA;
-	}
-	canon->type = TYPE_INT;
-	canon->v.num = ntohs(address.sin_port);
-    } else
-	*canon = var_ref(desc);
+    /* If we have multiple results, we'll bind to the first one we can. */
+    for (p = servinfo; p != nullptr; p = p->ai_next) {
+        if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+            perror("Creating listening socket");
+            continue;
+        }
+
+        if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(int)) == -1) {
+            perror("Setting listening socket options");
+            close(s);
+            return E_QUOTA;
+        }
+
+        if (bind(s, p->ai_addr, p->ai_addrlen) == -1) {
+            close(s);
+            perror("Binding listening socket");
+            continue;
+        }
+
+        if (port == 0) {
+            if (getsockname(s, p->ai_addr, &(p->ai_addrlen)) < 0) {
+                log_perror("Discovering local port number");
+                close(s);
+                return E_QUOTA;
+            }
+            canon->type = TYPE_INT;
+            if (p->ai_family == AF_INET) {    // IPv4
+                struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
+                canon->v.num = ntohs(ipv4->sin_port);
+            } else {    // IPv6
+                struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)p->ai_addr;
+                canon->v.num = ntohs(ipv6->sin6_port);
+            }
+        } else {
+            *canon = var_ref(desc);
+        }
+        break;
+    }
+
+    freeaddrinfo(servinfo);
+
+    if (p == nullptr) {
+        enum error e = E_QUOTA;
+
+        log_perror("Failed to bind to listening socket");
+        if (errno == EACCES)
+            e = E_PERM;
+        return e;
+    }
 
     stream_printf(st, "port %" PRIdN, canon->v.num);
     *name = reset_stream(st);
