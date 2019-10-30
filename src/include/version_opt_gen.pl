@@ -31,7 +31,6 @@ my @options =
 	       }],
 	      [NETWORK_STYLE =>
 	       qw(NS_BSD
-		  NS_SYSV
 		)],
 	      [MPLEX_STYLE =>
 	       qw(MP_SELECT

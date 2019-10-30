@@ -21,7 +21,4 @@
 #    if NETWORK_STYLE == NS_BSD
 #      include "net_bsd_tcp.cc"
 #    endif
-#    if NETWORK_STYLE == NS_SYSV
-#      include "net_sysv_tcp.cc"
-#    endif
 #  endif

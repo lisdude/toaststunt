@@ -3,7 +3,6 @@
  *
  * common code for
  * multi-user networking protocol implementations for TCP/IP 
- * (net_bsd_tcp.c and net_sysv_tcp.c)
  *
  */
 

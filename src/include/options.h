@@ -156,8 +156,6 @@
  *
  * NS_BSD	The server will use implementation techniques appropriate to a
  *		BSD-style UNIX system.
- * NS_SYSV	The server will use implementation techniques appropriate to an
- *		AT&T UNIX System V system.
  */
 
 #define NETWORK_STYLE NS_BSD
@@ -553,7 +551,6 @@
 #define NP_TCP		2
 
 #define NS_BSD		1
-#define NS_SYSV		2
 
 #define MP_SELECT	1
 #define MP_POLL		2
@@ -567,13 +564,7 @@
 #    else
        #error You cannot use BSD sockets without having select()!
 #    endif
-#  else				/* NETWORK_STYLE == NS_SYSV */
-#      if HAVE_POLL
-#        define MPLEX_STYLE MP_POLL
-#      else
-         #error You cannot use TLI without having poll()!
-#      endif
-#  endif
+#   endif
 #endif
 
 #if (NETWORK_PROTOCOL == NP_SINGLE) && defined(OUTBOUND_NETWORK)
@@ -592,7 +583,7 @@
 #  error Illegal value for "NETWORK_PROTOCOL"
 #endif
 
-#if NETWORK_STYLE != NS_BSD && NETWORK_STYLE != NS_SYSV
+#if NETWORK_STYLE != NS_BSD
 #  error Illegal value for "NETWORK_STYLE"
 #endif
 
