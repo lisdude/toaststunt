@@ -98,15 +98,30 @@ ELSE()
     execute_process(COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/version_src.h)
 endif()
 
+# Find packages. We don't do anything with the information yet because we need to know if things exist
+#                to modify the source files, so we have to do it before moo is defined. But we can't
+#                do the package setup UNTIL moo is defined.
+
+find_package(Threads REQUIRED)
+find_package(Nettle REQUIRED)
+find_package(Argon2 REQUIRED)
+find_package(PCRE)
+find_package(CURL)
+find_package(ASPELL)
+find_package(SQLite3)
+
 # Millions of source files
 set(src_CSRCS
     src/dependencies/thpool.c
     src/dependencies/sosemanuk.c
     src/dependencies/linenoise.c
-    src/dependencies/pcrs.c
     src/dependencies/strnatcmp.c
     src/http_parser.c
     src/regexpr.c)
+
+if(PCRE_FOUND)
+    list(APPEND src_CSRCS src/dependencies/pcrs.c)
+endif()
 
 set(src_YAJL
     src/dependencies/yajl/yajl.c
@@ -194,38 +209,31 @@ set(src_SERVER
 add_executable(moo ${src_SERVER})
 
 # Make sure we have the packages we need
-find_package(Threads REQUIRED)
 if(Threads_FOUND)
     target_link_libraries(moo "${CMAKE_THREAD_LIBS_INIT}")
 endif()
 
-find_package(PCRE)
 if(PCRE_FOUND)
     include_directories(${PCRE_INCLUDE_DIRS})
     target_link_libraries(moo ${PCRE_LIBRARIES})
 endif()
 
-find_package(Nettle REQUIRED)
 include_directories(${NETTLE_INCLUDE_DIRS})
 target_link_libraries(moo ${NETTLE_LIBRARIES})
 
-find_package(CURL)
 if(CURL_FOUND)
     include_directories(${CURL_INCLUDE_DIRS})
     target_link_libraries(moo ${CURL_LIBRARIES})
 endif()
 
-find_package(ASPELL)
 if(ASPELL_FOUND)
     include_directories(${ASPELL_INCLUDE_DIRS})
     target_link_libraries(moo ${ASPELL_LIBRARIES})
 endif()
 
-find_package(Argon2 REQUIRED)
 include_directories(${ARGON2_INCLUDE_DIRS})
 target_link_libraries(moo ${ARGON2_LIBRARIES})
 
-find_package(SQLite3)
 if(SQLITE3_FOUND)
     include_directories(${SQLITE3_INCLUDE_DIRS})
     target_link_libraries(moo ${SQLITE3_LIBRARIES})
