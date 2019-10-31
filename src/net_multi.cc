@@ -82,7 +82,7 @@ typedef struct nhandle {
     int outbound, binary;
 #if NETWORK_PROTOCOL == NP_TCP
     int client_echo;
-    struct in_addr ip_addr;
+    struct sockaddr_storage *ip_addr;
 #endif
 } nhandle;
 
@@ -336,7 +336,7 @@ pull_input(nhandle * h)
 
 static nhandle *
 new_nhandle(int rfd, int wfd, const char *local_name, const char *remote_name,
-	    int outbound, struct in_addr *ip_addr)
+	    int outbound, struct sockaddr_storage *ip_addr)
 {
     nhandle *h;
     static Stream *s = nullptr;
@@ -369,7 +369,7 @@ new_nhandle(int rfd, int wfd, const char *local_name, const char *remote_name,
     h->binary = 0;
 #if NETWORK_PROTOCOL == NP_TCP
     h->client_echo = 1;
-    h->ip_addr = *ip_addr;
+    h->ip_addr = ip_addr;
 #endif
 
     stream_printf(s, "%s %s %s",
@@ -414,7 +414,7 @@ close_nlistener(nlistener * l)
 static void
 make_new_connection(server_listener sl, int rfd, int wfd,
 		    const char *local_name, const char *remote_name,
-		    int outbound, struct in_addr *ip_addr)
+		    int outbound, struct sockaddr_storage *ip_addr)
 {
     nhandle *h;
     network_handle nh;
@@ -448,20 +448,20 @@ accept_new_connection(nlistener * l)
     nhandle *h;
     int rfd, wfd, i;
     const char *host_name;
-    struct in_addr ip_addr;
+    struct sockaddr_storage *ip_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));;
 
-    switch (proto_accept_connection(l->fd, &rfd, &wfd, &host_name, &ip_addr)) {
+    switch (proto_accept_connection(l->fd, &rfd, &wfd, &host_name, ip_addr)) {
     case PA_OKAY:
-	make_new_connection(l->slistener, rfd, wfd, l->name, host_name, 0, &ip_addr);
+	make_new_connection(l->slistener, rfd, wfd, l->name, host_name, 0, ip_addr);
 	break;
 
     case PA_FULL:
 	for (i = 0; i < proto.pocket_size; i++)
 	    close(pocket_descriptors[i]);
-	if (proto_accept_connection(l->fd, &rfd, &wfd, &host_name, &ip_addr) != PA_OKAY)
+	if (proto_accept_connection(l->fd, &rfd, &wfd, &host_name, ip_addr) != PA_OKAY)
 	    errlog("Can't accept connection even by emptying pockets!\n");
 	else {
-	    nh.ptr = h = new_nhandle(rfd, wfd, l->name, host_name, 0, &ip_addr);
+	    nh.ptr = h = new_nhandle(rfd, wfd, l->name, host_name, 0, ip_addr);
 	    server_refuse_connection(l->slistener, nh);
 	    close_nhandle(h);
 	}
@@ -574,6 +574,9 @@ network_make_listener(server_listener sl, Var desc,
 int
 network_listen(network_listener nl)
 {
+    if (!nl.ptr)
+        return 0;
+
     nlistener *l = (nlistener *)nl.ptr;
 
     return proto_listen(l->fd);
@@ -653,7 +656,7 @@ network_process_io(int timeout)
 }
 
 extern void
-rewrite_connection_name(network_handle nh, Stream *new_connection_name, struct in_addr ip_addr)
+rewrite_connection_name(network_handle nh, Stream *new_connection_name, struct sockaddr_storage *ip_addr)
 {
     nhandle *h = (nhandle *) nh.ptr;
 
@@ -678,7 +681,7 @@ const char *network_ip_address(network_handle nh)
 
     nhandle *h = (nhandle *)nh.ptr;
 
-    inet_ntop(AF_INET, &(h->ip_addr), ipstr, sizeof ipstr);
+    inet_ntop(h->ip_addr->ss_family, get_in_addr(h->ip_addr), ipstr, sizeof ipstr);
 
     return str_dup(ipstr);
 }
@@ -734,12 +737,11 @@ network_open_connection(Var arglist, server_listener sl)
     int rfd, wfd;
     const char *local_name, *remote_name;
     enum error e;
-    struct in_addr ip_addr;
+    struct sockaddr_storage ip_addr;
 
     e = proto_open_connection(arglist, &rfd, &wfd, &local_name, &remote_name, &ip_addr);
     if (e == E_NONE)
-	make_new_connection(sl, rfd, wfd,
-			    local_name, remote_name, 1, &ip_addr);
+	make_new_connection(sl, rfd, wfd, local_name, remote_name, 1, &ip_addr);
 
     return e;
 }

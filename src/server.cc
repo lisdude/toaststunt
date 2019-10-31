@@ -189,10 +189,10 @@ static int
 start_listener(slistener * l)
 {
     if (network_listen(l->nlistener)) {
-	oklog("LISTEN: #%" PRIdN " now listening on %s %s\n", l->oid, l->ipv6 ? "IPv6" : "IPv4", l->name);
+	oklog("LISTEN: #%" PRIdN " now listening on %s\n", l->oid, l->name);
 	return 1;
     } else {
-	errlog("LISTEN: Can't start #%" PRIdN " listening on %s %s!\n", l->oid, l->ipv6 ? "IPv6" : "IPv4", l->name);
+	errlog("LISTEN: Can't start #%" PRIdN " listening on %s!\n", l->oid, l->name);
 	return 0;
     }
 }
@@ -1492,7 +1492,7 @@ is_localhost(Objid connection)
 }
 
 void
-proxy_connected(Objid connection, Stream *new_connection_name, struct in_addr ip_addr)
+proxy_connected(Objid connection, Stream *new_connection_name, struct sockaddr_storage *ip_addr)
 {
     shandle *existing_h = find_shandle(connection);
     if (existing_h)
@@ -1820,8 +1820,11 @@ main(int argc, char **argv)
     }
 
     if (!emergency || emergency_mode()) {
-        int lv4_status = start_listener(lv4);
-        int lv6_status = start_listener(lv6);
+        int lv4_status = 0, lv6_status = 0;
+        if (lv4)
+            lv4_status = start_listener(lv4);
+        if (lv6)
+            lv6_status = start_listener(lv6);
 
         if (!lv4_status && !lv6_status)
         exit(1);

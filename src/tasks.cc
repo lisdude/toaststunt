@@ -20,6 +20,7 @@
 #include <sys/time.h>
 #include <math.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #include <string.h>
 #include <time.h>
@@ -935,15 +936,20 @@ do_login_task(tqueue * tq, char *command)
             if (!new_connection_name)
                 new_connection_name = new_stream(100);
 
-            struct sockaddr_in address;
-            address.sin_family = AF_INET;
-            address.sin_port = htons(atoi(source_port));
-            inet_pton(AF_INET, source, &address.sin_addr);
+			struct addrinfo hints, *address;
+
+			memset(&hints, 0, sizeof hints);
+			hints.ai_family = AF_UNSPEC;
+			hints.ai_socktype = SOCK_STREAM;
+
+			getaddrinfo(nullptr, source_port, &hints, &address);
+
+            //address.sin_port = htons(atoi(source_port));
             int timeout = server_int_option("name_lookup_timeout", 5);
 
-            stream_printf(new_connection_name, "port %s from %s, port %s", destination_port, lookup_name_from_addr(&address, timeout), source_port);
+            stream_printf(new_connection_name, "port %s from %s, port %s", destination_port, lookup_name_from_addr((struct sockaddr_storage *)address->ai_addr, timeout), source_port);
 
-            proxy_connected(tq->player, new_connection_name, address.sin_addr);
+            proxy_connected(tq->player, new_connection_name, (struct sockaddr_storage *)address->ai_addr);
             /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */
             clear_command = true;
         }
