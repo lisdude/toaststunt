@@ -35,7 +35,6 @@
 #include "config.h"
 #include "list.h"
 #include "log.h"
-#include "name_lookup.h"
 #include "net_proto.h"
 #include "options.h"
 #include "server.h"
@@ -64,8 +63,6 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 
     if (!tcp_arguments(argc, argv, &port))
 	return 0;
-
-    initialize_name_lookup();
 
     desc->type = TYPE_INT;
     desc->v.num = port;
@@ -163,7 +160,6 @@ enum proto_accept_error
 proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 			const char **name, struct sockaddr_storage *ip_addr)
 {
-    int timeout = server_int_option("name_lookup_timeout", 5);
     int option = 1;
     int fd;
     struct sockaddr_storage addr;
@@ -301,7 +297,6 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     static Timer_ID id;
     socklen_t length;
     int s, result;
-    int timeout = server_int_option("name_lookup_timeout", 5);
     static Stream *st1 = nullptr, *st2 = nullptr;
     struct addrinfo hints;
     struct addrinfo *servinfo, *p;

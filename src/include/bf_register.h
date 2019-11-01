@@ -44,4 +44,3 @@ extern void register_simplexnoise(void);
 extern void register_argon2(void);
 extern void register_spellcheck(void);
 extern void register_curl(void);
-extern void register_name_lookup(void);

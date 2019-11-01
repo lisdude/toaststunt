@@ -9,7 +9,6 @@
 #include "net_multi.h"                  // network_fd shenanigans
 #include "log.h"                        // errlog
 #include "map.h"
-#include "name_lookup.h"                // dns_threadpool
 
 /*
   A general-purpose extension for doing work in separate threads. The entrypoint (background_thread)
@@ -234,8 +233,8 @@ static threadpool *thread_pool_by_name(const char* pool)
 {
     if (!strcmp(pool, "MAIN"))
         return &background_pool;
-    else if (!strcmp(pool, "DNS"))
-        return dns_threadpool();
+/*    else if (!strcmp(pool, "DNS"))
+        return dns_threadpool(); */
 
     return nullptr;
 }

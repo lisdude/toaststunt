@@ -2247,6 +2247,29 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
+bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (player) */
+    Objid who = arglist.v.list[1].v.obj;
+    shandle *h = find_shandle(who);
+    Var r;
+
+    r.type = TYPE_STR;
+    r.v.str = nullptr;
+
+    if (h && !h->disconnect_me)
+        r.v.str = get_ntop_from_network_handle(h->nhandle);
+
+    free_var(arglist);
+    if (!is_wizard(progr) && progr != who)
+	return make_error_pack(E_PERM);
+    else if (!r.v.str)
+	return make_error_pack(E_INVARG);
+    else {
+	return make_var_pack(r);
+    }
+}
+
+static package
 bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (player, string [, no_flush]) */
     Objid conn = arglist.v.list[1].v.obj;
@@ -2525,6 +2548,7 @@ register_server(void)
 		      TYPE_OBJ, TYPE_STR);
     register_function("connection_options", 1, 1, bf_connection_options,
 		      TYPE_OBJ);
+    register_function("connection_name_lookup", 1, 1, bf_name_lookup, TYPE_OBJ);
     register_function("listen", 2, 4, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function("unlisten", 1, 1, bf_unlisten, TYPE_ANY);
     register_function("listeners", 0, 0, bf_listeners);

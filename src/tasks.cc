@@ -51,7 +51,6 @@
 #include "utils.h"
 #include "verbs.h"
 #include "version.h"
-#include "name_lookup.h"
 #include "background.h"
 
 #define ROUND(tvp)	((tvp)->tv_sec + ((tvp)->tv_usec > 500000))
@@ -944,10 +943,10 @@ do_login_task(tqueue * tq, char *command)
 
 			getaddrinfo(nullptr, source_port, &hints, &address);
 
-            //address.sin_port = htons(atoi(source_port));
-            int timeout = server_int_option("name_lookup_timeout", 5);
-
-            stream_printf(new_connection_name, "port %s from %s, port %s", destination_port, lookup_name_from_addr((struct sockaddr_storage *)address->ai_addr, timeout), source_port);
+            stream_printf(new_connection_name, "port %s from %s, port %s", 
+						  destination_port, 
+						  get_ntop((struct sockaddr_storage *)address->ai_addr),
+						  source_port);
 
             proxy_connected(tq->player, new_connection_name, (struct sockaddr_storage *)address->ai_addr);
             /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */

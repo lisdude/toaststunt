@@ -149,7 +149,6 @@ set(src_CXXSRCS
     src/list.cc
     src/map.cc
     src/match.cc
-    src/name_lookup.cc
     src/network.cc
     src/net_mplex.cc
     src/net_proto.cc

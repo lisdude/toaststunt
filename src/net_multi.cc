@@ -698,6 +698,12 @@ const char *network_ip_address(network_handle nh)
     return str_dup(ipstr);
 }
 
+const char *get_ntop_from_network_handle(network_handle nh)
+{
+    nhandle *h = (nhandle *)nh.ptr;
+    return get_ntop(h->ip_addr);
+}
+
 void
 network_set_connection_binary(network_handle nh, int do_binary)
 {
