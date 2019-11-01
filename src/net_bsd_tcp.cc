@@ -192,7 +192,11 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
     char ipstr[INET6_ADDRSTRLEN];
     inet_ntop(addr.ss_family, get_in_addr(&addr), ipstr, sizeof ipstr);
     stream_printf(s, "%s, port %" PRIdN,
+#ifndef NO_NAME_LOOKUP
+            get_nameinfo((struct sockaddr *)&addr),
+#else
             str_dup(ipstr),
+#endif
             get_in_port(&addr));
     *name = reset_stream(s);
     *ip_addr = addr;

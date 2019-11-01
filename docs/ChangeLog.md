@@ -3,9 +3,8 @@
 ## 2.6.0 (In Progress)
 - Add an `owned_objects(OBJ <who>)` builtin to return a list of valid objects owned by who.
 - Fix a security oversight where `recreate()` could allow the recreation of an object that already owns other objects, verbs, or properties. Now the `recycle()` function will correct ownership of anything owned by the object being recycled, though at a slight cost to speed on larger databases. If the speed hit proves to be too much and you know what you're doing, you can disable the `SAFE_RECYCLE` option in options.h.
-- Add the `NO_FORKED_LOOKUP` option to options.h. When enabled, the server won't spawn a separate name lookup task, nor will it do any DNS name lookups at all.
-- Add the `name_lookup(<IP address>)` function to perform a DNS lookup on an IP address in the background. Note that this function implicitly suspends, so if you use it in do_login_command you'll also need to use `switch_player()` to work around the no-suspend-at-login rule.
-- Add the `TOTAL_DNS_THREADS` option to options.h to control how many threads are given to `name_lookup()` at runtime.
+- Add the `NO_NAME_LOOKUP` option to options.h. When enabled, the server won't attempt to perform a DNS name lookups on any new connections.
+- Add the `connection_name_lookup(<connection> [, <rewrite connection_name>])` function to perform a DNS lookup on a connection's IP address in a background thread. Note that this function implicitly suspends, so if you use it in do_login_command you'll also need to use `switch_player()` or `force_input()` to work around the no-suspend-at-login rule.
 - Add a `thread_pool(<function>, <pool> [, <value>])` function that allows control over the thread pools from within the database.
 - The server now keeps a record of the IP address used by a connection. As such, the `connection_name()` function now has an optional argument that will return a connection's IP address. This is more reliable than parsing the standard `connection_name()` string.
 - The server will now listen for connections on both IPv4 and IPv6 addresses by default.

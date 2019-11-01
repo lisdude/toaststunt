@@ -233,8 +233,6 @@ static threadpool *thread_pool_by_name(const char* pool)
 {
     if (!strcmp(pool, "MAIN"))
         return &background_pool;
-/*    else if (!strcmp(pool, "DNS"))
-        return dns_threadpool(); */
 
     return nullptr;
 }

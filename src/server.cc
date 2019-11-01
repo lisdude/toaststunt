@@ -73,6 +73,7 @@
 #include "net_multi.h"  /* rewrite connection name */
 #include "waif.h" /* destroyed_waifs */
 #include "curl.h" /* curl shutdown */
+#include "background.h"
 
 extern "C" {
 #include "dependencies/linenoise.h"
@@ -2246,27 +2247,30 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
     }
 }
 
-static package
-bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (player) */
+void
+name_lookup_callback(Var arglist, Var * ret)
+{
+    int nargs = arglist.v.list[0].v.num;
     Objid who = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(who);
-    Var r;
-
-    r.type = TYPE_STR;
-    r.v.str = nullptr;
-
-    if (h && !h->disconnect_me)
-        r.v.str = get_ntop_from_network_handle(h->nhandle);
-
+    bool rewrite_connect_name = nargs > 1 && is_true(arglist.v.list[2]);
     free_var(arglist);
-    if (!is_wizard(progr) && progr != who)
-	return make_error_pack(E_PERM);
-    else if (!r.v.str)
-	return make_error_pack(E_INVARG);
-    else {
-	return make_var_pack(r);
-    }
+
+    if (!h || h->disconnect_me)
+        make_error_map(E_INVARG, "Invalid connection", ret);
+	else 
+        *ret = str_dup_to_var(get_nameinfo_from_network_handle(h->nhandle));
+}
+
+static package
+bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
+{
+	if (!is_wizard(progr) && progr != arglist.v.list[1].v.obj)
+		return make_error_pack(E_PERM);
+
+	char *human_string = nullptr;
+	asprintf(&human_string, "name_lookup for #%" PRIdN "", arglist.v.list[1].v.obj);
+	return background_thread(name_lookup_callback, &arglist, human_string);
 }
 
 static package

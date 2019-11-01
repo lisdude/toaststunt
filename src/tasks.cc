@@ -947,9 +947,13 @@ do_login_task(tqueue * tq, char *command)
 
 			getaddrinfo(source, source_port, &hints, &address);
 
-            stream_printf(new_connection_name, "%s, port %s from %s, port %s", 
-                          destination, destination_port,
+            stream_printf(new_connection_name, "port %s from %s, port %s", 
+                          destination_port,
+#ifndef NO_NAME_LOOKUP
                           get_nameinfo(address->ai_addr),
+#else
+						  get_ntop((struct sockaddr_storage *)address->ai_addr),
+#endif
 						  source_port);
 
             proxy_connected(tq->player, new_connection_name, (struct sockaddr_storage *)address->ai_addr);

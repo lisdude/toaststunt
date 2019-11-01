@@ -698,10 +698,10 @@ const char *network_ip_address(network_handle nh)
     return str_dup(ipstr);
 }
 
-const char *get_ntop_from_network_handle(network_handle nh)
+const char *get_nameinfo_from_network_handle(network_handle nh)
 {
     nhandle *h = (nhandle *)nh.ptr;
-    return get_ntop(h->ip_addr);
+    return get_nameinfo((struct sockaddr *)h->ip_addr);
 }
 
 void

@@ -50,6 +50,6 @@ extern int network_set_nonblocking(int fd);
 
 extern void rewrite_connection_name(network_handle nh, Stream *new_connection_name, struct sockaddr_storage *ip_addr);
 extern int network_is_localhost(network_handle nh);
-extern const char *get_ntop_from_network_handle(network_handle nh);
+extern const char *get_nameinfo_from_network_handle(network_handle nh);
 
 #endif				/* !Net_Multi_H */

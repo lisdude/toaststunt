@@ -495,8 +495,6 @@
  * Configurable options for the background subsystem.
  * TOTAL_BACKGROUND_THREADS is the total number of pthreads that will be created
  * at runtime to process background MOO tasks.
- * TOTAL_DNS_THREADS is the total number of pthreads that will be created at
- * runtime to process DNS name lookups from the name_lookup() function.
  * DEFAULT_THREAD_MODE dictates the default behavior of threaded MOO functions
  * without a call to set_thread_mode. When set to true, the default behavior is
  * to thread these functions, requiring a call to set_thread_mode(0) to disable.
@@ -506,17 +504,16 @@
  */
 
 #define TOTAL_BACKGROUND_THREADS    1
-#define TOTAL_DNS_THREADS           1
 #define DEFAULT_THREAD_MODE         true
 
 /******************************************************************************
- * Normally, DNS name lookups take place in a forked process. If you intend to
- * use in-database DNS lookups, or just always want numeric IP addresses, you
- * can disable the forked process here.
+ * By default, the server will resolve DNS hostnames from IP addresses for all
+ * connections. If you intend to use in-database threaded DNS lookups, or just
+ * always want numeric IP addresses, you can disable name lookups here.
  ******************************************************************************
  */
 
-/* #define NO_FORKED_LOOKUP */
+/* #define NO_NAME_LOOKUP */
 
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
