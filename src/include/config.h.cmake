@@ -60,9 +60,6 @@
 #cmakedefine01 HAVE_SIGEMPTYSET
 #cmakedefine01 HAVE_SIGRELSE
 
-//#cmakedefine01 HAVE_RANDOM_DEVICE
-//#cmakedefine01 RANDOM_DEVICE
-
 #if @HAVE_STRTOIMAX@
 # ifdef HAVE_LONG_LONG
 #  define strtoimax strtoll

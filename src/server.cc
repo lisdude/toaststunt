@@ -78,6 +78,8 @@ extern "C" {
 #include "dependencies/linenoise.h"
 }
 
+#define RANDOM_DEVICE "/dev/random"
+
 static pid_t parent_pid;
 static bool in_child = false;
 
@@ -1221,7 +1223,6 @@ init_random(void)
     sha256_init(&context);
 
 #ifndef TEST
-#ifdef HAVE_RANDOM_DEVICE
 
     oklog("RANDOM: seeding from " RANDOM_DEVICE "\n");
 
@@ -1249,16 +1250,6 @@ init_random(void)
 
     close(fd);
 
-#else
-
-    oklog("RANDOM: seeding from internal sources\n");
-
-    time_t time_now = time(nullptr);
-
-    sha256_update(&context, sizeof(time_now), (const unsigned char *)&time_now);
-    sha256_update(&context, sizeof(parent_pid), (const unsigned char *)&parent_pid);
-
-#endif
 #else /* #ifndef TEST */
 
     oklog("RANDOM: (-DTEST) not seeding!\n");
