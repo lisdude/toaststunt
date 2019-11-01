@@ -253,6 +253,7 @@ extern void *get_in_addr(struct sockaddr_storage *sa);
 extern unsigned short int get_in_port(struct sockaddr_storage *sa);
 extern const char *get_ntop(struct sockaddr_storage *sa);
 extern const char *get_ipver(struct sockaddr_storage *sa);
+extern const char *get_nameinfo(struct sockaddr *sa);
                 /* These functions allow us to extract
                  * information from a sockaddr struct without
                  * knowing the exact protocol being used. */

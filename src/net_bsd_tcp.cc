@@ -250,6 +250,19 @@ const char *get_ntop(struct sockaddr_storage *sa)
         }
 }
 
+const char *get_nameinfo(struct sockaddr *sa)
+{
+    char hostname[NI_MAXHOST] = "";
+    int status = getnameinfo(sa, sizeof *sa, hostname, sizeof hostname, nullptr, 0, 0);
+
+    if (status != 0) {
+        errlog("getnameinfo failed: %s", gai_strerror(status));
+        return get_ntop((sockaddr_storage *)sa);
+    }
+
+    return str_dup(hostname);
+}
+
 const char *get_ipver(struct sockaddr_storage *sa)
 {
     switch (sa->ss_family) {

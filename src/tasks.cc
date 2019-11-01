@@ -903,6 +903,7 @@ do_login_task(tqueue * tq, char *command)
         if (strlen(command) >= 5 && strncmp(command, "PROXY", 5) == 0) {
             applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
             char *source = nullptr;
+            char *destination = nullptr;
             char *source_port = nullptr;
             char *destination_port = nullptr;
             char *split = strtok(command, " ");
@@ -917,6 +918,9 @@ do_login_task(tqueue * tq, char *command)
                 switch (x) {
                     case 3:
                         source = split;
+                        break;
+                    case 4:
+                        destination = split;
                         break;
                     case 5:
                         source_port = split;
@@ -941,11 +945,11 @@ do_login_task(tqueue * tq, char *command)
 			hints.ai_family = AF_UNSPEC;
 			hints.ai_socktype = SOCK_STREAM;
 
-			getaddrinfo(nullptr, source_port, &hints, &address);
+			getaddrinfo(source, source_port, &hints, &address);
 
-            stream_printf(new_connection_name, "port %s from %s, port %s", 
-						  destination_port, 
-						  get_ntop((struct sockaddr_storage *)address->ai_addr),
+            stream_printf(new_connection_name, "%s, port %s from %s, port %s", 
+                          destination, destination_port,
+                          get_nameinfo(address->ai_addr),
 						  source_port);
 
             proxy_connected(tq->player, new_connection_name, (struct sockaddr_storage *)address->ai_addr);
