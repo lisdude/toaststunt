@@ -1484,11 +1484,13 @@ player_connected_silent(Objid old_id, Objid new_id)
 char
 is_localhost(Objid connection)
 {
+    /* TODO: This should really be using nhandle->ip_addr, but getting
+             to the nhandle is unreasonably difficult. So for now... 
+             ghetto string comparison will work. */
+
+
     shandle *existing_h = find_shandle(connection);
-    if (existing_h && strstr(network_connection_name(existing_h->nhandle), "[127.0.0.1]") != nullptr)
-        return 1;
-    else
-        return 0;
+    return network_is_localhost(existing_h->nhandle);
 }
 
 void

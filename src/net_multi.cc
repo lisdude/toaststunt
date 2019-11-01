@@ -655,7 +655,19 @@ network_process_io(int timeout)
     }
 }
 
-extern void
+int
+network_is_localhost(network_handle nh)
+{
+    nhandle *h = (nhandle *)nh.ptr;
+    const char *ip = get_ntop(h->ip_addr);
+
+    if (strstr(ip, "127.0.0.1") != nullptr || strstr(ip, "::1") != nullptr)
+        return 1;
+    else
+        return 0;
+}
+
+void
 rewrite_connection_name(network_handle nh, Stream *new_connection_name, struct sockaddr_storage *ip_addr)
 {
     nhandle *h = (nhandle *) nh.ptr;
