@@ -1485,11 +1485,6 @@ player_connected_silent(Objid old_id, Objid new_id)
 char
 is_localhost(Objid connection)
 {
-    /* TODO: This should really be using nhandle->ip_addr, but getting
-             to the nhandle is unreasonably difficult. So for now... 
-             ghetto string comparison will work. */
-
-
     shandle *existing_h = find_shandle(connection);
     return network_is_localhost(existing_h->nhandle);
 }

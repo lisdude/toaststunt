@@ -140,7 +140,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
         return e;
     }
 
-    stream_printf(st, "%s, port %" PRIdN, get_ntop((struct sockaddr_storage *)p->ai_addr),  canon->v.num);
+    stream_printf(st, "port %" PRIdN, canon->v.num);
     *name = reset_stream(st);
     *fd = s;
    
@@ -189,15 +189,15 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 #endif
 
     *read_fd = *write_fd = fd;
-    char ipstr[INET6_ADDRSTRLEN];
-    inet_ntop(addr.ss_family, get_in_addr(&addr), ipstr, sizeof ipstr);
+    
     stream_printf(s, "%s, port %" PRIdN,
 #ifndef NO_NAME_LOOKUP
             get_nameinfo((struct sockaddr *)&addr),
 #else
-            str_dup(ipstr),
+            get_ntop(addr),
 #endif
             get_in_port(&addr));
+   
     *name = reset_stream(s);
     *ip_addr = addr;
     return PA_OKAY;
@@ -216,29 +216,31 @@ proto_close_listener(int fd)
     close(fd);
 }
 
-void *get_in_addr(struct sockaddr_storage *sa)
+void *get_in_addr(const struct sockaddr_storage *sa)
 {
-    if (sa->ss_family == AF_INET) {
-        return &(((struct sockaddr_in*)sa)->sin_addr);
-    } else if (sa->ss_family == AF_INET6) {
-        return &(((struct sockaddr_in6*)sa)->sin6_addr);
-    } else {
-        return nullptr;
+    switch (sa->ss_family) {
+        case AF_INET:
+            return &(((struct sockaddr_in*)sa)->sin_addr);
+        case AF_INET6:
+            return &(((struct sockaddr_in6*)sa)->sin6_addr);
+        default:
+            return nullptr;
     }
 }
 
-unsigned short int get_in_port(struct sockaddr_storage *sa)
+unsigned short int get_in_port(const struct sockaddr_storage *sa)
 {
-    if (sa->ss_family == AF_INET) {
-        return ((struct sockaddr_in*)sa)->sin_port;
-    } else if (sa->ss_family == AF_INET6) {
-        return ((struct sockaddr_in6*)sa)->sin6_port;
-    } else {
-        return 0;
+    switch (sa->ss_family) {
+        case AF_INET:
+            return ((struct sockaddr_in*)sa)->sin_port;
+        case AF_INET6:
+            return ((struct sockaddr_in6*)sa)->sin6_port;
+        default:
+            return 0;
     }
 }
 
-const char *get_ntop(struct sockaddr_storage *sa)
+const char *get_ntop(const struct sockaddr_storage *sa)
 {
     switch (sa->ss_family) {
         case AF_INET:
@@ -254,7 +256,7 @@ const char *get_ntop(struct sockaddr_storage *sa)
         }
 }
 
-const char *get_nameinfo(struct sockaddr *sa)
+const char *get_nameinfo(const struct sockaddr *sa)
 {
     char hostname[NI_MAXHOST] = "";
     int status = getnameinfo(sa, sizeof *sa, hostname, sizeof hostname, nullptr, 0, 0);
@@ -267,7 +269,7 @@ const char *get_nameinfo(struct sockaddr *sa)
     return str_dup(hostname);
 }
 
-const char *get_ipver(struct sockaddr_storage *sa)
+const char *get_ipver(const struct sockaddr_storage *sa)
 {
     switch (sa->ss_family) {
     case AF_INET:
@@ -408,7 +410,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     stream_printf(st1, "port %" PRIdN, ntohs(get_in_port((struct sockaddr_storage *)p->ai_addr)));
     *local_name = reset_stream(st1);
 
-    stream_printf(st2, "%s, port %" PRIdN, host_name, port);
+    stream_printf(st2, "port %" PRIdN, port);
     *remote_name = reset_stream(st2);
 
     *ip_addr = *(struct sockaddr_storage *)(p->ai_addr);

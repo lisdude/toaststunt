@@ -656,9 +656,9 @@ network_process_io(int timeout)
 }
 
 int
-network_is_localhost(network_handle nh)
+network_is_localhost(const network_handle nh)
 {
-    nhandle *h = (nhandle *)nh.ptr;
+    const nhandle *h = (nhandle *)nh.ptr;
     const char *ip = get_ntop(h->ip_addr);
 
     if (strstr(ip, "127.0.0.1") != nullptr || strstr(ip, "::1") != nullptr)
@@ -680,27 +680,23 @@ rewrite_connection_name(network_handle nh, Stream *new_connection_name, struct s
 }
 
 const char *
-network_connection_name(network_handle nh)
+network_connection_name(const network_handle nh)
 {
-    nhandle *h = (nhandle *) nh.ptr;
+    const nhandle *h = (nhandle *) nh.ptr;
 
     return h->name;
 }
 
-const char *network_ip_address(network_handle nh)
+const char *network_ip_address(const network_handle nh)
 {
-    char ipstr[INET6_ADDRSTRLEN];
+    const nhandle *h = (nhandle *)nh.ptr;
 
-    nhandle *h = (nhandle *)nh.ptr;
-
-    inet_ntop(h->ip_addr->ss_family, get_in_addr(h->ip_addr), ipstr, sizeof ipstr);
-
-    return str_dup(ipstr);
+    return get_ntop(h->ip_addr);
 }
 
-const char *get_nameinfo_from_network_handle(network_handle nh)
+const char *get_nameinfo_from_network_handle(const network_handle nh)
 {
-    nhandle *h = (nhandle *)nh.ptr;
+    const nhandle *h = (nhandle *)nh.ptr;
     return get_nameinfo((struct sockaddr *)h->ip_addr);
 }
 

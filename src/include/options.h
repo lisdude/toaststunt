@@ -503,7 +503,7 @@
  ******************************************************************************
  */
 
-#define TOTAL_BACKGROUND_THREADS    1
+#define TOTAL_BACKGROUND_THREADS    2
 #define DEFAULT_THREAD_MODE         true
 
 /******************************************************************************
