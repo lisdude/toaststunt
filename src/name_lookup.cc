@@ -208,7 +208,7 @@ lookup(int to_intermediary, int from_intermediary)
 	struct addrinfo *res;
 
 	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_UNSPEC;	// AF_INET or AF_INET6 to force version
+	hints.ai_family = AF_INET;	// AF_INET or AF_INET6 to force version
 	hints.ai_socktype = SOCK_STREAM;
 
 	set_server_cmdline("(MOO name-lookup slave)");

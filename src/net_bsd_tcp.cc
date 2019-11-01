@@ -83,7 +83,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
     if (hints == nullptr) {
         hints = (struct addrinfo*)malloc(sizeof(struct addrinfo));
         memset(hints, 0, sizeof(struct addrinfo));
-        hints->ai_family = AF_UNSPEC;
+        hints->ai_family = AF_INET;
         hints->ai_socktype = SOCK_STREAM;
         hints->ai_flags = AI_PASSIVE;        // use our IP
     }
