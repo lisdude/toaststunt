@@ -214,6 +214,7 @@ add_executable(moo ${src_SERVER})
 # Make sure we have the packages we need
 if(Threads_FOUND)
     target_link_libraries(moo "${CMAKE_THREAD_LIBS_INIT}")
+    set(EXTRA_LINKER_FLAGS "${EXTRA_LINKER_FLAGS} -lpthread")
 endif()
 
 if(PCRE_FOUND)
@@ -250,7 +251,7 @@ CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/include/config.h.cmake
 target_link_libraries(moo -lm ${EXTRA_LINKER_FLAGS})
 
 if(NOT APPLE)
-    target_link_libraries(moo -lcrypt ${EXTRA_LINKER_FLAGS})
+    target_link_libraries(moo -lcrypt)
 endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
