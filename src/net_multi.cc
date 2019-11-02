@@ -387,16 +387,19 @@ close_nhandle(nhandle * h)
     (void) push_output(h);
     *(h->prev) = h->next;
     if (h->next)
-	h->next->prev = h->prev;
+        h->next->prev = h->prev;
     b = h->output_head;
     while (b) {
-	bb = b->next;
-	free_text_block(b);
-	b = bb;
+        bb = b->next;
+        free_text_block(b);
+        b = bb;
     }
     free_stream(h->input);
     proto_close_connection(h->rfd, h->wfd);
     free_str(h->name);
+#if NETWORK_PROTOCOL == NP_TCP
+    free(h->ip_addr);
+#endif
     myfree(h, M_NETWORK);
 }
 
@@ -448,7 +451,7 @@ accept_new_connection(nlistener * l)
     nhandle *h;
     int rfd, wfd, i;
     const char *host_name;
-    struct sockaddr_storage *ip_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));;
+    struct sockaddr_storage *ip_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
 
     switch (proto_accept_connection(l->fd, &rfd, &wfd, &host_name, ip_addr)) {
     case PA_OKAY:
@@ -660,11 +663,13 @@ network_is_localhost(const network_handle nh)
 {
     const nhandle *h = (nhandle *)nh.ptr;
     const char *ip = get_ntop(h->ip_addr);
+    int ret = 0;
 
     if (strstr(ip, "127.0.0.1") != nullptr || strstr(ip, "::1") != nullptr)
-        return 1;
-    else
-        return 0;
+        ret = 1;
+
+    free_str(ip);
+    return ret;
 }
 
 void
@@ -673,6 +678,7 @@ rewrite_connection_name(network_handle nh, Stream *new_connection_name, struct s
     nhandle *h = (nhandle *) nh.ptr;
     free_str(h->name);
     h->name = str_dup(reset_stream(new_connection_name));
+    free(h->ip_addr);
     h->ip_addr = ip_addr;
 }
 
@@ -712,14 +718,21 @@ network_name_lookup_rewrite(network_handle nh, const char *name)
        memcpy(source_port, old_name, pos + FIRST_SPACE);
        source_port[pos + FIRST_SPACE] = '\0';
 
+       const char *nameinfo = get_nameinfo(address->ai_addr);
+
     stream_printf(new_connection_name, "%s from %s, port %i",
                   source_port,
-                  get_nameinfo(address->ai_addr),
+                  nameinfo,
                   get_in_port(h->ip_addr));
 
-    rewrite_connection_name(nh, new_connection_name, (struct sockaddr_storage *)address->ai_addr);
+    struct sockaddr_storage *new_ai_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
+    memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, sizeof(struct sockaddr_storage *));
+
+    rewrite_connection_name(nh, new_connection_name, new_ai_addr);
     applog(LOG_INFO3, "NAME_LOOKUP: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(nh));
     free_str(old_name);
+    free_str(nameinfo);
+    freeaddrinfo(address);
 
     return 0;
 }

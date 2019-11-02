@@ -2253,6 +2253,7 @@ name_lookup_callback(Var arglist, Var * ret)
         if (rewrite_connect_name)
             if (network_name_lookup_rewrite(h->nhandle, name) != 0)
                 make_error_map(E_INVARG, "Failed to rewrite connection name.", ret);
+        free_str(name);
     }
 }
 

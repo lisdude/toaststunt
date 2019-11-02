@@ -947,16 +947,24 @@ do_login_task(tqueue * tq, char *command)
 
 			getaddrinfo(source, source_port, &hints, &address);
 
-            stream_printf(new_connection_name, "port %s from %s, port %s", 
-                          destination_port,
+            const char *nameinfo;
 #ifndef NO_NAME_LOOKUP
-                          get_nameinfo(address->ai_addr),
+            get_nameinfo(address->ai_addr);
 #else
-						  get_ntop((struct sockaddr_storage *)address->ai_addr),
+            get_ntop((struct sockaddr_storage *)address->ai_addr);
 #endif
+
+            stream_printf(new_connection_name, "port %s from %s, port %s",
+                          destination_port,
+                          nameinfo,
 						  source_port);
 
-            proxy_connected(tq->player, new_connection_name, (struct sockaddr_storage *)address->ai_addr);
+            free_str(nameinfo);
+
+            struct sockaddr_storage *new_ai_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
+            memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, sizeof(struct sockaddr_storage *));
+
+            proxy_connected(tq->player, new_connection_name, new_ai_addr);
             /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */
             clear_command = true;
         }

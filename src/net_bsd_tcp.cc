@@ -93,6 +93,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
     int rv = getaddrinfo(use_ipv6 ? bind_ipv6 : bind_ipv4, get_port_str(port), &hints, &servinfo);
     if (rv != 0) {
         log_perror(gai_strerror(rv));
+        freeaddrinfo(servinfo);
         return E_QUOTA;
     }
 
@@ -106,6 +107,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
         if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(int)) == -1) {
             perror("Setting listening socket options");
             close(s);
+            freeaddrinfo(servinfo);
             return E_QUOTA;
         }
 
@@ -119,6 +121,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
             if (getsockname(s, p->ai_addr, &(p->ai_addrlen)) < 0) {
                 log_perror("Discovering local port number");
                 close(s);
+                freeaddrinfo(servinfo);
                 return E_QUOTA;
             }
             canon->type = TYPE_INT;
@@ -135,13 +138,14 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
         log_perror("Failed to bind to listening socket");
         if (errno == EACCES)
             e = E_PERM;
+        freeaddrinfo(servinfo);
         return e;
     }
 
     stream_printf(st, "port %" PRIdN, canon->v.num);
     *name = reset_stream(st);
     *fd = s;
-   
+
     freeaddrinfo(servinfo);
 
     return E_NONE;
@@ -187,17 +191,21 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 #endif
 
     *read_fd = *write_fd = fd;
-    
-    stream_printf(s, "%s, port %" PRIdN,
+
+    const char *nameinfo;
 #ifndef NO_NAME_LOOKUP
-            get_nameinfo((struct sockaddr *)&addr),
+    nameinfo = get_nameinfo((struct sockaddr *)&addr);
 #else
-            get_ntop(&addr),
+    nameinfo = get_ntop(&addr);
 #endif
+
+    stream_printf(s, "%s, port %" PRIdN,
+            nameinfo,
             get_in_port(&addr));
    
     *name = reset_stream(s);
     *ip_addr = addr;
+    free_str(nameinfo);
     return PA_OKAY;
 }
 
