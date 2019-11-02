@@ -76,7 +76,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
     static Stream *st = nullptr;
     struct addrinfo hints;
     struct addrinfo *servinfo, *p;
-        
+
     memset(&hints, 0, sizeof hints);
     hints.ai_family = use_ipv6 ? AF_INET6 : AF_INET;
     hints.ai_socktype = SOCK_STREAM;
