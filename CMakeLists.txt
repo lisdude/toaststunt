@@ -49,9 +49,13 @@ set(CMAKE_CXX_FLAGS_WARN "${CMAKE_C_FLAGS_WARN}")
 # Check for memory leaks: Minimal optimizations, debug enabled, and sanitize address
 set(CMAKE_C_FLAGS_LEAKCHECK   "-O1 -g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 set(CMAKE_CXX_FLAGS_LEAKCHECK "${CMAKE_C_FLAGS_LEAKCHECK}")
-if(CMAKE_BUILD_TYPE EQUAL "LeakCheck")
+if(CMAKE_BUILD_TYPE MATCHES "LeakCheck")
     set(EXTRA_LINKER_FLAGS "-fsanitize=address")
 endif()
+
+string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
 
 # Compatibility Checks Galore
 include(CheckStructHasMember)
@@ -251,6 +255,5 @@ if(NOT APPLE)
 endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
-message(STATUS "C flags: ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
-message(STATUS "CXX flags: ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+message(STATUS "C flags: ${CMAKE_C_FLAGS}")
+message(STATUS "CXX flags: ${CMAKE_CXX_FLAGS}")
