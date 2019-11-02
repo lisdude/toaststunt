@@ -27,6 +27,7 @@
 #include "config.h"
 #include "options.h"
 #include "structures.h"
+#include <netdb.h>
 
 typedef struct {		/* Network's handle on a connection */
     void *ptr;
@@ -254,8 +255,11 @@ extern unsigned short int get_in_port(const struct sockaddr_storage *sa);
 extern const char *get_ntop(const struct sockaddr_storage *sa);
 extern const char *get_ipver(const struct sockaddr_storage *sa);
 extern const char *get_nameinfo(const struct sockaddr *sa);
+extern const char *get_nameinfo_port(const struct sockaddr *sa);
                 /* These functions allow us to extract
                  * information from a sockaddr struct without
                  * knowing the exact protocol being used. */
+
+extern const char *get_port_str(int port);
 
 #endif				/* Network_H */

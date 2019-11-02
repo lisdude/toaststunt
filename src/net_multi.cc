@@ -671,12 +671,57 @@ void
 rewrite_connection_name(network_handle nh, Stream *new_connection_name, struct sockaddr_storage *ip_addr)
 {
     nhandle *h = (nhandle *) nh.ptr;
-
-    char *oldname = h->name;
+    free_str(h->name);
     h->name = str_dup(reset_stream(new_connection_name));
     h->ip_addr = ip_addr;
-    applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", oldname, h->name);
-    free_str(oldname);
+}
+
+/* Called from connection_name_lookup, this allows us access to the network
+   handle before a call to rewrite_connection_name. That way we can get
+   the right(ish) port information. */
+void
+network_name_lookup_rewrite(network_handle nh, const char *name)
+{
+    nhandle *h = (nhandle *)nh.ptr;
+    struct addrinfo hints, *address;
+    int status;
+    const char *old_name = str_dup(network_connection_name(nh));  // rewrite is going to free this
+
+    static Stream *new_connection_name = nullptr;
+    if (!new_connection_name)
+        new_connection_name = new_stream(100);
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    status = getaddrinfo(name, nullptr, &hints, &address);
+    if (status != 0)
+    {
+        errlog("getaddrinfo failed in name_lookup_rewrite: %s\n", gai_strerror(status));
+        return;
+    }
+
+    /* The only thing missing is the port we're connected to. Rather than expend any more
+       brainpower on this, I'm just going to do a nasty thing and reuse the first part
+       of the existing connection_name string. Pull request for a better way is welcome! */
+       char source_port[10];
+       #define FIRST_SPACE 4
+       int pos = FIRST_SPACE;
+       while (old_name[pos++] != ' ') {}
+       memcpy(source_port, old_name, pos + FIRST_SPACE);
+       source_port[pos + FIRST_SPACE] = '\0';
+
+    unsigned short int port = get_in_port(h->ip_addr);
+
+    stream_printf(new_connection_name, "%s from %s, port %i",
+                  source_port,
+                  get_nameinfo(address->ai_addr),
+                  port);
+
+    rewrite_connection_name(nh, new_connection_name, (struct sockaddr_storage *)address->ai_addr);
+    applog(LOG_INFO3, "NAME_LOOKUP: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(nh));
+    free_str(old_name);
 }
 
 const char *

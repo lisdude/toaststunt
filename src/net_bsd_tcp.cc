@@ -89,10 +89,8 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
         return E_TYPE;
 
     port = desc.v.num;
-    char *port_str = nullptr;
-    asprintf(&port_str, "%d", port);
 
-    int rv = getaddrinfo(use_ipv6 ? bind_ipv6 : bind_ipv4, port_str, &hints, &servinfo);
+    int rv = getaddrinfo(use_ipv6 ? bind_ipv6 : bind_ipv4, get_port_str(port), &hints, &servinfo);
     if (rv != 0) {
         log_perror(gai_strerror(rv));
         return E_QUOTA;
@@ -124,7 +122,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
                 return E_QUOTA;
             }
             canon->type = TYPE_INT;
-            canon->v.num = ntohs(get_in_port((struct sockaddr_storage *)p->ai_addr));
+            canon->v.num = get_in_port((struct sockaddr_storage *)p->ai_addr);
         } else {
             *canon = var_ref(desc);
         }
@@ -194,7 +192,7 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 #ifndef NO_NAME_LOOKUP
             get_nameinfo((struct sockaddr *)&addr),
 #else
-            get_ntop(addr),
+            get_ntop(&addr),
 #endif
             get_in_port(&addr));
    
@@ -232,9 +230,9 @@ unsigned short int get_in_port(const struct sockaddr_storage *sa)
 {
     switch (sa->ss_family) {
         case AF_INET:
-            return ((struct sockaddr_in*)sa)->sin_port;
+            return ntohs(((struct sockaddr_in*)sa)->sin_port);
         case AF_INET6:
-            return ((struct sockaddr_in6*)sa)->sin6_port;
+            return ntohs(((struct sockaddr_in6*)sa)->sin6_port);
         default:
             return 0;
     }
@@ -262,11 +260,24 @@ const char *get_nameinfo(const struct sockaddr *sa)
     int status = getnameinfo(sa, sizeof *sa, hostname, sizeof hostname, nullptr, 0, 0);
 
     if (status != 0) {
-        errlog("getnameinfo failed: %s", gai_strerror(status));
+        errlog("getnameinfo failed: %s\n", gai_strerror(status));
         return get_ntop((sockaddr_storage *)sa);
     }
 
     return str_dup(hostname);
+}
+
+const char *get_nameinfo_port(const struct sockaddr *sa)
+{
+    char service[NI_MAXSERV];
+    int status = getnameinfo(sa, sizeof *sa, nullptr, 0, service, sizeof service, NI_NUMERICSERV);
+
+    if (status != 0) {
+        errlog("getnameinfo_port failed: %s\n", gai_strerror(status));
+        return nullptr;
+    }
+
+    return str_dup(service);
 }
 
 const char *get_ipver(const struct sockaddr_storage *sa)
@@ -279,6 +290,13 @@ const char *get_ipver(const struct sockaddr_storage *sa)
     default:
         return ">>unknown protocol<<";
     }
+}
+
+const char *get_port_str(int port)
+{
+    char *port_str = nullptr;
+    asprintf(&port_str, "%d", port);
+    return port_str;
 }
 
 #ifdef OUTBOUND_NETWORK
@@ -336,14 +354,12 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 
     host_name = arglist.v.list[1].v.str;
     port = arglist.v.list[2].v.num;
-    char *port_str = nullptr;
-    asprintf(&port_str, "%d", port);
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    int rv = getaddrinfo(host_name, port_str, &hints, &servinfo);
+    int rv = getaddrinfo(host_name, get_port_str(port), &hints, &servinfo);
     if (rv != 0) {
         errlog("proto_open_connection getaddrinfo error: %s\n", gai_strerror(rv));
         return E_INVARG;
@@ -407,7 +423,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     }
     *read_fd = *write_fd = s;
 
-    stream_printf(st1, "port %" PRIdN, ntohs(get_in_port((struct sockaddr_storage *)p->ai_addr)));
+    stream_printf(st1, "port %" PRIdN, get_in_port((struct sockaddr_storage *)p->ai_addr));
     *local_name = reset_stream(st1);
 
     stream_printf(st2, "port %" PRIdN, port);

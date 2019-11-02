@@ -1493,8 +1493,11 @@ void
 proxy_connected(Objid connection, Stream *new_connection_name, struct sockaddr_storage *ip_addr)
 {
     shandle *existing_h = find_shandle(connection);
-    if (existing_h)
+    if (existing_h) {
+        const char *oldname = network_connection_name(existing_h->nhandle);
         rewrite_connection_name(existing_h->nhandle, new_connection_name, ip_addr);
+        applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", oldname, network_connection_name(existing_h->nhandle));
+    }
 }
 
 void
@@ -2249,12 +2252,16 @@ name_lookup_callback(Var arglist, Var * ret)
     Objid who = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(who);
     bool rewrite_connect_name = nargs > 1 && is_true(arglist.v.list[2]);
-    free_var(arglist);
-
     if (!h || h->disconnect_me)
         make_error_map(E_INVARG, "Invalid connection", ret);
-	else 
-        *ret = str_dup_to_var(get_nameinfo_from_network_handle(h->nhandle));
+    else
+    {
+        const char *name = get_nameinfo_from_network_handle(h->nhandle);
+        *ret = str_dup_to_var(name);
+
+        if (rewrite_connect_name)
+            network_name_lookup_rewrite(h->nhandle, name);
+    }
 }
 
 static package
@@ -2265,7 +2272,7 @@ bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
 
 	char *human_string = nullptr;
 	asprintf(&human_string, "name_lookup for #%" PRIdN "", arglist.v.list[1].v.obj);
-	return background_thread(name_lookup_callback, &arglist, human_string);
+	return background_thread(name_lookup_callback, &arglist, human_string, &background_pool);
 }
 
 static package
@@ -2547,7 +2554,7 @@ register_server(void)
 		      TYPE_OBJ, TYPE_STR);
     register_function("connection_options", 1, 1, bf_connection_options,
 		      TYPE_OBJ);
-    register_function("connection_name_lookup", 1, 1, bf_name_lookup, TYPE_OBJ);
+    register_function("connection_name_lookup", 1, 2, bf_name_lookup, TYPE_OBJ, TYPE_ANY);
     register_function("listen", 2, 4, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function("unlisten", 1, 1, bf_unlisten, TYPE_ANY);
     register_function("listeners", 0, 0, bf_listeners);
