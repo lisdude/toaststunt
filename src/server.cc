@@ -2251,7 +2251,8 @@ name_lookup_callback(Var arglist, Var * ret)
         *ret = str_dup_to_var(name);
 
         if (rewrite_connect_name)
-            network_name_lookup_rewrite(h->nhandle, name);
+            if (network_name_lookup_rewrite(h->nhandle, name) != 0)
+                make_error_map(E_INVARG, "Failed to rewrite connection name.", ret);
     }
 }
 

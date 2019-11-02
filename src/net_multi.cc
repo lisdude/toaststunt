@@ -679,7 +679,7 @@ rewrite_connection_name(network_handle nh, Stream *new_connection_name, struct s
 /* Called from connection_name_lookup, this allows us access to the network
    handle before a call to rewrite_connection_name. That way we can get
    the right(ish) port information. */
-void
+int
 network_name_lookup_rewrite(network_handle nh, const char *name)
 {
     nhandle *h = (nhandle *)nh.ptr;
@@ -699,7 +699,7 @@ network_name_lookup_rewrite(network_handle nh, const char *name)
     if (status != 0)
     {
         errlog("getaddrinfo failed in name_lookup_rewrite: %s\n", gai_strerror(status));
-        return;
+        return 1;
     }
 
     /* The only thing missing is the port we're connected to. Rather than expend any more
@@ -712,16 +712,16 @@ network_name_lookup_rewrite(network_handle nh, const char *name)
        memcpy(source_port, old_name, pos + FIRST_SPACE);
        source_port[pos + FIRST_SPACE] = '\0';
 
-    unsigned short int port = get_in_port(h->ip_addr);
-
     stream_printf(new_connection_name, "%s from %s, port %i",
                   source_port,
                   get_nameinfo(address->ai_addr),
-                  port);
+                  get_in_port(h->ip_addr));
 
     rewrite_connection_name(nh, new_connection_name, (struct sockaddr_storage *)address->ai_addr);
     applog(LOG_INFO3, "NAME_LOOKUP: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(nh));
     free_str(old_name);
+
+    return 0;
 }
 
 const char *
