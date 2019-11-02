@@ -47,15 +47,15 @@ set(CMAKE_C_FLAGS_WARN   "${SHARED_COMPILE_FLAGS} -Wall -Wno-unused-parameter -W
 set(CMAKE_CXX_FLAGS_WARN "${CMAKE_C_FLAGS_WARN}")
 
 # Check for memory leaks: Minimal optimizations, debug enabled, and sanitize address
-set(CMAKE_C_FLAGS_LEAKCHECK   "-O1 -g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+set(CMAKE_C_FLAGS_LEAKCHECK  "-O1 -g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 set(CMAKE_CXX_FLAGS_LEAKCHECK "${CMAKE_C_FLAGS_LEAKCHECK}")
 if(CMAKE_BUILD_TYPE MATCHES "LeakCheck")
     set(EXTRA_LINKER_FLAGS "-fsanitize=address")
 endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+list(APPEND CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+list(APPEND CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
 
 # Compatibility Checks Galore
 include(CheckStructHasMember)
@@ -105,7 +105,6 @@ endif()
 # Find packages. We don't do anything with the information yet because we need to know if things exist
 #                to modify the source files, so we have to do it before moo is defined. But we can't
 #                do the package setup UNTIL moo is defined.
-
 find_package(Threads REQUIRED)
 find_package(Nettle REQUIRED)
 find_package(Argon2 REQUIRED)
@@ -212,18 +211,23 @@ set(src_SERVER
 add_executable(moo ${src_SERVER})
 
 # Make sure we have the packages we need
-if(Threads_FOUND)
-    target_link_libraries(moo "${CMAKE_THREAD_LIBS_INIT}")
-    set(EXTRA_LINKER_FLAGS "${EXTRA_LINKER_FLAGS} -lpthread")
+include_directories(${NETTLE_INCLUDE_DIRS})
+target_link_libraries(moo ${NETTLE_LIBRARIES})
+include_directories(${ARGON2_INCLUDE_DIRS})
+target_link_libraries(moo ${ARGON2_LIBRARIES})
+
+if(CMAKE_USE_PTHREADS_INIT)
+    #    list(APPEND CMAKE_C_FLAGS "-pthread")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+else()
+    target_link_libraries(moo Threads::Threads)
 endif()
 
 if(PCRE_FOUND)
     include_directories(${PCRE_INCLUDE_DIRS})
     target_link_libraries(moo ${PCRE_LIBRARIES})
 endif()
-
-include_directories(${NETTLE_INCLUDE_DIRS})
-target_link_libraries(moo ${NETTLE_LIBRARIES})
 
 if(CURL_FOUND)
     include_directories(${CURL_INCLUDE_DIRS})
@@ -234,9 +238,6 @@ if(ASPELL_FOUND)
     include_directories(${ASPELL_INCLUDE_DIRS})
     target_link_libraries(moo ${ASPELL_LIBRARIES})
 endif()
-
-include_directories(${ARGON2_INCLUDE_DIRS})
-target_link_libraries(moo ${ARGON2_LIBRARIES})
 
 if(SQLITE3_FOUND)
     include_directories(${SQLITE3_INCLUDE_DIRS})
