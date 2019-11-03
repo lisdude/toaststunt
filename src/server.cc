@@ -1477,7 +1477,10 @@ char
 is_localhost(Objid connection)
 {
     shandle *existing_h = find_shandle(connection);
-    return network_is_localhost(existing_h->nhandle);
+    if (!existing_h)
+        return 0;
+    else
+        return network_is_localhost(existing_h->nhandle);
 }
 
 void
