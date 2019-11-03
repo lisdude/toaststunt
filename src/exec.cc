@@ -441,7 +441,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     args[i - 1] = nullptr;
 
 
-    env = (const char **)mymalloc(sizeof(const char *) * ((arglist.v.list[0].v.num >= 3 ? arglist.v.list[3].v.num : 0) + 1), M_ARRAY);
+    env = (const char **)mymalloc(sizeof(const char *) * ((arglist.v.list[0].v.num >= 3 ? arglist.v.list[3].v.num : i) + 1), M_ARRAY);
     env[0] = str_dup("PATH=/bin:/usr/bin");
     if (arglist.v.list[0].v.num >= 3) {
         FOR_EACH(v, arglist.v.list[3], i, c)
