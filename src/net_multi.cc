@@ -727,13 +727,13 @@ network_name_lookup_rewrite(network_handle nh, const char *name)
                   get_in_port(h->ip_addr));
 
     struct sockaddr_storage *new_ai_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
-    memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, sizeof(struct sockaddr_storage));
+    memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, sizeof address->ai_addr);
+    freeaddrinfo(address);
 
     rewrite_connection_name(nh, new_connection_name, new_ai_addr);
     applog(LOG_INFO3, "NAME_LOOKUP: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(nh));
     free_str(old_name);
     free_str(nameinfo);
-    freeaddrinfo(address);
 
     return 0;
 }

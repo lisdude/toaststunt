@@ -958,7 +958,8 @@ do_login_task(tqueue * tq, char *command)
             free_str(nameinfo);
 
             struct sockaddr_storage *new_ai_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
-            memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, sizeof(struct sockaddr_storage));
+            memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, sizeof address->ai_addr);
+            freeaddrinfo(address);
 
             proxy_connected(tq->player, new_connection_name, new_ai_addr);
             /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */

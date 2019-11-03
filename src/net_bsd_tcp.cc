@@ -383,6 +383,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
         if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
             perror("Setting listening socket options");
             close(s);
+            freeaddrinfo(servinfo);
             return E_QUOTA;
         }
 
@@ -433,11 +434,11 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     stream_printf(st1, "port %" PRIdN, get_in_port((struct sockaddr_storage *)p->ai_addr));
     *local_name = reset_stream(st1);
 
-    stream_printf(st2, "port %" PRIdN, port);
+    stream_printf(st2, "%s, port %" PRIdN, host_name, port);
     *remote_name = reset_stream(st2);
 
-    *ip_addr = *(struct sockaddr_storage *)(p->ai_addr);
-    
+    memcpy(ip_addr, (struct sockaddr_storage *)(p->ai_addr), sizeof p->ai_addr);
+
     freeaddrinfo(servinfo);
 
     return E_NONE;
