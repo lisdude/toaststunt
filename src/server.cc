@@ -1485,9 +1485,10 @@ proxy_connected(Objid connection, Stream *new_connection_name, struct sockaddr_s
 {
     shandle *existing_h = find_shandle(connection);
     if (existing_h) {
-        const char *oldname = network_connection_name(existing_h->nhandle);
+        const char *oldname = str_dup(network_connection_name(existing_h->nhandle));
         rewrite_connection_name(existing_h->nhandle, new_connection_name, ip_addr);
         applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", oldname, network_connection_name(existing_h->nhandle));
+        free_str(oldname);
     }
 }
 
@@ -2220,11 +2221,12 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
     r.type = TYPE_STR;
     r.v.str = nullptr;
 
-    if (h && !h->disconnect_me)
+    if (h && !h->disconnect_me) {
         if (arglist.v.list[0].v.num == 1)
             r.v.str = str_dup(network_connection_name(h->nhandle));
         else
             r.v.str = network_ip_address(h->nhandle);
+    }
 
     free_var(arglist);
     if (!is_wizard(progr) && progr != who)

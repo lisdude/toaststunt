@@ -340,7 +340,6 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     static const char *host_name;
     static int port;
     static Timer_ID id;
-    socklen_t length;
     int s, result;
     static Stream *st1 = nullptr, *st2 = nullptr;
     struct addrinfo hints;

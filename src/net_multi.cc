@@ -727,7 +727,7 @@ network_name_lookup_rewrite(network_handle nh, const char *name)
                   get_in_port(h->ip_addr));
 
     struct sockaddr_storage *new_ai_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
-    memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, sizeof(struct sockaddr_storage *));
+    memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, sizeof(struct sockaddr_storage));
 
     rewrite_connection_name(nh, new_connection_name, new_ai_addr);
     applog(LOG_INFO3, "NAME_LOOKUP: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(nh));
@@ -810,11 +810,11 @@ network_open_connection(Var arglist, server_listener sl)
     int rfd, wfd;
     const char *local_name, *remote_name;
     enum error e;
-    struct sockaddr_storage ip_addr;
+    struct sockaddr_storage *ip_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));;
 
-    e = proto_open_connection(arglist, &rfd, &wfd, &local_name, &remote_name, &ip_addr);
+    e = proto_open_connection(arglist, &rfd, &wfd, &local_name, &remote_name, ip_addr);
     if (e == E_NONE)
-	make_new_connection(sl, rfd, wfd, local_name, remote_name, 1, &ip_addr);
+	make_new_connection(sl, rfd, wfd, local_name, remote_name, 1, ip_addr);
 
     return e;
 }
