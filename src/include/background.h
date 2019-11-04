@@ -10,8 +10,6 @@
 #define MAX_BACKGROUND_THREADS  20      /* The total number threads allowed to be run from within the MOO.
                                            Can be overridden with $server_options.max_background_threads */
 
-static threadpool background_pool;
-
 typedef struct background_waiter {
     vm the_vm;                          // Where we resume when we're done.
     int handle;                         // Our position in the process table.

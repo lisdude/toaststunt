@@ -898,64 +898,19 @@ do_login_task(tqueue * tq, char *command)
 
         /* Detect and parse incoming localhost proxies. This allows us to have an SSL presence and keep the originating IP. */
         if (strlen(command) >= 5 && strncmp(command, "PROXY", 5) == 0) {
-            applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
-            char *source = nullptr;
-            char *source_port = nullptr;
-            char *destination_port = nullptr;
-            char *split = strtok(command, " ");
-
-            int x = 0;
-            for (x = 1; x <= 6; x++) {
-                // Just in case something goes horribly wrong...
-                if (split == nullptr) {
-                    errlog("PROXY: Proxy command parsing failed!\n");
-                    break;
-                }
-                switch (x) {
-                    case 3:
-                        source = split;
-                        break;
-                    case 5:
-                        source_port = split;
-                        break;
-                    case 6:
-                        destination_port = split;
-                        break;
-                    default:
-                        break;
-                }
-                split = strtok(nullptr, " ");
-            }
-
+            struct sockaddr_storage *new_ai_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
             static Stream *new_connection_name = nullptr;
 
             if (!new_connection_name)
                 new_connection_name = new_stream(100);
 
-			struct addrinfo *address;
-			getaddrinfo(source, source_port, &tcp_hint, &address);
+            int status = network_parse_proxy_string(command, new_connection_name, new_ai_addr);
 
-            const char *nameinfo;
-#ifndef NO_NAME_LOOKUP
-            nameinfo = get_nameinfo(address->ai_addr);
-#else
-            nameinfo = get_ntop((struct sockaddr_storage *)address->ai_addr);
-#endif
-
-            stream_printf(new_connection_name, "port %s from %s, port %s",
-                          destination_port,
-                          nameinfo,
-						  source_port);
-
-            free_str(nameinfo);
-
-            struct sockaddr_storage *new_ai_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
-            memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, sizeof address->ai_addr);
-            freeaddrinfo(address);
-
+            if (status == 0) {
             proxy_connected(tq->player, new_connection_name, new_ai_addr);
             /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */
             clear_command = true;
+            }
         }
     }
 

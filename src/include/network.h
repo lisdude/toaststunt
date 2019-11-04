@@ -27,6 +27,7 @@
 #include "config.h"
 #include "options.h"
 #include "structures.h"
+#include "streams.h"
 #include <netdb.h>
 
 typedef struct {		/* Network's handle on a connection */
@@ -36,8 +37,6 @@ typedef struct {		/* Network's handle on a connection */
 typedef struct {		/* Network's handle on a listening point */
     void *ptr;
 } network_listener;
-
-static struct addrinfo tcp_hint;
 
 #include "server.h"		/* Include this *after* defining the types */
 
@@ -261,6 +260,11 @@ extern const char *get_nameinfo_port(const struct sockaddr *sa);
                 /* These functions allow us to extract
                  * information from a sockaddr struct without
                  * knowing the exact protocol being used. */
+
+int network_parse_proxy_string(char *command, Stream *new_connection_name, struct sockaddr_storage *new_ai_addr);
+                /* Take an HAProxy connection string and parse
+                 * it into a new connection_name and sockaddr_storage
+                 * for the connection. */
 
 extern const char *get_port_str(int port);
 

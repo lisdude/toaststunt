@@ -46,6 +46,8 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 
+struct addrinfo tcp_hint;
+
 const char *
 proto_name(void)
 {
@@ -443,3 +445,59 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     return E_NONE;
 }
 #endif				/* OUTBOUND_NETWORK */
+
+int
+network_parse_proxy_string(char *command, Stream *new_connection_name, struct sockaddr_storage *new_ai_addr)
+{
+    applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
+    char *source = nullptr;
+    char *source_port = nullptr;
+    char *destination_port = nullptr;
+    char *split = strtok(command, " ");
+
+    int x = 0;
+    for (x = 1; x <= 6; x++) {
+        // Just in case something goes horribly wrong...
+        if (split == nullptr) {
+            errlog("PROXY: Proxy command parsing failed!\n");
+            return 1;
+        }
+        switch (x) {
+            case 3:
+                source = split;
+                break;
+            case 5:
+                source_port = split;
+                break;
+            case 6:
+                destination_port = split;
+                break;
+            default:
+                break;
+        }
+        split = strtok(nullptr, " ");
+    }
+
+    struct addrinfo *address;
+    getaddrinfo(source, source_port, &tcp_hint, &address);
+
+    const char *nameinfo;
+#ifndef NO_NAME_LOOKUP
+    nameinfo = get_nameinfo(address->ai_addr);
+#else
+    nameinfo = get_ntop((struct sockaddr_storage *)address->ai_addr);
+#endif
+
+    stream_printf(new_connection_name, "port %s from %s, port %s",
+            destination_port,
+            nameinfo,
+            source_port);
+
+    free_str(nameinfo);
+
+    memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, sizeof address->ai_addr);
+
+    freeaddrinfo(address);
+
+    return 0;
+}

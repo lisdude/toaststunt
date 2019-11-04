@@ -27,6 +27,7 @@
      - Resuming tasks with data from external threads
 */
 
+static threadpool background_pool;
 static std::map <int, background_waiter*> background_process_table;
 static int next_background_handle = 1;
 

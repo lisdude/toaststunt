@@ -108,6 +108,8 @@ typedef struct {
 static fd_reg *reg_fds = nullptr;
 static int max_reg_fds = 0;
 
+extern struct addrinfo tcp_hint;
+
 void
 network_register_fd(int fd, network_fd_callback readable,
 		    network_fd_callback writable, void *data)
