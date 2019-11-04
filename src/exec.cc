@@ -399,6 +399,18 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 	goto free_arglist;
     }
 
+    /* Make sure any environment variables supplied are strings. */
+    if (arglist.v.list[0].v.num >= 3) {
+        // Use our own i and c here because i gets reused later.
+        int env_i, env_c;
+        FOR_EACH(v, arglist.v.list[3], env_i, env_c) {
+            if (v.type != TYPE_STR) {
+                pack = make_error_pack(E_INVARG);
+                goto free_arglist;
+            }
+        }
+    }
+
     /* prepend the exec subdirectory path */
     static Stream *s;
     if (!s)
@@ -437,13 +449,15 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 
     args = (const char **)mymalloc(sizeof(const char *) * i, M_ARRAY);
     FOR_EACH(v, arglist.v.list[1], i, c)
-	args[i - 1] = str_dup(v.v.str);
+    	args[i - 1] = str_dup(v.v.str);
     args[i - 1] = nullptr;
 
 
-    env = (const char **)mymalloc(sizeof(const char *) * ((arglist.v.list[0].v.num >= 3 ? arglist.v.list[3].v.num : i) + 1), M_ARRAY);
+    /* setup the environment variables */
+    // Add two to the args so we're guaranteed to always have env[0] for PATH and env[$] for null
+    env = (const char **)mymalloc(sizeof(const char *) * ((listlength(arglist) >= 3 ? listlength(arglist.v.list[3]) : 0) + 2), M_ARRAY);
     env[0] = str_dup("PATH=/bin:/usr/bin");
-    if (arglist.v.list[0].v.num >= 3) {
+    if (listlength(arglist) >= 3) {
         FOR_EACH(v, arglist.v.list[3], i, c)
             env[i] = str_dup(v.v.str);
         env[i] = nullptr;
