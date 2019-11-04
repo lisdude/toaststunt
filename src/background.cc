@@ -110,7 +110,7 @@ background_thread(void (*callback)(Var, Var*), Var* data, char *human_title, thr
         return make_error_pack(E_QUOTA);
     }
 
-    if (!threading_enabled || *the_pool == nullptr)
+    if (!threading_enabled)
     {
         Var r;
         callback(*data, &r);
@@ -123,7 +123,7 @@ background_thread(void (*callback)(Var, Var*), Var* data, char *human_title, thr
         w->callback = callback;
         w->data = *data;
         w->human_title = human_title;
-        w->pool = the_pool;
+        w->pool = (the_pool == nullptr ? &background_pool : the_pool);
         if (pipe(w->fd) == -1)
         {
             errlog("Failed to create pipe for background thread\n");
