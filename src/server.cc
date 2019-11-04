@@ -111,6 +111,7 @@ typedef struct shandle {
     Objid listener;
     task_queue tasks;
     int disconnect_me;
+    Objid switched;
     int outbound, binary;
     int print_messages;
 } shandle;
@@ -804,7 +805,11 @@ main_loop(void)
 				     "*** Disconnected ***", 0);
 		    network_close(h->nhandle);
 		    free_shandle(h);
-		}
+		} else if (is_user(h->switched)) {
+            call_notifier(h->switched, h->listener, "user_disconnected");
+            h->switched = 0;
+            call_notifier(h->player, h->listener, "user_connected");
+        }
 	    }
 	}
     }
@@ -1360,6 +1365,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
     h->connection_time = 0;
     h->last_activity_time = time(nullptr);
     h->player = next_unconnected_player--;
+    h->switched = 0;
     h->listener = l ? l->oid : SYSTEM_OBJECT;
     h->tasks = new_task_queue(h->player, h->listener);
     h->disconnect_me = 0;
@@ -1449,28 +1455,19 @@ player_connected_silent(Objid old_id, Objid new_id)
     if (!new_h)
 	panic_moo("Non-existent shandle connected");
 
+    new_h->switched = new_h->player;
     new_h->player = new_id;
     new_h->connection_time = time(nullptr);
 
     if (existing_h) {
-	/* network_connection_name is allowed to reuse the same string
-	 * storage, so we have to copy one of them.
-	 */
-	char *name1 = str_dup(network_connection_name(existing_h->nhandle));
-	oklog("REDIRECTED: %s, was %s, now %s\n",
-	      object_name(new_id),
-	      name1,
-	      network_connection_name(new_h->nhandle));
-	free_str(name1);
-	network_close(existing_h->nhandle);
-	free_shandle(existing_h);
-    } else {
+        network_close(existing_h->nhandle);
+	    free_shandle(existing_h);
+    }
 	oklog("SWITCHED: %s is now %s on %s\n",
 	      old_name,
           object_name(new_h->player),
 	      network_connection_name(new_h->nhandle));
-    }
-    free_str(old_name);
+   free_str(old_name);
 }
 
 char
