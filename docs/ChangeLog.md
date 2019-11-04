@@ -1,8 +1,13 @@
 # ToastStunt ChangeLog
 
 ## 2.6.0 (In Progress)
-- Add an `owned_objects(OBJ <who>)` builtin to return a list of valid objects owned by who.
+### Bug Fixes
 - Fix a security oversight where `recreate()` could allow the recreation of an object that already owns other objects, verbs, or properties. Now the `recycle()` function will correct ownership of anything owned by the object being recycled, though at a slight cost to speed on larger databases. If the speed hit proves to be too much and you know what you're doing, you can disable the `SAFE_RECYCLE` option in options.h.
+- Fixed a bug in `exec()` that could cause the server to panic.
+- Fixed a slow memory leak when pulling telnet sequences.
+
+### New Features
+- Add an `owned_objects(OBJ <who>)` builtin to return a list of valid objects owned by who.
 - Add the `NO_NAME_LOOKUP` option to options.h. When enabled, the server won't attempt to perform a DNS name lookups on any new connections.
 - Add the `connection_name_lookup(<connection> [, <rewrite connection_name>])` function to perform a DNS lookup on a connection's IP address in a background thread. Note that this function implicitly suspends, so if you use it in do_login_command you'll also need to use `switch_player()` or `force_input()` to work around the no-suspend-at-login rule.
 - Add a `thread_pool(<function>, <pool> [, <value>])` function that allows control over the thread pools from within the database.
