@@ -19,12 +19,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <math.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-
 #include <string.h>
 #include <time.h>
-#include <netinet/in.h>
 
 #include "config.h"
 #include "db.h"
@@ -52,6 +48,7 @@
 #include "verbs.h"
 #include "version.h"
 #include "background.h"
+#include "network.h"
 
 #define ROUND(tvp)	((tvp)->tv_sec + ((tvp)->tv_usec > 500000))
 
@@ -935,13 +932,8 @@ do_login_task(tqueue * tq, char *command)
             if (!new_connection_name)
                 new_connection_name = new_stream(100);
 
-			struct addrinfo hints, *address;
-
-			memset(&hints, 0, sizeof hints);
-			hints.ai_family = AF_UNSPEC;
-			hints.ai_socktype = SOCK_STREAM;
-
-			getaddrinfo(source, source_port, &hints, &address);
+			struct addrinfo *address;
+			getaddrinfo(source, source_port, &tcp_hint, &address);
 
             const char *nameinfo;
 #ifndef NO_NAME_LOOKUP

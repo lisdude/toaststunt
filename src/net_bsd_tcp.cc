@@ -64,6 +64,10 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
     if (!tcp_arguments(argc, argv, &port))
 	return 0;
 
+    memset(&tcp_hint, 0, sizeof tcp_hint);
+    tcp_hint.ai_family = AF_UNSPEC;
+    tcp_hint.ai_socktype = SOCK_STREAM;
+
     desc->type = TYPE_INT;
     desc->v.num = port;
     return 1;
@@ -342,7 +346,6 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     static Timer_ID id;
     int s, result;
     static Stream *st1 = nullptr, *st2 = nullptr;
-    struct addrinfo hints;
     struct addrinfo *servinfo, *p;
     int yes = 1;
 
@@ -362,11 +365,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     host_name = arglist.v.list[1].v.str;
     port = arglist.v.list[2].v.num;
 
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    int rv = getaddrinfo(host_name, get_port_str(port), &hints, &servinfo);
+    int rv = getaddrinfo(host_name, get_port_str(port), &tcp_hint, &servinfo);
     if (rv != 0) {
         errlog("proto_open_connection getaddrinfo error: %s\n", gai_strerror(rv));
         return E_INVARG;

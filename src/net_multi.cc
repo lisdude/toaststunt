@@ -98,7 +98,6 @@ typedef struct nlistener {
 
 static nlistener *all_nlisteners = nullptr;
 
-
 typedef struct {
     int fd;
     network_fd_callback readable;
@@ -690,7 +689,7 @@ int
 network_name_lookup_rewrite(network_handle nh, const char *name)
 {
     nhandle *h = (nhandle *)nh.ptr;
-    struct addrinfo hints, *address;
+    struct addrinfo *address;
     int status;
     const char *old_name = str_dup(network_connection_name(nh));  // rewrite is going to free this
 
@@ -698,11 +697,7 @@ network_name_lookup_rewrite(network_handle nh, const char *name)
     if (!new_connection_name)
         new_connection_name = new_stream(100);
 
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    status = getaddrinfo(name, nullptr, &hints, &address);
+    status = getaddrinfo(name, nullptr, &tcp_hint, &address);
     if (status != 0)
     {
         errlog("getaddrinfo failed in name_lookup_rewrite: %s\n", gai_strerror(status));

@@ -2270,7 +2270,7 @@ bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
 
 	char *human_string = nullptr;
 	asprintf(&human_string, "name_lookup for #%" PRIdN "", arglist.v.list[1].v.obj);
-	return background_thread(name_lookup_callback, &arglist, human_string, &background_pool);
+	return background_thread(name_lookup_callback, &arglist, human_string);
 }
 
 static package

@@ -9,12 +9,12 @@
 ### New Features
 - Add an `owned_objects(OBJ <who>)` builtin to return a list of valid objects owned by who.
 - Add the `NO_NAME_LOOKUP` option to options.h. When enabled, the server won't attempt to perform a DNS name lookups on any new connections.
-- Add the `connection_name_lookup(<connection> [, <rewrite connection_name>])` function to perform a DNS lookup on a connection's IP address in a background thread. Note that this function implicitly suspends, so if you use it in do_login_command you'll also need to use `switch_player()` or `force_input()` to work around the no-suspend-at-login rule.
+- Add the `connection_name_lookup(<connection> [, <rewrite connection_name>])` function to perform a DNS lookup on a connection's IP address in a background thread. Note that this function implicitly suspends, so if you use it in do_login_command you'll also need to use `switch_player()` or `force_input()` to work around the no-suspend-in-do_login_command shortcoming.
 - Add a `thread_pool(<function>, <pool> [, <value>])` function that allows control over the thread pools from within the database.
 - The server now keeps a record of the IP address used by a connection. As such, the `connection_name()` function now has an optional argument that will return a connection's IP address. This is more reliable than parsing the standard `connection_name()` string.
 - The server will now listen for connections on both IPv4 and IPv6 addresses by default.
 - The `listen()` function now has a second optional argument indicating that the server should listen with IPv6 rather than the default IPv4.
-- The command line argument to specify the listening IPv4 address has been changed to `-4` and `-6` has been added to specify the listening IPv6 address.
+- The command line argument to specify the listening IPv4 interface has been changed to `-4` and `-6` has been added to specify the listening IPv6 interace.
 
 ## 2.5.13 (Oct 14, 2019)
 - Add a `sqlite_limit()` builtin to limit the size of various SQLite constructs. [More information](https://www.sqlite.org/c3ref/c_limit_attached.html)

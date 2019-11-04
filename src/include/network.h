@@ -37,6 +37,8 @@ typedef struct {		/* Network's handle on a listening point */
     void *ptr;
 } network_listener;
 
+static struct addrinfo tcp_hint;
+
 #include "server.h"		/* Include this *after* defining the types */
 
 extern const char *network_protocol_name(void);
