@@ -8,7 +8,7 @@
 
 ### New Features
 - Add an `owned_objects(OBJ <who>)` builtin to return a list of valid objects owned by who.
-- Add the `NO_NAME_LOOKUP` option to options.h. When enabled, the server won't attempt to perform a DNS name lookups on any new connections. This option can be overriden in-DB by setting `$server_options.no_name_lookup` to 1 or 0.
+- Add the `NO_NAME_LOOKUP` option to options.h. When enabled, the server won't attempt to perform a DNS name lookups on any new connections. This option can be overridden in-DB by setting `$server_options.no_name_lookup` to 1 or 0.
 - Add the `connection_name_lookup(<connection> [, <rewrite connection_name>])` function to perform a DNS lookup on a connection's IP address in a background thread. Note that this function implicitly suspends, so if you use it in do_login_command you'll also need to use `switch_player()` or `force_input()` to work around the no-suspend-in-do_login_command shortcoming.
 - Add a `thread_pool(<function>, <pool> [, <value>])` function that allows control over the thread pools from within the database.
 - The server now keeps a record of the IP address used by a connection. As such, the `connection_name()` function now has an optional argument that will return a connection's IP address. This is more reliable than parsing the standard `connection_name()` string.
