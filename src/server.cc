@@ -1820,7 +1820,12 @@ main(int argc, char **argv)
             lv6_status = start_listener(lv6);
 
         if (!lv4_status && !lv6_status)
-        exit(1);
+            exit(1);
+
+        if (!lv4_status)
+            free_slistener(lv4);
+        if (!lv6_status)
+            free_slistener(lv6);
 
 	main_loop();
 

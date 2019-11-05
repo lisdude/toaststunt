@@ -463,9 +463,10 @@ accept_new_connection(nlistener * l)
     case PA_FULL:
 	for (i = 0; i < proto.pocket_size; i++)
 	    close(pocket_descriptors[i]);
-	if (proto_accept_connection(l->fd, &rfd, &wfd, &host_name, ip_addr) != PA_OKAY)
+	if (proto_accept_connection(l->fd, &rfd, &wfd, &host_name, ip_addr) != PA_OKAY) {
 	    errlog("Can't accept connection even by emptying pockets!\n");
-	else {
+        free(ip_addr);
+    } else {
 	    nh.ptr = h = new_nhandle(rfd, wfd, l->name, host_name, 0, ip_addr);
 	    server_refuse_connection(l->slistener, nh);
 	    close_nhandle(h);
@@ -475,6 +476,7 @@ accept_new_connection(nlistener * l)
 
     case PA_OTHER:
 	/* Do nothing.  The protocol implementation has already logged it. */
+    free(ip_addr);
 	break;
     }
 }
