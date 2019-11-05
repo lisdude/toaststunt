@@ -2429,7 +2429,7 @@ static package
 bf_unlisten(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (desc) */
     Var desc = arglist.v.list[1];
-    bool ipv6 = arglist.v.list[0].v.num >= 2 && is_true(arglist.v.list[1]);
+    bool ipv6 = arglist.v.list[0].v.num >= 2 && is_true(arglist.v.list[2]);
     enum error e = E_NONE;
     slistener *l = nullptr;
 
@@ -2556,7 +2556,7 @@ register_server(void)
 		      TYPE_OBJ);
     register_function("connection_name_lookup", 1, 2, bf_name_lookup, TYPE_OBJ, TYPE_ANY);
     register_function("listen", 2, 4, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
-    register_function("unlisten", 1, 1, bf_unlisten, TYPE_ANY);
+    register_function("unlisten", 1, 2, bf_unlisten, TYPE_ANY, TYPE_ANY);
     register_function("listeners", 0, 0, bf_listeners);
     register_function("buffered_output_length", 0, 1,
 		      bf_buffered_output_length, TYPE_OBJ);
