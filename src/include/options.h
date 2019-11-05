@@ -510,10 +510,14 @@
  * By default, the server will resolve DNS hostnames from IP addresses for all
  * connections. If you intend to use in-database threaded DNS lookups, or just
  * always want numeric IP addresses, you can disable name lookups here.
+ * NOTE: This option can be controlled in the database by setting the property
+ *       $server_options.no_name_lookup to 0 or 1. Because of this, you should
+ *       not comment out this define. Instead, set it to 1 or 0. If no option
+ *       is specified in-DB, it will fall back to the value defined here.
  ******************************************************************************
  */
 
-/* #define NO_NAME_LOOKUP */
+#define NO_NAME_LOOKUP 0
 
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********

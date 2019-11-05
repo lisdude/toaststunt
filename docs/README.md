@@ -75,7 +75,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - TOTAL_BACKGROUND_THREADS (number of threads created at runtime)
     - DEFAULT_THREAD_MODE (default mode of threaded functions)
     - SAFE_RECYCLE (change ownership of everything an object owns before recycling it)
-    - NO_NAME_LOOKUP (disable automatic DNS name resolution on new connections)
+    - NO_NAME_LOOKUP (disable automatic DNS name resolution on new connections. Can be overridden with $server_options.no_name_lookup)
 
 - Additional builtins:
     - frandom (random floats)

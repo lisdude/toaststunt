@@ -199,11 +199,10 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
     *read_fd = *write_fd = fd;
 
     const char *nameinfo;
-#ifndef NO_NAME_LOOKUP
-    nameinfo = get_nameinfo((struct sockaddr *)&addr);
-#else
-    nameinfo = get_ntop(&addr);
-#endif
+    if (!server_int_option("no_name_lookup", NO_NAME_LOOKUP))
+        nameinfo = get_nameinfo((struct sockaddr *)&addr);
+    else
+        nameinfo = get_ntop(&addr);
 
     stream_printf(s, "%s, port %" PRIdN,
             nameinfo,
@@ -482,11 +481,10 @@ network_parse_proxy_string(char *command, Stream *new_connection_name, struct so
     getaddrinfo(source, source_port, &tcp_hint, &address);
 
     const char *nameinfo;
-#ifndef NO_NAME_LOOKUP
-    nameinfo = get_nameinfo(address->ai_addr);
-#else
-    nameinfo = get_ntop((struct sockaddr_storage *)address->ai_addr);
-#endif
+    if (!server_int_option("no_name_lookup", NO_NAME_LOOKUP))
+        nameinfo = get_nameinfo(address->ai_addr);
+    else
+        nameinfo = get_ntop((struct sockaddr_storage *)address->ai_addr);
 
     stream_printf(new_connection_name, "port %s from %s, port %s",
             destination_port,
