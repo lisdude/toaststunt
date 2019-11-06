@@ -78,13 +78,13 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 enum error
 proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_ipv6)
 {
-    int s, port, option = 1;
+    int s, port, yes = 1;
     static Stream *st = nullptr;
     struct addrinfo hints;
     struct addrinfo *servinfo, *p;
-
+    
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = use_ipv6 ? AF_INET6 : AF_INET;
+    hints.ai_family = (use_ipv6 ? AF_INET6 : AF_INET);
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;        // use all the IPs
 
@@ -110,8 +110,15 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
             continue;
         }
 
-        if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(int)) == -1) {
+        if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == -1) {
             perror("Setting listening socket options");
+            close(s);
+            freeaddrinfo(servinfo);
+            return E_QUOTA;
+        }
+
+        if (use_ipv6 && setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof yes) == -1) {
+            perror("Disabling dual-stack mode for IPv6");
             close(s);
             freeaddrinfo(servinfo);
             return E_QUOTA;
@@ -149,8 +156,10 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
         return e;
     }
 
-    stream_printf(st, "port %" PRIdN, canon->v.num);
+    const char *nameinfo = get_ntop((struct sockaddr_storage *)p->ai_addr);
+    stream_printf(st, "%s port %" PRIdN, nameinfo, canon->v.num);
     *name = reset_stream(st);
+    free_str(nameinfo);
     *fd = s;
 
     freeaddrinfo(servinfo);
