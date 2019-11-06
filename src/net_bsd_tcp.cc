@@ -117,21 +117,22 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
             return E_QUOTA;
         }
 
-        if (bind(s, p->ai_addr, p->ai_addrlen) == -1) {
-            close(s);
-            perror("Binding listening socket");
-            continue;
-        }
-
         if (port == 0) {
+            applog(LOG_INFO2, "Port is 0 in proto_make_listener. Attempting to discover actual local port number...\n");
             if (getsockname(s, p->ai_addr, &(p->ai_addrlen)) < 0) {
-                log_perror("Discovering local port number");
+                log_perror("... failed to discover local port number");
                 close(s);
                 freeaddrinfo(servinfo);
                 return E_QUOTA;
+            } else {
+                canon->type = TYPE_INT;
+                canon->v.num = get_in_port((struct sockaddr_storage *)p->ai_addr);
+                applog(LOG_INFO2, "... port is now %i\n", canon->v.num);
             }
-            canon->type = TYPE_INT;
-            canon->v.num = get_in_port((struct sockaddr_storage *)p->ai_addr);
+        } else if (bind(s, p->ai_addr, p->ai_addrlen) == -1) {
+            close(s);
+            perror("Binding listening socket");
+            continue;
         } else {
             *canon = var_ref(desc);
         }
@@ -161,6 +162,8 @@ int
 proto_listen(int fd)
 {
     int status = listen(fd, 5);
+    if (status != 0)
+        log_perror("Failed to listen");
     return status == 0 ? 1 : 0;
 }
 
