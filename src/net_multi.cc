@@ -814,6 +814,8 @@ network_open_connection(Var arglist, server_listener sl)
     e = proto_open_connection(arglist, &rfd, &wfd, &local_name, &remote_name, ip_addr);
     if (e == E_NONE)
 	make_new_connection(sl, rfd, wfd, local_name, remote_name, 1, ip_addr);
+    else
+    free(ip_addr);
 
     return e;
 }
