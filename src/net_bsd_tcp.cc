@@ -282,10 +282,14 @@ const char *get_ntop(const struct sockaddr_storage *sa)
 const char *get_nameinfo(const struct sockaddr *sa)
 {
     char hostname[NI_MAXHOST] = "";
+    
     int status = getnameinfo(sa, sizeof *sa, hostname, sizeof hostname, nullptr, 0, 0);
 
     if (status != 0) {
-        errlog("getnameinfo failed: %s\n", gai_strerror(status));
+        /* Don't bother reporting unrecognized family errors.
+           More than likely it's because it's IPv6 '::' */
+        if (status != EAI_FAMILY)
+            errlog("getnameinfo failed: %s\n", gai_strerror(status));
         return get_ntop((sockaddr_storage *)sa);
     }
 
