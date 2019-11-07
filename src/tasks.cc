@@ -910,7 +910,9 @@ do_login_task(tqueue * tq, char *command)
             proxy_connected(tq->player, new_connection_name, new_ai_addr);
             /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */
             clear_command = true;
-            }
+            } else {
+				free(new_ai_addr);
+			}
         }
     }
 
