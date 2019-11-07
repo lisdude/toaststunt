@@ -282,8 +282,9 @@ const char *get_ntop(const struct sockaddr_storage *sa)
 const char *get_nameinfo(const struct sockaddr *sa)
 {
     char hostname[NI_MAXHOST] = "";
+    socklen_t sa_length = (sa->sa_family == AF_INET6 ? sizeof(sockaddr_in6) : sizeof(sockaddr_in));
     
-    int status = getnameinfo(sa, sizeof *sa, hostname, sizeof hostname, nullptr, 0, 0);
+    int status = getnameinfo(sa, sa_length, hostname, sizeof hostname, nullptr, 0, 0);
 
     if (status != 0) {
         /* Don't bother reporting unrecognized family errors.
@@ -509,7 +510,7 @@ network_parse_proxy_string(char *command, Stream *new_connection_name, struct so
 
     free_str(nameinfo);
 
-    memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, sizeof address->ai_addr);
+    memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, address->ai_addrlen);
 
     freeaddrinfo(address);
 
