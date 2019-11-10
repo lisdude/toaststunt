@@ -7,6 +7,7 @@
 - Add the `name_lookup(<IP address>)` function to perform a DNS lookup on an IP address in the background. Note that this function implicitly suspends, so if you use it in do_login_command you'll also need to use `switch_player()` to work around the no-suspend-at-login rule.
 - Add the `TOTAL_DNS_THREADS` option to options.h to control how many threads are given to `name_lookup()` at runtime.
 - Add a `thread_pool(<function>, <pool> [, <value>])` function that allows control over the thread pools from within the database.
+- Remove the `process_id()` builtin function.
 
 ## 2.5.13 (Oct 14, 2019)
 - Add a `sqlite_limit()` builtin to limit the size of various SQLite constructs. [More information](https://www.sqlite.org/c3ref/c_limit_attached.html)
