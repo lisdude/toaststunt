@@ -2551,10 +2551,8 @@ register_server(void)
     register_function("boot_player", 1, 1, bf_boot_player, TYPE_OBJ);
     register_function("set_connection_option", 3, 3, bf_set_connection_option,
 		      TYPE_OBJ, TYPE_STR, TYPE_ANY);
-    register_function("connection_option", 2, 2, bf_connection_options,
+    register_function("connection_options", 1, 2, bf_connection_options,
 		      TYPE_OBJ, TYPE_STR);
-    register_function("connection_options", 1, 1, bf_connection_options,
-		      TYPE_OBJ);
     register_function("connection_name_lookup", 1, 2, bf_name_lookup, TYPE_OBJ, TYPE_ANY);
     register_function("listen", 2, 4, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function("unlisten", 1, 2, bf_unlisten, TYPE_ANY, TYPE_ANY);
