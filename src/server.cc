@@ -54,6 +54,7 @@
 #include "garbage.h"
 #include "list.h"
 #include "log.h"
+#include "map.h"
 #include <nettle/sha2.h>
 #include "network.h"
 #include "numbers.h"
@@ -2448,22 +2449,22 @@ bf_unlisten(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* () */
-    int i, count = 0;
-    Var list, entry;
+{				/* (find) */
+    const int nargs = arglist.v.list[0].v.num;
+    Var entry, list = new_list(0);
+    bool find_listener = nargs == 1 ? true : false;
+    const Var find = find_listener ? arglist.v.list[1] : zero;
     slistener *l;
 
     free_var(arglist);
-    for (l = all_slisteners; l; l = l->next)
-	count++;
-    list = new_list(count);
-    for (i = 1, l = all_slisteners; l; i++, l = l->next) {
-	list.v.list[i] = entry = new_list(3);
-	entry.v.list[1].type = TYPE_OBJ;
-	entry.v.list[1].v.obj = l->oid;
-	entry.v.list[2] = var_ref(l->desc);
-	entry.v.list[3].type = TYPE_INT;
-	entry.v.list[3].v.num = l->print_messages;
+
+    for (l = all_slisteners; l && (!find_listener || equality(find, (find.type == TYPE_OBJ) ? Var::new_obj(l->oid) : l->desc, 0)); l = l->next) {
+	entry = new_map();
+	entry = mapinsert(entry, str_dup_to_var("object"), Var::new_obj(l->oid));
+	entry = mapinsert(entry, str_dup_to_var("canon"), var_ref(l->desc));
+	entry = mapinsert(entry, str_dup_to_var("print_messages"), Var::new_int(l->print_messages));
+	entry = mapinsert(entry, str_dup_to_var("ipv6"), Var::new_int(l->ipv6));
+	list = listappend(list, entry);
     }
 
     return make_var_pack(list);
@@ -2557,7 +2558,7 @@ register_server(void)
     register_function("connection_name_lookup", 1, 2, bf_name_lookup, TYPE_OBJ, TYPE_ANY);
     register_function("listen", 2, 4, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function("unlisten", 1, 2, bf_unlisten, TYPE_ANY, TYPE_ANY);
-    register_function("listeners", 0, 0, bf_listeners);
+    register_function("listeners", 0, 1, bf_listeners, TYPE_ANY);
     register_function("buffered_output_length", 0, 1,
 		      bf_buffered_output_length, TYPE_OBJ);
 }
