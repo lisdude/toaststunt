@@ -809,9 +809,9 @@ main_loop(void)
 		} else if (h->switched) {
             if (is_user(h->switched))
                 call_notifier(h->switched, h->listener, "user_disconnected");
-                h->switched = 0;
             if (is_user(h->player))
                 call_notifier(h->player, h->listener, "user_connected");
+            h->switched = 0;
         }
 	    }
 	}
