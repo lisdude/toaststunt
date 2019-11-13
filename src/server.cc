@@ -75,6 +75,7 @@
 #include "waif.h" /* destroyed_waifs */
 #include "curl.h" /* curl shutdown */
 #include "background.h"
+#include "map.h"
 
 extern "C" {
 #include "dependencies/linenoise.h"
@@ -126,7 +127,9 @@ typedef struct slistener {
     Var desc;
     int print_messages;
     bool ipv6;
-    const char *name;
+    const char *name;           // resolved hostname
+    const char *ip_addr;        // 'raw' IP address
+    u_int16_t port;             // listening port
 } slistener;
 
 static slistener *all_slisteners = nullptr;
@@ -161,43 +164,48 @@ free_shandle(shandle * h)
 static slistener *
 new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_ipv6)
 {
-    slistener *l = (slistener *)mymalloc(sizeof(slistener), M_NETWORK);
+    slistener *listener = (slistener *)mymalloc(sizeof(slistener), M_NETWORK);
     server_listener sl;
     enum error e;
-    const char *name;
+    const char *name, *ip_address;
+    u_int16_t port;
 
-    sl.ptr = l;
-    e = network_make_listener(sl, desc, &(l->nlistener), &(l->desc), &name, use_ipv6);
+    sl.ptr = listener;
+    e = network_make_listener(sl, desc, &(listener->nlistener), &name, &ip_address, &port, use_ipv6);
 
     if (ee)
-	*ee = e;
+        *ee = e;
 
     if (e != E_NONE) {
-	myfree(l, M_NETWORK);
-	return nullptr;
+        myfree(listener, M_NETWORK);
+        return nullptr;
     }
-    l->oid = oid;
-    l->print_messages = print_messages;
-    l->name = str_dup(name);
-    l->ipv6 = use_ipv6;
 
-    l->next = all_slisteners;
-    l->prev = &all_slisteners;
+    listener->oid = oid;
+    listener->print_messages = print_messages;
+    listener->name = str_dup(name);
+    listener->ipv6 = use_ipv6;
+    listener->ip_addr = str_dup(ip_address);
+    listener->port = port;
+    listener->desc = var_ref(desc);
+
+    listener->next = all_slisteners;
+    listener->prev = &all_slisteners;
     if (all_slisteners)
-	all_slisteners->prev = &(l->next);
-    all_slisteners = l;
+        all_slisteners->prev = &(listener->next);
+    all_slisteners = listener;
 
-    return l;
+    return listener;
 }
 
 static int
 start_listener(slistener * l)
 {
     if (network_listen(l->nlistener)) {
-	oklog("LISTEN: #%" PRIdN " now listening on %s\n", l->oid, l->name);
+	oklog("LISTEN: #%" PRIdN " now listening on %s [%s], port %i\n", l->oid, l->name, l->ip_addr, l->port);
 	return 1;
     } else {
-	errlog("LISTEN: Can't start #%" PRIdN " listening on %s!\n", l->oid, l->name);
+	errlog("LISTEN: Can't start #%" PRIdN " listening on %s [%s], port %i\n", l->oid, l->name, l->ip_addr, l->port);
 	return 0;
     }
 }
@@ -214,6 +222,7 @@ free_slistener(slistener * l)
 
     free_var(l->desc);
     free_str(l->name);
+    free_str(l->ip_addr);
 
     myfree(l, M_NETWORK);
 }
@@ -1387,9 +1396,15 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
 	task_suspend_input(h->tasks);
     }
 
-    oklog("%s: #%" PRIdN " on %s\n",
-	  outbound ? "CONNECT" : "ACCEPT",
-	  h->player, network_connection_name(nh));
+    if (outbound) {
+        oklog("CONNECT: #%" PRIdN " to %s [%s], port %i\n", h->player,
+              network_connection_name(nh), network_ip_address(nh), network_port(nh));
+    } else {
+    oklog("ACCEPT: #%" PRIdN " on %s [%s], port %i from %s [%s], port %i\n", h->player,
+	  network_source_connection_name(nh), network_source_ip_address(nh),
+      network_source_port(nh), network_connection_name(nh),
+      network_ip_address(nh), network_port(nh));
+}
 
     result.ptr = h;
     return result;
@@ -1483,16 +1498,47 @@ is_localhost(Objid connection)
         return network_is_localhost(existing_h->nhandle);
 }
 
-void
-proxy_connected(Objid connection, Stream *new_connection_name, struct sockaddr_storage *ip_addr)
+int
+proxy_connected(Objid connection, char *command)
 {
     shandle *existing_h = find_shandle(connection);
     if (existing_h) {
-        const char *oldname = str_dup(network_connection_name(existing_h->nhandle));
-        rewrite_connection_name(existing_h->nhandle, new_connection_name, ip_addr);
-        applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", oldname, network_connection_name(existing_h->nhandle));
-        free_str(oldname);
+    applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
+    char *source, *destination = nullptr;
+    char *source_port = nullptr;
+    char *destination_port = nullptr;
+    char *split = strtok(command, " ");
+
+    int x = 0;
+    for (x = 1; x <= 6; x++) {
+        // Just in case something goes horribly wrong...
+        if (split == nullptr) {
+            errlog("PROXY: Proxy command parsing failed!\n");
+            return 1;
+        }
+        switch (x) {
+            case 3:
+                source = split;        // local interface
+                break;
+            case 4:
+                destination = split;             // incoming connection IP
+                break;
+            case 5:
+                destination_port = split;        // incoming connection port
+                break;
+            case 6:
+                source_port = split;   // local port
+                break;
+            default:
+                break;
+        }
+        split = strtok(nullptr, " ");
     }
+    rewrite_connection_name(existing_h->nhandle, destination, destination_port, source, source_port);
+    } else {
+        return -1;
+    }
+    return 0;
 }
 
 void
@@ -1781,8 +1827,12 @@ main(int argc, char **argv)
     register_bi_functions();
 
     // Listen on both IPv4 and IPv6
-    lv4 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, false);
-    lv6 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, true);
+    if ((lv4 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, false)) == nullptr)
+        errlog("Error creating IPv4 listener.\n");
+
+    if ((lv6 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, true)) == nullptr)
+        errlog("Error creating IPv6 listener.\n");
+        
     if (!lv4 && !lv6) {
 	errlog("Can't create initial connection point!\n");
 	exit(1);
@@ -2257,7 +2307,7 @@ name_lookup_callback(Var arglist, Var * ret)
         make_error_map(E_INVARG, "Invalid connection", ret);
     else
     {
-        const char *name = get_nameinfo_from_network_handle(h->nhandle);
+        const char *name = network_connection_name(h->nhandle);
         *ret = str_dup_to_var(name);
 
         if (rewrite_connect_name)
@@ -2388,6 +2438,44 @@ bf_connection_options(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
     return make_var_pack(ans);
+}
+
+static package
+bf_connection_info(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (conn) */
+    Objid oid = arglist.v.list[1].v.obj;
+    shandle *h = find_shandle(oid);
+
+    if (!h || h->disconnect_me) {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    } else if (oid != progr && !is_wizard(progr)) {
+	free_var(arglist);
+	return make_error_pack(E_PERM);
+    }
+
+    // Avoid some mallocs
+    static Var src_addr =   str_dup_to_var("source_address");
+    static Var src_ip =   str_dup_to_var("source_ip");
+    static Var src_port =   str_dup_to_var("source_port");
+    static Var dest_addr =  str_dup_to_var("destination_address");
+    static Var dest_ip =  str_dup_to_var("destination_ip");
+    static Var dest_port =  str_dup_to_var("destination_port");
+    static Var protocol =   str_dup_to_var("protocol");
+
+    network_handle nh = h->nhandle;
+
+    Var ret = new_map();
+    ret = mapinsert(ret, var_ref(src_addr), str_ref_to_var(network_source_connection_name(nh)));
+    ret = mapinsert(ret, var_ref(src_port), Var::new_int(network_source_port(nh)));
+    ret = mapinsert(ret, var_ref(src_ip), str_ref_to_var(network_source_ip_address(nh)));
+    ret = mapinsert(ret, var_ref(dest_addr), str_ref_to_var(network_connection_name(nh)));
+    ret = mapinsert(ret, var_ref(dest_port), Var::new_int(network_port(nh)));
+    ret = mapinsert(ret, var_ref(dest_ip), str_ref_to_var(network_ip_address(nh)));
+    ret = mapinsert(ret, var_ref(protocol), str_dup_to_var(network_protocol(nh)));
+
+    free_var(arglist);
+    return make_var_pack(ret);
 }
 
 static slistener *
@@ -2555,6 +2643,7 @@ register_server(void)
 		      TYPE_OBJ, TYPE_STR, TYPE_ANY);
     register_function("connection_options", 1, 2, bf_connection_options,
 		      TYPE_OBJ, TYPE_STR);
+    register_function("connection_info", 1, 1, bf_connection_info, TYPE_OBJ);
     register_function("connection_name_lookup", 1, 2, bf_name_lookup, TYPE_OBJ, TYPE_ANY);
     register_function("listen", 2, 4, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function("unlisten", 1, 2, bf_unlisten, TYPE_ANY, TYPE_ANY);

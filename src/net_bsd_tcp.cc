@@ -76,72 +76,52 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 }
 
 enum error
-proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_ipv6)
+proto_make_listener(Var desc, int *fd, const char **name, const char **ip_address,
+                    u_int16_t *port, const bool use_ipv6)
 {
-    int s, port, yes = 1;
-    static Stream *st = nullptr;
+    int s, yes = 1;
     struct addrinfo hints;
     struct addrinfo *servinfo, *p;
+
+    if (desc.type != TYPE_INT)
+        return E_TYPE;
     
     memset(&hints, 0, sizeof hints);
     hints.ai_family = (use_ipv6 ? AF_INET6 : AF_INET);
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;        // use all the IPs
 
-    if (!st)
-        st = new_stream(20);
-
-    if (desc.type != TYPE_INT)
-        return E_TYPE;
-
-    port = desc.v.num;
-
-    int rv = getaddrinfo(use_ipv6 ? bind_ipv6 : bind_ipv4, get_port_str(port), &hints, &servinfo);
+    int rv = getaddrinfo(use_ipv6 ? bind_ipv6 : bind_ipv4, get_port_str(desc.v.num), &hints, &servinfo);
     if (rv != 0) {
         log_perror(gai_strerror(rv));
-        freeaddrinfo(servinfo);
         return E_QUOTA;
     }
 
     /* If we have multiple results, we'll bind to the first one we can. */
     for (p = servinfo; p != nullptr; p = p->ai_next) {
-        if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+        if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
             perror("Creating listening socket");
             continue;
         }
 
-        if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == -1) {
-            perror("Setting listening socket options");
+        if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) < 0) {
+            perror("Setting listening socket reuseaddr");
+            close(s);
+            freeaddrinfo(servinfo);
+            return E_QUOTA;
+        }
+        
+        if (use_ipv6 && setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof yes) < 0) {
+            perror("Disabling listening socket dual-stack mode for IPv6");
             close(s);
             freeaddrinfo(servinfo);
             return E_QUOTA;
         }
 
-        if (use_ipv6 && setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof yes) == -1) {
-            perror("Disabling dual-stack mode for IPv6");
-            close(s);
-            freeaddrinfo(servinfo);
-            return E_QUOTA;
-        }
-
-        if (port == 0) {
-            applog(LOG_INFO2, "Port is 0 in proto_make_listener. Attempting to discover actual local port number...\n");
-            if (getsockname(s, p->ai_addr, &(p->ai_addrlen)) < 0) {
-                log_perror("... failed to discover local port number");
-                close(s);
-                freeaddrinfo(servinfo);
-                return E_QUOTA;
-            } else {
-                canon->type = TYPE_INT;
-                canon->v.num = get_in_port((struct sockaddr_storage *)p->ai_addr);
-                applog(LOG_INFO2, "... port is now %i\n", canon->v.num);
-            }
-        } else if (bind(s, p->ai_addr, p->ai_addrlen) == -1) {
-            close(s);
+        if (bind(s, p->ai_addr, p->ai_addrlen) < 0) {
             perror("Binding listening socket");
+            close(s);
             continue;
-        } else {
-            *canon = var_ref(desc);
         }
         break;
     }
@@ -156,10 +136,12 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name, bool use_
         return e;
     }
 
-    const char *nameinfo = get_ntop((struct sockaddr_storage *)p->ai_addr);
-    stream_printf(st, "%s port %" PRIdN, nameinfo, canon->v.num);
-    *name = reset_stream(st);
-    free_str(nameinfo);
+    *ip_address = get_ntop((struct sockaddr_storage *)p->ai_addr);
+    if (!server_int_option("no_name_lookup", NO_NAME_LOOKUP))
+        *name = get_nameinfo((struct sockaddr *)p->ai_addr);
+    else
+        *name = str_dup(*ip_address);
+    *port = desc.v.num;
     *fd = s;
 
     freeaddrinfo(servinfo);
@@ -171,23 +153,20 @@ int
 proto_listen(int fd)
 {
     int status = listen(fd, 5);
-    if (status != 0)
+    if (status < 0)
         log_perror("Failed to listen");
-    return status == 0 ? 1 : 0;
+    return status < 0 ? 0 : 1;
 }
 
 enum proto_accept_error
 proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
-			const char **name, struct sockaddr_storage *ip_addr)
+			const char **name, const char **ip_addr, u_int16_t *port,
+            sa_family_t *protocol)
 {
     int option = 1;
     int fd;
     struct sockaddr_storage addr;
     socklen_t addr_length = sizeof addr;
-    static Stream *s = nullptr;
-
-    if (!s)
-        s = new_stream(100);
 
     fd = accept(listener_fd, (struct sockaddr *)&addr, &addr_length);
     if (fd < 0) {
@@ -210,19 +189,15 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 
     *read_fd = *write_fd = fd;
 
-    const char *nameinfo;
+    *ip_addr = get_ntop(&addr);
     if (!server_int_option("no_name_lookup", NO_NAME_LOOKUP))
-        nameinfo = get_nameinfo((struct sockaddr *)&addr);
+        *name = get_nameinfo((struct sockaddr *)&addr);
     else
-        nameinfo = get_ntop(&addr);
+        *name = str_dup(*ip_addr);
 
-    stream_printf(s, "%s, port %" PRIdN,
-            nameinfo,
-            get_in_port(&addr));
-   
-    *name = reset_stream(s);
-    *ip_addr = addr;
-    free_str(nameinfo);
+    *port = get_in_port(&addr);
+    *protocol = addr.ss_family;
+
     return PA_OKAY;
 }
 
@@ -353,37 +328,27 @@ timeout_proc(Timer_ID id, Timer_Data data)
 
 enum error
 proto_open_connection(Var arglist, int *read_fd, int *write_fd,
-		      const char **local_name, const char **remote_name, struct sockaddr_storage *ip_addr)
+                      const char **name, const char **ip_addr,
+                      u_int16_t *port, sa_family_t *protocol)
 {
-    /* These are `static' rather than `volatile' because I can't cope with
-     * getting all those nasty little parameter-passing rules right.  This
-     * function isn't recursive anyway, so it doesn't matter.
-     */
-    static const char *host_name;
-    static int port;
     static Timer_ID id;
     int s, result;
-    static Stream *st1 = nullptr, *st2 = nullptr;
     struct addrinfo *servinfo, *p;
     int yes = 1;
 
     if (!outbound_network_enabled)
-	return E_PERM;
+        return E_PERM;
 
-    if (!st1) {
-	st1 = new_stream(20);
-	st2 = new_stream(50);
-    }
     if (arglist.v.list[0].v.num != 2)
-	return E_ARGS;
+        return E_ARGS;
     else if (arglist.v.list[1].type != TYPE_STR ||
-	     arglist.v.list[2].type != TYPE_INT)
-	return E_TYPE;
+            arglist.v.list[2].type != TYPE_INT)
+        return E_TYPE;
 
-    host_name = arglist.v.list[1].v.str;
-    port = arglist.v.list[2].v.num;
+    const char *host_name = arglist.v.list[1].v.str;
+    int host_port = arglist.v.list[2].v.num;
 
-    int rv = getaddrinfo(host_name, get_port_str(port), &tcp_hint, &servinfo);
+    int rv = getaddrinfo(host_name, get_port_str(host_port), &tcp_hint, &servinfo);
     if (rv != 0) {
         errlog("proto_open_connection getaddrinfo error: %s\n", gai_strerror(rv));
         return E_INVARG;
@@ -392,9 +357,9 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     /* If we have multiple results, we'll bind to the first one we can. */
     for (p = servinfo; p != nullptr; p = p->ai_next) {
         if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-        if (errno != EMFILE)
-            log_perror("Making socket in proto_open_connection");
-        continue;
+            if (errno != EMFILE)
+                log_perror("Making socket in proto_open_connection");
+            continue;
         }
 
         if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
@@ -416,45 +381,41 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
         freeaddrinfo(servinfo);
         return e;
     }
-    
+
     try {
-	id = set_timer(server_int_option("outbound_connect_timeout", 5),
-		       timeout_proc, nullptr);
-	result = connect(s, p->ai_addr, p->ai_addrlen);
-	cancel_timer(id);
+        id = set_timer(server_int_option("outbound_connect_timeout", 5),
+                timeout_proc, nullptr);
+        result = connect(s, p->ai_addr, p->ai_addrlen);
+        cancel_timer(id);
     }
     catch (timeout_exception& exception) {
-	result = -1;
-	errno = ETIMEDOUT;
-	reenable_timers();
+        result = -1;
+        errno = ETIMEDOUT;
+        reenable_timers();
     }
 
     if (result < 0) {
-	close(s);
-    freeaddrinfo(servinfo);
-	if (errno == EADDRNOTAVAIL ||
-	    errno == ECONNREFUSED ||
-	    errno == ENETUNREACH ||
-	    errno == ETIMEDOUT)
-	    return E_INVARG;
-	log_perror("Connecting in proto_open_connection");
-	return E_QUOTA;
+        close(s);
+        freeaddrinfo(servinfo);
+        if (errno == EADDRNOTAVAIL ||
+                errno == ECONNREFUSED ||
+                errno == ENETUNREACH ||
+                errno == ETIMEDOUT)
+            return E_INVARG;
+        log_perror("Connecting in proto_open_connection");
+        return E_QUOTA;
     }
-    if (getsockname(s, p->ai_addr, &(p->ai_addrlen)) < 0) {
-	close(s);
-    freeaddrinfo(servinfo);
-	log_perror("Getting local name in proto_open_connection");
-	return E_QUOTA;
-    }
+
     *read_fd = *write_fd = s;
 
-    stream_printf(st1, "port %" PRIdN, get_in_port((struct sockaddr_storage *)p->ai_addr));
-    *local_name = reset_stream(st1);
-
-    stream_printf(st2, "%s, port %" PRIdN, host_name, port);
-    *remote_name = reset_stream(st2);
-
-    memcpy(ip_addr, (struct sockaddr_storage *)(p->ai_addr), sizeof p->ai_addr);
+    *ip_addr = get_ntop((struct sockaddr_storage *)p->ai_addr);
+    if (!server_int_option("no_name_lookup", NO_NAME_LOOKUP))
+        *name = get_nameinfo((struct sockaddr *)p->ai_addr);
+    else
+        *name = str_dup(*ip_addr);
+    
+    *port = get_in_port((struct sockaddr_storage *)p->ai_addr);
+    *protocol = servinfo->ai_family;
 
     freeaddrinfo(servinfo);
 
@@ -466,7 +427,7 @@ int
 network_parse_proxy_string(char *command, Stream *new_connection_name, struct sockaddr_storage *new_ai_addr)
 {
     applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
-    char *source = nullptr;
+    char *source, *destination = nullptr;
     char *source_port = nullptr;
     char *destination_port = nullptr;
     char *split = strtok(command, " ");
@@ -481,6 +442,9 @@ network_parse_proxy_string(char *command, Stream *new_connection_name, struct so
         switch (x) {
             case 3:
                 source = split;
+                break;
+            case 4:
+                destination = split;
                 break;
             case 5:
                 source_port = split;
@@ -503,7 +467,8 @@ network_parse_proxy_string(char *command, Stream *new_connection_name, struct so
     else
         nameinfo = get_ntop((struct sockaddr_storage *)address->ai_addr);
 
-    stream_printf(new_connection_name, "port %s from %s, port %s",
+    stream_printf(new_connection_name, "%s, port %s from %s, port %s",
+            destination,
             destination_port,
             nameinfo,
             source_port);

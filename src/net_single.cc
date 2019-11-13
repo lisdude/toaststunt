@@ -58,8 +58,7 @@ network_initialize(int argc, char **argv, Var * desc)
 }
 
 enum error
-network_make_listener(server_listener sl, Var desc, network_listener * nl,
-		      Var * canon, const char **name)
+network_make_listener(server_listener sl, Var desc, network_listener * nl, const char **name)
 {
     if (listening)
 	return E_PERM;
@@ -67,7 +66,6 @@ network_make_listener(server_listener sl, Var desc, network_listener * nl,
     listening = 1;
     slistener = sl;
     nl->ptr = 0;
-    *canon = zero;
     *name = "standard input";
     return E_NONE;
 }

@@ -898,23 +898,12 @@ do_login_task(tqueue * tq, char *command)
 
         /* Detect and parse incoming localhost proxies. This allows us to have an SSL presence and keep the originating IP. */
         if (strlen(command) >= 5 && strncmp(command, "PROXY", 5) == 0) {
-            struct sockaddr_storage *new_ai_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
-            static Stream *new_connection_name = nullptr;
-
-            if (!new_connection_name)
-                new_connection_name = new_stream(100);
-
-            int status = network_parse_proxy_string(command, new_connection_name, new_ai_addr);
-
-            if (status == 0) {
-            proxy_connected(tq->player, new_connection_name, new_ai_addr);
+            int status = proxy_connected(tq->player, command);
+			if (status == 0)
             /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */
             clear_command = true;
-            } else {
-				free(new_ai_addr);
-			}
+            }
         }
-    }
 
     args = parse_into_wordlist(clear_command ? "\0" : command);
     run_server_task_setting_id(tq->player, Var::new_obj(tq->handler),
