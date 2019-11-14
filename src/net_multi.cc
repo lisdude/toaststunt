@@ -708,11 +708,11 @@ rewrite_connection_name(network_handle nh, const char *destination, const char *
 }
 
 int
-network_name_lookup_rewrite(network_handle nh, const char *name)
+network_name_lookup_rewrite(network_handle nh, const char *name, Objid obj)
 {
 	nhandle *h = (nhandle *) nh.ptr;
 
-	applog(LOG_INFO3, "NAME_LOOKUP: connection_name changed from `%s` to `%s`\n", h->name, name);
+	applog(LOG_INFO3, "NAME_LOOKUP: connection_name for #%" PRIdN " changed from `%s` to `%s`\n", obj, h->name, name);
 	
 	free_str(h->name);
 	h->name = str_dup(name);
@@ -737,6 +737,21 @@ network_connection_name(const network_handle nh, bool name_lookup)
 		freeaddrinfo(address);
 	} else {
 		ret = h->name;
+	}
+
+	return ret;
+}
+
+char *
+full_network_connection_name(const network_handle nh, bool legacy)
+{
+	const nhandle *h = (nhandle *)nh.ptr;
+	char *ret = nullptr;
+
+	if (legacy) {
+		asprintf(&ret, "port %i from %s [%s], port %i", h->source_port, h->name, h->destination_ipaddr, h->destination_port);
+	} else {
+		asprintf(&ret, "%s [%s], port %i from %s [%s], port %i", h->source_address, h->source_ipaddr, h->source_port, h->name, h->destination_ipaddr, h->destination_port);
 	}
 
 	return ret;

@@ -171,6 +171,11 @@ extern const char *network_connection_name(network_handle nh, bool name_lookup =
 				 * be determined via a DNS name lookup.
 				 */
 
+extern char *full_network_connection_name(const network_handle nh, bool legacy = false);
+				/* Returns a 'legacy' style connection name string in the form:
+				   INTERFACE HOST NAME [IP] port PORT from HOSTNAME [IP], port PORT
+				   If legacy is true, the interface name and IP address are not included. */
+
 extern const char *network_ip_address(network_handle nh);
 				/* Return the numeric IP address for
                  * the connection.
@@ -288,6 +293,6 @@ int network_parse_proxy_string(char *command, Stream *new_connection_name, struc
                  * it into a new connection_name and sockaddr_storage
                  * for the connection. */
 
-extern const char *get_port_str(int port);
+extern char *get_port_str(int port);
 
 #endif				/* Network_H */

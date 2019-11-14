@@ -91,7 +91,9 @@ proto_make_listener(Var desc, int *fd, const char **name, const char **ip_addres
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;        // use all the IPs
 
-    int rv = getaddrinfo(use_ipv6 ? bind_ipv6 : bind_ipv4, get_port_str(desc.v.num), &hints, &servinfo);
+    char *port_string = get_port_str(desc.v.num);
+    int rv = getaddrinfo(use_ipv6 ? bind_ipv6 : bind_ipv4, port_string, &hints, &servinfo);
+    free(port_string);
     if (rv != 0) {
         log_perror(gai_strerror(rv));
         return E_QUOTA;
@@ -297,7 +299,7 @@ const char *get_ipver(const struct sockaddr_storage *sa)
     }
 }
 
-const char *get_port_str(int port)
+char *get_port_str(int port)
 {
     char *port_str = nullptr;
     asprintf(&port_str, "%d", port);

@@ -1591,10 +1591,12 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 	    call_notifier(new_id, new_h->listener, "user_connected");
 	}
     } else {
+        char *full_conn_name = full_network_connection_name(new_h->nhandle);
 	oklog("%s: %s on %s\n",
 	      is_newly_created ? "CREATED" : "CONNECTED",
 	      object_name(new_h->player),
-	      network_connection_name(new_h->nhandle));
+	      full_conn_name);
+          free(full_conn_name);
 	if (new_h->print_messages) {
 	    if (is_newly_created)
 		send_message(new_h->listener, new_h->nhandle, "create_msg",
@@ -2314,7 +2316,7 @@ name_lookup_callback(Var arglist, Var * ret)
         *ret = str_dup_to_var(name);
 
         if (rewrite_connect_name)
-            if (network_name_lookup_rewrite(h->nhandle, name) != 0)
+            if (network_name_lookup_rewrite(h->nhandle, name, who) != 0)
                 make_error_map(E_INVARG, "Failed to rewrite connection name.", ret);
 
         free_str(name);
@@ -2555,7 +2557,7 @@ bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
     for (l = all_slisteners; l && (!find_listener || equality(find, (find.type == TYPE_OBJ) ? Var::new_obj(l->oid) : l->desc, 0)); l = l->next) {
 	entry = new_map();
 	entry = mapinsert(entry, str_dup_to_var("object"), Var::new_obj(l->oid));
-	entry = mapinsert(entry, str_dup_to_var("canon"), var_ref(l->desc));
+	entry = mapinsert(entry, str_dup_to_var("port"), var_ref(l->desc));
 	entry = mapinsert(entry, str_dup_to_var("print_messages"), Var::new_int(l->print_messages));
 	entry = mapinsert(entry, str_dup_to_var("ipv6"), Var::new_int(l->ipv6));
 	list = listappend(list, entry);
