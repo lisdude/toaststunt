@@ -130,7 +130,7 @@ extern enum proto_accept_error
 extern enum error proto_open_connection(Var arglist,
 					int *read_fd, int *write_fd,
 					const char **name, const char **ip_addr,
-					u_int16_t *port, sa_family_t *protocol);
+					u_int16_t *port, sa_family_t *protocol, bool use_ipv6);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be opened.  If the arguments are OK for

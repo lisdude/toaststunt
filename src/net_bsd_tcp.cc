@@ -331,11 +331,12 @@ timeout_proc(Timer_ID id, Timer_Data data)
 enum error
 proto_open_connection(Var arglist, int *read_fd, int *write_fd,
                       const char **name, const char **ip_addr,
-                      u_int16_t *port, sa_family_t *protocol)
+                      u_int16_t *port, sa_family_t *protocol,
+                      bool use_ipv6)
 {
     static Timer_ID id;
     int s, result;
-    struct addrinfo *servinfo, *p;
+    struct addrinfo *servinfo, *p, hint;
     int yes = 1;
 
     if (!outbound_network_enabled)
@@ -350,8 +351,13 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     const char *host_name = arglist.v.list[1].v.str;
     int host_port = arglist.v.list[2].v.num;
 
+    memset(&hint, 0, sizeof hint);
+    hint.ai_family = use_ipv6 ? AF_INET6 : AF_INET;
+    hint.ai_socktype = SOCK_STREAM;
+    hint.ai_flags = AI_PASSIVE;
+
     char *port_string = get_port_str(host_port);
-    int rv = getaddrinfo(host_name, get_port_str(host_port), &tcp_hint, &servinfo);
+    int rv = getaddrinfo(host_name, get_port_str(host_port), &hint, &servinfo);
     free(port_string);
     if (rv != 0) {
         errlog("proto_open_connection getaddrinfo error: %s\n", gai_strerror(rv));
@@ -404,8 +410,10 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
         if (errno == EADDRNOTAVAIL ||
                 errno == ECONNREFUSED ||
                 errno == ENETUNREACH ||
-                errno == ETIMEDOUT)
+                errno == ETIMEDOUT) {
+                    log_perror("open_network_connection error");
             return E_INVARG;
+                }
         log_perror("Connecting in proto_open_connection");
         return E_QUOTA;
     }

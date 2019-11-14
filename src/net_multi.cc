@@ -857,7 +857,7 @@ network_set_client_echo(network_handle nh, int is_on)
 #ifdef OUTBOUND_NETWORK
 
 enum error
-network_open_connection(Var arglist, server_listener sl)
+network_open_connection(Var arglist, server_listener sl, bool use_ipv6)
 {
 	int rfd, wfd;
 	const char *name;
@@ -866,7 +866,7 @@ network_open_connection(Var arglist, server_listener sl)
 	sa_family_t protocol;
 	enum error e;
 	
-	e = proto_open_connection(arglist, &rfd, &wfd, &name, &ip_addr, &port, &protocol);
+	e = proto_open_connection(arglist, &rfd, &wfd, &name, &ip_addr, &port, &protocol, use_ipv6);
 	if (e == E_NONE)
 		make_new_connection(sl, rfd, wfd, 1, 0, nullptr, nullptr, port, name, ip_addr, protocol);
 

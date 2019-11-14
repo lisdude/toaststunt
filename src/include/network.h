@@ -227,7 +227,7 @@ extern int network_set_connection_option(network_handle nh,
 #ifdef OUTBOUND_NETWORK
 #include "structures.h"
 
-extern enum error network_open_connection(Var arglist, server_listener sl);
+extern enum error network_open_connection(Var arglist, server_listener sl, bool use_ipv6);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be made.  If the arguments are OK and the

@@ -2153,12 +2153,19 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
     enum error e;
     server_listener sl;
     slistener l;
+    int nargs = arglist.v.list[0].v.num;
+    bool use_ipv6 = false;
 
     if (!is_wizard(progr)) {
         free_var(arglist);
         return make_error_pack(E_PERM);
     }
 
+    if (nargs >= 3) {
+        use_ipv6 = is_true(arglist.v.list[3]);
+        arglist = listdelete(arglist, 3);
+    }
+    
     if (arglist.v.list[0].v.num == 3) {
 	Objid oid;
 
@@ -2181,7 +2188,7 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
 	sl.ptr = nullptr;
     }
 
-    e = network_open_connection(arglist, sl);
+    e = network_open_connection(arglist, sl, use_ipv6);
     free_var(arglist);
     if (e == E_NONE) {
 	/* The connection was successfully opened, implying that
