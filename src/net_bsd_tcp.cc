@@ -350,7 +350,9 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     const char *host_name = arglist.v.list[1].v.str;
     int host_port = arglist.v.list[2].v.num;
 
+    char *port_string = get_port_str(host_port);
     int rv = getaddrinfo(host_name, get_port_str(host_port), &tcp_hint, &servinfo);
+    free(port_string);
     if (rv != 0) {
         errlog("proto_open_connection getaddrinfo error: %s\n", gai_strerror(rv));
         return E_INVARG;

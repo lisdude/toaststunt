@@ -2276,7 +2276,7 @@ bf_idle_seconds(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (player) */
+{				/* (player [, IP | LEGACY]) */
     Objid who = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(who);
     Var r;
@@ -2287,8 +2287,13 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
     if (h && !h->disconnect_me) {
         if (arglist.v.list[0].v.num == 1)
             r.v.str = str_dup(network_connection_name(h->nhandle));
-        else
-            r.v.str = network_ip_address(h->nhandle);
+        else if (arglist.v.list[2].v.num == 1)
+            r.v.str = str_dup(network_ip_address(h->nhandle));
+        else {
+            char *full_conn_name = full_network_connection_name(h->nhandle, true);
+            r.v.str = str_dup(full_conn_name);
+            free(full_conn_name);
+        }
     }
 
     free_var(arglist);
