@@ -11,14 +11,18 @@
 - Add the `NO_NAME_LOOKUP` option to options.h. When enabled, the server won't attempt to perform a DNS name lookups on any new connections. This option can be overridden in-DB by setting `$server_options.no_name_lookup` to 1 or 0.
 - Add the `connection_name_lookup(<connection> [, <rewrite connection_name>])` function to perform a DNS lookup on a connection's IP address in a background thread. Note that this function implicitly suspends, so if you use it in do_login_command you'll also need to use `switch_player()` or `force_input()` to work around the no-suspend-in-do_login_command shortcoming.
 - Add a `thread_pool(<function>, <pool> [, <value>])` function that allows control over the thread pools from within the database.
-- The server now keeps a record of the IP address used by a connection. As such, the `connection_name()` function now has an optional argument that will return a connection's IP address. This is more reliable than parsing the standard `connection_name()` string.
+- The `connection_name(<obj> [, <method>])` function now only returns <obj>'s hostname (e.g. `1-2-3-6.someplace.com`). A new optional argument allows you to specify 1 if you want a numeric IP address, or 2 (well, any value, but 2 is good) if you want to return the legacy connection_name string.
 - The server will now listen for connections on both IPv4 and IPv6 by default.
 - The `listen()` function now has a second optional argument indicating that the server should listen with IPv6 rather than the default IPv4.
 - The command line argument to specify the listening IPv4 interface has been changed to `-4` and `-6` has been added to specify the listening IPv6 interface.
 - `switch_player()` now calls the listening object's `user_disconnected` and `user_connected` verbs when appropriate.
+- `open_network_connection()` has a new argument to specify that you want the new connection to be IPv6. **WARNING**: The order of arguments have been switched! If you previously relied on the third argument being an object, you'll need to put a 0 before it to specify the connection is IPv4.
+- `listeners()` now returns a list of maps with useful information about where objects are listening.
+- Added a `connection_info(<obj>)` function to display information about a connection. The information is what you previously would have found in the `connection_name()` string, but more easily accessible.
+- Removed the `connection_option()` function. Its functionality has been folded into `connection_options()`.
 
 ### *** WARNINGS ***
-- If your database relies on parsing the `connection_name()` string for an IP address, you will need to change it to use `connection_name(obj, 1)` instead. This will return the IP address with no parsing required. The unresolved IP address is no longer part of the full string.
+- If your database relies on parsing the `connection_name()` string, you will need to switch to one of the new options. The most preferred would be using `connection_info()`. If you're only parsing the numeric IP address, the `connection_name(1)` argument will suffice. If you find you desperately need the legacy string, however, you can still access it via `connection_name(<obj>, 2)`.
 - The `name_lookup_timeout` option is gone as part of the modernization of the networking. As such, it's recommended that you either switch to in-database DNS (see ToastCore for ideas) or modify your `/etc/resolv.conf` settings to adjust the timeout if you find that DNS lookups are causing lag.
 
 ## 2.5.13 (Oct 14, 2019)
