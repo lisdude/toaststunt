@@ -347,10 +347,6 @@ new_nhandle(const int rfd, const int wfd, const int outbound, u_int16_t listen_p
 			const char *local_ipaddr, sa_family_t protocol)
 {
 	nhandle *h;
-	static Stream *s = nullptr;
-
-	if (s == nullptr)
-		s = new_stream(100);
 
 	if (!network_set_nonblocking(rfd)
 	    || (rfd != wfd && !network_set_nonblocking(wfd)))
@@ -375,14 +371,14 @@ new_nhandle(const int rfd, const int wfd, const int outbound, u_int16_t listen_p
 	h->output_lines_flushed = 0;
 	h->outbound = outbound;
 	h->binary = 0;
-	h->name = local_hostname;
+	h->name = local_hostname;	// already malloced by a get_network* function
 #if NETWORK_PROTOCOL == NP_TCP
 	h->client_echo = 1;
 	h->source_port = listen_port;
 	h->source_address = str_dup(listen_hostname);
 	h->source_ipaddr = str_dup(listen_ipaddr);
 	h->destination_port = local_port;
-	h->destination_ipaddr = local_ipaddr;
+	h->destination_ipaddr = local_ipaddr;  // malloced by a get_network* function
 	h->protocol_family = protocol;
 #endif
 
@@ -578,8 +574,8 @@ network_make_listener(server_listener sl, Var desc, network_listener * nl,
 		nl->ptr = listener = (nlistener *) mymalloc(sizeof(nlistener), M_NETWORK);
 		listener->fd = fd;
 		listener->slistener = sl;
-		listener->name = *name;
-		listener->ip_addr = *ip_address;
+		listener->name = str_dup(*name);
+		listener->ip_addr = str_dup(*ip_address);
 		listener->port = *port;
 		if (all_nlisteners)
 			all_nlisteners->prev = &(listener->next);
@@ -698,12 +694,11 @@ rewrite_connection_name(network_handle nh, const char *destination, const char *
     if (!server_int_option("no_name_lookup", NO_NAME_LOOKUP))
         nameinfo = get_nameinfo(address->ai_addr);
     else
-        nameinfo = ip_addr;
+        nameinfo = str_dup(ip_addr);
 
     freeaddrinfo(address);
 	
 	nhandle *h = (nhandle *) nh.ptr;
-    applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", h->name, nameinfo);
 
 	free_str(h->name);
 	h->name = nameinfo;
@@ -712,58 +707,39 @@ rewrite_connection_name(network_handle nh, const char *destination, const char *
 	h->source_port = atoi(source_port);
 }
 
-/* Called from connection_name_lookup, this allows us access to the network
-   handle before a call to rewrite_connection_name. That way we can get
-   the right(ish) port information. */
 int
 network_name_lookup_rewrite(network_handle nh, const char *name)
 {
 	nhandle *h = (nhandle *) nh.ptr;
-	struct addrinfo *address;
-	int status;
-	const char *old_name = str_dup(network_connection_name(nh));	// rewrite is going to free this
 
-	static Stream *new_connection_name = nullptr;
-	if (!new_connection_name)
-		new_connection_name = new_stream(100);
-
-	status = getaddrinfo(name, nullptr, &tcp_hint, &address);
-	if (status != 0) {
-		errlog("getaddrinfo failed in name_lookup_rewrite: %s\n", gai_strerror(status));
-		return 1;
-	}
-
-	/* The only thing missing is the port we're connected to. Rather than expend any more
-	 * brainpower on this, I'm just going to do a nasty thing and reuse the first part
-	 * of the existing connection_name string. Pull request for a better way is welcome! */
-	char source_hostname[NI_MAXHOST] = "";
-	int source_port;
-
-	sscanf(old_name, "%s, port %i", source_hostname, &source_port);
-
-	const char *nameinfo = get_nameinfo(address->ai_addr);
-
-	struct sockaddr_storage *new_ai_addr = (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
-	memcpy(new_ai_addr, (struct sockaddr_storage *)address->ai_addr, address->ai_addrlen);
-
-	//rewrite_connection_name(nh, new_connection_name, new_ai_addr);
-
-	applog(LOG_INFO3, "NAME_LOOKUP: connection_name changed from `%s` to `%s`\n", old_name,
-	       network_connection_name(nh));
-
-	freeaddrinfo(address);
-	free_str(old_name);
-	free_str(nameinfo);
+	applog(LOG_INFO3, "NAME_LOOKUP: connection_name changed from `%s` to `%s`\n", h->name, name);
+	
+	free_str(h->name);
+	h->name = str_dup(name);
 
 	return 0;
 }
 
 const char *
-network_connection_name(const network_handle nh)
+network_connection_name(const network_handle nh, bool name_lookup)
 {
 	const nhandle *h = (nhandle *) nh.ptr;
+	const char *ret = nullptr;
 
-	return h->name;
+	if (name_lookup) {
+		struct addrinfo *address;
+	    int status = getaddrinfo(h->destination_ipaddr, nullptr, &tcp_hint, &address);
+        if (status < 0) {
+			// Better luck next time.
+			return h->name;
+		}
+		ret = get_nameinfo(address->ai_addr);
+		freeaddrinfo(address);
+	} else {
+		ret = h->name;
+	}
+
+	return ret;
 }
 
 const char *

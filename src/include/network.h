@@ -163,10 +163,12 @@ extern int network_process_io(int timeout);
 				 * timeout).
 				 */
 
-extern const char *network_connection_name(network_handle nh);
+extern const char *network_connection_name(network_handle nh, bool name_lookup = false);
 				/* Return some human-readable identification
 				 * for the specified connection.  It should fit
 				 * into the phrase 'Connection accepted: %s'.
+				 * If name_lookup is true, the connection name will
+				 * be determined via a DNS name lookup.
 				 */
 
 extern const char *network_ip_address(network_handle nh);

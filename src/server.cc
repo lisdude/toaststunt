@@ -183,9 +183,9 @@ new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_
 
     listener->oid = oid;
     listener->print_messages = print_messages;
-    listener->name = str_dup(name);
+    listener->name = name;                      // original copy
     listener->ipv6 = use_ipv6;
-    listener->ip_addr = str_dup(ip_address);
+    listener->ip_addr = ip_address;             // original copy
     listener->port = port;
     listener->desc = var_ref(desc);
 
@@ -1534,7 +1534,10 @@ proxy_connected(Objid connection, char *command)
         }
         split = strtok(nullptr, " ");
     }
+    const char *old_name = str_dup(network_connection_name(existing_h->nhandle));   // rewrite is going to free this
     rewrite_connection_name(existing_h->nhandle, destination, destination_port, source, source_port);
+    applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(existing_h->nhandle));
+    free_str(old_name);
     } else {
         return -1;
     }
@@ -2307,12 +2310,13 @@ name_lookup_callback(Var arglist, Var * ret)
         make_error_map(E_INVARG, "Invalid connection", ret);
     else
     {
-        const char *name = network_connection_name(h->nhandle);
+        const char *name = network_connection_name(h->nhandle, true);
         *ret = str_dup_to_var(name);
 
         if (rewrite_connect_name)
             if (network_name_lookup_rewrite(h->nhandle, name) != 0)
                 make_error_map(E_INVARG, "Failed to rewrite connection name.", ret);
+
         free_str(name);
     }
 }
