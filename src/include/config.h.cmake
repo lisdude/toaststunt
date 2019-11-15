@@ -13,7 +13,7 @@
 #   define SCNu32 "u"
 #   define SCNx32 "x"
 #else
-#   if !defined(__MACH__)
+#   if !defined(__MACH__) && !defined(__arm__)
 #       define PRId64 "ld"
 #       define PRIi64 "li"
 #       define PRIo64 "lo"
