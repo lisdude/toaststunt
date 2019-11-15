@@ -129,7 +129,7 @@ typedef struct slistener {
     bool ipv6;
     const char *name;           // resolved hostname
     const char *ip_addr;        // 'raw' IP address
-    u_int16_t port;             // listening port
+    uint16_t port;             // listening port
 } slistener;
 
 static slistener *all_slisteners = nullptr;
@@ -168,7 +168,7 @@ new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_
     server_listener sl;
     enum error e;
     const char *name, *ip_address;
-    u_int16_t port;
+    uint16_t port;
 
     sl.ptr = listener;
     e = network_make_listener(sl, desc, &(listener->nlistener), &name, &ip_address, &port, use_ipv6);

@@ -69,7 +69,7 @@ extern int proto_initialize(struct proto *proto, Var * desc,
 
 extern enum error proto_make_listener(Var desc, int *fd,
 				      const char **name, const char **ip_address,
-					  u_int16_t *port, const bool use_ipv6);
+					  uint16_t *port, const bool use_ipv6);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
 				 * be used as a specification of a new local
@@ -107,7 +107,7 @@ extern enum proto_accept_error
  proto_accept_connection(int listener_fd,
 			 int *read_fd, int *write_fd,
 			 const char **name, const char **ip_addr,
-			 u_int16_t *port, sa_family_t *protocol);
+			 uint16_t *port, sa_family_t *protocol);
 				/* Accept a new connection on LISTENER_FD,
 				 * returning PA_OKAY if successful, PA_FULL if
 				 * unsuccessful only because there aren't
@@ -130,7 +130,7 @@ extern enum proto_accept_error
 extern enum error proto_open_connection(Var arglist,
 					int *read_fd, int *write_fd,
 					const char **name, const char **ip_addr,
-					u_int16_t *port, sa_family_t *protocol, bool use_ipv6);
+					uint16_t *port, sa_family_t *protocol, bool use_ipv6);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be opened.  If the arguments are OK for

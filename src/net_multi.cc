@@ -83,10 +83,10 @@ typedef struct nhandle {
 	int outbound, binary;
 #if NETWORK_PROTOCOL == NP_TCP
 	bool client_echo;
-	u_int16_t source_port;          // port on server
+	uint16_t source_port;          // port on server
 	const char *source_address;           // interface on server (resolved hostname)
 	const char *source_ipaddr;			// interface on server (IP address)
-	u_int16_t destination_port;     // local port on connectee
+	uint16_t destination_port;     // local port on connectee
 	const char *destination_ipaddr;       // IP address of connection
 	sa_family_t protocol_family;    // AF_INET, AF_INET6
 #endif
@@ -100,7 +100,7 @@ typedef struct nlistener {
 	int fd;
 	const char *name;				// resolved hostname
 	const char *ip_addr;			// 'raw' IP address
-	u_int16_t port;					// listening port
+	uint16_t port;					// listening port
 } nlistener;
 
 static nlistener *all_nlisteners = nullptr;
@@ -342,8 +342,8 @@ pull_input(nhandle * h)
 }
 
 static nhandle *
-new_nhandle(const int rfd, const int wfd, const int outbound, u_int16_t listen_port, const char *listen_hostname,
-            const char *listen_ipaddr, u_int16_t local_port, const char *local_hostname,
+new_nhandle(const int rfd, const int wfd, const int outbound, uint16_t listen_port, const char *listen_hostname,
+            const char *listen_ipaddr, uint16_t local_port, const char *local_hostname,
 			const char *local_ipaddr, sa_family_t protocol)
 {
 	nhandle *h;
@@ -425,8 +425,8 @@ close_nlistener(nlistener * l)
 
 static void
 make_new_connection(server_listener sl, int rfd, int wfd, int outbound,
-					u_int16_t listen_port, const char *listen_hostname,
-					const char *listen_ipaddr, u_int16_t local_port,
+					uint16_t listen_port, const char *listen_hostname,
+					const char *listen_ipaddr, uint16_t local_port,
 					const char *local_hostname, const char *local_ipaddr,
 					sa_family_t protocol)
 {
@@ -463,7 +463,7 @@ accept_new_connection(nlistener * l)
 	int rfd, wfd, i;
 	const char *name;
 	const char *ip_addr;
-	u_int16_t port;
+	uint16_t port;
 	sa_family_t protocol;
 
 	switch (proto_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol)) {
@@ -564,7 +564,7 @@ network_initialize(int argc, char **argv, Var * desc)
 enum error
 network_make_listener(server_listener sl, Var desc, network_listener * nl,
 					  const char **name, const char **ip_address,
-					  u_int16_t *port, bool use_ipv6)
+					  uint16_t *port, bool use_ipv6)
 {
 	int fd;
 	enum error e = proto_make_listener(desc, &fd, name, ip_address, port, use_ipv6);
@@ -781,7 +781,7 @@ network_source_ip_address(const network_handle nh)
 	return h->source_ipaddr;
 }
 
-u_int16_t
+uint16_t
 network_port(const network_handle nh)
 {
 	const nhandle *h = (nhandle *)nh.ptr;
@@ -789,7 +789,7 @@ network_port(const network_handle nh)
 	return h->destination_port;
 }
 
-u_int16_t
+uint16_t
 network_source_port(const network_handle nh)
 {
 	const nhandle *h = (nhandle *)nh.ptr;
@@ -862,7 +862,7 @@ network_open_connection(Var arglist, server_listener sl, bool use_ipv6)
 	int rfd, wfd;
 	const char *name;
 	const char *ip_addr;
-	u_int16_t port;
+	uint16_t port;
 	sa_family_t protocol;
 	enum error e;
 	

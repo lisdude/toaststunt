@@ -77,7 +77,7 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 
 enum error
 proto_make_listener(Var desc, int *fd, const char **name, const char **ip_address,
-                    u_int16_t *port, const bool use_ipv6)
+                    uint16_t *port, const bool use_ipv6)
 {
     int s, yes = 1;
     struct addrinfo hints;
@@ -162,7 +162,7 @@ proto_listen(int fd)
 
 enum proto_accept_error
 proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
-			const char **name, const char **ip_addr, u_int16_t *port,
+			const char **name, const char **ip_addr, uint16_t *port,
             sa_family_t *protocol)
 {
     int option = 1;
@@ -331,7 +331,7 @@ timeout_proc(Timer_ID id, Timer_Data data)
 enum error
 proto_open_connection(Var arglist, int *read_fd, int *write_fd,
                       const char **name, const char **ip_addr,
-                      u_int16_t *port, sa_family_t *protocol,
+                      uint16_t *port, sa_family_t *protocol,
                       bool use_ipv6)
 {
     static Timer_ID id;

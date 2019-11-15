@@ -65,7 +65,7 @@ extern int network_initialize(int argc, char **argv,
 extern enum error network_make_listener(server_listener sl, Var desc,
 					network_listener * nl, 
 					const char **name, const char **ip_address,
-					u_int16_t *port, bool use_ipv6);
+					uint16_t *port, bool use_ipv6);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
 				 * be used as a specification of a new local
@@ -191,10 +191,10 @@ extern const char *network_source_ip_address(const network_handle nh);
 				   a connection is connected to.
 				 */
 
-extern u_int16_t network_port(const network_handle nh);
+extern uint16_t network_port(const network_handle nh);
 				/* Return the local port of a network connection. */
 
-extern u_int16_t network_source_port(const network_handle nh);
+extern uint16_t network_source_port(const network_handle nh);
 				/* Return the port of the local interface a connection is connected to. */
 
 extern const char *network_protocol(const network_handle nh);
