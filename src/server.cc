@@ -2561,20 +2561,27 @@ bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
     const int nargs = arglist.v.list[0].v.num;
     Var entry, list = new_list(0);
     bool find_listener = nargs == 1 ? true : false;
-    const Var find = find_listener ? arglist.v.list[1] : zero;
+    const Var find = find_listener ? arglist.v.list[1] : var_ref(zero);
     slistener *l;
 
-    free_var(arglist);
+// Save the keys for later
+    static const Var object = str_dup_to_var("object");
+    static const Var port = str_dup_to_var("port");
+    static const Var print = str_dup_to_var("print_messages");
+    static const Var ipv6 = str_dup_to_var("ipv6");
 
-    for (l = all_slisteners; l && (!find_listener || equality(find, (find.type == TYPE_OBJ) ? Var::new_obj(l->oid) : l->desc, 0)); l = l->next) {
+    for (l = all_slisteners; l; l = l->next) {
+    if (!find_listener || equality(find, (find.type == TYPE_OBJ) ? Var::new_obj(l->oid) : l->desc, 0)) {
 	entry = new_map();
-	entry = mapinsert(entry, str_dup_to_var("object"), Var::new_obj(l->oid));
-	entry = mapinsert(entry, str_dup_to_var("port"), var_ref(l->desc));
-	entry = mapinsert(entry, str_dup_to_var("print_messages"), Var::new_int(l->print_messages));
-	entry = mapinsert(entry, str_dup_to_var("ipv6"), Var::new_int(l->ipv6));
+	entry = mapinsert(entry, var_ref(object), Var::new_obj(l->oid));
+	entry = mapinsert(entry, var_ref(port), var_ref(l->desc));
+	entry = mapinsert(entry, var_ref(print), Var::new_int(l->print_messages));
+	entry = mapinsert(entry, var_ref(ipv6), Var::new_int(l->ipv6));
 	list = listappend(list, entry);
     }
+    }
 
+    free_var(arglist);
     return make_var_pack(list);
 }
 
