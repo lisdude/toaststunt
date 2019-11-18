@@ -1,6 +1,6 @@
 # ToastStunt ChangeLog
 
-## 2.6.0 (In Progress)
+## 2.6.0 (Nov 17, 2019)
 ### Bug Fixes
 - Fix a security oversight where `recreate()` could allow the recreation of an object that already owns other objects, verbs, or properties. Now the `recycle()` function will correct ownership of anything owned by the object being recycled, though at a slight cost to speed on larger databases. If the speed hit proves to be too much and you know what you're doing, you can disable the `SAFE_RECYCLE` option in options.h.
 - Fixed a bug in `exec()` that could cause the server to panic.
