@@ -54,6 +54,7 @@
 #include "garbage.h"
 #include "list.h"
 #include "log.h"
+#include "map.h"
 #include <nettle/sha2.h>
 #include "network.h"
 #include "numbers.h"
@@ -73,6 +74,8 @@
 #include "net_multi.h"  /* rewrite connection name */
 #include "waif.h" /* destroyed_waifs */
 #include "curl.h" /* curl shutdown */
+#include "background.h"
+#include "map.h"
 
 extern "C" {
 #include "dependencies/linenoise.h"
@@ -110,6 +113,7 @@ typedef struct shandle {
     Objid listener;
     task_queue tasks;
     int disconnect_me;
+    Objid switched;
     int outbound, binary;
     int print_messages;
 } shandle;
@@ -119,10 +123,13 @@ static shandle *all_shandles = nullptr;
 typedef struct slistener {
     struct slistener *next, **prev;
     network_listener nlistener;
-    Objid oid;			/* listen(OID, DESC, PRINT_MESSAGES) */
+    Objid oid;			/* listen(OID, DESC, PRINT_MESSAGES, IPV6) */
     Var desc;
     int print_messages;
-    const char *name;
+    bool ipv6;
+    const char *name;           // resolved hostname
+    const char *ip_addr;        // 'raw' IP address
+    uint16_t port;             // listening port
 } slistener;
 
 static slistener *all_slisteners = nullptr;
@@ -155,44 +162,50 @@ free_shandle(shandle * h)
 }
 
 static slistener *
-new_slistener(Objid oid, Var desc, int print_messages, enum error *ee)
+new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_ipv6)
 {
-    slistener *l = (slistener *)mymalloc(sizeof(slistener), M_NETWORK);
+    slistener *listener = (slistener *)mymalloc(sizeof(slistener), M_NETWORK);
     server_listener sl;
     enum error e;
-    const char *name;
+    const char *name, *ip_address;
+    uint16_t port;
 
-    sl.ptr = l;
-    e = network_make_listener(sl, desc, &(l->nlistener), &(l->desc), &name);
+    sl.ptr = listener;
+    e = network_make_listener(sl, desc, &(listener->nlistener), &name, &ip_address, &port, use_ipv6);
 
     if (ee)
-	*ee = e;
+        *ee = e;
 
     if (e != E_NONE) {
-	myfree(l, M_NETWORK);
-	return nullptr;
+        myfree(listener, M_NETWORK);
+        return nullptr;
     }
-    l->oid = oid;
-    l->print_messages = print_messages;
-    l->name = str_dup(name);
 
-    l->next = all_slisteners;
-    l->prev = &all_slisteners;
+    listener->oid = oid;
+    listener->print_messages = print_messages;
+    listener->name = name;                      // original copy
+    listener->ipv6 = use_ipv6;
+    listener->ip_addr = ip_address;             // original copy
+    listener->port = port;
+    listener->desc = var_ref(desc);
+
+    listener->next = all_slisteners;
+    listener->prev = &all_slisteners;
     if (all_slisteners)
-	all_slisteners->prev = &(l->next);
-    all_slisteners = l;
+        all_slisteners->prev = &(listener->next);
+    all_slisteners = listener;
 
-    return l;
+    return listener;
 }
 
 static int
 start_listener(slistener * l)
 {
     if (network_listen(l->nlistener)) {
-	oklog("LISTEN: #%" PRIdN " now listening on %s\n", l->oid, l->name);
+	oklog("LISTEN: #%" PRIdN " now listening on %s [%s], port %i\n", l->oid, l->name, l->ip_addr, l->port);
 	return 1;
     } else {
-	errlog("LISTEN: Can't start #%d listening on %s!\n", l->oid, l->name);
+	errlog("LISTEN: Can't start #%" PRIdN " listening on %s [%s], port %i\n", l->oid, l->name, l->ip_addr, l->port);
 	return 0;
     }
 }
@@ -209,6 +222,7 @@ free_slistener(slistener * l)
 
     free_var(l->desc);
     free_str(l->name);
+    free_str(l->ip_addr);
 
     myfree(l, M_NETWORK);
 }
@@ -801,7 +815,13 @@ main_loop(void)
 				     "*** Disconnected ***", 0);
 		    network_close(h->nhandle);
 		    free_shandle(h);
-		}
+		} else if (h->switched) {
+            if (is_user(h->switched))
+                call_notifier(h->switched, h->listener, "user_disconnected");
+            if (is_user(h->player))
+                call_notifier(h->player, h->listener, "user_connected");
+            h->switched = 0;
+        }
 	    }
 	}
     }
@@ -1357,6 +1377,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
     h->connection_time = 0;
     h->last_activity_time = time(nullptr);
     h->player = next_unconnected_player--;
+    h->switched = 0;
     h->listener = l ? l->oid : SYSTEM_OBJECT;
     h->tasks = new_task_queue(h->player, h->listener);
     h->disconnect_me = 0;
@@ -1375,9 +1396,15 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
 	task_suspend_input(h->tasks);
     }
 
-    oklog("%s: #%" PRIdN " on %s\n",
-	  outbound ? "CONNECT" : "ACCEPT",
-	  h->player, network_connection_name(nh));
+    if (outbound) {
+        oklog("CONNECT: #%" PRIdN " to %s [%s], port %i\n", h->player,
+              network_connection_name(nh), network_ip_address(nh), network_port(nh));
+    } else {
+    oklog("ACCEPT: #%" PRIdN " on %s [%s], port %i from %s [%s], port %i\n", h->player,
+	  network_source_connection_name(nh), network_source_ip_address(nh),
+      network_source_port(nh), network_connection_name(nh),
+      network_ip_address(nh), network_port(nh));
+}
 
     result.ptr = h;
     return result;
@@ -1446,46 +1473,76 @@ player_connected_silent(Objid old_id, Objid new_id)
     if (!new_h)
 	panic_moo("Non-existent shandle connected");
 
+    new_h->switched = new_h->player;
     new_h->player = new_id;
     new_h->connection_time = time(nullptr);
 
     if (existing_h) {
-	/* network_connection_name is allowed to reuse the same string
-	 * storage, so we have to copy one of them.
-	 */
-	char *name1 = str_dup(network_connection_name(existing_h->nhandle));
-	oklog("REDIRECTED: %s, was %s, now %s\n",
-	      object_name(new_id),
-	      name1,
-	      network_connection_name(new_h->nhandle));
-	free_str(name1);
-	network_close(existing_h->nhandle);
-	free_shandle(existing_h);
-    } else {
-	oklog("SWITCHED: %s is now %s on %s\n",
+        network_close(existing_h->nhandle);
+	    free_shandle(existing_h);
+    }
+	oklog("%s %s is now %s on %s\n",
+          old_id < 0 ? "CONNECTED:" : "SWITCHED:",
 	      old_name,
           object_name(new_h->player),
 	      network_connection_name(new_h->nhandle));
-    }
-    free_str(old_name);
+   free_str(old_name);
 }
 
 char
 is_localhost(Objid connection)
 {
     shandle *existing_h = find_shandle(connection);
-    if (existing_h && strstr(network_connection_name(existing_h->nhandle), "[127.0.0.1]") != nullptr)
-        return 1;
-    else
+    if (!existing_h)
         return 0;
+    else
+        return network_is_localhost(existing_h->nhandle);
 }
 
-void
-proxy_connected(Objid connection, Stream *new_connection_name, struct in_addr ip_addr)
+int
+proxy_connected(Objid connection, char *command)
 {
     shandle *existing_h = find_shandle(connection);
-    if (existing_h)
-        rewrite_connection_name(existing_h->nhandle, new_connection_name, ip_addr);
+    if (existing_h) {
+    applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
+    char *source, *destination = nullptr;
+    char *source_port = nullptr;
+    char *destination_port = nullptr;
+    char *split = strtok(command, " ");
+
+    int x = 0;
+    for (x = 1; x <= 6; x++) {
+        // Just in case something goes horribly wrong...
+        if (split == nullptr) {
+            errlog("PROXY: Proxy command parsing failed!\n");
+            return 1;
+        }
+        switch (x) {
+            case 3:
+                source = split;        // local interface
+                break;
+            case 4:
+                destination = split;             // incoming connection IP
+                break;
+            case 5:
+                destination_port = split;        // incoming connection port
+                break;
+            case 6:
+                source_port = split;   // local port
+                break;
+            default:
+                break;
+        }
+        split = strtok(nullptr, " ");
+    }
+    const char *old_name = str_dup(network_connection_name(existing_h->nhandle));   // rewrite is going to free this
+    rewrite_connection_name(existing_h->nhandle, destination, destination_port, source, source_port);
+    applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(existing_h->nhandle));
+    free_str(old_name);
+    } else {
+        return -1;
+    }
+    return 0;
 }
 
 void
@@ -1535,10 +1592,12 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 	    call_notifier(new_id, new_h->listener, "user_connected");
 	}
     } else {
+        char *full_conn_name = full_network_connection_name(new_h->nhandle);
 	oklog("%s: %s on %s\n",
 	      is_newly_created ? "CREATED" : "CONNECTED",
 	      object_name(new_h->player),
-	      network_connection_name(new_h->nhandle));
+	      full_conn_name);
+          free(full_conn_name);
 	if (new_h->print_messages) {
 	    if (is_newly_created)
 		send_message(new_h->listener, new_h->nhandle, "create_msg",
@@ -1652,7 +1711,7 @@ main(int argc, char **argv)
     int script_file_first = 0;
     int emergency = 0;
     Var desc;
-    slistener *l;
+    slistener *lv4, *lv6;
 
     init_cmdline(argc, argv);
 
@@ -1773,8 +1832,14 @@ main(int argc, char **argv)
 
     register_bi_functions();
 
-    l = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr);
-    if (!l) {
+    // Listen on both IPv4 and IPv6
+    if ((lv4 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, false)) == nullptr)
+        errlog("Error creating IPv4 listener.\n");
+
+    if ((lv6 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, true)) == nullptr)
+        errlog("Error creating IPv6 listener.\n");
+        
+    if (!lv4 && !lv6) {
 	errlog("Can't create initial connection point!\n");
 	exit(1);
     }
@@ -1807,8 +1872,19 @@ main(int argc, char **argv)
     }
 
     if (!emergency || emergency_mode()) {
-	if (!start_listener(l))
-	    exit(1);
+        int lv4_status = 0, lv6_status = 0;
+        if (lv4)
+            lv4_status = start_listener(lv4);
+        if (lv6)
+            lv6_status = start_listener(lv6);
+
+        if (!lv4_status && !lv6_status)
+            exit(1);
+
+        if (!lv4_status)
+            free_slistener(lv4);
+        if (!lv6_status)
+            free_slistener(lv6);
 
 	main_loop();
 
@@ -2078,12 +2154,19 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
     enum error e;
     server_listener sl;
     slistener l;
+    int nargs = arglist.v.list[0].v.num;
+    bool use_ipv6 = false;
 
     if (!is_wizard(progr)) {
         free_var(arglist);
         return make_error_pack(E_PERM);
     }
 
+    if (nargs >= 3) {
+        use_ipv6 = is_true(arglist.v.list[3]);
+        arglist = listdelete(arglist, 3);
+    }
+    
     if (arglist.v.list[0].v.num == 3) {
 	Objid oid;
 
@@ -2106,7 +2189,7 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
 	sl.ptr = nullptr;
     }
 
-    e = network_open_connection(arglist, sl);
+    e = network_open_connection(arglist, sl, use_ipv6);
     free_var(arglist);
     if (e == E_NONE) {
 	/* The connection was successfully opened, implying that
@@ -2201,7 +2284,7 @@ bf_idle_seconds(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (player) */
+{				/* (player [, IP | LEGACY]) */
     Objid who = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(who);
     Var r;
@@ -2209,11 +2292,17 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
     r.type = TYPE_STR;
     r.v.str = nullptr;
 
-    if (h && !h->disconnect_me)
+    if (h && !h->disconnect_me) {
         if (arglist.v.list[0].v.num == 1)
             r.v.str = str_dup(network_connection_name(h->nhandle));
-        else
-            r.v.str = network_ip_address(h->nhandle);
+        else if (arglist.v.list[2].v.num == 1)
+            r.v.str = str_dup(network_ip_address(h->nhandle));
+        else {
+            char *full_conn_name = full_network_connection_name(h->nhandle, true);
+            r.v.str = str_dup(full_conn_name);
+            free(full_conn_name);
+        }
+    }
 
     free_var(arglist);
     if (!is_wizard(progr) && progr != who)
@@ -2223,6 +2312,40 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
     else {
 	return make_var_pack(r);
     }
+}
+
+void
+name_lookup_callback(Var arglist, Var * ret)
+{
+    int nargs = arglist.v.list[0].v.num;
+    Objid who = arglist.v.list[1].v.obj;
+    shandle *h = find_shandle(who);
+    bool rewrite_connect_name = nargs > 1 && is_true(arglist.v.list[2]);
+    if (!h || h->disconnect_me)
+        make_error_map(E_INVARG, "Invalid connection", ret);
+    else
+    {
+        const char *name;
+        int status = lookup_network_connection_name(h->nhandle, &name);
+        *ret = str_dup_to_var(name);
+
+        if (rewrite_connect_name && status == 0)
+            if (network_name_lookup_rewrite(h->nhandle, name, who) != 0)
+                make_error_map(E_INVARG, "Failed to rewrite connection name.", ret);
+
+        free_str(name);
+    }
+}
+
+static package
+bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
+{
+	if (!is_wizard(progr) && progr != arglist.v.list[1].v.obj)
+		return make_error_pack(E_PERM);
+
+	char *human_string = nullptr;
+	asprintf(&human_string, "name_lookup for #%" PRIdN "", arglist.v.list[1].v.obj);
+	return background_thread(name_lookup_callback, &arglist, human_string);
 }
 
 static package
@@ -2337,13 +2460,51 @@ bf_connection_options(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ans);
 }
 
+static package
+bf_connection_info(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (conn) */
+    Objid oid = arglist.v.list[1].v.obj;
+    shandle *h = find_shandle(oid);
+
+    if (!h || h->disconnect_me) {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    } else if (oid != progr && !is_wizard(progr)) {
+	free_var(arglist);
+	return make_error_pack(E_PERM);
+    }
+
+    // Avoid some mallocs
+    static Var src_addr =   str_dup_to_var("source_address");
+    static Var src_ip =   str_dup_to_var("source_ip");
+    static Var src_port =   str_dup_to_var("source_port");
+    static Var dest_addr =  str_dup_to_var("destination_address");
+    static Var dest_ip =  str_dup_to_var("destination_ip");
+    static Var dest_port =  str_dup_to_var("destination_port");
+    static Var protocol =   str_dup_to_var("protocol");
+
+    network_handle nh = h->nhandle;
+
+    Var ret = new_map();
+    ret = mapinsert(ret, var_ref(src_addr), str_ref_to_var(network_source_connection_name(nh)));
+    ret = mapinsert(ret, var_ref(src_port), Var::new_int(network_source_port(nh)));
+    ret = mapinsert(ret, var_ref(src_ip), str_ref_to_var(network_source_ip_address(nh)));
+    ret = mapinsert(ret, var_ref(dest_addr), str_ref_to_var(network_connection_name(nh)));
+    ret = mapinsert(ret, var_ref(dest_port), Var::new_int(network_port(nh)));
+    ret = mapinsert(ret, var_ref(dest_ip), str_ref_to_var(network_ip_address(nh)));
+    ret = mapinsert(ret, var_ref(protocol), str_dup_to_var(network_protocol(nh)));
+
+    free_var(arglist);
+    return make_var_pack(ret);
+}
+
 static slistener *
-find_slistener(Var desc)
+find_slistener(Var desc, bool use_ipv6)
 {
     slistener *l;
 
     for (l = all_slisteners; l; l = l->next)
-	if (equality(desc, l->desc, 0))
+	if (equality(desc, l->desc, 0) && l->ipv6 == use_ipv6)
 	    return l;
 
     return nullptr;
@@ -2356,14 +2517,15 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
     Var desc = arglist.v.list[2];
     int nargs = arglist.v.list[0].v.num;
     int print_messages = nargs >= 3 && is_true(arglist.v.list[3]);
+    bool ipv6 = nargs >= 4 && is_true(arglist.v.list[4]);
     enum error e;
     slistener *l = nullptr;
 
     if (!is_wizard(progr))
 	e = E_PERM;
-    else if (!valid(oid) || find_slistener(desc))
+    else if (!valid(oid) || find_slistener(desc, ipv6))
 	e = E_INVARG;
-    else if (!(l = new_slistener(oid, desc, print_messages, &e)));	/* Do nothing; e is already set */
+    else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6)));	/* Do nothing; e is already set */
     else if (!start_listener(l))
 	e = E_QUOTA;
 
@@ -2378,12 +2540,13 @@ static package
 bf_unlisten(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (desc) */
     Var desc = arglist.v.list[1];
+    bool ipv6 = arglist.v.list[0].v.num >= 2 && is_true(arglist.v.list[2]);
     enum error e = E_NONE;
     slistener *l = nullptr;
 
     if (!is_wizard(progr))
 	e = E_PERM;
-    else if (!(l = find_slistener(desc)))
+    else if (!(l = find_slistener(desc, ipv6)))
 	e = E_INVARG;
 
     free_var(arglist);
@@ -2396,24 +2559,31 @@ bf_unlisten(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* () */
-    int i, count = 0;
-    Var list, entry;
+{				/* (find) */
+    const int nargs = arglist.v.list[0].v.num;
+    Var entry, list = new_list(0);
+    bool find_listener = nargs == 1 ? true : false;
+    const Var find = find_listener ? arglist.v.list[1] : var_ref(zero);
     slistener *l;
 
-    free_var(arglist);
-    for (l = all_slisteners; l; l = l->next)
-	count++;
-    list = new_list(count);
-    for (i = 1, l = all_slisteners; l; i++, l = l->next) {
-	list.v.list[i] = entry = new_list(3);
-	entry.v.list[1].type = TYPE_OBJ;
-	entry.v.list[1].v.obj = l->oid;
-	entry.v.list[2] = var_ref(l->desc);
-	entry.v.list[3].type = TYPE_INT;
-	entry.v.list[3].v.num = l->print_messages;
+// Save the keys for later
+    static const Var object = str_dup_to_var("object");
+    static const Var port = str_dup_to_var("port");
+    static const Var print = str_dup_to_var("print_messages");
+    static const Var ipv6 = str_dup_to_var("ipv6");
+
+    for (l = all_slisteners; l; l = l->next) {
+    if (!find_listener || equality(find, (find.type == TYPE_OBJ) ? Var::new_obj(l->oid) : l->desc, 0)) {
+	entry = new_map();
+	entry = mapinsert(entry, var_ref(object), Var::new_obj(l->oid));
+	entry = mapinsert(entry, var_ref(port), var_ref(l->desc));
+	entry = mapinsert(entry, var_ref(print), Var::new_int(l->print_messages));
+	entry = mapinsert(entry, var_ref(ipv6), Var::new_int(l->ipv6));
+	list = listappend(list, entry);
+    }
     }
 
+    free_var(arglist);
     return make_var_pack(list);
 }
 
@@ -2485,13 +2655,13 @@ register_server(void)
     register_function("boot_player", 1, 1, bf_boot_player, TYPE_OBJ);
     register_function("set_connection_option", 3, 3, bf_set_connection_option,
 		      TYPE_OBJ, TYPE_STR, TYPE_ANY);
-    register_function("connection_option", 2, 2, bf_connection_options,
+    register_function("connection_options", 1, 2, bf_connection_options,
 		      TYPE_OBJ, TYPE_STR);
-    register_function("connection_options", 1, 1, bf_connection_options,
-		      TYPE_OBJ);
-    register_function("listen", 2, 3, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY);
-    register_function("unlisten", 1, 1, bf_unlisten, TYPE_ANY);
-    register_function("listeners", 0, 0, bf_listeners);
+    register_function("connection_info", 1, 1, bf_connection_info, TYPE_OBJ);
+    register_function("connection_name_lookup", 1, 2, bf_name_lookup, TYPE_OBJ, TYPE_ANY);
+    register_function("listen", 2, 4, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
+    register_function("unlisten", 1, 2, bf_unlisten, TYPE_ANY, TYPE_ANY);
+    register_function("listeners", 0, 1, bf_listeners, TYPE_ANY);
     register_function("buffered_output_length", 0, 1,
 		      bf_buffered_output_length, TYPE_OBJ);
 }

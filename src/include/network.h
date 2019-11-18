@@ -27,6 +27,8 @@
 #include "config.h"
 #include "options.h"
 #include "structures.h"
+#include "streams.h"
+#include <netdb.h>
 
 typedef struct {		/* Network's handle on a connection */
     void *ptr;
@@ -61,8 +63,9 @@ extern int network_initialize(int argc, char **argv,
 				 */
 
 extern enum error network_make_listener(server_listener sl, Var desc,
-					network_listener * nl,
-					Var * canon, const char **name);
+					network_listener * nl, 
+					const char **name, const char **ip_address,
+					uint16_t *port, bool use_ipv6);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
 				 * be used as a specification of a new local
@@ -166,10 +169,41 @@ extern const char *network_connection_name(network_handle nh);
 				 * into the phrase 'Connection accepted: %s'.
 				 */
 
+extern int lookup_network_connection_name(const network_handle nh, const char **name);
+				/* Similar to network_connection_name, except this function
+				   will perform a DNS name lookup and fallback to the
+				   stored value if it fails. Returns 0 if the DNS lookup
+				   was successful or -1  if it failed.
+				*/
+
+extern char *full_network_connection_name(const network_handle nh, bool legacy = false);
+				/* Returns a 'legacy' style connection name string in the form:
+				   INTERFACE HOST NAME [IP] port PORT from HOSTNAME [IP], port PORT
+				   If legacy is true, the interface name and IP address are not included. */
+
 extern const char *network_ip_address(network_handle nh);
 				/* Return the numeric IP address for
                  * the connection.
 				 */
+
+extern const char *network_source_connection_name(const network_handle nh);
+				/* Return the resolved hostname (if available) of
+				   the local interface a connection is connected to.
+				 */
+
+extern const char *network_source_ip_address(const network_handle nh);
+				/* Return the unresolved IP address of the local interface 
+				   a connection is connected to.
+				 */
+
+extern uint16_t network_port(const network_handle nh);
+				/* Return the local port of a network connection. */
+
+extern uint16_t network_source_port(const network_handle nh);
+				/* Return the port of the local interface a connection is connected to. */
+
+extern const char *network_protocol(const network_handle nh);
+				/* Return a string indicating the protocol (IPv4, IPv6) of the connection. */
 
 extern Var network_connection_options(network_handle nh,
 				      Var list);
@@ -198,7 +232,7 @@ extern int network_set_connection_option(network_handle nh,
 #ifdef OUTBOUND_NETWORK
 #include "structures.h"
 
-extern enum error network_open_connection(Var arglist, server_listener sl);
+extern enum error network_open_connection(Var arglist, server_listener sl, bool use_ipv6);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be made.  If the arguments are OK and the
@@ -249,10 +283,21 @@ extern void network_shutdown(void);
 				 * never make another call on the network.
 				 */
 
-extern void *get_in_addr(struct sockaddr *sa);
-extern unsigned short int get_in_port(struct sockaddr *sa);
+extern void *get_in_addr(const struct sockaddr_storage *sa);
+extern unsigned short int get_in_port(const struct sockaddr_storage *sa);
+extern const char *get_ntop(const struct sockaddr_storage *sa);
+extern const char *get_ipver(const struct sockaddr_storage *sa);
+extern const char *get_nameinfo(const struct sockaddr *sa);
+extern const char *get_nameinfo_port(const struct sockaddr *sa);
                 /* These functions allow us to extract
                  * information from a sockaddr struct without
                  * knowing the exact protocol being used. */
+
+int network_parse_proxy_string(char *command, Stream *new_connection_name, struct sockaddr_storage *new_ai_addr);
+                /* Take an HAProxy connection string and parse
+                 * it into a new connection_name and sockaddr_storage
+                 * for the connection. */
+
+extern char *get_port_str(int port);
 
 #endif				/* Network_H */

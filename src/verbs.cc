@@ -540,7 +540,7 @@ bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 	else
     {
 #ifdef LOG_CODE_CHANGES
-        oklog("CODE_CHANGE: %s (#%d) set verb #%d:%s\n", db_object_name(progr), progr, obj.v.obj, str_ref(db_verb_names(h)));
+        oklog("CODE_CHANGE: %s (#%d) set verb #%" PRIdN ":%s\n", db_object_name(progr), progr, obj.v.obj, str_ref(db_verb_names(h)));
 #endif
 	    db_set_verb_program(h, program);
     }
@@ -617,7 +617,7 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 	    Program *program = parse_list_as_program(arglist, &errors);
 
             #ifdef LOG_EVALS
-            oklog("CODE_EVAL: %s (#%d) evaluated: %s\n", db_object_name(progr), progr, arglist.v.list[1]);
+            oklog("CODE_EVAL: %s (#%" PRIdN ") evaluated: %s\n", db_object_name(progr), progr, arglist.v.list[1]);
             #endif
 
 	    free_var(arglist);

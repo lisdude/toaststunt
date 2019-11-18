@@ -19,11 +19,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <math.h>
-#include <arpa/inet.h>
-
 #include <string.h>
 #include <time.h>
-#include <netinet/in.h>
 
 #include "config.h"
 #include "db.h"
@@ -50,8 +47,8 @@
 #include "utils.h"
 #include "verbs.h"
 #include "version.h"
-#include "name_lookup.h"
 #include "background.h"
+#include "network.h"
 
 #define ROUND(tvp)	((tvp)->tv_sec + ((tvp)->tv_usec > 500000))
 
@@ -901,53 +898,12 @@ do_login_task(tqueue * tq, char *command)
 
         /* Detect and parse incoming localhost proxies. This allows us to have an SSL presence and keep the originating IP. */
         if (strlen(command) >= 5 && strncmp(command, "PROXY", 5) == 0) {
-            applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
-            char *source = nullptr;
-            char *source_port = nullptr;
-            char *destination_port = nullptr;
-            char *split = strtok(command, " ");
-
-            int x = 0;
-            for (x = 1; x <= 6; x++) {
-                // Just in case something goes horribly wrong...
-                if (split == nullptr) {
-                    errlog("PROXY: Proxy command parsing failed!\n");
-                    break;
-                }
-                switch (x) {
-                    case 3:
-                        source = split;
-                        break;
-                    case 5:
-                        source_port = split;
-                        break;
-                    case 6:
-                        destination_port = split;
-                        break;
-                    default:
-                        break;
-                }
-                split = strtok(nullptr, " ");
-            }
-
-            static Stream *new_connection_name = nullptr;
-
-            if (!new_connection_name)
-                new_connection_name = new_stream(100);
-
-            struct sockaddr_in address;
-            address.sin_family = AF_INET;
-            address.sin_port = htons(atoi(source_port));
-            inet_pton(AF_INET, source, &address.sin_addr);
-            int timeout = server_int_option("name_lookup_timeout", 5);
-
-            stream_printf(new_connection_name, "port %s from %s, port %s", destination_port, lookup_name_from_addr(&address, timeout), source_port);
-
-            proxy_connected(tq->player, new_connection_name, address.sin_addr);
+            int status = proxy_connected(tq->player, command);
+			if (status == 0)
             /* Clear the command so that we don't get an `I don't understand that.` from the proxy command. */
             clear_command = true;
+            }
         }
-    }
 
     args = parse_into_wordlist(clear_command ? "\0" : command);
     run_server_task_setting_id(tq->player, Var::new_obj(tq->handler),

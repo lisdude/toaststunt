@@ -3,7 +3,6 @@
  *
  * common code for
  * multi-user networking protocol implementations for TCP/IP 
- * (net_bsd_tcp.c and net_sysv_tcp.c)
  *
  */
 
@@ -11,12 +10,13 @@
 static char outbound_network_enabled = OUTBOUND_NETWORK;
 #endif
 
-static in_addr_t bind_local_ip = INADDR_ANY;
+static const char *bind_ipv4 = nullptr;
+static const char *bind_ipv6 = nullptr;
 
 const char *
 proto_usage_string(void)
 {
-    return "[+O|-O] [-a ip_address] [[-p] port]";
+    return "[+O|-O] [-4 ipv4_address] [-6 ipv6_address] [[-p] port]";
 }
 
 
@@ -40,17 +40,21 @@ tcp_arguments(int argc, char **argv, int *pport)
 	    }
 #endif
 	}
-	else if (0 == strcmp(argv[0],"-a")) {
+	else if (0 == strcmp(argv[0],"-4")) {
             if (argc <= 1)
                 return 0;
             argc--;
             argv++;
-            bind_local_ip = inet_addr(argv[0]);
-            if (bind_local_ip == INADDR_NONE)
+            bind_ipv4 = str_dup(argv[0]);
+	    oklog("CMDLINE: IPv4 source address restricted to %s\n", argv[0]);
+	} else if (0 == strcmp(argv[0],"-6")) {
+            if (argc <= 1)
                 return 0;
-	    oklog("CMDLINE: Source address restricted to %s\n", argv[0]);
-        }
-        else {
+            argc--;
+            argv++;
+            bind_ipv6 = str_dup(argv[0]);
+	    oklog("CMDLINE: IPv6 source address restricted to %s\n", argv[0]);
+        } else {
             if (p != nullptr) /* strtoul always sets p */
                 return 0;
             if (0 == strcmp(argv[0],"-p")) {

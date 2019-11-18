@@ -54,8 +54,8 @@ if(CMAKE_BUILD_TYPE MATCHES "LeakCheck")
 endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
-list(APPEND CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
-list(APPEND CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
 
 # Compatibility Checks Galore
 include(CheckStructHasMember)
@@ -167,7 +167,6 @@ set(src_CXXSRCS
     src/list.cc
     src/map.cc
     src/match.cc
-    src/name_lookup.cc
     src/network.cc
     src/net_mplex.cc
     src/net_proto.cc
@@ -218,7 +217,10 @@ include_directories(${ARGON2_INCLUDE_DIRS})
 target_link_libraries(moo ${ARGON2_LIBRARIES})
 
 if(CMAKE_USE_PTHREADS_INIT)
+<<<<<<< HEAD
     #    list(APPEND CMAKE_C_FLAGS "-pthread")
+=======
+>>>>>>> ipv6
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 else()

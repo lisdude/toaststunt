@@ -1,13 +1,31 @@
 # ToastStunt ChangeLog
 
 ## 2.6.0 (In Progress)
-- Add an `owned_objects(OBJ <who>)` builtin to return a list of valid objects owned by who.
+### Bug Fixes
 - Fix a security oversight where `recreate()` could allow the recreation of an object that already owns other objects, verbs, or properties. Now the `recycle()` function will correct ownership of anything owned by the object being recycled, though at a slight cost to speed on larger databases. If the speed hit proves to be too much and you know what you're doing, you can disable the `SAFE_RECYCLE` option in options.h.
-- Add the `NO_FORKED_LOOKUP` option to options.h. When enabled, the server won't spawn a separate name lookup task, nor will it do any DNS name lookups at all.
-- Add the `name_lookup(<IP address>)` function to perform a DNS lookup on an IP address in the background. Note that this function implicitly suspends, so if you use it in do_login_command you'll also need to use `switch_player()` to work around the no-suspend-at-login rule.
-- Add the `TOTAL_DNS_THREADS` option to options.h to control how many threads are given to `name_lookup()` at runtime.
+- Fixed a bug in `exec()` that could cause the server to panic.
+- Fixed a slow memory leak when pulling telnet sequences.
+
+### New Features
+- Add an `owned_objects(OBJ <who>)` builtin to return a list of valid objects owned by who.
+- Add the `NO_NAME_LOOKUP` option to options.h. When enabled, the server won't attempt to perform a DNS name lookup on any new connections. This option can be overridden in-DB by setting `$server_options.no_name_lookup` to 1 or 0 and calling `load_server_options()`.
+- Add the `connection_name_lookup(<connection> [, <rewrite connection_name>])` function to perform a DNS lookup on a connection's IP address in a background thread. Note that this function implicitly suspends, so if you use it in do_login_command you'll also need to use `switch_player()` or `force_input()` to work around the no-suspend-in-do_login_command shortcoming.
 - Add a `thread_pool(<function>, <pool> [, <value>])` function that allows control over the thread pools from within the database.
-- Remove the `process_id()` builtin function.
+- The `connection_name(<obj> [, <method>])` function now only returns obj's hostname (e.g. `1-2-3-6.someplace.com`). A new optional argument allows you to specify 1 if you want a numeric IP address, or 2 (well, any value, but 2 is good) if you want to return the legacy connection_name string.
+- The server will now listen for connections on both IPv4 and IPv6 by default.
+- The `listen()` function now has a second optional argument indicating that the server should listen with IPv6 rather than the default IPv4.
+- The command line argument to specify the listening IPv4 interface has been changed to `-4` and `-6` has been added to specify the listening IPv6 interface.
+- `switch_player()` now calls the listening object's `user_disconnected` and `user_connected` verbs when appropriate.
+- `open_network_connection()` has a new argument to specify that you want the new connection to be IPv6. **WARNING**: The order of arguments have been switched! If you previously relied on the third argument being an object, you'll need to put a 0 before it to specify the connection is IPv4.
+- `listeners([<obj>])` now returns a list of maps with useful information about where objects are listening. If an argument is supplied and obj is a valid listener, only information about that object will be returned.
+- Added a `connection_info(<obj>)` function to display information about a connection. The information is what you previously would have found in the `connection_name()` string, but more easily accessible.
+- Removed the `connection_option()` function. Its functionality has been folded into `connection_options()`.
+- Removed the process_id() builtin function.
+
+### *** WARNINGS ***
+- If your database relies on parsing the `connection_name()` string, you will need to switch to one of the new options. The most preferred would be using `connection_info()`. If you're only parsing the numeric IP address, the `connection_name(1)` argument will suffice. If you find you desperately need the legacy string, however, you can still access it via `connection_name(<obj>, 2)`.
+- The `name_lookup_timeout` option is gone as part of the modernization of the networking. As such, it's recommended that you either switch to in-database DNS (see ToastCore for ideas) or modify your `/etc/resolv.conf` settings to adjust the timeout if you find that DNS lookups are causing lag.
+- Any code relying on `listeners()` being a list should be updated to use the map keys.
 
 ## 2.5.13 (Oct 14, 2019)
 - Add a `sqlite_limit()` builtin to limit the size of various SQLite constructs. [More information](https://www.sqlite.org/c3ref/c_limit_attached.html)

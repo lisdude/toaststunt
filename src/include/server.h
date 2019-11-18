@@ -164,7 +164,7 @@ extern int read_values_pending_finalization(void);
 
 #include "streams.h"
 char is_localhost(Objid connection);
-void proxy_connected(Objid connection, Stream *new_connection_name, struct in_addr ip_addr);
+int proxy_connected(Objid connection, char *command);
 
 #include "db.h"
 
