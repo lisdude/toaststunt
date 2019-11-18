@@ -2325,10 +2325,11 @@ name_lookup_callback(Var arglist, Var * ret)
         make_error_map(E_INVARG, "Invalid connection", ret);
     else
     {
-        const char *name = network_connection_name(h->nhandle, true);
+        const char *name;
+        int status = lookup_network_connection_name(h->nhandle, &name);
         *ret = str_dup_to_var(name);
 
-        if (rewrite_connect_name)
+        if (rewrite_connect_name && status == 0)
             if (network_name_lookup_rewrite(h->nhandle, name, who) != 0)
                 make_error_map(E_INVARG, "Failed to rewrite connection name.", ret);
 

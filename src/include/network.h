@@ -163,13 +163,18 @@ extern int network_process_io(int timeout);
 				 * timeout).
 				 */
 
-extern const char *network_connection_name(network_handle nh, bool name_lookup = false);
+extern const char *network_connection_name(network_handle nh);
 				/* Return some human-readable identification
 				 * for the specified connection.  It should fit
 				 * into the phrase 'Connection accepted: %s'.
-				 * If name_lookup is true, the connection name will
-				 * be determined via a DNS name lookup.
 				 */
+
+extern int lookup_network_connection_name(const network_handle nh, const char **name);
+				/* Similar to network_connection_name, except this function
+				   will perform a DNS name lookup and fallback to the
+				   stored value if it fails. Returns 0 if the DNS lookup
+				   was successful or -1  if it failed.
+				*/
 
 extern char *full_network_connection_name(const network_handle nh, bool legacy = false);
 				/* Returns a 'legacy' style connection name string in the form:

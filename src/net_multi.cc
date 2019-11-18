@@ -89,6 +89,7 @@ typedef struct nhandle {
 	uint16_t destination_port;     // local port on connectee
 	const char *destination_ipaddr;       // IP address of connection
 	sa_family_t protocol_family;    // AF_INET, AF_INET6
+	pthread_mutex_t *name_mutex;
 #endif
 } nhandle;
 
@@ -380,6 +381,8 @@ new_nhandle(const int rfd, const int wfd, const int outbound, uint16_t listen_po
 	h->destination_port = local_port;
 	h->destination_ipaddr = local_ipaddr;  // malloced by a get_network* function
 	h->protocol_family = protocol;
+	h->name_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(h->name_mutex, nullptr);
 #endif
 
 	return h;
@@ -407,6 +410,8 @@ close_nhandle(nhandle * h)
 	free_str(h->source_address);
 	free_str(h->source_ipaddr);
 	free_str(h->destination_ipaddr);
+    pthread_mutex_destroy(h->name_mutex);
+	free(h->name_mutex);
 #endif
 	myfree(h, M_NETWORK);
 }
@@ -700,11 +705,13 @@ rewrite_connection_name(network_handle nh, const char *destination, const char *
 	
 	nhandle *h = (nhandle *) nh.ptr;
 
+	pthread_mutex_lock(h->name_mutex);
 	free_str(h->name);
 	h->name = nameinfo;
 	free_str(h->destination_ipaddr);
 	h->destination_ipaddr = ip_addr;
 	h->source_port = atoi(source_port);
+	pthread_mutex_unlock(h->name_mutex);
 }
 
 int
@@ -712,34 +719,48 @@ network_name_lookup_rewrite(network_handle nh, const char *name, Objid obj)
 {
 	nhandle *h = (nhandle *) nh.ptr;
 
+	pthread_mutex_lock(h->name_mutex);	
 	applog(LOG_INFO3, "NAME_LOOKUP: connection_name for #%" PRIdN " changed from `%s` to `%s`\n", obj, h->name, name);
-	
 	free_str(h->name);
 	h->name = str_dup(name);
+	pthread_mutex_unlock(h->name_mutex);	
 
 	return 0;
 }
 
 const char *
-network_connection_name(const network_handle nh, bool name_lookup)
+network_connection_name(const network_handle nh)
 {
 	const nhandle *h = (nhandle *) nh.ptr;
 	const char *ret = nullptr;
+		
+		pthread_mutex_lock(h->name_mutex);	
+		ret = h->name;
+		pthread_mutex_unlock(h->name_mutex);	
+	
+	return ret;
+}
 
-	if (name_lookup) {
+int
+lookup_network_connection_name(const network_handle nh, const char **name)
+{
+	const nhandle *h = (nhandle *) nh.ptr;
+	int retval = 0;
+
+	pthread_mutex_lock(h->name_mutex);	
+	
 		struct addrinfo *address;
 	    int status = getaddrinfo(h->destination_ipaddr, nullptr, &tcp_hint, &address);
         if (status < 0) {
 			// Better luck next time.
-			return h->name;
-		}
-		ret = get_nameinfo(address->ai_addr);
+			*name = h->name;
+			retval = -1;
+		} else {
+		*name = get_nameinfo(address->ai_addr);
 		freeaddrinfo(address);
-	} else {
-		ret = h->name;
-	}
-
-	return ret;
+		}
+	pthread_mutex_unlock(h->name_mutex);	
+		return retval;
 }
 
 char *
@@ -748,11 +769,15 @@ full_network_connection_name(const network_handle nh, bool legacy)
 	const nhandle *h = (nhandle *)nh.ptr;
 	char *ret = nullptr;
 
+	pthread_mutex_lock(h->name_mutex);	
+
 	if (legacy) {
 		asprintf(&ret, "port %i from %s [%s], port %i", h->source_port, h->name, h->destination_ipaddr, h->destination_port);
 	} else {
 		asprintf(&ret, "%s [%s], port %i from %s [%s], port %i", h->source_address, h->source_ipaddr, h->source_port, h->name, h->destination_ipaddr, h->destination_port);
 	}
+
+	pthread_mutex_unlock(h->name_mutex);	
 
 	return ret;
 }
@@ -762,7 +787,10 @@ network_ip_address(const network_handle nh)
 {
 	const nhandle *h = (nhandle *) nh.ptr;
 
-	return h->destination_ipaddr;
+	pthread_mutex_lock(h->name_mutex);	
+	const char *ret = h->destination_ipaddr;
+	pthread_mutex_unlock(h->name_mutex);	
+	return ret;
 }
 
 const char *
@@ -793,8 +821,11 @@ uint16_t
 network_source_port(const network_handle nh)
 {
 	const nhandle *h = (nhandle *)nh.ptr;
+	pthread_mutex_lock(h->name_mutex);
+	uint16_t port = h->source_port;
+	pthread_mutex_unlock(h->name_mutex);
 
-	return h->source_port;
+	return port;
 }
 
 const char *
