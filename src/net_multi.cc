@@ -27,6 +27,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <pthread.h>
 
 #include "config.h"
 #include "list.h"
