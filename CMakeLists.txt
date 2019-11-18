@@ -217,10 +217,6 @@ include_directories(${ARGON2_INCLUDE_DIRS})
 target_link_libraries(moo ${ARGON2_LIBRARIES})
 
 if(CMAKE_USE_PTHREADS_INIT)
-<<<<<<< HEAD
-    #    list(APPEND CMAKE_C_FLAGS "-pthread")
-=======
->>>>>>> ipv6
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 else()
