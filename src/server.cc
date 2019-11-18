@@ -1481,7 +1481,8 @@ player_connected_silent(Objid old_id, Objid new_id)
         network_close(existing_h->nhandle);
 	    free_shandle(existing_h);
     }
-	oklog("SWITCHED: %s is now %s on %s\n",
+	oklog("%s %s is now %s on %s\n",
+          old_id < 0 ? "CONNECTED:" : "SWITCHED:",
 	      old_name,
           object_name(new_h->player),
 	      network_connection_name(new_h->nhandle));
