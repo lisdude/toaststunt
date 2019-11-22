@@ -76,6 +76,7 @@ check_function_exists(sigrelse HAVE_SIGRELSE)
 check_function_exists(lrand48 HAVE_LRAND48)
 check_function_exists(random HAVE_RANDOM)
 check_function_exists(select HAVE_SELECT)
+check_function_exists(poll HAVE_POLL)
 check_function_exists(strtoimax HAVE_STRTOIMAX)
 check_function_exists(accept4 HAVE_ACCEPT4)
 

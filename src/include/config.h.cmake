@@ -52,6 +52,7 @@
 #cmakedefine01 HAVE_TM_ZONE
 #cmakedefine01 HAVE_TZNAME
 #cmakedefine01 HAVE_SELECT
+#cmakedefine01 HAVE_POLL
 #cmakedefine01 HAVE_RANDOM
 #cmakedefine01 HAVE_LRAND48
 #cmakedefine01 HAVE_WAITPID

@@ -223,9 +223,9 @@
  *			   accepted by a given listener L.
  */
 
-#define MAX_QUEUED_OUTPUT	65536
-#define MAX_QUEUED_INPUT	MAX_QUEUED_OUTPUT
-#define MAX_LINE_BYTES	5242880 
+#define MAX_QUEUED_OUTPUT	      65536
+#define MAX_QUEUED_INPUT	      MAX_QUEUED_OUTPUT
+#define MAX_LINE_BYTES          5242880 
 #define DEFAULT_CONNECT_TIMEOUT	300
 
 /******************************************************************************
@@ -560,10 +560,12 @@
 
 #if NETWORK_PROTOCOL != NP_SINGLE  &&  !defined(MPLEX_STYLE)
 #  if NETWORK_STYLE == NS_BSD
-#    if HAVE_SELECT
+#    if HAVE_POLL
+#       define MPLEX_STYLE MP_POLL
+#    elif HAVE_SELECT
 #      define MPLEX_STYLE MP_SELECT
 #    else
-       #error You cannot use BSD sockets without having select()!
+#      #error Couldn not find select() or poll()!
 #    endif
 #   endif
 #endif
