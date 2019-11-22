@@ -201,6 +201,7 @@ free_text_block(text_block * b)
 	myfree(b, M_NETWORK);
 }
 
+#ifndef HAVE_ACCEPT4
 int
 network_set_nonblocking(int fd)
 {
@@ -217,12 +218,13 @@ network_set_nonblocking(int fd)
 #else
 	int flags;
 
-	if ((flags = fcntl(fd, F_GETFL, 0)) < 0 || fcntl(fd, F_SETFL, flags | NONBLOCK_FLAG) < 0)
+	if ((flags = fcntl(fd, F_GETFL, 0)) < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
 		return 0;
 	else
 		return 1;
 #endif
 }
+#endif
 
 static int
 push_output(nhandle * h)
@@ -350,9 +352,11 @@ new_nhandle(const int rfd, const int wfd, const int outbound, uint16_t listen_po
 {
 	nhandle *h;
 
+#ifndef HAVE_ACCEPT4
 	if (!network_set_nonblocking(rfd)
 	    || (rfd != wfd && !network_set_nonblocking(wfd)))
 		log_perror("Setting connection non-blocking");
+#endif
 
 	h = (nhandle *) mymalloc(sizeof(nhandle), M_NETWORK);
 

@@ -59,6 +59,7 @@
 #cmakedefine01 HAVE_WAIT3
 #cmakedefine01 HAVE_SIGEMPTYSET
 #cmakedefine01 HAVE_SIGRELSE
+#cmakedefine01 HAVE_ACCEPT4
 
 #if @HAVE_STRTOIMAX@
 # ifdef HAVE_LONG_LONG

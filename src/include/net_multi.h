@@ -40,10 +40,12 @@ extern void network_unregister_fd(int fd);
 				 * forgotten.
 				 */
 
+#ifndef HAVE_ACCEPT4
 extern int network_set_nonblocking(int fd);
 				/* Enable nonblocking I/O on the file
 				 * descriptor FD.  Return true iff successful.
 				 */
+#endif
 
 #include "streams.h"
 #include "network.h"
