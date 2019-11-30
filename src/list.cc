@@ -448,7 +448,7 @@ unparse_value(Stream * s, Var v)
 	stream_add_string(s, error_name(v.v.err));
 	break;
     case TYPE_FLOAT:
-    char buffer[40];
+    char buffer[41];
     snprintf(buffer, 40, "%.*g", DBL_DIG, v.v.fnum);
     if (!strchr(buffer, '.') && !strchr(buffer, 'e'))
         strncat(buffer, ".0", 40);
