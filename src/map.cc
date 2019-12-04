@@ -1052,7 +1052,7 @@ bf_mapvalues(Var arglist, Byte next, void *vdata, Objid progr)
 	}
 	else
 	{
-		Var r = new_list(nargs-1);
+		Var r = new_list(0);
 		for (int i = 2; i <= nargs; ++i)
 		{
 			const auto rbnode = maplookup(arglist.v.list[1], arglist.v.list[i], nullptr, true);
@@ -1062,7 +1062,7 @@ bf_mapvalues(Var arglist, Byte next, void *vdata, Objid progr)
 				free_var(arglist);
 				return make_error_pack(E_RANGE);
 			}
-			r = listset(r, var_ref(rbnode->value), i-1);
+			r = listappend(r, var_ref(rbnode->value));
 		}
 		free_var(arglist);
 		return make_var_pack(r);
