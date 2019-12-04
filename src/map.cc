@@ -1041,10 +1041,32 @@ do_map_values(Var key, Var value, void *data, int first)
 static package
 bf_mapvalues(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r = new_list(0);
-    mapforeach(arglist.v.list[1], do_map_values, &r);
-    free_var(arglist);
-    return make_var_pack(r);
+	const auto nargs = arglist.v.list[0].v.num;
+	//nargs==1: simple mapvalues, dump all values of the map.
+	if (nargs==1)
+	{
+		Var r = new_list(0);
+		mapforeach(arglist.v.list[1], do_map_values, &r);
+		free_var(arglist);
+		return make_var_pack(r);
+	}
+	else
+	{
+		Var r = new_list(0);
+		for (int i = 2; i <= nargs; ++i)
+		{
+			const auto rbnode = maplookup(arglist.v.list[1], arglist.v.list[i], nullptr, true);
+			if (!rbnode)
+			{
+				free_var(r);
+				free_var(arglist);
+				return make_error_pack(E_RANGE);
+			}
+			r = listappend(r, var_ref(rbnode->value));
+		}
+		free_var(arglist);
+		return make_var_pack(r);
+	}
 }
 
 static package
@@ -1072,6 +1094,6 @@ register_map(void)
 {
     register_function("mapdelete", 2, 2, bf_mapdelete, TYPE_MAP, TYPE_ANY);
     register_function("mapkeys", 1, 1, bf_mapkeys, TYPE_MAP);
-    register_function("mapvalues", 1, 1, bf_mapvalues, TYPE_MAP);
+    register_function("mapvalues", 1, -1, bf_mapvalues, TYPE_MAP);
     register_function("maphaskey", 2, 3, bf_maphaskey, TYPE_MAP, TYPE_ANY, TYPE_INT);
 }
