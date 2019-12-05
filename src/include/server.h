@@ -162,6 +162,13 @@ extern void queue_anonymous_object(Var v);
 extern void write_values_pending_finalization(void);
 extern int read_values_pending_finalization(void);
 
+/*
+ * These procedures represent my frustration with the separation
+ * of the server module from the network implementation.
+ */
+extern int find_network_handle(Objid obj, network_handle **handle);
+/***************************************************************/
+
 #include "streams.h"
 char is_localhost(Objid connection);
 int proxy_connected(Objid connection, char *command);

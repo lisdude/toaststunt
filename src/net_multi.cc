@@ -720,9 +720,13 @@ rewrite_connection_name(network_handle nh, const char *destination, const char *
 }
 
 int
-network_name_lookup_rewrite(network_handle nh, const char *name, Objid obj)
+network_name_lookup_rewrite(Objid obj, const char *name)
 {
-	nhandle *h = (nhandle *) nh.ptr;
+	network_handle *nh;
+	if (find_network_handle(obj, &nh) < 0)
+		return -1;
+
+	nhandle *h = (nhandle *) nh->ptr;
 
 	pthread_mutex_lock(h->name_mutex);	
 	applog(LOG_INFO3, "NAME_LOOKUP: connection_name for #%" PRIdN " changed from `%s` to `%s`\n", obj, h->name, name);

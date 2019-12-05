@@ -1699,6 +1699,19 @@ read_active_connections(void)
     return 1;
 }
 
+int
+find_network_handle(Objid obj, network_handle **handle)
+{
+    shandle *h = find_shandle(obj);
+
+    if (!h || h->disconnect_me)
+        return -1;
+    else
+        *handle = &(h->nhandle);
+
+    return 0;
+}
+
     int waif_conversion_type = _TYPE_WAIF;    /* For shame. We can remove this someday. */
 
 int
@@ -2330,7 +2343,7 @@ name_lookup_callback(Var arglist, Var * ret)
         *ret = str_dup_to_var(name);
 
         if (rewrite_connect_name && status == 0)
-            if (network_name_lookup_rewrite(h->nhandle, name, who) != 0)
+            if (network_name_lookup_rewrite(who, name) != 0)
                 make_error_map(E_INVARG, "Failed to rewrite connection name.", ret);
 
         free_str(name);

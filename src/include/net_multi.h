@@ -51,7 +51,7 @@ extern int network_set_nonblocking(int fd);
 #include "network.h"
 
 extern void rewrite_connection_name(network_handle nh, const char *destination, const char *destination_port, const char *source, const char *source_port);
-extern int network_name_lookup_rewrite(network_handle nh, const char *name, Objid obj);
+extern int network_name_lookup_rewrite(Objid obj, const char *name);
 extern int network_is_localhost(network_handle nh);
 
 #endif				/* !Net_Multi_H */
