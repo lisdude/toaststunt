@@ -45,16 +45,8 @@ get_pcre(const char *string, unsigned char options) {
 static package
 bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
     /* Some useful constants. */
-    static Var match = nothing;
-    if (match.v.obj == NOTHING) {
-        match.type = TYPE_STR;
-        match.v.str = str_dup("match");
-    }
-    static Var position = nothing;
-    if (position.v.obj == NOTHING) {
-        position.type = TYPE_STR;
-        position.v.str = str_dup("position");
-    }
+    static Var match = str_dup_to_var("match");
+    static Var position = str_dup_to_var("position");
     /**************************/
 
     const char *subject, *pattern;
@@ -306,4 +298,3 @@ register_pcre() {
 #else /* PCRE_FOUND */
 void register_pcre(void) { }
 #endif /* PCRE_FOUND */
-
