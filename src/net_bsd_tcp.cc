@@ -170,7 +170,7 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
     struct sockaddr_storage addr;
     socklen_t addr_length = sizeof addr;
 
-#ifdef HAVE_ACCEPT4
+#if HAVE_ACCEPT4
     fd = accept4(listener_fd, (struct sockaddr *)&addr, &addr_length, SOCK_NONBLOCK);
 #else
     fd = accept(listener_fd, (struct sockaddr *)&addr, &addr_length);
