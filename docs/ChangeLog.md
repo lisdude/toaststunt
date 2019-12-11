@@ -3,6 +3,8 @@
 ## 2.6.1 (In Progress)
 - The `mapvalues` function now accepts any number of keys, the values of which will be returned by the function. If a key doesn't exist, E_RANGE is returned.
 - Very minor performance improvement for Linux users by saving one (to two) calls to the kernel for every incoming network connection.
+- Fix a bug in `connection_name_lookup(x, 1)` that could result in a server crash.
+- Add a third argument to `slice()` to provide a default value when slicing a list of maps by key. This allows you to maintain index consistency in situations where some of the maps may not contain the sliced key.
 
 ## 2.6.0 (Nov 17, 2019)
 ### Bug Fixes

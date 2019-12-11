@@ -846,6 +846,7 @@ bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
     int nargs = arglist.v.list[0].v.num;
     Var alist = arglist.v.list[1];
     Var index = (nargs < 2 ? Var::new_int(1) : arglist.v.list[2]);
+    Var default_map_value = (nargs >= 3 ? var_ref(arglist.v.list[3]) : var_ref(nothing));
 
     // Validate the types here since we used TYPE_ANY to allow lists and ints
     if (nargs > 1 && index.type != TYPE_LIST && index.type != TYPE_INT && index.type != TYPE_STR) {
@@ -894,6 +895,8 @@ bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
                 Var tmp;
                 if (maplookup(element, index, &tmp, 0) != nullptr)
                     ret = listappend(ret, var_ref(tmp));
+                else if (nargs >= 3)
+                    ret = listappend(ret, var_ref(default_map_value));
             }
         } else if (index.type == TYPE_INT) {
             if (index.v.num > (element.type == TYPE_STR ? memo_strlen(element.v.str) : element.v.list[0].v.num)) {
@@ -1760,7 +1763,7 @@ register_list(void)
     register_function("equal", 2, 2, bf_equal, TYPE_ANY, TYPE_ANY);
     register_function("explode", 1, 3, bf_explode, TYPE_STR, TYPE_STR, TYPE_INT);
     register_function("reverse", 1, 1, bf_reverse, TYPE_ANY);
-    register_function("slice", 1, 2, bf_slice, TYPE_LIST, TYPE_ANY);
+    register_function("slice", 1, 3, bf_slice, TYPE_LIST, TYPE_ANY, TYPE_ANY);
     register_function("sort", 1, 4, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_INT, TYPE_INT);
     register_function("all_members", 2, 2, bf_all_members, TYPE_ANY, TYPE_LIST);
 
