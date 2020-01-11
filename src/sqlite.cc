@@ -279,6 +279,7 @@ void sqlite_query_thread_callback(Var args, Var *r)
     sqlite_result *thread_handle = (sqlite_result*)mymalloc(sizeof(sqlite_result), M_STRUCT);
     thread_handle->connection = &sqlite_connections[index];
     thread_handle->last_result = new_list(0);
+    thread_handle->include_headers = args.v.list[0].v.num > 2 && is_true(args.v.list[3]);
 
     thread_handle->connection->locks++;
 
@@ -499,7 +500,15 @@ int callback(void *index, int argc, char **argv, char **azColName)
         } else {
             s = string_to_moo_type(argv[i], handle->options & SQLITE_PARSE_OBJECTS, handle->options & SQLITE_SANITIZE_STRINGS);
         }
-        ret = listappend(ret, s);
+
+        if (thread_handle->include_headers) {
+            Var tmp_value = new_list(2);
+            tmp_value.v.list[1] = str_dup_to_var(azColName[i]);
+            tmp_value.v.list[2] = s;
+            ret = listappend(ret, tmp_value);
+        } else {
+            ret = listappend(ret, s);
+        }
     }
 
     thread_handle->last_result = listappend(thread_handle->last_result, ret);
@@ -601,7 +610,7 @@ register_sqlite() {
     register_function("sqlite_close", 1, 1, bf_sqlite_close, TYPE_INT);
     register_function("sqlite_handles", 0, 0, bf_sqlite_handles);
     register_function("sqlite_info", 1, 1, bf_sqlite_info, TYPE_INT);
-    register_function("sqlite_query", 2, 2, bf_sqlite_query, TYPE_INT, TYPE_STR);
+    register_function("sqlite_query", 2, 3, bf_sqlite_query, TYPE_INT, TYPE_STR, TYPE_ANY);
     register_function("sqlite_execute", 3, 3, bf_sqlite_execute, TYPE_INT, TYPE_STR, TYPE_LIST);
     register_function("sqlite_last_insert_row_id", 1, 1, bf_sqlite_last_insert_row_id, TYPE_INT);
     register_function("sqlite_limit", 3, 3, bf_sqlite_limit, TYPE_INT, TYPE_ANY, TYPE_INT);

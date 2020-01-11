@@ -30,6 +30,7 @@ typedef struct sqlite_result
 {
     sqlite_conn *connection;
     Var last_result;
+    bool include_headers;
 } sqlite_result;
 
 // Forward declarations
