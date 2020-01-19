@@ -119,22 +119,6 @@ class Testrecycle < Test::Unit::TestCase
     end
   end
 
-  def test_that_calling_recycle_when_recycling_an_object_fails
-    run_test_as('programmer') do
-      a = create(:object)
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
-        vc << %Q<typeof(this) == OBJ || raise(E_INVARG);>
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
-        vc << %Q<recycle(this);>
-      end
-      assert_equal 0, get(a, 'recycle_called')
-      simplify(command("; recycle(create(#{a}, 0));"))
-      assert_equal 1, get(a, 'recycle_called')
-    end
-  end
-
   def test_that_calling_recycle_when_recycling_an_anonymous_object_fails
     run_test_as('programmer') do
       a = create(:object)

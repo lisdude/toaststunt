@@ -19,6 +19,7 @@
 
 #include "collection.h"
 #include "db.h"
+#include "db_private.h"
 #include "db_io.h"
 #include "execute.h"
 #include "functions.h"
@@ -762,7 +763,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	if (!obj.is_object()) {
 	    free_var(obj);
 	    return make_error_pack(E_TYPE);
-	} else if (!is_valid(obj) || db_object_has_flag2(obj, FLAG_RECYCLED)) {
+	} else if (!is_valid(obj) || (TYPE_ANON == obj.type && dbpriv_object_has_flag(obj.v.anon, FLAG_RECYCLED))) {
 	    free_var(obj);
 	    return make_error_pack(E_INVARG);
 	} else if (!controls2(progr, obj)) {
@@ -770,7 +771,8 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	    return make_error_pack(E_PERM);
 	}
 
-	db_set_object_flag2(obj, FLAG_RECYCLED);
+	if (TYPE_ANON == obj.type)
+		dbpriv_set_object_flag(obj.v.anon, FLAG_RECYCLED);
 
 	/* Recycle permanent and anonymous objects.
 	 *
@@ -807,7 +809,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	    free_var(obj);
 	    free_var(*data);
 	    free_data(data);
-	    return no_var_pack();
+	    return make_error_pack(E_INVARG);
 	}
 
 	if (TYPE_OBJ == obj.type) {
