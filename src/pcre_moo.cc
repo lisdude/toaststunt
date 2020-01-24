@@ -3,6 +3,8 @@
 #ifdef PCRE_FOUND
 
 #include <ctype.h>
+#include <map>
+#include <limits.h>
 
 #include "pcre_moo.h"
 #include "functions.h"
@@ -14,36 +16,77 @@
 #include "dependencies/pcrs.h"
 #include "dependencies/xtrapbits.h"
 
+struct StrCompare : public std::binary_function<const char*, const char*, bool>
+{
+    public:
+        bool operator() (const char* str1, const char* str2) const
+        { return strcmp(str1, str2) < 0; }
+};
+
+static std::map<const char*, pcre_cache_entry*, StrCompare> pcre_pattern_cache;
+
 static struct pcre_cache_entry *
-get_pcre(const char *string, unsigned char options) {
-    const char *err;
-    int eos; /* Error offset */
-    char buf[256];
+get_pcre(const char *string, unsigned char options)
+{
+    pcre_cache_entry *entry = nullptr;
 
-    pcre_cache_entry *entry = (pcre_cache_entry*)malloc(sizeof(pcre_cache_entry));
-    entry->error = nullptr;
-    entry->re = nullptr;
-    entry->captures = 0;
-    entry->extra = nullptr;
-
-    entry->re = pcre_compile(string, options, &err, &eos, nullptr);
-    if (entry->re == nullptr) {
-        sprintf(buf, "PCRE compile error at offset %d: %s", eos, err);
-        entry->error = str_dup(buf);
+    if (pcre_pattern_cache.count(string) != 0) {
+        entry = pcre_pattern_cache[string];
+        entry->cache_hits++;
     } else {
-        const char *error = nullptr;
-        entry->extra = pcre_study(entry->re, 0, &error);
-        if (error != nullptr)
-            entry->error = str_dup(error);
-        else 
-            (void)pcre_fullinfo(entry->re, nullptr, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
+        /* If the cache is too large, remove the entry with the least amount of hits. */
+        if (pcre_pattern_cache.size() >= PCRE_PATTERN_CACHE_SIZE) {
+            std::map<const char*, pcre_cache_entry*, StrCompare>::iterator entry_to_delete = pcre_pattern_cache.begin(), it = entry_to_delete;
+            while (it != pcre_pattern_cache.end()) {
+                if (it->second->cache_hits < entry_to_delete->second->cache_hits) {
+                    entry_to_delete = it;
+                    /* Don't bother trying to find anything less than 0... waste of string comparisons. */
+                    if (it->second->cache_hits == 0)
+                        break;
+                }
+                it++;
+            }
+            /* We could use delete_cache_entry here, and arguably it would be cleaner, but that would cause an extra pointless
+               iteration full of string comparisons. Fortunately we have enough information here to deal with it directly. */
+            free_entry(entry_to_delete->second);
+            free_str(entry_to_delete->first);
+            pcre_pattern_cache.erase(entry_to_delete);
+        }
+
+        const char *err;
+        int eos; /* Error offset */
+        char buf[256];
+
+        entry = (pcre_cache_entry*)malloc(sizeof(pcre_cache_entry));
+        entry->error = nullptr;
+        entry->re = nullptr;
+        entry->captures = 0;
+        entry->extra = nullptr;
+        entry->cache_hits = 0;
+
+        entry->re = pcre_compile(string, options, &err, &eos, nullptr);
+        if (entry->re == nullptr) {
+            sprintf(buf, "PCRE compile error at offset %d: %s", eos, err);
+            entry->error = str_dup(buf);
+        } else {
+            const char *error = nullptr;
+            entry->extra = pcre_study(entry->re, 0, &error);
+            if (error != nullptr)
+                entry->error = str_dup(error);
+            else 
+                (void)pcre_fullinfo(entry->re, nullptr, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
+        }
+
+        if (entry->error == nullptr)
+            pcre_pattern_cache[str_dup(string)] = entry;
     }
 
     return entry;
 }
 
-static package
-bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
+    static package
+bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
+{
     /* Some useful constants. */
     static Var match = str_dup_to_var("match");
     static Var position = str_dup_to_var("position");
@@ -75,6 +118,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         package r = make_raise_pack(E_INVARG, entry->error, var_ref(zero));
         free_entry(entry);
         free_var(arglist);
+        /* We don't need to remove it from the cache because error entries never make it to begin with. */
         return r;
     }
 
@@ -109,6 +153,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         {
             /* We've encountered some funky error. Back out and let them know what it is. */
             free_entry(entry);
+            delete_cache_entry(pattern);
             free_var(arglist);
             sprintf(err, "pcre_exec returned error: %d", rc);
             return make_raise_pack(E_INVARG, err, var_ref(zero));
@@ -116,6 +161,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             /* We don't have enough room to store all of these substrings. */
             sprintf(err, "pcre_exec only has room for %d substrings", entry->captures);
             free_entry(entry);
+            delete_cache_entry(pattern);
             free_var(arglist);
             return make_raise_pack(E_QUOTA, err, var_ref(zero));
         } else if (rc == PCRE_ERROR_NOMATCH) {
@@ -124,6 +170,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
         } else if (loops >= total_loops) {
             /* The loop has iterated beyond the maximum limit, probably locking the server. Kill it. */
             free_entry(entry);
+            delete_cache_entry(pattern);
             free_var(arglist);
             sprintf(err, "Too many iterations of matching loop: %d", loops);
             return make_raise_pack(E_MAXREC, err, var_ref(zero));
@@ -203,7 +250,6 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr) {
             break;
     }
 
-    free_entry(entry);
     free_var(arglist);
     return make_var_pack(ret);
 }
@@ -227,6 +273,13 @@ void free_entry(pcre_cache_entry *entry)
     free(entry);
 }
 
+void delete_cache_entry(const char *pattern)
+{
+    auto it = pcre_pattern_cache.find(pattern);
+    free_str(it->first);
+    pcre_pattern_cache.erase(it);
+}
+
 /* Create a two element list with the substring indices. */
 Var result_indices(int ovector[], int n)
 {
@@ -239,8 +292,9 @@ Var result_indices(int ovector[], int n)
     return pos;
 }
 
-static package
-bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr) {
+    static package
+bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr)
+{
     const char *linebuf = arglist.v.list[1].v.str;
     const char *pattern = arglist.v.list[2].v.str;
 
@@ -287,12 +341,42 @@ bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr) {
     }
 }
 
+    static package
+bf_pcre_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+    Var ret = new_list(pcre_pattern_cache.size());
+
+    int count = 0;
+    for (const auto& x : pcre_pattern_cache) {
+        count++;
+        Var entry = new_list(2);
+        entry.v.list[1] = str_dup_to_var(x.first);
+        entry.v.list[2] = Var::new_int(x.second->cache_hits);
+        ret.v.list[count] = entry;
+    }
+
+    return make_var_pack(ret);
+}
+
+    void
+pcre_shutdown(void)
+{
+    for (const auto& x : pcre_pattern_cache) {
+        free_entry(x.second);
+        free_str(x.first);
+    }
+
+    pcre_pattern_cache.clear();
+}
+
 void
 register_pcre() {
     oklog("REGISTER_PCRE: v%s (PCRE Library v%s)\n", EXT_PCRE_VERSION, pcre_version());
     //                                                   string    pattern   ?case     ?find_all
     register_function("pcre_match", 2, 4, bf_pcre_match, TYPE_STR, TYPE_STR, TYPE_INT, TYPE_INT);
     register_function("pcre_replace", 2, 2, bf_pcre_replace, TYPE_STR, TYPE_STR);
+    register_function("pcre_cache_stats", 0, 0, bf_pcre_cache_stats);
 }
 
 #else /* PCRE_FOUND */

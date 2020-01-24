@@ -18,7 +18,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 ## Features
 
 - SQLite [functions: sqlite_open(), sqlite_close(), sqlite_handle(), sqlite_info(), sqlite_query(), sqlite_execute(), sqlite_limit()].
-- Perl Compatible Regular Expressions (PCRE) [functions: pcre_match(), pcre_replace]
+- Perl Compatible Regular Expressions (PCRE) [functions: pcre_match(), pcre_replace, pcre_cache_stats]
 - Simplex noise (implemented but never actually tested / used)
 - [Argon2id hashing](https://github.com/P-H-C/phc-winner-argon2) [functions: argon2(), argon2_verify()]
 - 32-bit and 64-bit versions ($maxint and $minint set automatically)
@@ -76,6 +76,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - DEFAULT_THREAD_MODE (default mode of threaded functions)
     - SAFE_RECYCLE (change ownership of everything an object owns before recycling it)
     - NO_NAME_LOOKUP (disable automatic DNS name resolution on new connections. Can be overridden with $server_options.no_name_lookup)
+    - PCRE_PATTERN_CACHE_SIZE (specifies how many PCRE patterns are cached)
 
 - Additional builtins:
     - frandom (random floats)

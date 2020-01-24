@@ -239,12 +239,14 @@
 
 /******************************************************************************
  * The server maintains a cache of the most recently used patterns from calls
- * to the match() and rmatch() built-in functions.  PATTERN_CACHE_SIZE controls
- * how many past patterns are remembered by the server.  Do not set it to a
- * number less than 1.
+ * to the match(), rmatch(), and pcre_match() built-in functions.
+ * PATTERN_CACHE_SIZE controls how many past patterns are remembered by the
+ * server for the former and PCRE_PATTERN_CACHE_SIZE for the latter.
+ * Do not set either value to a number less than 1.
  */
 
 #define PATTERN_CACHE_SIZE	20
+#define PCRE_PATTERN_CACHE_SIZE	20
 
 /******************************************************************************
  * Prior to 1.8.4 property lookups were required on every reference to a

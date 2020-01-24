@@ -6,6 +6,7 @@
 - Fix a bug in `connection_name_lookup(x, 1)` that could result in a server crash.
 - Add a third argument to `slice()` to provide a default value when slicing a list of maps by key. This allows you to maintain index consistency in situations where some of the maps may not contain the sliced key.
 - Add a third argument to `sqlite_query()` to return the column name along with the result.
+- Cache `pcre_match()` patterns to speed up matching.
 
 ## 2.6.0 (Nov 17, 2019)
 ### Bug Fixes

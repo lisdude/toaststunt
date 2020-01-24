@@ -76,6 +76,7 @@
 #include "curl.h" /* curl shutdown */
 #include "background.h"
 #include "map.h"
+#include "pcre_moo.h" /* pcre shutdown */
 
 extern "C" {
 #include "dependencies/linenoise.h"
@@ -1905,12 +1906,11 @@ main(int argc, char **argv)
     }
 
     gc_collect();
-
     db_shutdown();
-
     db_clear_ancestor_cache();
     sqlite_shutdown();
     curl_shutdown();
+    pcre_shutdown();
 
     free_str(this_program);
 

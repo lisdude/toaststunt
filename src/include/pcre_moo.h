@@ -13,17 +13,17 @@
 #define RETURN_GROUPS       4
 #define FIND_ALL            8
 
-/* A misnomer, since we don't have a cache anymore. But I'm leaving
- * this struct around just in case we want to go back to caching
- * in the future, which we might with studying. */
 struct pcre_cache_entry {
     char *error;
     pcre *re;
     pcre_extra *extra;
     int captures;
+    unsigned int cache_hits;
 };
 
 void free_entry(pcre_cache_entry *);
+void delete_cache_entry(const char *pattern);
 Var result_indices(int ovector[], int n);
+extern void pcre_shutdown(void);
 
 #endif /* EXTENSION_PCRE_H */
