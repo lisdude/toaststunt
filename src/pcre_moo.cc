@@ -345,6 +345,10 @@ bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr)
 bf_pcre_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
 {
     free_var(arglist);
+
+    if (!is_wizard(progr))
+	    return make_error_pack(E_PERM);
+
     Var ret = new_list(pcre_pattern_cache.size());
 
     int count = 0;
