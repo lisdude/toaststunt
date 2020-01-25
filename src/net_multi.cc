@@ -470,7 +470,8 @@ accept_new_connection(nlistener * l)
 {
 	network_handle nh;
 	nhandle *h;
-	int rfd, wfd, i;
+	int rfd, wfd;
+	unsigned int i;
 	const char *name;
 	const char *ip_addr;
 	uint16_t port;
@@ -753,23 +754,23 @@ network_connection_name(const network_handle nh)
 int
 lookup_network_connection_name(const network_handle nh, const char **name)
 {
-	const nhandle *h = (nhandle *) nh.ptr;
-	int retval = 0;
+    const nhandle *h = (nhandle *) nh.ptr;
+    int retval = 0;
 
-	pthread_mutex_lock(h->name_mutex);	
-	
-		struct addrinfo *address;
-	    int status = getaddrinfo(h->destination_ipaddr, nullptr, &tcp_hint, &address);
-        if (status < 0) {
-			// Better luck next time.
-			*name = h->name;
-			retval = -1;
-		} else {
-		*name = get_nameinfo(address->ai_addr);
-		freeaddrinfo(address);
-		}
-	pthread_mutex_unlock(h->name_mutex);	
-		return retval;
+    pthread_mutex_lock(h->name_mutex);	
+
+    struct addrinfo *address;
+    int status = getaddrinfo(h->destination_ipaddr, nullptr, &tcp_hint, &address);
+    if (status < 0) {
+        // Better luck next time.
+        *name = str_dup(h->name);
+        retval = -1;
+    } else {
+        *name = get_nameinfo(address->ai_addr);
+    }
+    freeaddrinfo(address);
+    pthread_mutex_unlock(h->name_mutex);	
+    return retval;
 }
 
 char *
