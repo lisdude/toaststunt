@@ -787,9 +787,11 @@ main_loop(void)
 			: (now - h->last_activity_time
 			   > DEFAULT_CONNECT_TIMEOUT))) {
 		    call_notifier(h->player, h->listener, "user_disconnected");
+            lock_connection_name_mutex(h->nhandle);
 		    oklog("TIMEOUT: #%" PRIdN " on %s\n",
 			  h->player,
 			  network_connection_name(h->nhandle));
+             unlock_connection_name_mutex(h->nhandle);
 		    if (h->print_messages)
 			send_message(h->listener, h->nhandle, "timeout_msg",
 				     "*** Timed-out waiting for login. ***",
@@ -797,9 +799,11 @@ main_loop(void)
 		    network_close(h->nhandle);
 		    free_shandle(h);
 		} else if (h->connection_time != 0 && !valid(h->player)) {
+            lock_connection_name_mutex(h->nhandle);
 		    oklog("RECYCLED: #%" PRIdN " on %s\n",
 			  h->player,
 			  network_connection_name(h->nhandle));
+            unlock_connection_name_mutex(h->nhandle);
 		    if (h->print_messages)
 			send_message(h->listener, h->nhandle,
 				     "recycle_msg", "*** Recycled ***", 0);
@@ -808,9 +812,11 @@ main_loop(void)
 		} else if (h->disconnect_me) {
 		    call_notifier(h->player, h->listener,
 				  "user_disconnected");
+            lock_connection_name_mutex(h->nhandle);
 		    oklog("DISCONNECTED: %s on %s\n",
 			  object_name(h->player),
 			  network_connection_name(h->nhandle));
+            unlock_connection_name_mutex(h->nhandle);
 		    if (h->print_messages)
 			send_message(h->listener, h->nhandle, "boot_msg",
 				     "*** Disconnected ***", 0);
@@ -1397,16 +1403,20 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
 	task_suspend_input(h->tasks);
     }
 
+    lock_connection_name_mutex(nh);
+    const char *connection_name = str_dup(network_connection_name(nh));
+    unlock_connection_name_mutex(nh);
+
     if (outbound) {
         oklog("CONNECT: #%" PRIdN " to %s [%s], port %i\n", h->player,
-              network_connection_name(nh), network_ip_address(nh), network_port(nh));
+              connection_name, network_ip_address(nh), network_port(nh));
     } else {
     oklog("ACCEPT: #%" PRIdN " on %s [%s], port %i from %s [%s], port %i\n", h->player,
 	  network_source_connection_name(nh), network_source_ip_address(nh),
-      network_source_port(nh), network_connection_name(nh),
+      network_source_port(nh), connection_name,
       network_ip_address(nh), network_port(nh));
 }
-
+    free_str(connection_name);
     result.ptr = h;
     return result;
 }
@@ -1416,6 +1426,8 @@ server_refuse_connection(server_listener sl, network_handle nh)
 {
     slistener *l = (slistener *)sl.ptr;
 
+    lock_connection_name_mutex(nh);
+
     if (l->print_messages)
 	send_message(l->oid, nh, "server_full_msg",
 		     "*** Sorry, but the server cannot accept any more"
@@ -1423,7 +1435,9 @@ server_refuse_connection(server_listener sl, network_handle nh)
 		     "*** Please try again later.",
 		     0);
     errlog("SERVER FULL: refusing connection on %s from %s\n",
-	   l->name, network_connection_name(nh));
+	   l->name, (nh));
+    
+    unlock_connection_name_mutex(nh);
 }
 
 void
@@ -1440,9 +1454,12 @@ server_close(server_handle sh)
 {
     shandle *h = (shandle *) sh.ptr;
 
+    lock_connection_name_mutex(h->nhandle);
+
     oklog("CLIENT DISCONNECTED: %s on %s\n",
 	  object_name(h->player),
 	  network_connection_name(h->nhandle));
+    unlock_connection_name_mutex(h->nhandle);
     h->disconnect_me = 1;
     call_notifier(h->player, h->listener, "user_client_disconnected");
     free_shandle(h);
@@ -1482,11 +1499,13 @@ player_connected_silent(Objid old_id, Objid new_id)
         network_close(existing_h->nhandle);
 	    free_shandle(existing_h);
     }
+    lock_connection_name_mutex(new_h->nhandle);
 	oklog("%s %s is now %s on %s\n",
           old_id < 0 ? "CONNECTED:" : "SWITCHED:",
 	      old_name,
           object_name(new_h->player),
 	      network_connection_name(new_h->nhandle));
+    unlock_connection_name_mutex(new_h->nhandle);
    free_str(old_name);
 }
 
@@ -1538,7 +1557,9 @@ proxy_connected(Objid connection, char *command)
     }
     const char *old_name = str_dup(network_connection_name(existing_h->nhandle));   // rewrite is going to free this
     rewrite_connection_name(existing_h->nhandle, destination, destination_port, source, source_port);
+    lock_connection_name_mutex(existing_h->nhandle);
     applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(existing_h->nhandle));
+    unlock_connection_name_mutex(existing_h->nhandle);
     free_str(old_name);
     } else {
         return -1;
@@ -1565,14 +1586,13 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 	 * latter only needs listener value.
 	 */
 	Objid existing_listener = existing_h->listener;
-	/* network_connection_name is allowed to reuse the same string
-	 * storage, so we have to copy one of them.
-	 */
+    lock_connection_name_mutex(new_h->nhandle);
 	char *name1 = str_dup(network_connection_name(existing_h->nhandle));
 	oklog("REDIRECTED: %s, was %s, now %s\n",
 	      object_name(new_id),
 	      name1,
 	      network_connection_name(new_h->nhandle));
+    unlock_connection_name_mutex(new_h->nhandle);
 	free_str(name1);
 	if (existing_h->print_messages)
 	    send_message(existing_listener, existing_h->nhandle,
@@ -2306,9 +2326,11 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
     r.v.str = nullptr;
 
     if (h && !h->disconnect_me) {
-        if (arglist.v.list[0].v.num == 1)
+        if (arglist.v.list[0].v.num == 1) {
+            lock_connection_name_mutex(h->nhandle);
             r.v.str = str_dup(network_connection_name(h->nhandle));
-        else if (arglist.v.list[2].v.num == 1)
+            unlock_connection_name_mutex(h->nhandle);
+        } else if (arglist.v.list[2].v.num == 1)
             r.v.str = str_dup(network_ip_address(h->nhandle));
         else {
             char *full_conn_name = full_network_connection_name(h->nhandle, true);
@@ -2502,7 +2524,9 @@ bf_connection_info(Var arglist, Byte next, void *vdata, Objid progr)
     ret = mapinsert(ret, var_ref(src_addr), str_ref_to_var(network_source_connection_name(nh)));
     ret = mapinsert(ret, var_ref(src_port), Var::new_int(network_source_port(nh)));
     ret = mapinsert(ret, var_ref(src_ip), str_ref_to_var(network_source_ip_address(nh)));
+    lock_connection_name_mutex(nh);
     ret = mapinsert(ret, var_ref(dest_addr), str_ref_to_var(network_connection_name(nh)));
+    unlock_connection_name_mutex(nh);
     ret = mapinsert(ret, var_ref(dest_port), Var::new_int(network_port(nh)));
     ret = mapinsert(ret, var_ref(dest_ip), str_ref_to_var(network_ip_address(nh)));
     ret = mapinsert(ret, var_ref(protocol), str_dup_to_var(network_protocol(nh)));

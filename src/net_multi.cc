@@ -421,6 +421,7 @@ close_nhandle(nhandle * h)
 	myfree(h, M_NETWORK);
 }
 
+
 static void
 close_nlistener(nlistener * l)
 {
@@ -738,17 +739,26 @@ network_name_lookup_rewrite(Objid obj, const char *name)
 	return 0;
 }
 
+void
+lock_connection_name_mutex(const network_handle nh)
+{
+	const nhandle *h = (nhandle *) nh.ptr;
+	pthread_mutex_lock(h->name_mutex);
+}
+
+void
+unlock_connection_name_mutex(const network_handle nh)
+{
+	const nhandle *h = (nhandle *) nh.ptr;
+	pthread_mutex_unlock(h->name_mutex);
+}
+
+
 const char *
 network_connection_name(const network_handle nh)
 {
 	const nhandle *h = (nhandle *) nh.ptr;
-	const char *ret = nullptr;
-		
-		pthread_mutex_lock(h->name_mutex);	
-		ret = h->name;
-		pthread_mutex_unlock(h->name_mutex);	
-	
-	return ret;
+	return h->name;
 }
 
 int
