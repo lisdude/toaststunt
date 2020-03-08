@@ -9,6 +9,7 @@
 - Fix a bug that would cause the server to crash (at worst) when a DNS lookup failed.
 - Fix a bug where long-running recycle verbs would cause the object to remain unrecycled and unrecyclable in the future.
 - Fix bugs in `connection_name_lookup(x, 1)` that could result in a server crash.
+- Fix a bug in `parse_json()` that could crash the server. (Thanks to Tyler Spivey for the report and fix.)
 
 
 ## 2.6.0 (Nov 17, 2019)

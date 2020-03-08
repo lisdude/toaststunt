@@ -113,6 +113,7 @@ struct parse_context {
     struct stack_item stack;
     struct stack_item *top;
     mode_type mode;
+    int depth;
 };
 
 struct generate_context {
@@ -317,11 +318,16 @@ static int
 handle_start_map(void *ctx)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
+
+    if (pctx->depth >= server_int_option("json_max_parse_depth", JSON_MAX_PARSE_DEPTH))
+        return 0;
+
     Var k, v;
     k.type = (var_type)MAP_SENTINEL;
     PUSH(pctx->top, k);
     v.type = (var_type)MAP_SENTINEL;
     PUSH(pctx->top, v);
+    pctx->depth++;
     return 1;
 }
 
@@ -337,6 +343,7 @@ handle_end_map(void *ctx)
 	map = mapinsert(map, k, v);
     }
     PUSH(pctx->top, map);
+    pctx->depth--;
     return 1;
 }
 
@@ -344,9 +351,14 @@ static int
 handle_start_array(void *ctx)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
+
+    if (pctx->depth >= server_int_option("json_max_parse_depth", JSON_MAX_PARSE_DEPTH))
+        return 0;
+
     Var v;
     v.type = (var_type)ARRAY_SENTINEL;
     PUSH(pctx->top, v);
+    pctx->depth++;
     return 1;
 }
 
@@ -361,6 +373,7 @@ handle_end_array(void *ctx)
 	list = listinsert(list, v, 1);
     }
     PUSH(pctx->top, list);
+    pctx->depth--;
     return 1;
 }
 
@@ -519,6 +532,7 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
     pctx.stack.v.type = TYPE_INT;
     pctx.stack.v.v.num = 0;
     pctx.mode = MODE_COMMON_SUBSET;
+    pctx.depth = 0;
 
     const char *str = arglist.v.list[1].v.str;
     size_t len = strlen(str);

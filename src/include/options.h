@@ -521,6 +521,14 @@
 
 #define NO_NAME_LOOKUP 0
 
+/******************************************************************************
+ * This constant controls the maximum recursive depth that parse_json will
+ * allow before giving up. A value too large has the potential to crash the
+ * server, so caution is advised.
+*/
+
+#define JSON_MAX_PARSE_DEPTH 1000
+
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/
