@@ -55,5 +55,8 @@ extern int network_name_lookup_rewrite(Objid obj, const char *name);
 extern int network_is_localhost(network_handle nh);
 extern void lock_connection_name_mutex(const network_handle nh);
 extern void unlock_connection_name_mutex(const network_handle nh);
+extern void increment_nhandle_refcount(const network_handle nh);
+extern void decrement_nhandle_refcount(const network_handle nh);
+extern int nhandle_refcount(const network_handle nh);
 
 #endif				/* !Net_Multi_H */

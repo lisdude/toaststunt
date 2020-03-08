@@ -3,12 +3,13 @@
 ## 2.6.1 (In Progress)
 - The `mapvalues` function now accepts any number of keys, the values of which will be returned by the function. If a key doesn't exist, E_RANGE is returned.
 - Very minor performance improvement for Linux users by saving one (to two) calls to the kernel for every incoming network connection.
-- Fix a bug in `connection_name_lookup(x, 1)` that could result in a server crash.
 - Add a third argument to `slice()` to provide a default value when slicing a list of maps by key. This allows you to maintain index consistency in situations where some of the maps may not contain the sliced key.
 - Add a third argument to `sqlite_query()` to return the column name along with the result.
 - Cache `pcre_match()` patterns to speed up matching. Includes a `pcre_cache_stats()` function to view the number of cache hits per pattern.
 - Fix a bug that would cause the server to crash (at worst) when a DNS lookup failed.
 - Fix a bug where long-running recycle verbs would cause the object to remain unrecycled and unrecyclable in the future.
+- Fix bugs in `connection_name_lookup(x, 1)` that could result in a server crash.
+
 
 ## 2.6.0 (Nov 17, 2019)
 ### Bug Fixes

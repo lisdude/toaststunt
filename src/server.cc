@@ -780,6 +780,9 @@ main_loop(void)
 
 		nexth = h->next;
 
+        if (nhandle_refcount(h->nhandle) > 1)
+            continue;
+
 		if (!h->outbound && h->connection_time == 0
 		    && (get_server_option(h->listener, "connect_timeout", &v)
 			? (v.type == TYPE_INT && v.v.num > 0
@@ -1455,10 +1458,11 @@ server_close(server_handle sh)
     shandle *h = (shandle *) sh.ptr;
 
     lock_connection_name_mutex(h->nhandle);
-
+    
     oklog("CLIENT DISCONNECTED: %s on %s\n",
 	  object_name(h->player),
 	  network_connection_name(h->nhandle));
+    
     unlock_connection_name_mutex(h->nhandle);
     h->disconnect_me = 1;
     call_notifier(h->player, h->listener, "user_client_disconnected");
@@ -2370,6 +2374,8 @@ name_lookup_callback(Var arglist, Var * ret)
 
         free_str(name);
     }
+    if (h)
+        decrement_nhandle_refcount(h->nhandle);
 }
 
 static package
@@ -2377,6 +2383,13 @@ bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
 {
 	if (!is_wizard(progr) && progr != arglist.v.list[1].v.obj)
 		return make_error_pack(E_PERM);
+
+    /* The main thread should keep track of nhandle refcounts to
+       ensure that close_nhandle doesn't pull the rug out from
+       under the other threads. */
+    shandle *h = find_shandle(arglist.v.list[1].v.obj);
+    if (h && !h->disconnect_me)
+        increment_nhandle_refcount(h->nhandle);
 
 	char *human_string = nullptr;
 	asprintf(&human_string, "name_lookup for #%" PRIdN "", arglist.v.list[1].v.obj);
