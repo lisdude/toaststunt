@@ -97,12 +97,14 @@ add_custom_command(
 # version_options.h
 execute_process(COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/src/include/version_opt_gen.pl)
 
-# Ubuntu hates file(touch), macOS hates cmake_command -E. This should make both happy.
-if(APPLE)
-    file(TOUCH ${CMAKE_BINARY_DIR}/version_src.h)
-ELSE()
-    execute_process(COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/version_src.h)
-endif()
+# Add current version control situation to version_src.h
+set(VERSION_SRC ${CMAKE_BINARY_DIR}/version_src.h)
+set(VERSION_DUMMY ${CMAKE_BINARY_DIR}/version_src_dummy.h)
+add_custom_command(
+    OUTPUT  ${VERSION_DUMMY}
+            ${VERSION_SRC}
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/CMakeModules/version.cmake
+    COMMENT "Generating version_src.h")
 
 # Find packages. We don't do anything with the information yet because we need to know if things exist
 #                to modify the source files, so we have to do it before moo is defined. But we can't
@@ -204,6 +206,7 @@ set(src_GRAMMAR
     ${BISON_MOOParser_OUTPUTS})
 
 set(src_SERVER
+    ${VERSION_SRC}
     ${src_GRAMMAR}
     ${src_YAJL}
     ${src_CRYPT}

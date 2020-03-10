@@ -85,6 +85,7 @@ static void init_version_structure()
 {
 
 #define SET_INT(W,value)  (W).type = TYPE_INT;  (W).v.num = (value)
+#define SET_FLOAT(W,value) (W).type = TYPE_FLOAT; (W).v.fnum = (value)
 #define SET_STR(W,value)  (W).type = TYPE_STR;  (W).v.str = str_dup(value)
 #define SET_OBJ(W,value)  (W).type = TYPE_OBJ;  (W).v.obj = (value)
 #define SET_VAR(W,value)  (W) = var_ref(value)
@@ -146,6 +147,7 @@ static void init_version_structure()
 
     BEGIN_GROUP(options);
 #define _DINT(name,value) PUSH_PAIR(name,INT,value)
+#define _DFLOAT(name,value) PUSH_PAIR(name,FLOAT,value)
 #define _DSTR(name,value) PUSH_PAIR(name,STR,value)
 #define _DDEF(name)       PUSH_PAIR(name,VAR,truev)
 #define _DNDEF(name)      PUSH_PAIR(name,VAR,falsev)

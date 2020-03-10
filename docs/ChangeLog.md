@@ -1,6 +1,6 @@
 # ToastStunt ChangeLog
 
-## 2.6.1 (In Progress)
+## 2.6.1 (Mar 10, 2020)
 - The `mapvalues` function now accepts any number of keys, the values of which will be returned by the function. If a key doesn't exist, E_RANGE is returned.
 - Very minor performance improvement for Linux users by saving one (to two) calls to the kernel for every incoming network connection.
 - Add a third argument to `slice()` to provide a default value when slicing a list of maps by key. This allows you to maintain index consistency in situations where some of the maps may not contain the sliced key.
@@ -10,6 +10,7 @@
 - Fix a bug where long-running recycle verbs would cause the object to remain unrecycled and unrecyclable in the future.
 - Fix bugs in `connection_name_lookup(x, 1)` that could result in a server crash.
 - Fix a bug in `parse_json()` that could crash the server. (Thanks to Tyler Spivey for the report and fix.)
+- Populate `server_version(1)` with all of the new options.h options and version control information.
 
 
 ## 2.6.0 (Nov 17, 2019)
