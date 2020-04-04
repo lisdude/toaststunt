@@ -298,6 +298,7 @@ do_modulus(Var a, Var b)
 		const auto n = a.v.fnum;
 		const auto d = b.v.fnum;
 		const auto result = fmod((fmod(n,d) + d), d);
+		ans.type=TYPE_FLOAT;
 		ans.v.fnum = result;
 	}
 	return ans;
