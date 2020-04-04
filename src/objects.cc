@@ -1048,7 +1048,7 @@ void locate_by_name_thread_callback(Var arglist, Var *ret)
     const int string_length = memo_strlen(arglist.v.list[1].v.str);
 
     const Objid last_objid = db_last_used_objid();
-    for (int x = 1; x < last_objid; x++)
+    for (int x = 0; x <= last_objid; x++)
     {
         if (!valid(x))
             continue;
