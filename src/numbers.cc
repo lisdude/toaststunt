@@ -278,32 +278,30 @@ SIMPLE_BINARY(multiply, *)
 Var
 do_modulus(Var a, Var b)
 {
-    Var ans;
+	Var ans;
 
-    if (a.type != b.type) {
-	ans.type = TYPE_ERR;
-	ans.v.err = E_TYPE;
-    } else if ((a.type == TYPE_INT && b.v.num == 0) ||
-               (a.type == TYPE_FLOAT && b.v.fnum == 0.0)) {
-	ans.type = TYPE_ERR;
-	ans.v.err = E_DIV;
-    } else if (a.type == TYPE_INT) {
-	ans.type = TYPE_INT;
-	if (a.v.num == MININT && b.v.num == -1)
-	    ans.v.num = 0;
+	if (a.type != b.type) {
+		ans.type = TYPE_ERR;
+		ans.v.err = E_TYPE;
+		return ans;
+	} 
+	if (a.type == TYPE_INT)
+	{
+		const auto n = a.v.num;
+		const auto d = b.v.num;
+		const auto result = (n % d + d) % d;
+		ans.type = TYPE_INT;
+		ans.v.num = result;
+	}
 	else
-	    ans.v.num = a.v.num % b.v.num;
-    } else { // must be float
-	double d = fmod(a.v.fnum, b.v.fnum);
-	if (!IS_REAL(d)) {
-	    ans.type = TYPE_ERR;
-	    ans.v.err = E_FLOAT;
-	} else {
-        ans.type = TYPE_FLOAT;
-        ans.v.fnum = d;
-    }
-    }
-    return ans;
+	{
+		const auto n = a.v.fnum;
+		const auto d = b.v.fnum;
+		const auto result = fmod((fmod(n,d) + d), d);
+		ans.type=TYPE_FLOAT;
+		ans.v.fnum = result;
+	}
+	return ans;
 }
 
 Var
