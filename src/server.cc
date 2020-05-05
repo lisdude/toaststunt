@@ -1527,6 +1527,7 @@ int
 proxy_connected(Objid connection, char *command)
 {
     shandle *existing_h = find_shandle(connection);
+    int ret = 0;
     if (existing_h) {
     applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
     char *source, *destination = nullptr;
@@ -1560,15 +1561,20 @@ proxy_connected(Objid connection, char *command)
         split = strtok(nullptr, " ");
     }
     const char *old_name = str_dup(network_connection_name(existing_h->nhandle));   // rewrite is going to free this
-    rewrite_connection_name(existing_h->nhandle, destination, destination_port, source, source_port);
-    lock_connection_name_mutex(existing_h->nhandle);
-    applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(existing_h->nhandle));
-    unlock_connection_name_mutex(existing_h->nhandle);
+    int rw = rewrite_connection_name(existing_h->nhandle, destination, destination_port, source, source_port);
+    if (rw != 0) {
+        errlog("PROXY: Proxy rewrite failed.\n");
+        ret = 1;
+    } else {
+        lock_connection_name_mutex(existing_h->nhandle);
+        applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(existing_h->nhandle));
+        unlock_connection_name_mutex(existing_h->nhandle);
+    }
     free_str(old_name);
     } else {
-        return -1;
+        ret = -1;
     }
-    return 0;
+    return ret;
 }
 
 void

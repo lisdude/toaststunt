@@ -698,31 +698,36 @@ network_is_localhost(const network_handle nh)
 	return ret;
 }
 
-void
+int
 rewrite_connection_name(network_handle nh, const char *destination, const char *destination_ip, const char *source, const char *source_port)
 {
     const char *nameinfo;
     struct addrinfo *address;
-    getaddrinfo(source, source_port, &tcp_hint, &address);
+    int ret = 0, status = getaddrinfo(source, source_port, &tcp_hint, &address);
 
-    const char *ip_addr = get_ntop((struct sockaddr_storage *)address->ai_addr);
+    if (status < 0) {
+        errlog("getaddrinfo failed while rewriting connection_name: %s\n", gai_strerror(status));
+        ret = -1;
+    } else {
+        const char *ip_addr = get_ntop((struct sockaddr_storage *)address->ai_addr);
 
-    if (!server_int_option("no_name_lookup", NO_NAME_LOOKUP))
-        nameinfo = get_nameinfo(address->ai_addr);
-    else
-        nameinfo = str_dup(ip_addr);
+        if (!server_int_option("no_name_lookup", NO_NAME_LOOKUP))
+            nameinfo = get_nameinfo(address->ai_addr);
+        else
+            nameinfo = str_dup(ip_addr);
 
-    freeaddrinfo(address);
-	
-	nhandle *h = (nhandle *) nh.ptr;
+    freeaddrinfo(address);	
 
-	pthread_mutex_lock(h->name_mutex);
-	free_str(h->name);
-	h->name = nameinfo;
-	free_str(h->destination_ipaddr);
-	h->destination_ipaddr = ip_addr;
-	h->source_port = atoi(source_port);
-	pthread_mutex_unlock(h->name_mutex);
+	    nhandle *h = (nhandle *) nh.ptr;
+	    pthread_mutex_lock(h->name_mutex);
+	    free_str(h->name);
+	    h->name = nameinfo;
+	    free_str(h->destination_ipaddr);
+	    h->destination_ipaddr = ip_addr;
+	    h->source_port = atoi(source_port);
+	    pthread_mutex_unlock(h->name_mutex);
+    }
+    return ret;
 }
 
 int
