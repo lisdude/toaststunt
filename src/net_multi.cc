@@ -692,7 +692,7 @@ network_is_localhost(const network_handle nh)
 	const char *ip = h->destination_ipaddr;
 	int ret = 0;
 
-	if (strstr(ip, "127.0.0.1") != nullptr || strstr(ip, "::1") != nullptr)
+	if (strcmp(ip, "127.0.0.1") == 0 || strcmp(ip, "::1") == 0)
 		ret = 1;
 
 	return ret;
