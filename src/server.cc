@@ -1954,18 +1954,10 @@ static package
 bf_server_version(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    if (arglist.v.list[0].v.num > 0) {
-	r = server_version_full(arglist.v.list[1]);
-    }
-    else {
-	r.type = TYPE_STR;
-	r.v.str = str_dup(server_version);
-    }
+    r.type = TYPE_BOOL;
+    r.v.truth = false;
     free_var(arglist);
-    if (r.type == TYPE_ERR)
-	return make_error_pack(r.v.err);
-    else
-	return make_var_pack(r);
+    return make_var_pack(r);
 }
 
 static package

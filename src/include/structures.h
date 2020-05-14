@@ -103,6 +103,7 @@ typedef enum {
     _TYPE_ITER,			/* map iterator; not visible */
     _TYPE_ANON,			/* anonymous object; user-visible */
     _TYPE_WAIF,         /* lightweight object; user-visible */
+    TYPE_BOOL,			/* Experimental boolean type */
     /* THE END - complex aliases come next */
     TYPE_STR = (_TYPE_STR | TYPE_COMPLEX_FLAG),
     TYPE_FLOAT = (_TYPE_FLOAT),
@@ -110,7 +111,7 @@ typedef enum {
     TYPE_MAP = (_TYPE_MAP | TYPE_COMPLEX_FLAG),
     TYPE_ITER = (_TYPE_ITER | TYPE_COMPLEX_FLAG),
     TYPE_ANON = (_TYPE_ANON | TYPE_COMPLEX_FLAG),
-    TYPE_WAIF = (_TYPE_WAIF | TYPE_COMPLEX_FLAG)
+    TYPE_WAIF = (_TYPE_WAIF | TYPE_COMPLEX_FLAG),
 } var_type;
 
 #define TYPE_ANY ((var_type) -1)	/* wildcard for use in declaring built-ins */
@@ -167,6 +168,7 @@ typedef struct Waif {
 	double fnum;		/* FLOAT */
 	Object *anon;		/* ANON */
     Waif *waif;         /* WAIF */
+	bool truth	;		/* BOOL */
     } v;
     var_type type;
 

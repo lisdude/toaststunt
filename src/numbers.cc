@@ -143,6 +143,9 @@ become_integer(Var in, Num *ret, int called_from_toint)
 	    return E_FLOAT;
 	*ret = (Num) in.v.fnum;
 	break;
+    case TYPE_BOOL:
+	*ret = in.v.truth;
+	break;
     case TYPE_MAP:
     case TYPE_LIST:
     case TYPE_ANON:
@@ -178,6 +181,7 @@ become_float(Var in, double *ret)
     case TYPE_LIST:
     case TYPE_ANON:
     case TYPE_WAIF:
+    case TYPE_BOOL:
 	return E_TYPE;
     default:
 	errlog("BECOME_FLOAT: Impossible var type: %d\n", (int) in.type);

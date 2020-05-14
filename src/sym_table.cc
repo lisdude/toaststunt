@@ -68,6 +68,9 @@ first_user_slot(DB_Version version)
     if (version >= DBV_Waif)
         count += 1;
 
+    if (version >= DBV_Bool)
+        count += 3;
+
     return count;
 }
 
@@ -111,6 +114,11 @@ new_builtin_names(DB_Version version)
         }
         if (version >= DBV_Waif) {
             bi->names[SLOT_WAIF] = str_dup("WAIF");
+        }
+        if (version >= DBV_Bool) {
+            bi->names[SLOT_BOOL] = str_dup("BOOL");
+            bi->names[SLOT_TRUE] = str_dup("true");
+            bi->names[SLOT_FALSE] = str_dup("false");
         }
     }
     return copy_names(builtins[version]);

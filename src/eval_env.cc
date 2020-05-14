@@ -104,8 +104,18 @@ fill_in_rt_consts(Var * env, DB_Version version)
 	env[SLOT_ANON] = var_ref(v);
     }
     if (version >= DBV_Waif) {
-    v.v.num = (int) _TYPE_WAIF;
-    env[SLOT_WAIF] = var_ref(v);
+	v.v.num = (int) _TYPE_WAIF;
+	env[SLOT_WAIF] = var_ref(v);
+    }
+    if (version >= DBV_Bool) {
+	v.type = TYPE_INT;
+	v.v.num = (int) TYPE_BOOL;
+	env[SLOT_BOOL] = var_ref(v);
+	v.type = TYPE_BOOL;
+	v.v.truth = true;
+	env[SLOT_TRUE] = var_ref(v);
+	v.v.truth = false;
+	env[SLOT_FALSE] = var_ref(v);
     }
 }
 
