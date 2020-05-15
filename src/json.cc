@@ -204,8 +204,8 @@ handle_boolean(void *ctx, int boolean)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
     Var v;
-    v.type = TYPE_STR;
-    v.v.str = str_dup(boolean ? "true" : "false");
+    v.type = TYPE_BOOL;
+    v.v.truth = boolean;
     PUSH(pctx->top, v);
     return 1;
 }
@@ -498,6 +498,10 @@ generate(yajl_gen g, Var v, void *ctx)
 		return dmc.status;
 	    yajl_gen_array_close(g);
 	    return yajl_gen_status_ok;
+	}
+    case TYPE_BOOL:
+	{
+	    return yajl_gen_bool(g, v.v.num);
 	}
     }
 
