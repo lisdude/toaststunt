@@ -210,6 +210,8 @@ dbio_read_var(void)
     r = read_waif();
     break;
     case TYPE_BOOL:
+	r.v.truth = dbio_read_num();
+	break;
     default:
 	errlog("DBIO_READ_VAR: Unknown type (%d) at DB file pos. %ld\n",
 	       l, ftell(input));
@@ -390,6 +392,8 @@ dbio_write_var(Var v)
     write_waif(v);
     break;
     case TYPE_BOOL:
+	dbio_write_num(v.v.truth);
+	break;
     default:
 	errlog("DBIO_WRITE_VAR: Unknown type (%d)\n", (int)v.type);
 	break;
