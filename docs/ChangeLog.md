@@ -1,5 +1,12 @@
 # ToastStunt ChangeLog
 
+## 2.6.2 (In Progress)
+- Apply standard task limits to threaded background tasks.
+- Fix a bug that would cause the number of queued tasks (as seen by `queue_info(<player>)`) to drop into the negatives, effectively disabling task limits.
+- Standardize the modulus operator across platforms.
+- Fix an off-by-one error in `locate_by_name()`
+- Fix a crash and spoofing potential in proxy rewriting.
+
 ## 2.6.1 (Mar 10, 2020)
 - The `mapvalues` function now accepts any number of keys, the values of which will be returned by the function. If a key doesn't exist, E_RANGE is returned.
 - Very minor performance improvement for Linux users by saving one (to two) calls to the kernel for every incoming network connection.
@@ -11,7 +18,6 @@
 - Fix bugs in `connection_name_lookup(x, 1)` that could result in a server crash.
 - Fix a bug in `parse_json()` that could crash the server. (Thanks to Tyler Spivey for the report and fix.)
 - Populate `server_version(1)` with all of the new options.h options and version control information.
-
 
 ## 2.6.0 (Nov 17, 2019)
 ### Bug Fixes

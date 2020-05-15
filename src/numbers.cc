@@ -655,7 +655,7 @@ bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
 #define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
 #endif
 
-/* Returns a float of the time (including milliseconds)
+/* Returns a float representing seconds and nanoseconds since the Epoch.
    Optional arguments specify monotonic time; 1: Monotonic. 2. Monotonic raw.
    (seconds since an arbitrary period of time. More useful for timing
    since its not affected by NTP or other time changes.) */
