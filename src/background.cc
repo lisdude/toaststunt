@@ -87,6 +87,12 @@ static enum error
 background_suspender(vm the_vm, void *data)
 {
     background_waiter *w = (background_waiter*)data;
+    
+    if (!check_user_task_limit(the_vm->activ_stack->progr)) {
+        deallocate_background_waiter(w);
+	    return E_QUOTA;
+    }
+
     w->the_vm = the_vm;
     w->active = true;
 

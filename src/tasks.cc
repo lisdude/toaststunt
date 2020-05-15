@@ -1226,7 +1226,7 @@ enqueue_forked(Program * program, activation a, Var * rt_env,
     enqueue_waiting(t);
 }
 
-static int
+int
 check_user_task_limit(Objid user)
 {
     tqueue *tq = find_tqueue(user, 0);
@@ -1328,8 +1328,8 @@ resume_task(vm the_vm, Var value)
     t->t.suspended.start_tv.tv_usec = 0;
     t->t.suspended.value = value;
 
-    enqueue_bg_task(tq, t);
     ensure_usage(tq);
+	enqueue_waiting(t);
 }
 
 Var

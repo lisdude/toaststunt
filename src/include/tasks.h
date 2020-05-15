@@ -56,6 +56,7 @@ extern void resume_task(vm the_vm, Var value);
 				 * returned.
 				 */
 extern vm find_suspended_task(int id);
+extern int check_user_task_limit(Objid user);
 
 /* External task queues:
 
