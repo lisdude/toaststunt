@@ -477,11 +477,12 @@ equality(Var lhs, Var rhs, int case_matters)
 	    panic_moo("EQUALITY: Unknown value type");
 	}
     } else {
-        if (lhs.type == TYPE_BOOL) {
-            return lhs.v.truth == true ? is_true(var_ref(rhs)) : !is_true(var_ref(rhs));
-        } else {
-            return rhs.v.truth == true ? is_true(var_ref(lhs)) : !is_true(var_ref(lhs));
-        }
+	if (lhs.type == TYPE_BOOL && rhs.type == TYPE_INT) {
+	    return rhs.v.num == lhs.v.truth;
+	}
+	else         if (rhs.type == TYPE_BOOL && lhs.type == TYPE_INT) {
+	    return lhs.v.num == rhs.v.truth;
+	}
     }
     return 0;
 }
