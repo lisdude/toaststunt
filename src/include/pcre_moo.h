@@ -7,7 +7,6 @@
 
 #include "structures.h"
 
-#define EXT_PCRE_VERSION    "3.0"
 #define DEFAULT_LOOPS       1000
 #define RETURN_INDEXES      2
 #define RETURN_GROUPS       4

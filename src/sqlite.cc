@@ -602,7 +602,7 @@ void sqlite_shutdown()
 
 void
 register_sqlite() {
-    oklog("REGISTER_SQLITE: v%s (SQLite Library v%s)\n", SQLITE_MOO_VERSION, sqlite3_libversion());
+    oklog("REGISTER_SQLITE: Using SQLite Library v%s\n", sqlite3_libversion());
       if (sqlite3_threadsafe() > 0) {
         int retCode = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
         if (retCode != SQLITE_OK) {
