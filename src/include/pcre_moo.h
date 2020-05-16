@@ -26,4 +26,9 @@ void delete_cache_entry(const char *pattern);
 Var result_indices(int ovector[], int n);
 extern void pcre_shutdown(void);
 
+#ifdef SQLITE3_FOUND
+#include <sqlite3.h>
+extern void sqlite_regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv);
+#endif
+
 #endif /* EXTENSION_PCRE_H */

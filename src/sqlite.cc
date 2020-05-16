@@ -14,6 +14,9 @@
 #include "log.h"
 #include "server.h"
 #include "map.h"
+#ifdef PCRE_FOUND
+#include "pcre_moo.h"    // SQLite regexp function
+#endif
 
 // Map of open connections
 static std::unordered_map <int, sqlite_conn> sqlite_connections;
@@ -73,6 +76,9 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
         deallocate_handle(index, false);
         return make_raise_pack(E_NONE, err, var_ref(zero));
     } else {
+        #ifdef PCRE_FOUND
+        sqlite3_create_function(handle->id, "REGEXP", 2, SQLITE_UTF8 | SQLITE_DETERMINISTIC, nullptr, &sqlite_regexp, nullptr, nullptr);
+        #endif
         handle->path = str_dup(path);
         Var r;
         r.type = TYPE_INT;

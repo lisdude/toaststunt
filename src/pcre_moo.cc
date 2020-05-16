@@ -374,6 +374,36 @@ pcre_shutdown(void)
     pcre_pattern_cache.clear();
 }
 
+#ifdef SQLITE3_FOUND
+void sqlite_regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv)
+{
+    const char *pattern = (const char *)sqlite3_value_text(argv[0]);
+    if (!pattern)
+    {
+        sqlite3_result_error(ctx, "SQLite REGEXP called with invalid pattern.", -1);
+        return;
+    }
+
+    const char *string = (const char *)sqlite3_value_text(argv[1]);
+    if (!string)
+    {
+        sqlite3_result_error(ctx, "SQLite REGEXP called with invalid string.", -1);
+        return;
+    }
+
+    struct pcre_cache_entry *entry = get_pcre(pattern, 0);
+    if (entry->error != nullptr)
+    {
+        sqlite3_result_error(ctx, entry->error, -1);
+        return;
+    }
+
+    int result = pcre_exec(entry->re, entry->extra, string, strlen(string), 0, 0, nullptr, 0);
+
+    sqlite3_result_int(ctx, result >= 0);
+}
+#endif /* SQLITE3_FOUND */
+
 void
 register_pcre() {
     oklog("REGISTER_PCRE: v%s (PCRE Library v%s)\n", EXT_PCRE_VERSION, pcre_version());
