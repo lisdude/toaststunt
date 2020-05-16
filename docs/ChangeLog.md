@@ -6,6 +6,7 @@
 - Standardize the modulus operator across platforms.
 - Fix an off-by-one error in `locate_by_name()`
 - Fix a crash and spoofing potential in proxy rewriting.
+- Add math functions `cbrt()`, `atan2`, `asinh`, `atanh`, and `acosh`.
 
 ## 2.6.1 (Mar 10, 2020)
 - The `mapvalues` function now accepts any number of keys, the values of which will be returned by the function. If a key doesn't exist, E_RANGE is returned.
