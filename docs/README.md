@@ -1,6 +1,6 @@
 # ToastStunt
 
-ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of features that were found useful while developing [Miriani](https://www.toastsoft.net) and [ChatMud](https://www.chatmud.com/), a mostly complete list of which can be found below.
+ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of features and improvements that were found useful while developing [Miriani](https://www.toastsoft.net) and [ChatMud](https://www.chatmud.com/), a mostly complete list of which can be found below.
 
 * [Features](#features)
 * [ChangeLog](ChangeLog.md)
@@ -17,49 +17,47 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 
 ## Features
 
-- SQLite [functions: sqlite_open(), sqlite_close(), sqlite_handle(), sqlite_info(), sqlite_query(), sqlite_execute(), sqlite_limit()].
-- Perl Compatible Regular Expressions (PCRE) [functions: pcre_match(), pcre_replace, pcre_cache_stats]
-- Simplex noise (implemented but never actually tested / used)
-- [Argon2id hashing](https://github.com/P-H-C/phc-winner-argon2) [functions: argon2(), argon2_verify()]
-- 32-bit and 64-bit versions ($maxint and $minint set automatically)
+- SQLite
+- Perl Compatible Regular Expressions (PCRE)
+- Simplex Noise
+- [Argon2id Hashing](https://github.com/P-H-C/phc-winner-argon2)
+- 64-bit Integers (with the choice to fall back to 32-bit integers; $maxint and $minint set automatically)
+- Network Improvements (including IPv6 connection support and threaded DNS lookups)
+- HAProxy Source IP Rewriting (see notes below if you need to disable this)
 
 - Waifs:
     - Call :recycle on waifs when they're destroyed
     - A WAIF type (so typeof(some_waif) == WAIF)
     - Waif dict patch (so waif[x] and waif[x] = y will call the :_index and :_set_index verbs on the waif)
     - '-w' command line option to convert existing databases with a different waif type to the new waif type
-    - waif_stats (show how many instances of each class of waif exist, how many waifs are pending recycling, and how many waifs in total exist)
+    - `waif_stats()` (show how many instances of each class of waif exist, how many waifs are pending recycling, and how many waifs in total exist)
     - Parser recognition for waif properties (e.g. thing.:property)
 
 - Basic threading support:
     - background.cc (a library, of sorts, to make it easier to thread builtins)
     - Threaded builtins: sqlite_query, sqlite_execute, locate_by_name, sort, slice, argon2, argon2_verify, connection_name_lookup
     - set_thread_mode (an argument of 0 will disable threading for all builtins in the current verb, 1 will re-enable, and no arguments will print the current mode)
-    - thread_pool() (database control over the the thread pools)
+    - `thread_pool()` (database control over the the thread pools)
 
 - FileIO improvements:
     - Faster reading
     - Open as many files as you want, configurable with FILE_IO_MAX_FILES or $server_options.file_io_max_files
-    - file_handles() (returns a list of open files)
-    - file_grep() (search for a string in a file (kind of FUP in FIO, don't tell))
-    - file_count_lines() (counts the number of lines in a file)
+    - `file_handles()` (returns a list of open files)
+    - `file_grep()` (search for a string in a file (kind of FUP in FIO, don't tell))
+    - `file_count_lines()` (counts the number of lines in a file)
 
-- ANSI:
-    - Parse_ansi() (parses color tags into their ANSI equivalents)
-    - remove_ansi() (strips ANSI tags from strings)
+- Profiling:
+    - `finished_tasks()` (returns a list of the last X tasks to finish executing, including their total execution time) [see options.h below]
+    - Set a maximum lag threshold (can be overridden with $server_options.task_lag_threshold) that, when exceeded, will make a note in the server log and call #0:handle_lagging_task with arguments: {callers, execution time}
 
 - Telnet:
     - Capture IAC commands and pass them to listener:do_out_of_band_command() for the database to handle.
 
-- Primitive types:
-    - Support calling verbs on an object prototype ($obj_proto). Counterintuitively, this will only work for types of OBJ that are invalid. This can come in useful for un-logged-in connections (i.e. creating a set of convenient utilities for dealing with negative connections in-MOO).
-
-- Maps:
-    - maphaskey() (check if a key exists in a map. Looks nicer than `!(x in mapkeys(map))` and is faster when not dealing with hundreds of keys)
-
-- Profiling:
-    - finished_tasks() (returns a list of the last X tasks to finish executing, including their total execution time) [see options.h below]
-    - Set a maximum lag threshold (can be overridden with $server_options.task_lag_threshold) that, when exceeded, will make a note in the server log and call #0:handle_lagging_task with arguments: {callers, execution time}
+- Stunt Improvements
+    - Primitive types:
+        - Support calling verbs on an object prototype ($obj_proto). Counterintuitively, this will only work for types of OBJ that are invalid. This can come in useful for un-logged-in connections (i.e. creating a set of convenient utilities for dealing with negative connections in-MOO).
+    - Maps:
+        - `maphaskey()` (check if a key exists in a map. Looks nicer than `!(x in mapkeys(map))` and is faster when not dealing with hundreds of keys)
 
 - Options.h configuration:
     - LOG_CODE_CHANGES (causes .program and set_verb_code to add a line to the server log indicating the object, verb, and programmer)
@@ -104,24 +102,24 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - curl (return webpage as string)
     - owned_objects (returns all valid objects owned by an object)
     - connection_name_lookup (perform a DNS name lookup)
+    - connection_info (show detailed information about a particular connection)
+    - parse_ansi (parses color tags into their ANSI equivalents)
+    - remove_ansi (strips ANSI tags from strings)
 
 - Miscellaneous changes:
-    - Numeric IP addresses in connection_name
-    - Detect connections from TCP proxies using the HAProxy Proxy protocol and rewrite the source IP as appropriate (controllable with $server_options.proxy_rewrite)
     - .last_move (a map of an object's last location and the time() it moved)
     - Sub-second fork and suspend
     - Call 'do_blank_command' on listening objects when a blank command is issued
     - Allow `"string" in "some other string"` as a shortcut for index()
     - Allow exec to set environment variables with a new argument
-    - Bandaid over an issue where emptylist loses all references and gets freed, causing a server panic
     - Change the server log message when calling switch_player()
-    - Complete deprecation of tonum() in favor of toint()
+    - Deprecation of `tonum()` in favor of `toint()`
     - Move #0.dump_interval to $server_options.dump_interval
-    - New argument to notify() to suppress the newline
-    - Support object lists in isa() as well as an optional third argument to return the matching parent rather than simply true or false
-    - New argument to move() to effectively listinsert() the object into the destination's .contents
-    - New argument to is_member() for controlling case sensitivity of equality comparisons. No third argument or a true value results in standard functionality; a false value as the third argument results in case not mattering at all
-    - Update random() to accept a second optional argument for setting the maximum value returned. Including the second argument will treat the first argument as the minimum.
+    - New argument to `notify()` to suppress the newline
+    - Support object lists in `isa()` as well as an optional third argument to return the matching parent rather than simply true or false
+    - New argument to `move()` to effectively `listinsert()` the object into the destination's .contents
+    - New argument to `is_member()` for controlling case sensitivity of equality comparisons. No third argument or a true value results in standard functionality; a false value as the third argument results in case not mattering at all
+    - Update `random()` to accept a second optional argument for setting the maximum value returned. Including the second argument will treat the first argument as the minimum.
     - SIGUSR1 will close and reopen the logfile, allowing it to be rotated without restarting the server.
     - '-m' command line option to clear all last_move properties in your database (and not set them again for the lifetime of the process).
     - Build system is now CMake
