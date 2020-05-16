@@ -414,6 +414,30 @@ bf_sqlite_limit(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+/* Interrupt a long-running SQLite query.
+ * Args: INT <database handle> */
+    static package
+bf_sqlite_interrupt(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (!is_wizard(progr))
+    {
+        free_var(arglist);
+        return make_error_pack(E_PERM);
+    }
+
+    int index = arglist.v.list[1].v.num;
+    free_var(arglist);
+
+    if (!valid_handle(index))
+        return make_raise_pack(E_INVARG, "Invalid database handle", var_ref(zero));
+
+    sqlite_conn *handle = &sqlite_connections[index];
+
+    sqlite3_interrupt(handle->id);
+
+    return no_var_pack();
+}
+
 /* -------------------------------------------------------- */
 
 /* Return true if a handle is valid and active. */
@@ -620,6 +644,7 @@ register_sqlite() {
     register_function("sqlite_execute", 3, 3, bf_sqlite_execute, TYPE_INT, TYPE_STR, TYPE_LIST);
     register_function("sqlite_last_insert_row_id", 1, 1, bf_sqlite_last_insert_row_id, TYPE_INT);
     register_function("sqlite_limit", 3, 3, bf_sqlite_limit, TYPE_INT, TYPE_ANY, TYPE_INT);
+    register_function("sqlite_interrupt", 1, 1, bf_sqlite_interrupt, TYPE_INT);
 }
 
 #else /* SQLITE3_FOUND */
