@@ -2306,11 +2306,12 @@ forked_task_bytes(forked_task ft)
 }
 
 static Var
-list_for_forked_task(forked_task ft, Objid progr)
+list_for_forked_task(forked_task ft, Objid progr, int include_variables)
 {
     Var list;
 
-    list = new_list(10);
+    list = new_list(include_variables ? 11 : 10);
+
     list.v.list[1].type = TYPE_INT;
     list.v.list[1].v.num = ft.id;
     list.v.list[2].type = TYPE_INT;
@@ -2330,6 +2331,9 @@ list_for_forked_task(forked_task ft, Objid progr)
     list.v.list[10].type = TYPE_INT;
     list.v.list[10].v.num = forked_task_bytes(ft);
 
+    if (include_variables)
+	list.v.list[11] = make_rt_var_map(ft.a.rt_env, ft.a.prog->var_names, ft.a.prog->num_var_names);
+
     return list;
 }
 
@@ -2346,11 +2350,11 @@ suspended_task_bytes(vm the_vm)
 }
 
 static Var
-list_for_vm(vm the_vm, Objid progr)
+list_for_vm(vm the_vm, Objid progr, int include_variables)
 {
     Var list;
 
-    list = new_list(10);
+    list = new_list(include_variables ? 11 : 10);
 
     list.v.list[1].type = TYPE_INT;
     list.v.list[1].v.num = the_vm->task_id;
@@ -2370,15 +2374,18 @@ list_for_vm(vm the_vm, Objid progr)
     list.v.list[10].type = TYPE_INT;
     list.v.list[10].v.num = suspended_task_bytes(the_vm);
 
+    if (include_variables) {
+	list.v.list[11] = make_rt_var_map(top_activ(the_vm).rt_env, top_activ(the_vm).prog->var_names, top_activ(the_vm).prog->num_var_names);
+    }
     return list;
 }
 
 static Var
-list_for_suspended_task(suspended_task st, Objid progr)
+list_for_suspended_task(suspended_task st, Objid progr, int include_variables)
 {
     Var list;
 
-    list = list_for_vm(st.the_vm, progr);
+    list = list_for_vm(st.the_vm, progr, include_variables);
     list.v.list[2].type = TYPE_INT;
     list.v.list[2].v.num = ROUND(&st.start_tv);
 
@@ -2386,11 +2393,11 @@ list_for_suspended_task(suspended_task st, Objid progr)
 }
 
 static Var
-list_for_reading_task(Objid player, vm the_vm, Objid progr)
+list_for_reading_task(Objid player, vm the_vm, Objid progr, int include_variables)
 {
     Var list;
 
-    list = list_for_vm(the_vm, progr);
+    list = list_for_vm(the_vm, progr, include_variables);
     list.v.list[2].type = TYPE_INT;
     list.v.list[2].v.num = -1;	/* conventional value */
 
@@ -2417,7 +2424,7 @@ listing_closure(vm the_vm, const char *status, void *data)
     Var list;
 
     if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm)) {
-	list = list_for_vm(the_vm, qdata->progr);
+	list = list_for_vm(the_vm, qdata->progr, 0);
 	list.v.list[2].type = TYPE_STR;
 	list.v.list[2].v.str = str_dup(status);
 	qdata->tasks.v.list[qdata->i++] = list;
@@ -2443,6 +2450,8 @@ static package
 bf_queued_tasks(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var tasks;
+    int nargs = arglist.v.list[0].v.num;
+    int include_variables = (nargs == 1 && is_true(arglist.v.list[1]));
     int show_all = is_wizard(progr);
     tqueue *tq;
     task *t;
@@ -2488,37 +2497,37 @@ bf_queued_tasks(Var arglist, Byte next, void *vdata, Objid progr)
 	if (tq->reading && (show_all || tq->player == progr))
 	    tasks.v.list[i++] = list_for_reading_task(tq->player,
 						      tq->reading_vm,
-						      progr);
+						      progr, include_variables);
     }
 
     for (tq = active_tqueues; tq; tq = tq->next) {
 	if (tq->reading && (show_all || tq->player == progr))
 	    tasks.v.list[i++] = list_for_reading_task(tq->player,
 						      tq->reading_vm,
-						      progr);
+						      progr, include_variables);
 
 	for (t = tq->first_bg; t; t = t->next)
 	    if (t->kind == TASK_FORKED && (show_all
 					|| t->t.forked.a.progr == progr))
 		tasks.v.list[i++] = list_for_forked_task(t->t.forked,
-						         progr);
+						         progr, include_variables);
 	    else if (t->kind == TASK_SUSPENDED
 		     && (show_all
 		   || progr_of_cur_verb(t->t.suspended.the_vm) == progr))
 		tasks.v.list[i++] = list_for_suspended_task(t->t.suspended,
-						            progr);
+						            progr, include_variables);
     }
 
     for (t = waiting_tasks; t; t = t->next) {
 	if (t->kind == TASK_FORKED && (show_all ||
 				       t->t.forked.a.progr == progr))
 	    tasks.v.list[i++] = list_for_forked_task(t->t.forked,
-						     progr);
+						     progr, include_variables);
 	else if (t->kind == TASK_SUSPENDED
 		 && (progr_of_cur_verb(t->t.suspended.the_vm) == progr
 		     || show_all))
 	    tasks.v.list[i++] = list_for_suspended_task(t->t.suspended,
-						        progr);
+						        progr, include_variables);
     }
 
     qdata.tasks = tasks;
@@ -2980,7 +2989,7 @@ void
 register_tasks(void)
 {
     register_function("task_id", 0, 0, bf_task_id);
-    register_function("queued_tasks", 0, 0, bf_queued_tasks);
+    register_function("queued_tasks", 0, 1, bf_queued_tasks, TYPE_INT);
 	#ifdef SAVE_FINISHED_TASKS
     register_function("finished_tasks", 0, 0, bf_finished_tasks);
 	#endif

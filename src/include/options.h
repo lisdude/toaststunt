@@ -464,6 +464,14 @@
 /* #define SAVE_FINISHED_TASKS 15 */
 
 /******************************************************************************
+ * For debugging tracebacks, it is possible to capture the variables for the environment prior to
+ * passing them to `handle_uncaught_error', `handle_task_timeout', and `handle_lagging_task' inside the database.
+ * Be aware that this includes all runtime environment variables including pre-set constants, and the information returned can be very extensive (and possibly memory intensive).
+ ******************************************************************************
+*/
+/* #define INCLUDE_RT_VARS */
+
+/******************************************************************************
  * The server supports 64-bit integers. If you don't want the added memory usage
  * and don't need the larger integers, you can disable that here. NOTE: Disabling
  * this option and loading a database that has saved 64-bit integers will probably

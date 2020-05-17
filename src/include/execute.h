@@ -132,8 +132,8 @@ Var *reorder_rt_env(Var * old_rt_env, const char **old_names,
 extern void free_reordered_rt_env_values(void);
 extern void write_activ(activation a);
 extern int read_activ(activation * a, int which_vector);
+extern Var make_rt_var_map(Var * rt_env, const char **var_names, unsigned size);
 
 extern bool get_thread_mode();
 extern void set_thread_mode(bool mode);
-
 #endif
