@@ -64,4 +64,9 @@ extern void free_names(Names *);
 /* Added in DBV_Waif */
 #define SLOT_WAIF   20
 
+/* Added in DBV_Bool */
+#define SLOT_BOOL   21
+#define SLOT_TRUE   22
+#define SLOT_FALSE   23
+
 #endif				/* !Sym_Table_h */

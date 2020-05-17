@@ -396,6 +396,9 @@ stream_add_tostr(Stream * s, Var v)
     case TYPE_WAIF:
     stream_add_string(s, "[[waif]]");
     break;
+    case TYPE_BOOL:
+	stream_add_string(s, v.v.truth ? "true" : "false");
+    break;
     default:
 	panic_moo("STREAM_ADD_TOSTR: Unknown Var type");
     }
@@ -499,6 +502,9 @@ unparse_value(Stream * s, Var v)
 	break;
     case TYPE_WAIF:
     stream_printf(s, "[[class = #%" PRIdN ", owner = #%" PRIdN "]]", v.v.waif->_class, v.v.waif->owner);
+    break;
+    case TYPE_BOOL:
+    stream_printf(s, v.v.truth ? "true" : "false");
     break;
     default:
 	errlog("UNPARSE_VALUE: Unknown Var type = %d\n", v.type);
