@@ -9,6 +9,7 @@
 - Add math functions `cbrt()`, `atan2`, `asinh`, `atanh`, and `acosh`.
 - Add support for the SQLite `REGEXP` operator.
 - Add an `sqlite_interrupt(<handle>)` function to abort long-running SQLite queries.
+- Improve handling of 'x not found' errors. Now when you get a property, verb, or variable not found error, two things happen: First, the traceback message will tell you what exactly was not found. Second, if you catch the error in a try, the name of the missing thing will be available as the third argument in the error list.
 
 ## 2.6.1 (Mar 10, 2020)
 - The `mapvalues` function now accepts any number of keys, the values of which will be returned by the function. If a key doesn't exist, E_RANGE is returned.

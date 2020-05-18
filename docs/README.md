@@ -123,6 +123,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - SIGUSR1 will close and reopen the logfile, allowing it to be rotated without restarting the server.
     - '-m' command line option to clear all last_move properties in your database (and not set them again for the lifetime of the process).
     - Build system is now CMake
+    - Improved error messages when verbs, properties, or variables are not found.
 
 ## Build Instructions
 ### **Debian/Ubuntu**

@@ -343,6 +343,18 @@ make_raise_pack(enum error err, const char *msg, Var value)
 }
 
 package
+make_raise_x_not_found_pack(enum error err, const char *msg)
+{
+	Var missing;
+	missing.type = TYPE_STR;
+	missing.v.str = str_dup(msg);
+	char *error_msg = nullptr;
+	asprintf(&error_msg, "%s: %s", unparse_error(err), msg);
+
+    return make_raise_pack(err, error_msg, missing);
+}
+
+package
 make_var_pack(Var v)
 {
     package p;

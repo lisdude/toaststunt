@@ -45,6 +45,7 @@
 #include "waif.h"
 #include "version.h"
 #include "background.h"
+#include "unparse.h"
 
 /* the following globals are the guts of the virtual machine: */
 static activation *activ_stack = nullptr;
@@ -855,12 +856,38 @@ do {							\
     } 							\
 } while (0)
 
+#define RAISE_ERROR_WITH_VALUE(the_err, the_msg, the_value) \
+do { \
+    if (RUN_ACTIV.debug) { \
+    STORE_STATE_VARIABLES(); \
+    if (raise_error(make_raise_pack(the_err, the_msg, the_value), 0)) { \
+		/* No try-except */ \
+        return OUTCOME_ABORTED; \
+	} else { \
+        LOAD_STATE_VARIABLES(); \
+		free(the_msg); \
+        goto next_opcode; \
+        } \
+    } \
+} while (0)
+
 #define PUSH_ERROR(the_err)					\
 do {    							\
     RAISE_ERROR(the_err);	/* may not return!! */		\
     error_var.type = TYPE_ERR;					\
     error_var.v.err = the_err;					\
     PUSH(error_var);						\
+} while (0)
+
+/* NOTE: the_msg will be freed */
+#define PUSH_RAISED_ERROR(the_err, the_msg, the_value) \
+do { \
+    RAISE_ERROR_WITH_VALUE(the_err, the_msg, the_value); /* may not return */ \
+	free(the_msg); \
+	free_var(the_value); \
+    error_var.type = TYPE_ERR; \
+    error_var.v.err = the_err; \
+    PUSH(error_var); \
 } while (0)
 
 #define PUSH_ERROR_UNLESS_QUOTA(the_err)			\
@@ -877,6 +904,17 @@ do {								\
     else							\
 	PUSH_ERROR(the_err);					\
 } while (0)
+
+#define RAISE_X_NOT_FOUND(the_err, the_missing) \
+do { \
+	Var missing;																		\
+	missing.type = TYPE_STR;															\
+	missing.v.str = str_dup(the_missing);												\
+	char *error_msg = nullptr;															\
+	asprintf(&error_msg, "%s: %s", unparse_error(the_err), the_missing);				\
+	PUSH_RAISED_ERROR(the_err, error_msg, missing);									    \
+} while (0)
+
 
 #define JUMP(label)     (bv = bc.vector + label)
 
@@ -1672,9 +1710,11 @@ do {								\
 	    {
 		Var value;
 
-		value = RUN_ACTIV.rt_env[READ_BYTES(bv, bc.numbytes_var_name)];
-		if (value.type == TYPE_NONE)
-		    PUSH_ERROR(E_VARNF);
+		int var_pos = READ_BYTES(bv, bc.numbytes_var_name);
+		value = RUN_ACTIV.rt_env[var_pos];
+		if (value.type == TYPE_NONE) {
+			RAISE_X_NOT_FOUND(E_VARNF, *(&RUN_ACTIV.prog->var_names[var_pos]));
+		}
 		else
 		    PUSH_REF(value);
 	    }
@@ -1711,12 +1751,14 @@ do {								\
 		    h = db_find_property(obj, propname.v.str, &prop);
 		    built_in = db_is_property_built_in(h);
 
-		    free_var(propname);
 		    free_var(obj);
 
 		    if (!h.ptr)
-			PUSH_ERROR(E_PROPNF);
-		    else if (built_in
+			RAISE_X_NOT_FOUND(E_PROPNF, propname.v.str);
+		    else {
+			free_var(propname);
+
+			 if (built_in
 			 ? bi_prop_protected(built_in, RUN_ACTIV.progr)
 		      : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
 			PUSH_ERROR(E_PERM);
@@ -1726,6 +1768,7 @@ do {								\
 			PUSH_REF(prop);
 		}
 	    }
+		}
 	    break;
 
 	case OP_PUSH_GET_PROP:
@@ -1753,7 +1796,7 @@ do {								\
 		    h = db_find_property(obj, propname.v.str, &prop);
 		    built_in = db_is_property_built_in(h);
 		    if (!h.ptr)
-			PUSH_ERROR(E_PROPNF);
+			RAISE_X_NOT_FOUND(E_PROPNF, propname.v.str);
 		    else if (built_in
 			 ? bi_prop_protected(built_in, RUN_ACTIV.progr)
 		      : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
@@ -1777,13 +1820,18 @@ do {								\
 			enum error err;
 
 			err = waif_put_prop(obj.v.waif, propname.v.str, rhs, RUN_ACTIV.progr);
-			free_var(propname);
 			free_var(obj);
 			if (err == E_NONE) {
+				free_var(propname);
 				PUSH(rhs);
 			} else {
 				free_var(rhs);
-				PUSH_ERROR(err);
+				if (err == E_PROPNF)
+					RAISE_X_NOT_FOUND(E_PROPNF, propname.v.str);
+				else {
+					free_var(propname);
+					PUSH_ERROR(err);
+				}
 			}
 		} else if (!obj.is_object() || propname.type != TYPE_STR) {
 		    free_var(rhs);
@@ -1867,18 +1915,22 @@ do {								\
 			}
 		    }
 
-		    free_var(propname);
 		    free_var(obj);
 
-		    if (err == E_NONE) {
-			db_set_property_value(h, var_ref(rhs));
-			PUSH(rhs);
-		    } else {
-			free_var(rhs);
-			PUSH_ERROR(err);
-		    }
-		}
+			if (err == E_PROPNF) {
+				RAISE_X_NOT_FOUND(E_PROPNF, propname.v.str);
+			} else {
+				free_var(propname);
+		    	if (err == E_NONE) {
+				db_set_property_value(h, var_ref(rhs));
+				PUSH(rhs);
+		  	 	} else {
+					free_var(rhs);
+					PUSH_ERROR(err);
+		    	}
+				}
 	    }
+		}
 	    break;
 
 	case OP_FORK:
@@ -1980,6 +2032,10 @@ MATCH_TYPE(OBJ, obj)
 			err = E_TYPE;
 		}
 		free_var(obj);
+
+		if (err == E_VERBNF)
+			RAISE_X_NOT_FOUND(E_VERBNF, verb.v.str);
+			else {
 		free_var(verb);
 
 		if (err != E_NONE) {	/* there is an error, RUN_ACTIV unchanged,
@@ -1988,6 +2044,7 @@ MATCH_TYPE(OBJ, obj)
 		    PUSH_ERROR(err);
 		}
 	    }
+		}
 	    break;
 
 	case OP_RETURN:
@@ -2687,7 +2744,7 @@ MATCH_TYPE(OBJ, obj)
 		value = RUN_ACTIV.rt_env[PUSH_n_INDEX(op)];
 		if (value.type == TYPE_NONE) {
 		    free_var(value);
-		    PUSH_ERROR(E_VARNF);
+			RAISE_X_NOT_FOUND(E_VARNF, *(&RUN_ACTIV.prog->var_names[PUSH_n_INDEX(op)]));
 		} else
 		    PUSH_REF(value);
 	    }
@@ -2730,7 +2787,7 @@ MATCH_TYPE(OBJ, obj)
 		Var *vp;
 		vp = &RUN_ACTIV.rt_env[PUSH_CLEAR_n_INDEX(op)];
 		if (vp->type == TYPE_NONE) {
-		    PUSH_ERROR(E_VARNF);
+			RAISE_X_NOT_FOUND(E_VARNF, *(&RUN_ACTIV.prog->var_names[PUSH_CLEAR_n_INDEX(op)]));
 		} else {
 		    PUSH(*vp);
 		    vp->type = TYPE_NONE;
@@ -3420,7 +3477,11 @@ bf_pass(Var arglist, Byte next, void *vdata, Objid progr)
 	return tail_call_pack();
 
     free_var(arglist);
-    return make_error_pack(e);
+
+	if (e == E_VERBNF)
+		return make_raise_x_not_found_pack(e, RUN_ACTIV.verb);
+	else
+ 	   return make_error_pack(e);
 }
 
 static package
