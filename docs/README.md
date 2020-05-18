@@ -46,9 +46,11 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - `file_grep()` (search for a string in a file (kind of FUP in FIO, don't tell))
     - `file_count_lines()` (counts the number of lines in a file)
 
-- Profiling:
+- Profiling and debugging:
     - `finished_tasks()` (returns a list of the last X tasks to finish executing, including their total execution time) [see options.h below]
     - Set a maximum lag threshold (can be overridden with $server_options.task_lag_threshold) that, when exceeded, will make a note in the server log and call #0:handle_lagging_task with arguments: {callers, execution time}
+    - Include a map of defined variables for stack frames when being passed to `handle_uncaught_error`, `handle_task_timeout`, and `handle_lagging_task` [see options.h below]
+    - Optionally capture defined variables for running tasks by providing a true argument to `queued_tasks()` or a third true argument to `task_stack()`.
 
 - Telnet:
     - Capture IAC commands and pass them to listener:do_out_of_band_command() for the database to handle.
@@ -75,6 +77,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - SAFE_RECYCLE (change ownership of everything an object owns before recycling it)
     - NO_NAME_LOOKUP (disable automatic DNS name resolution on new connections. Can be overridden with $server_options.no_name_lookup)
     - PCRE_PATTERN_CACHE_SIZE (specifies how many PCRE patterns are cached)
+    - INCLUDE_RT_VARS (Include runtime environment variables in the stack argument for `handle_uncaught_error`, `handle_task_timeout`, and `handle_lagging_task`)
 
 - Additional builtins:
     - frandom (random floats)
