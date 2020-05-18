@@ -167,7 +167,7 @@ static const char *func_not_found_msg = "no such function";
 const char *
 name_func_by_num(unsigned n)
 {				/* used by unparse only */
-    if (n >= bf_table.size()-1)
+    if (n >= bf_table.size())
 	return func_not_found_msg;
     else
 	return bf_table[n].name;
