@@ -1052,7 +1052,7 @@ do { \
 		key = POP(); /* any except list or map */
 		value = POP(); /* any */
 		map = POP(); /* should be map */
-		if (map.type != TYPE_MAP || (key.is_collection() && TYPE_ANON != key.type) || TYPE_BOOL == key.type) {
+		if (map.type != TYPE_MAP || (key.is_collection() && TYPE_ANON != key.type)) {
 		    free_var(key);
 		    free_var(value);
 		    free_var(map);

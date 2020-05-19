@@ -675,7 +675,7 @@ mapinsert(Var map, Var key, Var value)
      * collections (for which `compare' does not currently work).
      */
     if (key.type == TYPE_NONE || key.type == TYPE_CLEAR
-	|| (key.is_collection() && TYPE_ANON != key.type) || TYPE_BOOL == key.type)
+	|| (key.is_collection() && TYPE_ANON != key.type))
 	panic_moo("MAPINSERT: invalid key");
 
     Var _new = map;
