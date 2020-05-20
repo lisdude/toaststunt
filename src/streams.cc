@@ -31,7 +31,7 @@ new_stream(int size)
     Stream *s = (Stream *)mymalloc(sizeof(Stream), M_STREAM);
 
     if (size < 1)
-	size = 1;
+        size = 1;
 
     s->buffer = (char *)mymalloc(size, M_STREAM);
     s->buflen = size;
@@ -60,12 +60,12 @@ static void
 grow(Stream * s, int newlen, int need)
 {
     if (allow_stream_exceptions > 0) {
-	if (newlen > stream_alloc_maximum) {
-	    if (s->current + need < stream_alloc_maximum)
-		newlen = stream_alloc_maximum;
-	    else
-		throw stream_too_big();
-	}
+        if (newlen > stream_alloc_maximum) {
+            if (s->current + need < stream_alloc_maximum)
+                newlen = stream_alloc_maximum;
+            else
+                throw stream_too_big();
+        }
     }
     s->buffer = (char *)myrealloc(s->buffer, newlen, M_STREAM);
     s->buflen = newlen;
@@ -75,7 +75,7 @@ void
 stream_add_char(Stream * s, char c)
 {
     if (s->current + 1 >= s->buflen)
-	grow(s, s->buflen * 2, 1);
+        grow(s, s->buflen * 2, 1);
 
     s->buffer[s->current++] = c;
 }
@@ -84,7 +84,7 @@ void
 stream_delete_char(Stream * s)
 {
     if (s->current > 0)
-      s->current--;
+        s->current--;
 }
 
 void
@@ -93,18 +93,18 @@ stream_add_string(Stream * s, const char *string)
     int len = strlen(string);
 
     if (s->current + len >= s->buflen) {
-	int newlen = s->buflen * 2;
+        int newlen = s->buflen * 2;
 
-	if (newlen <= s->current + len)
-	    newlen = s->current + len + 1;
-	grow(s, newlen, len);
+        if (newlen <= s->current + len)
+            newlen = s->current + len + 1;
+        grow(s, newlen, len);
     }
     strcpy(s->buffer + s->current, string);
     s->current += len;
 }
 
 void
-stream_printf(Stream * s, const char *fmt,...)
+stream_printf(Stream * s, const char *fmt, ...)
 {
     va_list args, pargs;
     int len;

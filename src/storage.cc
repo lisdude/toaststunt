@@ -36,33 +36,33 @@ refcount_overhead(Memory_Type type)
      * refcount slot for allocations that won't need it.
      */
     switch (type) {
-    /* deal with systems with picky alignment issues */
-    case M_LIST:
+        /* deal with systems with picky alignment issues */
+        case M_LIST:
 #ifdef MEMO_VALUE_BYTES
-	return MAX(sizeof(int), sizeof(Var *)) * 2;
+            return MAX(sizeof(int), sizeof(Var *)) * 2;
 #else
-	return MAX(sizeof(int), sizeof(Var *));
+            return MAX(sizeof(int), sizeof(Var *));
 #endif /* MEMO_VALUE_BYTES */
-    case M_TREE:
+        case M_TREE:
 #ifdef MEMO_VALUE_BYTES
-	return MAX(sizeof(int), sizeof(rbtree *)) * 2;
+            return MAX(sizeof(int), sizeof(rbtree *)) * 2;
 #else
-	return MAX(sizeof(int), sizeof(rbtree *));
+            return MAX(sizeof(int), sizeof(rbtree *));
 #endif /* MEMO_VALUE_BYTES */
-    case M_TRAV:
-	return MAX(sizeof(int), sizeof(rbtrav *));
-    case M_STRING:
+        case M_TRAV:
+            return MAX(sizeof(int), sizeof(rbtrav *));
+        case M_STRING:
 #ifdef MEMO_STRLEN
-	return sizeof(int) * 2;
+            return sizeof(int) * 2;
 #else
-	return sizeof(int);
+            return sizeof(int);
 #endif /* MEMO_STRLEN */
-    case M_ANON:
-	return MAX(sizeof(int), sizeof(struct Object *));
-    case M_WAIF:
-    return MAX(sizeof(int), sizeof(void *));
-    default:
-	return 0;
+        case M_ANON:
+            return MAX(sizeof(int), sizeof(struct Object *));
+        case M_WAIF:
+            return MAX(sizeof(int), sizeof(void *));
+        default:
+            return 0;
     }
 }
 
@@ -73,33 +73,33 @@ mymalloc(unsigned size, Memory_Type type)
     char msg[100];
     int offs;
 
-    if (size == 0)		/* For queasy systems */
-	size = 1;
+    if (size == 0)      /* For queasy systems */
+        size = 1;
 
     offs = refcount_overhead(type);
     memptr = (char *) malloc(offs + size);
     if (!memptr) {
-	sprintf(msg, "memory allocation (size %u) failed!", size);
-	panic_moo(msg);
+        sprintf(msg, "memory allocation (size %u) failed!", size);
+        panic_moo(msg);
     }
     alloc_num[type]++;
 
     if (offs) {
-	memptr += offs;
-	((reference_overhead *)memptr)[-1].count = 1;
+        memptr += offs;
+        ((reference_overhead *)memptr)[-1].count = 1;
 #ifdef ENABLE_GC
-	((reference_overhead *)memptr)[-1].buffered = 0;
-	((reference_overhead *)memptr)[-1].color = (type == M_ANON) ? GC_BLACK : GC_GREEN;
+        ((reference_overhead *)memptr)[-1].buffered = 0;
+        ((reference_overhead *)memptr)[-1].color = (type == M_ANON) ? GC_BLACK : GC_GREEN;
 #endif /* ENABLE_GC */
 #ifdef MEMO_STRLEN
-	if (type == M_STRING)
-	    ((int *) memptr)[-2] = size - 1;
+        if (type == M_STRING)
+            ((int *) memptr)[-2] = size - 1;
 #endif /* MEMO_STRLEN */
 #ifdef MEMO_VALUE_BYTES
-	if (type == M_LIST)
-	    ((int *) memptr)[-2] = 0;
-	if (type == M_TREE)
-	    ((int *) memptr)[-2] = 0;
+        if (type == M_LIST)
+            ((int *) memptr)[-2] = 0;
+        if (type == M_TREE)
+            ((int *) memptr)[-2] = 0;
 #endif /* MEMO_VALUE_BYTES */
     }
     return memptr;
@@ -118,17 +118,17 @@ str_dup(const char *s)
     char *r;
 
     if (s == nullptr || *s == '\0') {
-	static char *emptystring;
+        static char *emptystring;
 
-	if (!emptystring) {
-	    emptystring = (char *) mymalloc(1, M_STRING);
-	    *emptystring = '\0';
-	}
-	addref(emptystring);
-	return emptystring;
+        if (!emptystring) {
+            emptystring = (char *) mymalloc(1, M_STRING);
+            *emptystring = '\0';
+        }
+        addref(emptystring);
+        return emptystring;
     } else {
-	r = (char *) mymalloc(strlen(s) + 1, M_STRING);	/* NO MEMO HERE */
-	strcpy(r, s);
+        r = (char *) mymalloc(strlen(s) + 1, M_STRING); /* NO MEMO HERE */
+        strcpy(r, s);
     }
     return r;
 }
@@ -141,8 +141,8 @@ myrealloc(void *ptr, unsigned size, Memory_Type type)
 
     ptr = realloc((char *) ptr - offs, size + offs);
     if (!ptr) {
-	sprintf(msg, "memory re-allocation (size %u) failed!", size);
-	panic_moo(msg);
+        sprintf(msg, "memory re-allocation (size %u) failed!", size);
+        panic_moo(msg);
     }
 
     return (char *) ptr + offs;
@@ -162,7 +162,7 @@ void
 free_str(const char *s)
 {
     if (delref(s) == 0)
-	myfree((void *) s, M_STRING);
+        myfree((void *) s, M_STRING);
 }
 
 #endif

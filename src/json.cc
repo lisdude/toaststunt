@@ -128,7 +128,7 @@ value_to_literal(Var v)
 {
     static Stream *s = nullptr;
     if (!s)
-	s = new_stream(100);
+        s = new_stream(100);
     unparse_value(s, v);
     return reset_stream(s);
 }
@@ -140,22 +140,22 @@ valid_type(const char **val, size_t *len)
     /* format: "...|<TYPE>"
        where <TYPE> is a MOO type string: "obj", "int", "float", "err", "str" */
     if (*len > 3 && !strncmp(*val + *len - 4, "|obj", 4)) {
-	*len = *len - 4;
-	return TYPE_OBJ;
+        *len = *len - 4;
+        return TYPE_OBJ;
     } else if (*len > 3 && !strncmp(*val + *len - 4, "|int", 4)) {
-	*len = *len - 4;
-	return TYPE_INT;
+        *len = *len - 4;
+        return TYPE_INT;
     } else if (*len > 5 && !strncmp(*val + *len - 6, "|float", 6)) {
-	*len = *len - 6;
-	return TYPE_FLOAT;
+        *len = *len - 6;
+        return TYPE_FLOAT;
     } else if (*len > 3 && !strncmp(*val + *len - 4, "|err", 4)) {
-	*len = *len - 4;
-	return TYPE_ERR;
+        *len = *len - 4;
+        return TYPE_ERR;
     } else if (*len > 3 && !strncmp(*val + *len - 4, "|str", 4)) {
-	*len = *len - 4;
-	return TYPE_STR;
+        *len = *len - 4;
+        return TYPE_STR;
     } else
-	return TYPE_NONE;
+        return TYPE_NONE;
 }
 
 /* Append type information. */
@@ -164,26 +164,26 @@ append_type(const char *str, var_type type)
 {
     static Stream *stream = nullptr;
     if (nullptr == stream)
-	stream = new_stream(20);
+        stream = new_stream(20);
     stream_add_string(stream, str);
     switch (type) {
-    case TYPE_OBJ:
-	stream_add_string(stream, "|obj");
-	break;
-    case TYPE_INT:
-	stream_add_string(stream, "|int");
-	break;
-    case TYPE_FLOAT:
-	stream_add_string(stream, "|float");
-	break;
-    case TYPE_ERR:
-	stream_add_string(stream, "|err");
-	break;
-    case TYPE_STR:
-	stream_add_string(stream, "|str");
-	break;
-    default:
-	panic_moo("Unsupported type in append_type()");
+        case TYPE_OBJ:
+            stream_add_string(stream, "|obj");
+            break;
+        case TYPE_INT:
+            stream_add_string(stream, "|int");
+            break;
+        case TYPE_FLOAT:
+            stream_add_string(stream, "|float");
+            break;
+        case TYPE_ERR:
+            stream_add_string(stream, "|err");
+            break;
+        case TYPE_STR:
+            stream_add_string(stream, "|str");
+            break;
+        default:
+            panic_moo("Unsupported type in append_type()");
     }
     return reset_stream(stream);
 }
@@ -218,15 +218,15 @@ handle_number(void *ctx, const char *numberVal, unsigned int numberLen, yajl_tok
 
     if (yajl_tok_integer == tok) {
 
-	long int i = 0;
+        long int i = 0;
 
-	errno = 0;
-	i = strtol(numberVal, nullptr, 10);
+        errno = 0;
+        i = strtol(numberVal, nullptr, 10);
 
-	if (0 == errno && (i >= MININT && i <= MAXINT)) {
-	    v = Var::new_int(i);
-	    PUSH(pctx->top, v);
-	    return 1;
+        if (0 == errno && (i >= MININT && i <= MAXINT)) {
+            v = Var::new_int(i);
+            PUSH(pctx->top, v);
+            return 1;
         }
     }
 
@@ -238,8 +238,8 @@ handle_number(void *ctx, const char *numberVal, unsigned int numberLen, yajl_tok
     if (0 == errno) {
         v.type = TYPE_FLOAT;
         v.v.fnum = d;
-	PUSH(pctx->top, v);
-	return 1;
+        PUSH(pctx->top, v);
+        return 1;
     }
 
     return 0;
@@ -256,58 +256,58 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
     size_t len = (size_t)stringLen;
 
     if (MODE_EMBEDDED_TYPES == pctx->mode
-	&& TYPE_NONE != (type = valid_type(&val, &len))) {
-	switch (type) {
-	case TYPE_OBJ:
-	    {
-		char *p;
-		if (*val == '#')
-		    val++;
-		v.type = TYPE_OBJ;
-		v.v.num = strtol(val, &p, 10);
-		break;
-	    }
-	case TYPE_INT:
-	    {
-		char *p;
-		v = Var::new_int(strtol(val, &p, 10));
-		break;
-	    }
-	case TYPE_FLOAT:
-	    {
-		char *p;
-        v.type = TYPE_FLOAT;
-		v.v.fnum = strtod(val, &p);
-		break;
-	    }
-	case TYPE_ERR:
-	    {
-		char temp[len + 1];
-		strncpy(temp, val, len);
-		temp[len] = '\0';
-		v.type = TYPE_ERR;
-		int err = parse_error(temp);
-		v.v.err = err > -1 ? (error)err : E_NONE;
-		break;
-	    }
-	case TYPE_STR:
-	    {
-		char temp[len + 1];
-		strncpy(temp, val, len);
-		temp[len] = '\0';
-		v.type = TYPE_STR;
-		v.v.str = str_dup(temp);
-		break;
-	    }
-	default:
-	    panic_moo("Unsupported type in handle_string()");
-	}
+            && TYPE_NONE != (type = valid_type(&val, &len))) {
+        switch (type) {
+            case TYPE_OBJ:
+            {
+                char *p;
+                if (*val == '#')
+                    val++;
+                v.type = TYPE_OBJ;
+                v.v.num = strtol(val, &p, 10);
+                break;
+            }
+            case TYPE_INT:
+            {
+                char *p;
+                v = Var::new_int(strtol(val, &p, 10));
+                break;
+            }
+            case TYPE_FLOAT:
+            {
+                char *p;
+                v.type = TYPE_FLOAT;
+                v.v.fnum = strtod(val, &p);
+                break;
+            }
+            case TYPE_ERR:
+            {
+                char temp[len + 1];
+                strncpy(temp, val, len);
+                temp[len] = '\0';
+                v.type = TYPE_ERR;
+                int err = parse_error(temp);
+                v.v.err = err > -1 ? (error)err : E_NONE;
+                break;
+            }
+            case TYPE_STR:
+            {
+                char temp[len + 1];
+                strncpy(temp, val, len);
+                temp[len] = '\0';
+                v.type = TYPE_STR;
+                v.v.str = str_dup(temp);
+                break;
+            }
+            default:
+                panic_moo("Unsupported type in handle_string()");
+        }
     } else {
-	char temp[len + 1];
-	strncpy(temp, val, len);
-	temp[len] = '\0';
-	v.type = TYPE_STR;
-	v.v.str = str_dup(temp);
+        char temp[len + 1];
+        strncpy(temp, val, len);
+        temp[len] = '\0';
+        v.type = TYPE_STR;
+        v.v.str = str_dup(temp);
     }
 
     PUSH(pctx->top, v);
@@ -338,9 +338,9 @@ handle_end_map(void *ctx)
     Var map = new_map();
     Var k, v;
     for (v = POP(pctx->top), k = POP(pctx->top);
-	 (int)v.type > MAP_SENTINEL && (int)k.type > MAP_SENTINEL;
-	 v = POP(pctx->top), k = POP(pctx->top)) {
-	map = mapinsert(map, k, v);
+            (int)v.type > MAP_SENTINEL && (int)k.type > MAP_SENTINEL;
+            v = POP(pctx->top), k = POP(pctx->top)) {
+        map = mapinsert(map, k, v);
     }
     PUSH(pctx->top, map);
     pctx->depth--;
@@ -369,8 +369,8 @@ handle_end_array(void *ctx)
     Var list = new_list(0);
     Var v;
     for (v = POP(pctx->top); (int)v.type > ARRAY_SENTINEL;
-	 v = POP(pctx->top)) {
-	list = listinsert(list, v, 1);
+            v = POP(pctx->top)) {
+        list = listinsert(list, v, 1);
     }
     PUSH(pctx->top, list);
     pctx->depth--;
@@ -383,30 +383,30 @@ generate_key(yajl_gen g, Var v, void *ctx)
     struct generate_context *gctx = (struct generate_context *)ctx;
 
     switch (v.type) {
-    case TYPE_OBJ:
-    case TYPE_INT:
-    case TYPE_FLOAT:
-    case TYPE_ERR:
-	{
-	    const char *tmp = value_to_literal(v);
-	    if (MODE_EMBEDDED_TYPES == gctx->mode)
-		tmp = append_type(tmp, v.type);
-	    return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
-	}
-    case TYPE_STR:
-	{
-	    const char *tmp = v.v.str;
-	    size_t len = strlen(tmp);
-	    if (MODE_EMBEDDED_TYPES == gctx->mode)
-		if (TYPE_NONE != valid_type(&tmp, &len))
-		    tmp = append_type(tmp, v.type);
-	    return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
-	}
-    case TYPE_ANON:
-    case TYPE_WAIF:
-    break;
-    default:
-	panic_moo("Unsupported type in generate_key()");
+        case TYPE_OBJ:
+        case TYPE_INT:
+        case TYPE_FLOAT:
+        case TYPE_ERR:
+        {
+            const char *tmp = value_to_literal(v);
+            if (MODE_EMBEDDED_TYPES == gctx->mode)
+                tmp = append_type(tmp, v.type);
+            return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
+        }
+        case TYPE_STR:
+        {
+            const char *tmp = v.v.str;
+            size_t len = strlen(tmp);
+            if (MODE_EMBEDDED_TYPES == gctx->mode)
+                if (TYPE_NONE != valid_type(&tmp, &len))
+                    tmp = append_type(tmp, v.type);
+            return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
+        }
+        case TYPE_ANON:
+        case TYPE_WAIF:
+            break;
+        default:
+            panic_moo("Unsupported type in generate_key()");
     }
 
     return yajl_gen_keys_must_be_strings;
@@ -428,10 +428,10 @@ do_map(Var key, Var value, void *data, int first)
 
     dmc->status = generate_key(dmc->g, key, dmc->gctx);
     if (yajl_gen_status_ok != dmc->status)
-	return 1;
+        return 1;
     dmc->status = generate(dmc->g, value, dmc->gctx);
     if (yajl_gen_status_ok != dmc->status)
-	return 1;
+        return 1;
 
     return 0;
 }
@@ -443,7 +443,7 @@ do_list(Var value, void *data, int first)
 
     dmc->status = generate(dmc->g, value, dmc->gctx);
     if (yajl_gen_status_ok != dmc->status)
-	return 1;
+        return 1;
 
     return 0;
 }
@@ -454,58 +454,58 @@ generate(yajl_gen g, Var v, void *ctx)
     struct generate_context *gctx = (struct generate_context *)ctx;
 
     switch (v.type) {
-    case TYPE_INT:
-	return yajl_gen_integer(g, v.v.num);
-    case TYPE_FLOAT:
-	return yajl_gen_double(g, v.v.fnum);
-    case TYPE_OBJ:
-    case TYPE_ERR:
-	{
-	    const char *tmp = value_to_literal(v);
-	    if (MODE_EMBEDDED_TYPES == gctx->mode)
-		tmp = append_type(tmp, v.type);
-	    return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
-	}
-    case TYPE_STR:
-	{
-	    const char *tmp = v.v.str;
-	    size_t len = strlen(tmp);
-	    if (MODE_EMBEDDED_TYPES == gctx->mode)
-		if (TYPE_NONE != valid_type(&tmp, &len))
-		    tmp = append_type(tmp, v.type);
-	    return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
-	}
-    case TYPE_MAP:
-	{
-	    struct do_closure dmc;
-	    dmc.g = g;
-	    dmc.gctx = gctx;
-	    dmc.status = yajl_gen_status_ok;
-	    yajl_gen_map_open(g);
-	    if (mapforeach(v, do_map, &dmc))
-		return dmc.status;
-	    yajl_gen_map_close(g);
-	    return yajl_gen_status_ok;
-	}
-    case TYPE_LIST:
-	{
-	    struct do_closure dmc;
-	    dmc.g = g;
-	    dmc.gctx = gctx;
-	    dmc.status = yajl_gen_status_ok;
-	    yajl_gen_array_open(g);
-	    if (listforeach(v, do_list, &dmc))
-		return dmc.status;
-	    yajl_gen_array_close(g);
-	    return yajl_gen_status_ok;
-	}
-    case TYPE_BOOL:
-	{
-	    return yajl_gen_bool(g, v.v.num);
-	}
+        case TYPE_INT:
+            return yajl_gen_integer(g, v.v.num);
+        case TYPE_FLOAT:
+            return yajl_gen_double(g, v.v.fnum);
+        case TYPE_OBJ:
+        case TYPE_ERR:
+        {
+            const char *tmp = value_to_literal(v);
+            if (MODE_EMBEDDED_TYPES == gctx->mode)
+                tmp = append_type(tmp, v.type);
+            return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
+        }
+        case TYPE_STR:
+        {
+            const char *tmp = v.v.str;
+            size_t len = strlen(tmp);
+            if (MODE_EMBEDDED_TYPES == gctx->mode)
+                if (TYPE_NONE != valid_type(&tmp, &len))
+                    tmp = append_type(tmp, v.type);
+            return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
+        }
+        case TYPE_MAP:
+        {
+            struct do_closure dmc;
+            dmc.g = g;
+            dmc.gctx = gctx;
+            dmc.status = yajl_gen_status_ok;
+            yajl_gen_map_open(g);
+            if (mapforeach(v, do_map, &dmc))
+                return dmc.status;
+            yajl_gen_map_close(g);
+            return yajl_gen_status_ok;
+        }
+        case TYPE_LIST:
+        {
+            struct do_closure dmc;
+            dmc.g = g;
+            dmc.gctx = gctx;
+            dmc.status = yajl_gen_status_ok;
+            yajl_gen_array_open(g);
+            if (listforeach(v, do_list, &dmc))
+                return dmc.status;
+            yajl_gen_array_close(g);
+            return yajl_gen_status_ok;
+        }
+        case TYPE_BOOL:
+        {
+            return yajl_gen_bool(g, v.v.num);
+        }
     }
 
-    return (yajl_gen_status)-1;
+    return (yajl_gen_status) - 1;
 }
 
 static yajl_callbacks callbacks = {
@@ -546,42 +546,42 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
     int done = 0;
 
     if (1 < arglist.v.list[0].v.num) {
-	if (!strcasecmp(arglist.v.list[2].v.str, "common-subset")) {
-	    pctx.mode = MODE_COMMON_SUBSET;
-	} else if (!strcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
-	    pctx.mode = MODE_EMBEDDED_TYPES;
-	} else {
-	    free_var(arglist);
-	    return make_error_pack(E_INVARG);
-	}
+        if (!strcasecmp(arglist.v.list[2].v.str, "common-subset")) {
+            pctx.mode = MODE_COMMON_SUBSET;
+        } else if (!strcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
+            pctx.mode = MODE_EMBEDDED_TYPES;
+        } else {
+            free_var(arglist);
+            return make_error_pack(E_INVARG);
+        }
     }
 
     hand = yajl_alloc(&callbacks, &cfg, nullptr, (void *)&pctx);
 
     while (!done) {
-	if (len == 0)
-	    done = 1;
+        if (len == 0)
+            done = 1;
 
-	if (done)
-	    stat = yajl_parse_complete(hand);
-	else
-	    stat = yajl_parse(hand, (const unsigned char *)str, len);
+        if (done)
+            stat = yajl_parse_complete(hand);
+        else
+            stat = yajl_parse(hand, (const unsigned char *)str, len);
 
-	len = 0;
+        len = 0;
 
-	if (done) {
-	    if (stat != yajl_status_ok) {
-		/* clean up the stack */
-		while (pctx.top != &pctx.stack) {
-		    Var v = POP(pctx.top);
-		    free_var(v);
-		}
-		pack = make_error_pack(E_INVARG);
-	    } else {
-		Var v = POP(pctx.top);
-		pack = make_var_pack(v);
-	    }
-	}
+        if (done) {
+            if (stat != yajl_status_ok) {
+                /* clean up the stack */
+                while (pctx.top != &pctx.stack) {
+                    Var v = POP(pctx.top);
+                    free_var(v);
+                }
+                pack = make_error_pack(E_INVARG);
+            } else {
+                Var v = POP(pctx.top);
+                pack = make_var_pack(v);
+            }
+        }
     }
 
     yajl_free(hand);
@@ -607,27 +607,27 @@ bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
     package pack;
 
     if (1 < arglist.v.list[0].v.num) {
-	if (!strcasecmp(arglist.v.list[2].v.str, "common-subset")) {
-	    gctx.mode = MODE_COMMON_SUBSET;
-	} else if (!strcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
-	    gctx.mode = MODE_EMBEDDED_TYPES;
-	} else {
-	    free_var(arglist);
-	    return make_error_pack(E_INVARG);
-	}
+        if (!strcasecmp(arglist.v.list[2].v.str, "common-subset")) {
+            gctx.mode = MODE_COMMON_SUBSET;
+        } else if (!strcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
+            gctx.mode = MODE_EMBEDDED_TYPES;
+        } else {
+            free_var(arglist);
+            return make_error_pack(E_INVARG);
+        }
     }
 
     g = yajl_gen_alloc(&cfg, nullptr);
 
     if (yajl_gen_status_ok == generate(g, arglist.v.list[1], &gctx)) {
-	yajl_gen_get_buf(g, (const unsigned char **)&buf, &len);
+        yajl_gen_get_buf(g, (const unsigned char **)&buf, &len);
 
-	json.type = TYPE_STR;
-	json.v.str = str_dup(buf);
+        json.type = TYPE_STR;
+        json.v.str = str_dup(buf);
 
-	pack = make_var_pack(json);
+        pack = make_var_pack(json);
     } else {
-	pack = make_error_pack(E_INVARG);
+        pack = make_error_pack(E_INVARG);
     }
 
     yajl_gen_clear(g);

@@ -37,32 +37,32 @@ mplex_clear(void)
 
     max_fd = 0;
     for (i = 0; i < num_ports; i++) {
-	ports[i].fd = -1;
-	ports[i].events = 0;
+        ports[i].fd = -1;
+        ports[i].events = 0;
     }
 }
 
 static void
 add_common(int fd, unsigned dir)
 {
-    if (fd >= num_ports) {	/* Grow ports array */
-	int new_num = (fd + 9) / 10 * 10 + 1;
-	Port *new_ports = (Port *)mymalloc(new_num * sizeof(Port), M_NETWORK);
-	int i;
+    if (fd >= num_ports) {  /* Grow ports array */
+        int new_num = (fd + 9) / 10 * 10 + 1;
+        Port *new_ports = (Port *)mymalloc(new_num * sizeof(Port), M_NETWORK);
+        int i;
 
-	for (i = 0; i < num_ports; i++)
-	    new_ports[i] = ports[i];
+        for (i = 0; i < num_ports; i++)
+            new_ports[i] = ports[i];
 
-	if (ports != 0)
-	    myfree(ports, M_NETWORK);
+        if (ports != 0)
+            myfree(ports, M_NETWORK);
 
-	ports = new_ports;
-	num_ports = new_num;
+        ports = new_ports;
+        num_ports = new_num;
     }
     ports[fd].fd = fd;
     ports[fd].events |= dir;
     if (fd > max_fd)
-	max_fd = fd;
+        max_fd = fd;
 }
 
 void
@@ -83,11 +83,11 @@ mplex_wait(unsigned timeout)
     int result = poll(ports, max_fd + 1, timeout / 1000);
 
     if (result < 0) {
-	if (errno != EINTR)
-	    log_perror("Waiting for network I/O");
-	return 1;
+        if (errno != EINTR)
+            log_perror("Waiting for network I/O");
+        return 1;
     } else
-	return (result == 0);
+        return (result == 0);
 }
 
 int

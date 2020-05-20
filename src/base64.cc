@@ -41,9 +41,9 @@ static package
 make_space_pack()
 {
     if (server_flag_option_cached(SVO_MAX_CONCAT_CATCHABLE))
-	return make_error_pack(E_QUOTA);
+        return make_error_pack(E_QUOTA);
     else
-	return make_abort_pack(ABORT_SECONDS);
+        return make_abort_pack(ABORT_SECONDS);
 }
 
 static const unsigned char base64_chars[] =
@@ -66,15 +66,15 @@ bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
     in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
 
     if (!in) {
-	const package pack = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(arglist.v.list[1]));
-	free_var(arglist);
-	return pack;
+        const package pack = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(arglist.v.list[1]));
+        free_var(arglist);
+        return pack;
     }
 
     if ((len / 3) * 4 > stream_alloc_maximum) {
-	const package pack = make_space_pack();
-	free_var(arglist);
-	return pack;
+        const package pack = make_space_pack();
+        free_var(arglist);
+        return pack;
     }
 
     /* encode */
@@ -84,25 +84,25 @@ bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
     const unsigned char *inp = (unsigned char *)in;
 
     while (endp - inp >= 3) {
-	buffer << chars[inp[0] >> 2];
-	buffer << chars[((inp[0] & 0x03) << 4) | (inp[1] >> 4)];
-	buffer << chars[((inp[1] & 0x0f) << 2) | (inp[2] >> 6)];
-	buffer << chars[inp[2] & 0x3f];
-	inp += 3;
+        buffer << chars[inp[0] >> 2];
+        buffer << chars[((inp[0] & 0x03) << 4) | (inp[1] >> 4)];
+        buffer << chars[((inp[1] & 0x0f) << 2) | (inp[2] >> 6)];
+        buffer << chars[inp[2] & 0x3f];
+        inp += 3;
     }
 
     if (endp - inp) {
-	buffer << chars[inp[0] >> 2];
-	if (endp - inp == 2) {
-	    buffer << chars[((inp[0] & 0x03) << 4) | (inp[1] >> 4)];
-	    buffer << chars[(inp[1] & 0x0f) << 2];
-	} else {
-	    buffer << chars[(inp[0] & 0x03) << 4];
-	    if (!safe)
-		buffer << '=';
-	}
-	if (!safe)
-	    buffer << '=';
+        buffer << chars[inp[0] >> 2];
+        if (endp - inp == 2) {
+            buffer << chars[((inp[0] & 0x03) << 4) | (inp[1] >> 4)];
+            buffer << chars[(inp[1] & 0x0f) << 2];
+        } else {
+            buffer << chars[(inp[0] & 0x03) << 4];
+            if (!safe)
+                buffer << '=';
+        }
+        if (!safe)
+            buffer << '=';
     }
 
     /* return */
@@ -172,36 +172,36 @@ bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
     int i, pad = 0;
 
     for (i = 0; i < len; i++) {
-	const unsigned char tmp = (unsigned char)in[i];
-	if (table[tmp] == 80) {
-	    const package pack = make_raise_pack(E_INVARG, "Invalid character in encoded data", var_ref(arglist.v.list[1]));
-	    free_var(arglist);
-	    return pack;
-	}
-	if (pad && tmp != '=') {
-	    const package pack = make_raise_pack(E_INVARG, "Pad character in encoded data", var_ref(arglist.v.list[1]));
-	    free_var(arglist);
-	    return pack;
-	}
-	if (tmp == '=')
-	    pad++;
+        const unsigned char tmp = (unsigned char)in[i];
+        if (table[tmp] == 80) {
+            const package pack = make_raise_pack(E_INVARG, "Invalid character in encoded data", var_ref(arglist.v.list[1]));
+            free_var(arglist);
+            return pack;
+        }
+        if (pad && tmp != '=') {
+            const package pack = make_raise_pack(E_INVARG, "Pad character in encoded data", var_ref(arglist.v.list[1]));
+            free_var(arglist);
+            return pack;
+        }
+        if (tmp == '=')
+            pad++;
     }
 
     if (pad > 2) {
-	const package pack = make_raise_pack(E_INVARG, "Too many pad characters", var_ref(arglist.v.list[1]));
-	free_var(arglist);
-	return pack;
+        const package pack = make_raise_pack(E_INVARG, "Too many pad characters", var_ref(arglist.v.list[1]));
+        free_var(arglist);
+        return pack;
     }
     if ((len - pad == 1) || (!safe && len % 4)) {
-	const package pack = make_raise_pack(E_INVARG, "Invalid length", var_ref(arglist.v.list[1]));
-	free_var(arglist);
-	return pack;
+        const package pack = make_raise_pack(E_INVARG, "Invalid length", var_ref(arglist.v.list[1]));
+        free_var(arglist);
+        return pack;
     }
 
     if ((len / 4) * 3 > stream_alloc_maximum) {
-	const package pack = make_space_pack();
-	free_var(arglist);
-	return pack;
+        const package pack = make_space_pack();
+        free_var(arglist);
+        return pack;
     }
 
     /* decode */
@@ -210,18 +210,18 @@ bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
     unsigned char ar[4], block[4];
 
     for (i = 0; i < len + len % 4; i++) {
-	if (i < len) {
-	    block[i % 4] = table[(unsigned char)in[i]];
-	    ar[i % 4] = in[i];
-	} else {
-	    block[i % 4] = '\0';
-	    ar[i % 4] = '=';
-	}
-	if (i % 4 == 3) {
-	    buffer << (char)((block[0] << 2) | (block[1] >> 4));
-	    buffer << (char)((block[1] << 4) | (block[2] >> 2));
-	    buffer << (char)((block[2] << 6) | block[3]);
-	}
+        if (i < len) {
+            block[i % 4] = table[(unsigned char)in[i]];
+            ar[i % 4] = in[i];
+        } else {
+            block[i % 4] = '\0';
+            ar[i % 4] = '=';
+        }
+        if (i % 4 == 3) {
+            buffer << (char)((block[0] << 2) | (block[1] >> 4));
+            buffer << (char)((block[1] << 4) | (block[2] >> 2));
+            buffer << (char)((block[2] << 6) | block[3]);
+        }
     }
 
     const std::string& tmp = buffer.str();
@@ -229,10 +229,10 @@ bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
     int size = tmp.size();
 
     if (size) {
-	if (ar[2] == '=')
-	    size -= 2;
-	else if (ar[3] == '=')
-	    size -= 1;
+        if (ar[2] == '=')
+            size -= 2;
+        else if (ar[3] == '=')
+            size -= 1;
     }
 
     /* return */

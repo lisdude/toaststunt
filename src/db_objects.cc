@@ -60,9 +60,9 @@ Object *
 dbpriv_find_object(Objid oid)
 {
     if (oid < 0 || oid >= max_objects)
-	return nullptr;
+        return nullptr;
     else
-	return objects[oid];
+        return objects[oid];
 }
 
 int
@@ -89,7 +89,7 @@ void
 db_set_last_used_objid(Objid oid)
 {
     while (!objects[num_objects - 1] && num_objects > oid)
-	num_objects--;
+        num_objects--;
 }
 
 static void
@@ -98,33 +98,33 @@ extend(unsigned int new_objects)
     int size;
 
     for (size = 128; size <= new_objects; size *= 2)
-	;
+        ;
 
     if (max_objects == 0) {
-	objects = (Object **)mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
-	memset(objects, 0, size * sizeof(Object *));
-	max_objects = size;
+        objects = (Object **)mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
+        memset(objects, 0, size * sizeof(Object *));
+        max_objects = size;
     }
     if (size > max_objects) {
-	Object **_new = (Object **)mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
-	memcpy(_new, objects, max_objects * sizeof(Object *));
-	memset(_new + max_objects, 0, (size - max_objects) * sizeof(Object *));
-	myfree(objects, M_OBJECT_TABLE);
-	objects = _new;
-	max_objects = size;
+        Object **_new = (Object **)mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
+        memcpy(_new, objects, max_objects * sizeof(Object *));
+        memset(_new + max_objects, 0, (size - max_objects) * sizeof(Object *));
+        myfree(objects, M_OBJECT_TABLE);
+        objects = _new;
+        max_objects = size;
     }
 
     for (size = 4096; size <= new_objects; size *= 2)
-	;
+        ;
 
     if (array_size == 0) {
-	bit_array = (unsigned char *)mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
-	array_size = size;
+        bit_array = (unsigned char *)mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
+        array_size = size;
     }
     if (size > array_size) {
-	myfree(bit_array, M_ARRAY);
-	bit_array = (unsigned char *)mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
-	array_size = size;
+        myfree(bit_array, M_ARRAY);
+        bit_array = (unsigned char *)mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
+        array_size = size;
     }
 }
 
@@ -146,10 +146,10 @@ dbpriv_after_load(void)
     int i;
 
     for (i = num_objects; i < max_objects; i++) {
-	if (objects[i]) {
-	    dbpriv_assign_nonce(objects[i]);
-	    objects[i] = nullptr;
-	}
+        if (objects[i]) {
+            dbpriv_assign_nonce(objects[i]);
+            objects[i] = nullptr;
+        }
     }
 }
 
@@ -243,14 +243,14 @@ db_destroy_object(Objid oid)
     db_priv_affected_callable_verb_lookup();
 
     if (!o)
-	panic_moo("DB_DESTROY_OBJECT: Invalid object!");
+        panic_moo("DB_DESTROY_OBJECT: Invalid object!");
 
     if (o->location.v.obj != NOTHING ||
-	o->contents.v.list[0].v.num != 0 ||
-	(o->parents.type == TYPE_OBJ && o->parents.v.obj != NOTHING) ||
-	(o->parents.type == TYPE_LIST && o->parents.v.list[0].v.num != 0) ||
-	o->children.v.list[0].v.num != 0)
-	panic_moo("DB_DESTROY_OBJECT: Not a barren orphan!");
+            o->contents.v.list[0].v.num != 0 ||
+            (o->parents.type == TYPE_OBJ && o->parents.v.obj != NOTHING) ||
+            (o->parents.type == TYPE_LIST && o->parents.v.list[0].v.num != 0) ||
+            o->children.v.list[0].v.num != 0)
+        panic_moo("DB_DESTROY_OBJECT: Not a barren orphan!");
 
     free_var(o->parents);
     free_var(o->children);
@@ -260,33 +260,33 @@ db_destroy_object(Objid oid)
     free_var(o->contents);
 
     if (is_user(oid)) {
-	Var t;
+        Var t;
 
-	t.type = TYPE_OBJ;
-	t.v.obj = oid;
-	all_users = setremove(all_users, t);
+        t.type = TYPE_OBJ;
+        t.v.obj = oid;
+        all_users = setremove(all_users, t);
     }
     free_str(o->name);
 
     for (i = 0; i < o->propdefs.cur_length; i++) {
-	/* As an orphan, the only properties on this object are the ones
-	 * defined on it directly, so these two arrays must be the same length.
-	 */
-	free_str(o->propdefs.l[i].name);
-	free_var(o->propval[i].var);
+        /* As an orphan, the only properties on this object are the ones
+         * defined on it directly, so these two arrays must be the same length.
+         */
+        free_str(o->propdefs.l[i].name);
+        free_var(o->propval[i].var);
     }
     if (o->propdefs.l)
-	myfree(o->propdefs.l, M_PROPDEF);
+        myfree(o->propdefs.l, M_PROPDEF);
     if (o->propval)
-	myfree(o->propval, M_PVAL);
+        myfree(o->propval, M_PVAL);
     o->nval = 0;
 
     for (v = o->verbdefs; v; v = w) {
-	if (v->program)
-	    free_program(v->program);
-	free_str(v->name);
-	w = v->next;
-	myfree(v, M_VERBDEF);
+        if (v->program)
+            free_program(v->program);
+        free_str(v->name);
+        w = v->next;
+        myfree(v, M_VERBDEF);
     }
 
     myfree(objects[oid], M_OBJECT);
@@ -300,26 +300,26 @@ db_read_anonymous()
     int oid;
 
     if ((oid = dbio_read_num()) == NOTHING) {
-	r.type = TYPE_ANON;
-	r.v.anon = nullptr;
+        r.type = TYPE_ANON;
+        r.v.anon = nullptr;
     } else if (max_objects && (oid < max_objects && objects[oid])) {
-	r.type = TYPE_ANON;
-	r.v.anon = objects[oid];
-	addref(r.v.anon);
+        r.type = TYPE_ANON;
+        r.v.anon = objects[oid];
+        addref(r.v.anon);
     }
     else {
-	/* Back up the permanent object count, temporarily store the
-	 * database id of this anonymous object as the new count, and
-	 * allocate a new object -- this will force the new anonymous
-	 * object to be allocated at that position -- restore the
-	 * count when finished.
-	 */
-	int sav_objects = num_objects;
-	num_objects = oid;
-	dbpriv_new_anonymous_object();
-	num_objects = sav_objects;
-	r.type = TYPE_ANON;
-	r.v.anon = objects[oid];
+        /* Back up the permanent object count, temporarily store the
+         * database id of this anonymous object as the new count, and
+         * allocate a new object -- this will force the new anonymous
+         * object to be allocated at that position -- restore the
+         * count when finished.
+         */
+        int sav_objects = num_objects;
+        num_objects = oid;
+        dbpriv_new_anonymous_object();
+        num_objects = sav_objects;
+        r.type = TYPE_ANON;
+        r.v.anon = objects[oid];
     }
 
     return r;
@@ -332,14 +332,14 @@ db_write_anonymous(Var v)
     Object *o = (Object *)v.v.anon;
 
     if (!is_valid(v))
-	oid = NOTHING;
+        oid = NOTHING;
     else if (o->id != NOTHING)
-	oid = o->id;
+        oid = o->id;
     else {
-	ensure_new_object();
-	objects[num_objects] = o;
-	oid = o->id = num_objects;
-	num_objects++;
+        ensure_new_object();
+        objects[num_objects] = o;
+        oid = o->id = num_objects;
+        num_objects++;
     }
 
     dbio_write_num(oid);
@@ -357,10 +357,10 @@ db_make_anonymous(Objid oid, Objid last)
 
     /* remove me from my old parents' children */
     if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING)
-	objects[old_parents.v.obj]->children = setremove(objects[old_parents.v.obj]->children, me);
+        objects[old_parents.v.obj]->children = setremove(objects[old_parents.v.obj]->children, me);
     else if (old_parents.type == TYPE_LIST)
-	FOR_EACH(parent, old_parents, i, c)
-	    objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, me);
+        FOR_EACH(parent, old_parents, i, c)
+        objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, me);
 
     objects[oid] = nullptr;
     db_set_last_used_objid(last);
@@ -395,21 +395,21 @@ db_destroy_anonymous_object(void *obj)
     free_var(o->parents);
 
     for (i = 0; i < o->propdefs.cur_length; i++)
-	free_str(o->propdefs.l[i].name);
+        free_str(o->propdefs.l[i].name);
     if (o->propdefs.l)
-	myfree(o->propdefs.l, M_PROPDEF);
+        myfree(o->propdefs.l, M_PROPDEF);
     for (i = 0; i < o->nval; i++)
-	free_var(o->propval[i].var);
+        free_var(o->propval[i].var);
     if (o->propval)
-	myfree(o->propval, M_PVAL);
+        myfree(o->propval, M_PVAL);
     o->nval = 0;
 
     for (v = o->verbdefs; v; v = w) {
-	if (v->program)
-	    free_program(v->program);
-	free_str(v->name);
-	w = v->next;
-	myfree(v, M_VERBDEF);
+        if (v->program)
+            free_program(v->program);
+        free_str(v->name);
+        w = v->next;
+        myfree(v, M_VERBDEF);
     }
 
     dbpriv_set_object_flag(o, FLAG_INVALID);
@@ -425,22 +425,22 @@ int
 parents_ok(Object *o)
 {
     if (TYPE_LIST == o->parents.type) {
-	Var parent;
-	int i, c;
-	FOR_EACH(parent, o->parents, i, c) {
-	    Objid oid = parent.v.obj;
-	    if (!valid(oid) || objects[oid]->nonce > o->nonce) {
-		dbpriv_set_object_flag(o, FLAG_INVALID);
-		return 0;
-	    }
-	}
+        Var parent;
+        int i, c;
+        FOR_EACH(parent, o->parents, i, c) {
+            Objid oid = parent.v.obj;
+            if (!valid(oid) || objects[oid]->nonce > o->nonce) {
+                dbpriv_set_object_flag(o, FLAG_INVALID);
+                return 0;
+            }
+        }
     }
     else {
-	Objid oid = o->parents.v.obj;
-	if (NOTHING != oid && (!valid(oid) || objects[oid]->nonce > o->nonce)) {
-	    dbpriv_set_object_flag(o, FLAG_INVALID);
-	    return 0;
-	}
+        Objid oid = o->parents.v.obj;
+        if (NOTHING != oid && (!valid(oid) || objects[oid]->nonce > o->nonce)) {
+            dbpriv_set_object_flag(o, FLAG_INVALID);
+            return 0;
+        }
     }
 
     return 1;
@@ -473,96 +473,96 @@ db_renumber_object(Objid old)
 #endif /* USE_ANCESTOR_CACHE */
 
     for (_new = 0; _new < old; _new++) {
-	if (objects[_new] == nullptr) {
-	    /* Change the identity of the object. */
-	    o = objects[_new] = objects[old];
-	    objects[old] = nullptr;
-	    objects[_new]->id = _new;
+        if (objects[_new] == nullptr) {
+            /* Change the identity of the object. */
+            o = objects[_new] = objects[old];
+            objects[old] = nullptr;
+            objects[_new]->id = _new;
 
-	    /* Fix up the parents/children hierarchy and the
-	     * location/contents hierarchy.
-	     */
-	    int i1, c1, i2, c2;
-	    Var obj1, obj2;
+            /* Fix up the parents/children hierarchy and the
+             * location/contents hierarchy.
+             */
+            int i1, c1, i2, c2;
+            Var obj1, obj2;
 
-#define	    FIX(up, down)							\
-	    if (TYPE_LIST == o->up.type) {					\
-		FOR_EACH(obj1, o->up, i1, c1) {					\
-		    FOR_EACH(obj2, objects[obj1.v.obj]->down, i2, c2)		\
-			if (obj2.v.obj == old)					\
-			    break;						\
-		    objects[obj1.v.obj]->down.v.list[i2].v.obj = _new;		\
-		}								\
-	    }									\
-	    else if (TYPE_OBJ == o->up.type && NOTHING != o->up.v.obj) {	\
-		FOR_EACH(obj1, objects[o->up.v.obj]->down, i2, c2)		\
-		if (obj1.v.obj == old)						\
-		    break;							\
-		objects[o->up.v.obj]->down.v.list[i2].v.obj = _new;		\
-	    }									\
-	    FOR_EACH(obj1, o->down, i1, c1) {					\
-		if (TYPE_LIST == objects[obj1.v.obj]->up.type) {		\
-		    FOR_EACH(obj2, objects[obj1.v.obj]->up, i2, c2)		\
-			if (obj2.v.obj == old)					\
-			    break;						\
-		    objects[obj1.v.obj]->up.v.list[i2].v.obj = _new;		\
-		}								\
-		else {								\
-		    objects[obj1.v.obj]->up.v.obj = _new;			\
-		}								\
-	    }
+#define     FIX(up, down)                           \
+    if (TYPE_LIST == o->up.type) {                  \
+        FOR_EACH(obj1, o->up, i1, c1) {                 \
+            FOR_EACH(obj2, objects[obj1.v.obj]->down, i2, c2)       \
+            if (obj2.v.obj == old)                  \
+                break;                      \
+            objects[obj1.v.obj]->down.v.list[i2].v.obj = _new;      \
+        }                               \
+    }                                   \
+    else if (TYPE_OBJ == o->up.type && NOTHING != o->up.v.obj) {    \
+        FOR_EACH(obj1, objects[o->up.v.obj]->down, i2, c2)      \
+        if (obj1.v.obj == old)                      \
+            break;                          \
+        objects[o->up.v.obj]->down.v.list[i2].v.obj = _new;     \
+    }                                   \
+    FOR_EACH(obj1, o->down, i1, c1) {                   \
+        if (TYPE_LIST == objects[obj1.v.obj]->up.type) {        \
+            FOR_EACH(obj2, objects[obj1.v.obj]->up, i2, c2)     \
+            if (obj2.v.obj == old)                  \
+                break;                      \
+            objects[obj1.v.obj]->up.v.list[i2].v.obj = _new;        \
+        }                               \
+        else {                              \
+            objects[obj1.v.obj]->up.v.obj = _new;           \
+        }                               \
+    }
 
-	    FIX(parents, children);
-	    FIX(location, contents);
+            FIX(parents, children);
+            FIX(location, contents);
 
-#undef	    FIX
+#undef      FIX
 
-	    /* Fix up the list of users, if necessary */
-	    if (is_user(_new)) {
-		int i;
+            /* Fix up the list of users, if necessary */
+            if (is_user(_new)) {
+                int i;
 
-		for (i = 1; i <= all_users.v.list[0].v.num; i++)
-		    if (all_users.v.list[i].v.obj == old) {
-			all_users.v.list[i].v.obj = _new;
-			break;
-		    }
-	    }
-	    /* Fix the owners of verbs, properties and objects */
-	    {
-		Objid oid;
+                for (i = 1; i <= all_users.v.list[0].v.num; i++)
+                    if (all_users.v.list[i].v.obj == old) {
+                        all_users.v.list[i].v.obj = _new;
+                        break;
+                    }
+            }
+            /* Fix the owners of verbs, properties and objects */
+            {
+                Objid oid;
 
-		for (oid = 0; oid < num_objects; oid++) {
-		    Object *o = objects[oid];
-		    Verbdef *v;
-		    Pval *p;
-		    int i, count;
+                for (oid = 0; oid < num_objects; oid++) {
+                    Object *o = objects[oid];
+                    Verbdef *v;
+                    Pval *p;
+                    int i, count;
 
-		    if (!o)
-			continue;
+                    if (!o)
+                        continue;
 
-		    if (o->owner == _new)
-			o->owner = NOTHING;
-		    else if (o->owner == old)
-			o->owner = _new;
+                    if (o->owner == _new)
+                        o->owner = NOTHING;
+                    else if (o->owner == old)
+                        o->owner = _new;
 
-		    for (v = o->verbdefs; v; v = v->next)
-			if (v->owner == _new)
-			    v->owner = NOTHING;
-			else if (v->owner == old)
-			    v->owner = _new;
+                    for (v = o->verbdefs; v; v = v->next)
+                        if (v->owner == _new)
+                            v->owner = NOTHING;
+                        else if (v->owner == old)
+                            v->owner = _new;
 
-		    p = o->propval;
-		    count = o->nval;
-		    for (i = 0; i < count; i++)
-			if (p[i].owner == _new)
-			    p[i].owner = NOTHING;
-			else if (p[i].owner == old)
-			    p[i].owner = _new;
-		}
-	    }
+                    p = o->propval;
+                    count = o->nval;
+                    for (i = 0; i < count; i++)
+                        if (p[i].owner == _new)
+                            p[i].owner = NOTHING;
+                        else if (p[i].owner == old)
+                            p[i].owner = _new;
+                }
+            }
 
-	    return _new;
-	}
+            return _new;
+        }
     }
 
     /* There are no recycled objects less than `old', so keep its number. */
@@ -580,20 +580,20 @@ db_object_bytes(Var obj)
     count += memo_strlen(o->name) + 1;
 
     for (v = o->verbdefs; v; v = v->next) {
-	count += sizeof(Verbdef);
-	count += memo_strlen(v->name) + 1;
-	if (v->program)
-	    count += program_bytes(v->program);
+        count += sizeof(Verbdef);
+        count += memo_strlen(v->name) + 1;
+        if (v->program)
+            count += program_bytes(v->program);
     }
 
     count += sizeof(Propdef) * o->propdefs.cur_length;
     for (i = 0; i < o->propdefs.cur_length; i++)
-	count += memo_strlen(o->propdefs.l[i].name) + 1;
+        count += memo_strlen(o->propdefs.l[i].name) + 1;
 
     len = o->nval;
     count += (sizeof(Pval) - sizeof(Var)) * len;
     for (i = 0; i < len; i++)
-	count += value_bytes(o->propval[i].var);
+        count += value_bytes(o->propval[i].var);
 
     return count;
 }
@@ -617,84 +617,84 @@ db_object_bytes(Var obj)
 #define ARRAY_SIZE_IN_BYTES (array_size / 8)
 #define CLEAR_BIT_ARRAY() memset(bit_array, 0, ARRAY_SIZE_IN_BYTES)
 
-#define DEFUNC(name, field)						\
-									\
-static int								\
-db1_count_##name(Object *o)						\
-{									\
-    int i, c, n = 0;							\
-    Var tmp, field = enlist_var(var_ref(o->field));			\
-    Object *o2;								\
-    Objid oid;								\
-									\
-    FOR_EACH(tmp, field, i, c) {					\
-	if (valid(oid = tmp.v.obj)) {					\
-	    if (bit_is_false(bit_array, oid)) {				\
-		bit_true(bit_array, oid);				\
-		o2 = dbpriv_find_object(oid);				\
-		n += db1_count_##name(o2) + 1;				\
-	    }								\
-	}								\
-    }									\
-									\
-    free_var(field);							\
-									\
-    return n;								\
-}									\
-									\
-static void								\
-db2_add_##name(Object *o, Var *plist, int *px)				\
-{									\
-    int i, c;								\
-    Var tmp, field = enlist_var(var_ref(o->field));			\
-    Object *o2;								\
-    Objid oid;								\
-									\
-    FOR_EACH(tmp, field, i, c) {					\
-	if (valid(oid = tmp.v.obj)) {					\
-	    if (bit_is_false(bit_array, oid)) {				\
-		bit_true(bit_array, oid);				\
-		++(*px);						\
-		plist->v.list[*px].type = TYPE_OBJ;			\
-		plist->v.list[*px].v.obj = oid;				\
-		o2 = dbpriv_find_object(oid);				\
-		db2_add_##name(o2, plist, px);				\
-	    }								\
-	}								\
-    }									\
-									\
-    free_var(field);							\
-}									\
-									\
-Var									\
-db_##name(Var obj, bool full)						\
-{									\
-    Object *o;								\
-    int n, i = 0;							\
-    Var list;								\
-									\
-    o = dbpriv_dereference(obj);					\
-    if ((o->field.type == TYPE_OBJ && o->field.v.obj == NOTHING) ||	\
-	(o->field.type == TYPE_LIST && listlength(o->field) == 0))	\
-	return full ? enlist_var(var_ref(obj)) : new_list(0);		\
-									\
-    CLEAR_BIT_ARRAY();							\
-									\
-    n = db1_count_##name(o) + (full ? 1 : 0);				\
-									\
-    list = new_list(n);							\
-									\
-    if (full)								\
-	list.v.list[++i] = var_ref(obj);				\
-									\
-    CLEAR_BIT_ARRAY();							\
-									\
-    db2_add_##name(o, &list, &i);					\
-									\
-    list.v.list[0].v.num = i; /* sketchy */				\
-									\
-    return list;							\
-}
+#define DEFUNC(name, field)                     \
+    \
+    static int                              \
+    db1_count_##name(Object *o)                     \
+    {                                   \
+        int i, c, n = 0;                            \
+        Var tmp, field = enlist_var(var_ref(o->field));         \
+        Object *o2;                             \
+        Objid oid;                              \
+        \
+        FOR_EACH(tmp, field, i, c) {                    \
+            if (valid(oid = tmp.v.obj)) {                   \
+                if (bit_is_false(bit_array, oid)) {             \
+                    bit_true(bit_array, oid);               \
+                    o2 = dbpriv_find_object(oid);               \
+                    n += db1_count_##name(o2) + 1;              \
+                }                               \
+            }                               \
+        }                                   \
+        \
+        free_var(field);                            \
+        \
+        return n;                               \
+    }                                   \
+    \
+    static void                             \
+    db2_add_##name(Object *o, Var *plist, int *px)              \
+    {                                   \
+        int i, c;                               \
+        Var tmp, field = enlist_var(var_ref(o->field));         \
+        Object *o2;                             \
+        Objid oid;                              \
+        \
+        FOR_EACH(tmp, field, i, c) {                    \
+            if (valid(oid = tmp.v.obj)) {                   \
+                if (bit_is_false(bit_array, oid)) {             \
+                    bit_true(bit_array, oid);               \
+                    ++(*px);                        \
+                    plist->v.list[*px].type = TYPE_OBJ;         \
+                    plist->v.list[*px].v.obj = oid;             \
+                    o2 = dbpriv_find_object(oid);               \
+                    db2_add_##name(o2, plist, px);              \
+                }                               \
+            }                               \
+        }                                   \
+        \
+        free_var(field);                            \
+    }                                   \
+    \
+    Var                                 \
+    db_##name(Var obj, bool full)                       \
+    {                                   \
+        Object *o;                              \
+        int n, i = 0;                           \
+        Var list;                               \
+        \
+        o = dbpriv_dereference(obj);                    \
+        if ((o->field.type == TYPE_OBJ && o->field.v.obj == NOTHING) || \
+                (o->field.type == TYPE_LIST && listlength(o->field) == 0))  \
+            return full ? enlist_var(var_ref(obj)) : new_list(0);       \
+        \
+        CLEAR_BIT_ARRAY();                          \
+        \
+        n = db1_count_##name(o) + (full ? 1 : 0);               \
+        \
+        list = new_list(n);                         \
+        \
+        if (full)                               \
+            list.v.list[++i] = var_ref(obj);                \
+        \
+        CLEAR_BIT_ARRAY();                          \
+        \
+        db2_add_##name(o, &list, &i);                   \
+        \
+        list.v.list[0].v.num = i; /* sketchy */             \
+        \
+        return list;                            \
+    }
 
 DEFUNC(descendants, children);
 
@@ -762,24 +762,24 @@ int
 db_object_has_flag2(Var obj, db_object_flag f)
 {
     return (TYPE_ANON == obj.type) ?
-            dbpriv_object_has_flag(obj.v.anon, f) :
-            db_object_has_flag(obj.v.obj, f);
+           dbpriv_object_has_flag(obj.v.anon, f) :
+           db_object_has_flag(obj.v.obj, f);
 }
 
 void
 db_set_object_flag2(Var obj, db_object_flag f)
 {
     (TYPE_ANON == obj.type) ?
-      dbpriv_set_object_flag(obj.v.anon, f) :
-      db_set_object_flag(obj.v.obj, f);
+    dbpriv_set_object_flag(obj.v.anon, f) :
+    db_set_object_flag(obj.v.obj, f);
 }
 
 void
 db_clear_object_flag2(Var obj, db_object_flag f)
 {
     (TYPE_ANON == obj.type) ?
-      dbpriv_clear_object_flag(obj.v.anon, f) :
-      db_clear_object_flag(obj.v.obj, f);
+    dbpriv_clear_object_flag(obj.v.anon, f) :
+    db_clear_object_flag(obj.v.obj, f);
 }
 
 Objid
@@ -816,7 +816,7 @@ void
 dbpriv_set_object_name(Object *o, const char *name)
 {
     if (o->name)
-	free_str(o->name);
+        free_str(o->name);
     o->name = name;
 }
 
@@ -868,8 +868,8 @@ db_for_all_children(Objid oid, int (*func) (void *, Objid), void *data)
     int i, c = db_count_children(oid);
 
     for (i = 1; i <= c; i++)
-	if (func(data, objects[oid]->children.v.list[i].v.obj))
-	    return 1;
+        if (func(data, objects[oid]->children.v.list[i].v.obj))
+            return 1;
 
     return 0;
 }
@@ -880,12 +880,12 @@ check_for_duplicates(Var list)
     int i, j, c;
 
     if (TYPE_LIST != list.type || (c = listlength(list)) < 1)
-	return 1;
+        return 1;
 
     for (i = 1; i <= c; i++)
-	for (j = i + i; j <= c; j++)
-	    if (equality(list.v.list[i], list.v.list[j], 1))
-		return 0;
+        for (j = i + i; j <= c; j++)
+            if (equality(list.v.list[i], list.v.list[j], 1))
+                return 0;
 
     return 1;
 }
@@ -897,14 +897,14 @@ check_children_of_object(Var obj, Var anon_kids)
     int i, c;
 
     if (TYPE_LIST != anon_kids.type || listlength(anon_kids) < 1)
-	return 1;
+        return 1;
 
     FOR_EACH (kid, anon_kids, i, c) {
-	Var parents = db_object_parents2(kid);
-	if (TYPE_ANON != kid.type
-	    || ((TYPE_OBJ == parents.type && !equality(obj, parents, 0))
-	        || (TYPE_LIST == parents.type && !ismember(obj, parents, 0))))
-	    return 0;
+        Var parents = db_object_parents2(kid);
+        if (TYPE_ANON != kid.type
+                || ((TYPE_OBJ == parents.type && !equality(obj, parents, 0))
+                    || (TYPE_LIST == parents.type && !ismember(obj, parents, 0))))
+            return 0;
     }
 
     return 1;
@@ -914,29 +914,29 @@ int
 db_change_parents(Var obj, Var new_parents, Var anon_kids)
 {
     if (!check_for_duplicates(new_parents))
-	return 0;
+        return 0;
     if (!check_for_duplicates(anon_kids))
-	return 0;
+        return 0;
     if (!check_children_of_object(obj, anon_kids))
-	return 0;
+        return 0;
     if (!dbpriv_check_properties_for_chparent(obj, new_parents, anon_kids))
-	return 0;
+        return 0;
 
     Object *o = dbpriv_dereference(obj);
 
     if (o->verbdefs == nullptr
-        && listlength(o->children) == 0
-        && (TYPE_LIST != anon_kids.type || listlength(anon_kids) == 0)) {
-	/* Since this object has no children and no verbs, we know that it
-	   can't have had any part in affecting verb lookup, since we use first
-	   parent with verbs as a key in the verb lookup cache. */
-	/* The "no kids" rule is necessary because potentially one of the
-	   children could have verbs on it--and that child could have cache
-	   entries for THIS object's parentage. */
-	/* In any case, don't clear the cache. */
-	;
+            && listlength(o->children) == 0
+            && (TYPE_LIST != anon_kids.type || listlength(anon_kids) == 0)) {
+        /* Since this object has no children and no verbs, we know that it
+           can't have had any part in affecting verb lookup, since we use first
+           parent with verbs as a key in the verb lookup cache. */
+        /* The "no kids" rule is necessary because potentially one of the
+           children could have verbs on it--and that child could have cache
+           entries for THIS object's parentage. */
+        /* In any case, don't clear the cache. */
+        ;
     } else {
-	db_priv_affected_callable_verb_lookup();
+        db_priv_affected_callable_verb_lookup();
     }
 
     Var old_parents = o->parents;
@@ -946,22 +946,22 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
 
     /* only adjust the parent's children for permanent objects */
     if (TYPE_OBJ == obj.type) {
-	Var parent;
-	int i, c;
+        Var parent;
+        int i, c;
 
-	/* remove me/obj from my old parents' children */
-	if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING)
-	    objects[old_parents.v.obj]->children = setremove(objects[old_parents.v.obj]->children, obj);
-	else if (old_parents.type == TYPE_LIST)
-	    FOR_EACH(parent, old_parents, i, c)
-		objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, obj);
+        /* remove me/obj from my old parents' children */
+        if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING)
+            objects[old_parents.v.obj]->children = setremove(objects[old_parents.v.obj]->children, obj);
+        else if (old_parents.type == TYPE_LIST)
+            FOR_EACH(parent, old_parents, i, c)
+            objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, obj);
 
-	/* add me/obj to my new parents' children */
-	if (new_parents.type == TYPE_OBJ && new_parents.v.obj != NOTHING)
-	    objects[new_parents.v.obj]->children = setadd(objects[new_parents.v.obj]->children, obj);
-	else if (new_parents.type == TYPE_LIST)
-	    FOR_EACH(parent, new_parents, i, c)
-		objects[parent.v.obj]->children = setadd(objects[parent.v.obj]->children, obj);
+        /* add me/obj to my new parents' children */
+        if (new_parents.type == TYPE_OBJ && new_parents.v.obj != NOTHING)
+            objects[new_parents.v.obj]->children = setadd(objects[new_parents.v.obj]->children, obj);
+        else if (new_parents.type == TYPE_LIST)
+            FOR_EACH(parent, new_parents, i, c)
+            objects[parent.v.obj]->children = setadd(objects[parent.v.obj]->children, obj);
     }
 
     free_var(o->parents);
@@ -1009,7 +1009,7 @@ dbpriv_object_location(Object *o)
 Var
 dbpriv_object_last_move(Object *o)
 {
-	   return o->last_move;
+    return o->last_move;
 }
 
 Objid
@@ -1036,8 +1036,8 @@ db_for_all_contents(Objid oid, int (*func) (void *, Objid), void *data)
     int i, c = db_count_contents(oid);
 
     for (i = 1; i <= c; i++)
-	if (func(data, objects[oid]->contents.v.list[i].v.obj))
-	    return 1;
+        if (func(data, objects[oid]->contents.v.list[i].v.obj))
+            return 1;
 
     return 0;
 }
@@ -1070,11 +1070,11 @@ db_change_location(Objid oid, Objid new_location, int position)
             objects[oid]->last_move = new_map();
         }
 
-    Var last_move = objects[oid]->last_move;
-    last_move = mapinsert(last_move, var_ref(time_key), Var::new_int(time(nullptr)));
-    last_move = mapinsert(last_move, var_ref(source_key), Var::new_obj(old_location));
+        Var last_move = objects[oid]->last_move;
+        last_move = mapinsert(last_move, var_ref(time_key), Var::new_int(time(nullptr)));
+        last_move = mapinsert(last_move, var_ref(source_key), Var::new_obj(old_location));
 
-    objects[oid]->last_move = last_move;
+        objects[oid]->last_move = last_move;
     }
 
 }
@@ -1109,7 +1109,7 @@ db_set_object_flag(Objid oid, db_object_flag f)
     dbpriv_set_object_flag(objects[oid], f);
 
     if (f == FLAG_USER)
-	all_users = setadd(all_users, Var::new_obj(oid));
+        all_users = setadd(all_users, Var::new_obj(oid));
 }
 
 void
@@ -1117,15 +1117,15 @@ db_clear_object_flag(Objid oid, db_object_flag f)
 {
     dbpriv_clear_object_flag(objects[oid], f);
     if (f == FLAG_USER)
-	all_users = setremove(all_users, Var::new_obj(oid));
+        all_users = setremove(all_users, Var::new_obj(oid));
 }
 
 int
 db_object_allows(Var obj, Objid progr, db_object_flag f)
 {
     return (is_wizard(progr)
-	    || progr == db_object_owner2(obj)
-	    || db_object_has_flag2(obj, f));
+            || progr == db_object_owner2(obj)
+            || db_object_has_flag2(obj, f));
 }
 
 int
@@ -1162,7 +1162,7 @@ int
 db_object_isa(Var object, Var parent)
 {
     if (equality(object, parent, 0))
-	return 1;
+        return 1;
 
     Object *o, *t;
 
@@ -1173,19 +1173,19 @@ db_object_isa(Var object, Var parent)
     Var ancestor, ancestors = enlist_var(var_ref(o->parents));
 
     while (listlength(ancestors) > 0) {
-	POP_TOP(ancestor, ancestors);
+        POP_TOP(ancestor, ancestors);
 
-	if (ancestor.v.obj == NOTHING)
-	    continue;
+        if (ancestor.v.obj == NOTHING)
+            continue;
 
-	if (equality(ancestor, parent, 0)) {
-	    free_var(ancestors);
-	    return 1;
-	}
+        if (equality(ancestor, parent, 0)) {
+            free_var(ancestors);
+            return 1;
+        }
 
-	t = dbpriv_find_object(ancestor.v.obj);
+        t = dbpriv_find_object(ancestor.v.obj);
 
-	ancestors = listconcat(ancestors, enlist_var(var_ref(t->parents)));
+        ancestors = listconcat(ancestors, enlist_var(var_ref(t->parents)));
     }
 
     return 0;
@@ -1222,5 +1222,5 @@ db_clear_ancestor_cache(void)
     for (auto const& x : ancestor_cache)
         free_var(x.second);
     ancestor_cache.clear();
-#endif 
+#endif
 }

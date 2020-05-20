@@ -25,7 +25,7 @@ static int next_sqlite_handle = 1;
 
 /* Open an SQLite database.
  * Args: STR <path to database>, [INT options] */
-    static package
+static package
 bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
 {
     if (!is_wizard(progr))
@@ -76,9 +76,9 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
         deallocate_handle(index, false);
         return make_raise_pack(E_NONE, err, var_ref(zero));
     } else {
-        #ifdef PCRE_FOUND
+#ifdef PCRE_FOUND
         sqlite3_create_function(handle->id, "REGEXP", 2, SQLITE_UTF8 | SQLITE_DETERMINISTIC, nullptr, &sqlite_regexp, nullptr, nullptr);
-        #endif
+#endif
         handle->path = str_dup(path);
         Var r;
         r.type = TYPE_INT;
@@ -89,7 +89,7 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
 
 /* Close an SQLite database.
  * Args: INT <database handle> */
-    static package
+static package
 bf_sqlite_close(Var arglist, Byte next, void *vdata, Objid progr)
 {
     if (!is_wizard(progr))
@@ -114,7 +114,7 @@ bf_sqlite_close(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 /* Return a list of open SQLite database handles. */
-    static package
+static package
 bf_sqlite_handles(Var arglist, Byte next, void *vdata, Objid progr)
 {
     free_var(arglist);
@@ -133,7 +133,7 @@ bf_sqlite_handles(Var arglist, Byte next, void *vdata, Objid progr)
 
 /* Return information about the specified SQLite database handle.
  * Args: <INT database handle> */
-    static package
+static package
 bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
 {
     if (!is_wizard(progr))
@@ -250,7 +250,7 @@ void sqlite_execute_thread_callback(Var args, Var *r)
  * Args: INT <database handle>, STR <SQL query>, LIST <values>, BOOL <threaded>
  * e.g. sqlite_execute(0, 'INSERT INTO test VALUES (?, ?);', {5, #5})
  * TODO: Cache prepared statements? */
-    static package
+static package
 bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
 {
     if (!is_wizard(progr))
@@ -259,10 +259,10 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-        char *human_string = nullptr;
-        asprintf(&human_string, "sqlite_execute: %s", arglist.v.list[2].v.str);
+    char *human_string = nullptr;
+    asprintf(&human_string, "sqlite_execute: %s", arglist.v.list[2].v.str);
 
-        return background_thread(sqlite_execute_thread_callback, &arglist, human_string);
+    return background_thread(sqlite_execute_thread_callback, &arglist, human_string);
 }
 
 /* The function responsible for the actual query call.
@@ -309,7 +309,7 @@ void sqlite_query_thread_callback(Var args, Var *r)
 
 /* Execute an SQL command.
  * Args: INT <database handle>, STR <query>, BOOL <threaded> */
-    static package
+static package
 bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
 {
     if (!is_wizard(progr))
@@ -318,15 +318,15 @@ bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-        char *human_string = nullptr;
-        asprintf(&human_string, "sqlite_query: %s", arglist.v.list[2].v.str);
+    char *human_string = nullptr;
+    asprintf(&human_string, "sqlite_query: %s", arglist.v.list[2].v.str);
 
-        return background_thread(sqlite_query_thread_callback, &arglist, human_string);
+    return background_thread(sqlite_query_thread_callback, &arglist, human_string);
 }
 
 /* Identifies the row ID of the last insert command.
  * (this was an early API test, I don't really see the usefulness) */
-    static package
+static package
 bf_sqlite_last_insert_row_id(Var arglist, Byte next, void *vdata, Objid progr)
 {
     if (!is_wizard(progr))
@@ -351,7 +351,7 @@ bf_sqlite_last_insert_row_id(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 /* Set run-time limits */
-    static package
+static package
 bf_sqlite_limit(Var arglist, Byte next, void *vdata, Objid progr)
 {
     static const struct {
@@ -362,14 +362,14 @@ bf_sqlite_limit(Var arglist, Byte next, void *vdata, Objid progr)
         {"LIMIT_SQL_LENGTH", 1},
         {"LIMIT_COLUMN", 2},
         {"LIMIT_EXPR_DEPTH", 3},
-		{"LIMIT_COMPOUND_SELECT", 4},
-		{"LIMIT_VDBE_OP", 5},
-		{"LIMIT_FUNCTION_ARG", 6},
-		{"LIMIT_ATTACHED", 7},
-		{"LIMIT_LIKE_PATTERN_LENGTH", 8},
-		{"LIMIT_VARIABLE_NUMBER", 9},
-		{"LIMIT_TRIGGER_DEPTH", 10},
-		{"LIMIT_WORKER_THREADS", 11}
+        {"LIMIT_COMPOUND_SELECT", 4},
+        {"LIMIT_VDBE_OP", 5},
+        {"LIMIT_FUNCTION_ARG", 6},
+        {"LIMIT_ATTACHED", 7},
+        {"LIMIT_LIKE_PATTERN_LENGTH", 8},
+        {"LIMIT_VARIABLE_NUMBER", 9},
+        {"LIMIT_TRIGGER_DEPTH", 10},
+        {"LIMIT_WORKER_THREADS", 11}
     };
 
     static const int max_categories = sizeof(categories) / sizeof(categories[0]);
@@ -416,7 +416,7 @@ bf_sqlite_limit(Var arglist, Byte next, void *vdata, Objid progr)
 
 /* Interrupt a long-running SQLite query.
  * Args: INT <database handle> */
-    static package
+static package
 bf_sqlite_interrupt(Var arglist, Byte next, void *vdata, Objid progr)
 {
     if (!is_wizard(progr))
@@ -627,7 +627,7 @@ void sqlite_shutdown()
 void
 register_sqlite() {
     oklog("REGISTER_SQLITE: Using SQLite Library v%s\n", sqlite3_libversion());
-      if (sqlite3_threadsafe() > 0) {
+    if (sqlite3_threadsafe() > 0) {
         int retCode = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
         if (retCode != SQLITE_OK) {
             errlog("SQLite couldn't be set to serialized.\n");

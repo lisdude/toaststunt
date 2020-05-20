@@ -47,12 +47,12 @@ void
 end_code_allocation(int aborted)
 {
     if (aborted) {
-	int i;
+        int i;
 
-	for (i = 0; i < next_pool_slot; i++) {
-	    if (pool[i].ptr != nullptr)
-		myfree(pool[i].ptr, pool[i].type);
-	}
+        for (i = 0; i < next_pool_slot; i++) {
+            if (pool[i].ptr != nullptr)
+                myfree(pool[i].ptr, pool[i].type);
+        }
     }
     myfree(pool, M_AST_POOL);
 }
@@ -60,17 +60,17 @@ end_code_allocation(int aborted)
 static void *
 allocate(int size, Memory_Type type)
 {
-    if (next_pool_slot >= pool_size) {	/* enlarge the pool */
-	struct entry *new_pool;
-	int i;
+    if (next_pool_slot >= pool_size) {  /* enlarge the pool */
+        struct entry *new_pool;
+        int i;
 
-	pool_size *= 2;
-	new_pool = (struct entry *)mymalloc(pool_size * sizeof(struct entry), M_AST_POOL);
-	for (i = 0; i < next_pool_slot; i++) {
-	    new_pool[i] = pool[i];
-	}
-	myfree(pool, M_AST_POOL);
-	pool = new_pool;
+        pool_size *= 2;
+        new_pool = (struct entry *)mymalloc(pool_size * sizeof(struct entry), M_AST_POOL);
+        for (i = 0; i < next_pool_slot; i++) {
+            new_pool[i] = pool[i];
+        }
+        myfree(pool, M_AST_POOL);
+        pool = new_pool;
     }
     pool[next_pool_slot].type = type;
     return pool[next_pool_slot++].ptr = mymalloc(size, type);
@@ -82,11 +82,11 @@ deallocate(void *ptr)
     int i;
 
     for (i = 0; i < next_pool_slot; i++) {
-	if (ptr == pool[i].ptr) {
-	    myfree(ptr, pool[i].type);
-	    pool[i].ptr = nullptr;
-	    return;
-	}
+        if (ptr == pool[i].ptr) {
+            myfree(ptr, pool[i].type);
+            pool[i].ptr = nullptr;
+            return;
+        }
     }
 
     errlog("DEALLOCATE: Unknown pointer deallocated\n");
@@ -230,10 +230,10 @@ free_map_list(Map_List * map)
     Map_List *m, *next_m;
 
     for (m = map; m; m = next_m) {
-	next_m = m->next;
-	free_expr(m->key);
-	free_expr(m->value);
-	myfree(m, M_AST);
+        next_m = m->next;
+        free_expr(m->key);
+        free_expr(m->value);
+        myfree(m, M_AST);
     }
 }
 
@@ -243,9 +243,9 @@ free_arg_list(Arg_List * args)
     Arg_List *arg, *next_arg;
 
     for (arg = args; arg; arg = next_arg) {
-	next_arg = arg->next;
-	free_expr(arg->expr);
-	myfree(arg, M_AST);
+        next_arg = arg->next;
+        free_expr(arg->expr);
+        myfree(arg, M_AST);
     }
 }
 
@@ -255,10 +255,10 @@ free_scatter(Scatter * sc)
     Scatter *next_sc;
 
     for (; sc; sc = next_sc) {
-	next_sc = sc->next;
-	if (sc->expr)
-	    free_expr(sc->expr);
-	myfree(sc, M_AST);
+        next_sc = sc->next;
+        if (sc->expr)
+            free_expr(sc->expr);
+        myfree(sc, M_AST);
     }
 }
 
@@ -267,93 +267,93 @@ free_expr(Expr * expr)
 {
     switch (expr->kind) {
 
-    case EXPR_VAR:
-	free_var(expr->e.var);
-	break;
+        case EXPR_VAR:
+            free_var(expr->e.var);
+            break;
 
-    case EXPR_ID:
-    case EXPR_FIRST:
-    case EXPR_LAST:
-	/* Do nothing. */
-	break;
+        case EXPR_ID:
+        case EXPR_FIRST:
+        case EXPR_LAST:
+            /* Do nothing. */
+            break;
 
-    case EXPR_PROP:
-    case EXPR_INDEX:
-    case EXPR_PLUS:
-    case EXPR_MINUS:
-    case EXPR_TIMES:
-    case EXPR_DIVIDE:
-    case EXPR_MOD:
-    case EXPR_AND:
-    case EXPR_OR:
-    case EXPR_EQ:
-    case EXPR_NE:
-    case EXPR_LT:
-    case EXPR_LE:
-    case EXPR_GT:
-    case EXPR_GE:
-    case EXPR_IN:
-    case EXPR_ASGN:
-    case EXPR_EXP:
-    case EXPR_BITOR:
-    case EXPR_BITAND:
-    case EXPR_BITXOR:
-    case EXPR_BITSHL:
-    case EXPR_BITSHR:
-	free_expr(expr->e.bin.lhs);
-	free_expr(expr->e.bin.rhs);
-	break;
+        case EXPR_PROP:
+        case EXPR_INDEX:
+        case EXPR_PLUS:
+        case EXPR_MINUS:
+        case EXPR_TIMES:
+        case EXPR_DIVIDE:
+        case EXPR_MOD:
+        case EXPR_AND:
+        case EXPR_OR:
+        case EXPR_EQ:
+        case EXPR_NE:
+        case EXPR_LT:
+        case EXPR_LE:
+        case EXPR_GT:
+        case EXPR_GE:
+        case EXPR_IN:
+        case EXPR_ASGN:
+        case EXPR_EXP:
+        case EXPR_BITOR:
+        case EXPR_BITAND:
+        case EXPR_BITXOR:
+        case EXPR_BITSHL:
+        case EXPR_BITSHR:
+            free_expr(expr->e.bin.lhs);
+            free_expr(expr->e.bin.rhs);
+            break;
 
-    case EXPR_COND:
-	free_expr(expr->e.cond.condition);
-	free_expr(expr->e.cond.consequent);
-	free_expr(expr->e.cond.alternate);
-	break;
+        case EXPR_COND:
+            free_expr(expr->e.cond.condition);
+            free_expr(expr->e.cond.consequent);
+            free_expr(expr->e.cond.alternate);
+            break;
 
-    case EXPR_VERB:
-	free_expr(expr->e.verb.obj);
-	free_expr(expr->e.verb.verb);
-	free_arg_list(expr->e.verb.args);
-	break;
+        case EXPR_VERB:
+            free_expr(expr->e.verb.obj);
+            free_expr(expr->e.verb.verb);
+            free_arg_list(expr->e.verb.args);
+            break;
 
-    case EXPR_RANGE:
-	free_expr(expr->e.range.base);
-	free_expr(expr->e.range.from);
-	free_expr(expr->e.range.to);
-	break;
+        case EXPR_RANGE:
+            free_expr(expr->e.range.base);
+            free_expr(expr->e.range.from);
+            free_expr(expr->e.range.to);
+            break;
 
-    case EXPR_CALL:
-	free_arg_list(expr->e.call.args);
-	break;
+        case EXPR_CALL:
+            free_arg_list(expr->e.call.args);
+            break;
 
-    case EXPR_NEGATE:
-    case EXPR_NOT:
-    case EXPR_COMPLEMENT:
-	free_expr(expr->e.expr);
-	break;
+        case EXPR_NEGATE:
+        case EXPR_NOT:
+        case EXPR_COMPLEMENT:
+            free_expr(expr->e.expr);
+            break;
 
-    case EXPR_MAP:
-        free_map_list(expr->e.map);
-        break;
+        case EXPR_MAP:
+            free_map_list(expr->e.map);
+            break;
 
-    case EXPR_LIST:
-	free_arg_list(expr->e.list);
-	break;
+        case EXPR_LIST:
+            free_arg_list(expr->e.list);
+            break;
 
-    case EXPR_CATCH:
-	free_expr(expr->e._catch._try);
-	free_arg_list(expr->e._catch.codes);
-	if (expr->e._catch.except)
-	    free_expr(expr->e._catch.except);
-	break;
+        case EXPR_CATCH:
+            free_expr(expr->e._catch._try);
+            free_arg_list(expr->e._catch.codes);
+            if (expr->e._catch.except)
+                free_expr(expr->e._catch.except);
+            break;
 
-    case EXPR_SCATTER:
-	free_scatter(expr->e.scatter);
-	break;
+        case EXPR_SCATTER:
+            free_scatter(expr->e.scatter);
+            break;
 
-    default:
-	errlog("FREE_EXPR: Unknown Expr_Kind: %d\n", expr->kind);
-	break;
+        default:
+            errlog("FREE_EXPR: Unknown Expr_Kind: %d\n", expr->kind);
+            break;
     }
 
     myfree(expr, M_AST);
@@ -367,72 +367,72 @@ free_stmt(Stmt * stmt)
     Except_Arm *except, *next_e;
 
     for (; stmt; stmt = next_stmt) {
-	next_stmt = stmt->next;
+        next_stmt = stmt->next;
 
-	switch (stmt->kind) {
+        switch (stmt->kind) {
 
-	case STMT_COND:
-	    for (arm = stmt->s.cond.arms; arm; arm = next_arm) {
-		next_arm = arm->next;
-		free_expr(arm->condition);
-		free_stmt(arm->stmt);
-		myfree(arm, M_AST);
-	    }
-	    if (stmt->s.cond.otherwise)
-		free_stmt(stmt->s.cond.otherwise);
-	    break;
+            case STMT_COND:
+                for (arm = stmt->s.cond.arms; arm; arm = next_arm) {
+                    next_arm = arm->next;
+                    free_expr(arm->condition);
+                    free_stmt(arm->stmt);
+                    myfree(arm, M_AST);
+                }
+                if (stmt->s.cond.otherwise)
+                    free_stmt(stmt->s.cond.otherwise);
+                break;
 
-	case STMT_LIST:
-	    free_expr(stmt->s.list.expr);
-	    free_stmt(stmt->s.list.body);
-	    break;
+            case STMT_LIST:
+                free_expr(stmt->s.list.expr);
+                free_stmt(stmt->s.list.body);
+                break;
 
-	case STMT_RANGE:
-	    free_expr(stmt->s.range.from);
-	    free_expr(stmt->s.range.to);
-	    free_stmt(stmt->s.range.body);
-	    break;
+            case STMT_RANGE:
+                free_expr(stmt->s.range.from);
+                free_expr(stmt->s.range.to);
+                free_stmt(stmt->s.range.body);
+                break;
 
-	case STMT_WHILE:
-	    free_expr(stmt->s.loop.condition);
-	    free_stmt(stmt->s.loop.body);
-	    break;
+            case STMT_WHILE:
+                free_expr(stmt->s.loop.condition);
+                free_stmt(stmt->s.loop.body);
+                break;
 
-	case STMT_FORK:
-	    free_expr(stmt->s.fork.time);
-	    free_stmt(stmt->s.fork.body);
-	    break;
+            case STMT_FORK:
+                free_expr(stmt->s.fork.time);
+                free_stmt(stmt->s.fork.body);
+                break;
 
-	case STMT_EXPR:
-	case STMT_RETURN:
-	    if (stmt->s.expr)
-		free_expr(stmt->s.expr);
-	    break;
+            case STMT_EXPR:
+            case STMT_RETURN:
+                if (stmt->s.expr)
+                    free_expr(stmt->s.expr);
+                break;
 
-	case STMT_TRY_EXCEPT:
-	    free_stmt(stmt->s._catch.body);
-	    for (except = stmt->s._catch.excepts; except; except = next_e) {
-		next_e = except->next;
-		free_arg_list(except->codes);
-		free_stmt(except->stmt);
-		myfree(except, M_AST);
-	    }
-	    break;
+            case STMT_TRY_EXCEPT:
+                free_stmt(stmt->s._catch.body);
+                for (except = stmt->s._catch.excepts; except; except = next_e) {
+                    next_e = except->next;
+                    free_arg_list(except->codes);
+                    free_stmt(except->stmt);
+                    myfree(except, M_AST);
+                }
+                break;
 
-	case STMT_TRY_FINALLY:
-	    free_stmt(stmt->s.finally.body);
-	    free_stmt(stmt->s.finally.handler);
-	    break;
+            case STMT_TRY_FINALLY:
+                free_stmt(stmt->s.finally.body);
+                free_stmt(stmt->s.finally.handler);
+                break;
 
-	case STMT_BREAK:
-	case STMT_CONTINUE:
-	    break;		/* Nothing extra to free */
+            case STMT_BREAK:
+            case STMT_CONTINUE:
+                break;      /* Nothing extra to free */
 
-	default:
-	    errlog("FREE_STMT: unknown Stmt_Kind: %d\n", stmt->kind);
-	    break;
-	}
+            default:
+                errlog("FREE_STMT: unknown Stmt_Kind: %d\n", stmt->kind);
+                break;
+        }
 
-	myfree(stmt, M_AST);
+        myfree(stmt, M_AST);
     }
 }

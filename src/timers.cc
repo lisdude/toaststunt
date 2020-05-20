@@ -47,12 +47,12 @@ static Timer_Entry *
 allocate_timer(void)
 {
     if (free_timers) {
-	Timer_Entry *_this = free_timers;
+        Timer_Entry *_this = free_timers;
 
-	free_timers = _this->next;
-	return _this;
+        free_timers = _this->next;
+        return _this;
     } else
-	return (Timer_Entry *) malloc(sizeof(Timer_Entry));
+        return (Timer_Entry *) malloc(sizeof(Timer_Entry));
 }
 
 static void
@@ -76,7 +76,7 @@ wakeup_call(int signo)
     free_timer(_this);
     restart_timers();
     if (proc)
-	(*proc) (id, data);
+        (*proc) (id, data);
 }
 
 
@@ -92,7 +92,7 @@ virtual_wakeup_call(int signo)
     virtual_timer = nullptr;
     free_timer(_this);
     if (proc)
-	(*proc) (id, data);
+        (*proc) (id, data);
 }
 #endif
 
@@ -105,18 +105,18 @@ stop_timers()
 
 #ifdef ITIMER_VIRTUAL
     {
-	struct itimerval itimer, oitimer;
+        struct itimerval itimer, oitimer;
 
-	itimer.it_value.tv_sec = 0;
-	itimer.it_value.tv_usec = 0;
-	itimer.it_interval.tv_sec = 0;
-	itimer.it_interval.tv_usec = 0;
+        itimer.it_value.tv_sec = 0;
+        itimer.it_value.tv_usec = 0;
+        itimer.it_interval.tv_sec = 0;
+        itimer.it_interval.tv_usec = 0;
 
-	setitimer(ITIMER_VIRTUAL, &itimer, &oitimer);
-	signal(SIGVTALRM, SIG_IGN);
-	signal(SIGVTALRM, virtual_wakeup_call);
-	if (virtual_timer)
-	    virtual_timer->when = oitimer.it_value.tv_sec;
+        setitimer(ITIMER_VIRTUAL, &itimer, &oitimer);
+        signal(SIGVTALRM, SIG_IGN);
+        signal(SIGVTALRM, virtual_wakeup_call);
+        if (virtual_timer)
+            virtual_timer->when = oitimer.it_value.tv_sec;
     }
 #endif
 }
@@ -125,31 +125,31 @@ static void
 restart_timers()
 {
     if (active_timers) {
-	time_t now = time(nullptr);
+        time_t now = time(nullptr);
 
-	signal(SIGALRM, wakeup_call);
+        signal(SIGALRM, wakeup_call);
 
-	if (now < active_timers->when)	/* first timer is in the future */
-	    alarm(active_timers->when - now);
-	else
-	    kill(getpid(), SIGALRM);	/* we're already late... */
+        if (now < active_timers->when)  /* first timer is in the future */
+            alarm(active_timers->when - now);
+        else
+            kill(getpid(), SIGALRM);    /* we're already late... */
     }
 #ifdef ITIMER_VIRTUAL
 
     if (virtual_timer) {
-	signal(SIGVTALRM, virtual_wakeup_call);
+        signal(SIGVTALRM, virtual_wakeup_call);
 
-	if (virtual_timer->when > 0) {
-	    struct itimerval itimer;
+        if (virtual_timer->when > 0) {
+            struct itimerval itimer;
 
-	    itimer.it_value.tv_sec = virtual_timer->when;
-	    itimer.it_value.tv_usec = 0;
-	    itimer.it_interval.tv_sec = 0;
-	    itimer.it_interval.tv_usec = 0;
+            itimer.it_value.tv_sec = virtual_timer->when;
+            itimer.it_value.tv_usec = 0;
+            itimer.it_interval.tv_sec = 0;
+            itimer.it_interval.tv_usec = 0;
 
-	    setitimer(ITIMER_VIRTUAL, &itimer, nullptr);
-	} else
-	    kill(getpid(), SIGVTALRM);
+            setitimer(ITIMER_VIRTUAL, &itimer, nullptr);
+        } else
+            kill(getpid(), SIGVTALRM);
     }
 #endif
 }
@@ -169,7 +169,7 @@ set_timer(unsigned seconds, Timer_Proc proc, Timer_Data data)
 
     t = &active_timers;
     while (*t && _this->when >= (*t)->when)
-	t = &((*t)->next);
+        t = &((*t)->next);
     _this->next = *t;
     *t = _this;
 
@@ -184,7 +184,7 @@ set_virtual_timer(unsigned seconds, Timer_Proc proc, Timer_Data data)
 #ifdef ITIMER_VIRTUAL
 
     if (virtual_timer)
-	return -1;
+        return -1;
 
     stop_timers();
 
@@ -198,7 +198,7 @@ set_virtual_timer(unsigned seconds, Timer_Proc proc, Timer_Data data)
 
     return virtual_timer->id;
 
-#else				/* !ITIMER_VIRTUAL */
+#else               /* !ITIMER_VIRTUAL */
 
     return set_timer(seconds, proc, data);
 
@@ -223,16 +223,16 @@ timer_wakeup_interval(Timer_ID id)
 #ifdef ITIMER_VIRTUAL
 
     if (virtual_timer && virtual_timer->id == id) {
-	struct itimerval itimer;
+        struct itimerval itimer;
 
-	getitimer(ITIMER_VIRTUAL, &itimer);
-	return itimer.it_value.tv_sec;
+        getitimer(ITIMER_VIRTUAL, &itimer);
+        return itimer.it_value.tv_sec;
     }
 #endif
 
     for (t = active_timers; t; t = t->next)
-	if (t->id == id)
-	    return t->when - time(nullptr);;
+        if (t->id == id)
+            return t->when - time(nullptr);;
 
     return 0;
 }
@@ -253,21 +253,21 @@ cancel_timer(Timer_ID id)
     stop_timers();
 
     if (virtual_timer && virtual_timer->id == id) {
-	free_timer(virtual_timer);
-	virtual_timer = nullptr;
-	found = 1;
+        free_timer(virtual_timer);
+        virtual_timer = nullptr;
+        found = 1;
     } else {
-	while (*t) {
-	    if ((*t)->id == id) {
-		Timer_Entry *tt = *t;
+        while (*t) {
+            if ((*t)->id == id) {
+                Timer_Entry *tt = *t;
 
-		*t = tt->next;
-		found = 1;
-		free_timer(tt);
-		break;
-	    }
-	    t = &((*t)->next);
-	}
+                *t = tt->next;
+                found = 1;
+                free_timer(tt);
+                break;
+            }
+            t = &((*t)->next);
+        }
     }
 
     restart_timers();
@@ -286,9 +286,9 @@ reenable_timers(void)
     sigprocmask(SIG_UNBLOCK, &sigs, 0);
 #else
 #if HAVE_SIGRELSE
-    sigrelse(SIGALRM);		/* restore previous signal action */
+    sigrelse(SIGALRM);      /* restore previous signal action */
 #else
-          #error I need some way to stop blocking SIGALRM!
+#error I need some way to stop blocking SIGALRM!
 #endif
 #endif
 }

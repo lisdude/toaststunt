@@ -39,7 +39,7 @@
  * input to the log file.
  */
 
-/* #define LOG_EVALS */
+#define LOG_EVALS
 
 /******************************************************************************
  * Define ENABLE_GC to enable automatic garbage collection of cyclic data
@@ -49,7 +49,7 @@
  * because it will lose track of cyclic data structures.
  */
 
-#define ENABLE_GC
+//#define ENABLE_GC
 
 #define GC_ROOTS_LIMIT 2000
 
@@ -377,7 +377,7 @@
  ******************************************************************************
  */
 
-#define EXEC_SUBDIR "executables/"
+#define EXEC_SUBDIR "/fup/executables/"
 #define EXEC_MAX_PROCESSES 256
 
 /******************************************************************************
@@ -388,7 +388,7 @@
  ******************************************************************************
  */
 
-#define FILE_SUBDIR "files/"
+#define FILE_SUBDIR "/fup/files/"
 #define FILE_IO_BUFFER_LENGTH 4096
 #define FILE_IO_MAX_FILES     256
 
@@ -452,7 +452,7 @@
  *       this option if you're sure you don't mind this.
  ******************************************************************************
 */
-/* #define UNSAFE_FIO */
+#define UNSAFE_FIO
 
 /******************************************************************************
  * When functions leave the interpreter, the server can store certain information
@@ -461,7 +461,7 @@
  * (The number defined is how many tasks will get saved.)
  ******************************************************************************
 */
-/* #define SAVE_FINISHED_TASKS 15 */
+#define SAVE_FINISHED_TASKS 15
 
 /******************************************************************************
  * For debugging tracebacks, it is possible to capture the variables for the environment prior to
@@ -488,7 +488,7 @@
  * for logins that doesn't directly involve calling Argon2 in do_login_command.
  ******************************************************************************
 */
-/* #define THREAD_ARGON2 */
+#define THREAD_ARGON2
 
 /******************************************************************************
  * This option controls whether or not the server will fix object ownership
@@ -513,7 +513,7 @@
  ******************************************************************************
  */
 
-#define TOTAL_BACKGROUND_THREADS    2
+#define TOTAL_BACKGROUND_THREADS    4
 #define DEFAULT_THREAD_MODE         true
 
 /******************************************************************************
@@ -527,7 +527,7 @@
  ******************************************************************************
  */
 
-#define NO_NAME_LOOKUP 0
+#define NO_NAME_LOOKUP 1
 
 /******************************************************************************
  * This constant controls the maximum recursive depth that parse_json will

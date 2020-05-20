@@ -70,8 +70,8 @@ const char *operating_system_name()
 {
     char *os_name;
 
-	struct utsname name;
-	if (uname(&name))
+    struct utsname name;
+    if (uname(&name))
         asprintf(&os_name, "unknown");
     else
         asprintf(&os_name, "%s", name.sysname);
@@ -95,48 +95,48 @@ static void init_version_structure()
     Var stack[DEPTH];
     Var *the_list = stack;
 
-#define BEGIN_LIST(n)				\
-    if (++the_list - stack >= DEPTH)		\
-	panic_moo("init_version_structure:  push");	\
+#define BEGIN_LIST(n)                               \
+    if (++the_list - stack >= DEPTH)                \
+        panic_moo("init_version_structure:  push"); \
     the_list[0] = new_list(n)
 
-#define END_LIST()				\
-    if (the_list-- == stack)			\
-	panic_moo("init_version_structure:  pop");	\
+#define END_LIST()                                    \
+    if (the_list-- == stack)                          \
+        panic_moo("init_version_structure:  pop");    \
     the_list[0] = listappend(the_list[0],the_list[1])
 
-#define BEGIN_GROUP(name)			\
-    BEGIN_LIST(1);				\
-    SET_STR(the_list[0].v.list[1],#name);	\
+#define BEGIN_GROUP(name)                        \
+    BEGIN_LIST(1);                               \
+    SET_STR(the_list[0].v.list[1],#name);        \
     BEGIN_LIST(0)
 
 #define END_GROUP()   END_LIST(); END_LIST()
 
     Var item;
 
-#define PUSH_VALUE(WHAT,value)			\
-    SET_##WHAT(item,value);			\
+#define PUSH_VALUE(WHAT,value)                    \
+    SET_##WHAT(item,value);                       \
     the_list[0] = listappend(the_list[0], item);
 
-#define PUSH_PAIR(name,WHAT,value)		\
-    item = new_list(2);				\
-    SET_STR(item.v.list[1],name);		\
-    SET_##WHAT(item.v.list[2],value);		\
+#define PUSH_PAIR(name,WHAT,value)                \
+    item = new_list(2);                           \
+    SET_STR(item.v.list[1],name);                 \
+    SET_##WHAT(item.v.list[2],value);             \
     the_list[0] = listappend(the_list[0], item);
 
     /* create non-string/int true and false values */
     Var falsev;
     Var truev = new_list(1);
-    SET_INT(truev.v.list[1],0);
-    SET_OBJ(falsev,-1);
+    SET_INT(truev.v.list[1], 0);
+    SET_OBJ(falsev, -1);
 
     the_list[0] = new_list(0);
-    PUSH_PAIR("major",INT,VERSION_MAJOR);
-    PUSH_PAIR("minor",INT,VERSION_MINOR);
-    PUSH_PAIR("release",INT,VERSION_RELEASE);
-    PUSH_PAIR("ext",STR,VERSION_EXT);
-    PUSH_PAIR("string",STR,server_version);
-    PUSH_PAIR("os",STR,operating_system_name());
+    PUSH_PAIR("major", INT, VERSION_MAJOR);
+    PUSH_PAIR("minor", INT, VERSION_MINOR);
+    PUSH_PAIR("release", INT, VERSION_RELEASE);
+    PUSH_PAIR("ext", STR, VERSION_EXT);
+    PUSH_PAIR("string", STR, server_version);
+    PUSH_PAIR("os", STR, operating_system_name());
 
     BEGIN_GROUP(features);
 #define _FDEF(name) PUSH_VALUE(STR,#name)
@@ -169,7 +169,7 @@ static void init_version_structure()
     END_GROUP();
 
     if (stack != the_list)
-	panic_moo("init_version_structure: unpopped stuff");
+        panic_moo("init_version_structure: unpopped stuff");
 
     free_var(truev);
     free_var(falsev);
@@ -183,60 +183,60 @@ server_version_full(Var arg)
     const char *s;
     Var *tree;
     if (!version_structure) {
-	init_version_structure();
+        init_version_structure();
     }
     if (arg.type != TYPE_STR || arg.v.str[0] == '\0' ) {
-	r.type   = TYPE_LIST;
-	r.v.list = version_structure;
-	return var_ref(r);
+        r.type   = TYPE_LIST;
+        r.v.list = version_structure;
+        return var_ref(r);
     }
     s = arg.v.str;
     tree = version_structure;
     for (;;) {
-	/* invariants:
-	 *   s is a nonempty string;
-	 *   tree has at least one string or {string,_} pair
-	 */
-	int i = tree[0].v.num;
-	const char *e = s;
-	while (*e != '/' && *++e != '\0');
-	do {
-	    --i; ++tree;
-	    switch (tree[0].type) {
-	    default:
-		break;
-	    case TYPE_STR:
-		if (memo_strlen(tree[0].v.str) == e - s &&
-		    strncmp(tree[0].v.str, s, e - s) == 0)
-		    goto found;
-		break;
-	    case TYPE_LIST:
-		if (tree[0].v.list[0].v.num == 2 &&
-		    tree[0].v.list[1].type == TYPE_STR &&
-		    memo_strlen(tree[0].v.list[1].v.str) == e - s &&
-		    strncmp(tree[0].v.list[1].v.str, s, e - s) == 0) {
+        /* invariants:
+         *   s is a nonempty string;
+         *   tree has at least one string or {string,_} pair
+         */
+        int i = tree[0].v.num;
+        const char *e = s;
+        while (*e != '/' && *++e != '\0');
+        do {
+            --i; ++tree;
+            switch (tree[0].type) {
+                default:
+                    break;
+                case TYPE_STR:
+                    if (memo_strlen(tree[0].v.str) == e - s &&
+                            strncmp(tree[0].v.str, s, e - s) == 0)
+                        goto found;
+                    break;
+                case TYPE_LIST:
+                    if (tree[0].v.list[0].v.num == 2 &&
+                            tree[0].v.list[1].type == TYPE_STR &&
+                            memo_strlen(tree[0].v.list[1].v.str) == e - s &&
+                            strncmp(tree[0].v.list[1].v.str, s, e - s) == 0) {
 
-		    if (tree[0].v.list[0].v.num > 1)
-			tree = tree[0].v.list + 2;
-		    else
-			tree = tree[0].v.list + 1;
-		    goto found;
-		}
-		break;
-	    }
-	} while (i > 0);
-	break;
-      found:
-	s = (*e != '\0' ? e+1 : e); /* skip trailing slash */
-	if (*s == '\0')
-	    return var_ref(tree[0]);
-	if (tree[0].type != TYPE_LIST)
-	    break;
-	tree = tree[0].v.list;
-	if (tree[0].v.num <= 0 ||
-	    (tree[1].type != TYPE_STR &&
-	     tree[1].type != TYPE_LIST))
-	    break;
+                        if (tree[0].v.list[0].v.num > 1)
+                            tree = tree[0].v.list + 2;
+                        else
+                            tree = tree[0].v.list + 1;
+                        goto found;
+                    }
+                    break;
+            }
+        } while (i > 0);
+        break;
+found:
+        s = (*e != '\0' ? e + 1 : e); /* skip trailing slash */
+        if (*s == '\0')
+            return var_ref(tree[0]);
+        if (tree[0].type != TYPE_LIST)
+            break;
+        tree = tree[0].v.list;
+        if (tree[0].v.num <= 0 ||
+                (tree[1].type != TYPE_STR &&
+                 tree[1].type != TYPE_LIST))
+            break;
     }
     r.type  = TYPE_ERR;
     r.v.err = E_INVARG;

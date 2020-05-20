@@ -35,13 +35,13 @@ new_rt_env(unsigned size)
     unsigned i;
 
     if (size <= NUM_READY_VARS && ready_size_rt_envs) {
-	ret = ready_size_rt_envs;
-	ready_size_rt_envs = ret[0].v.list;
+        ret = ready_size_rt_envs;
+        ready_size_rt_envs = ret[0].v.list;
     } else
-	ret = (Var *)mymalloc(MAX(size, NUM_READY_VARS) * sizeof(Var), M_RT_ENV);
+        ret = (Var *)mymalloc(MAX(size, NUM_READY_VARS) * sizeof(Var), M_RT_ENV);
 
     for (i = 0; i < size; i++)
-	ret[i].type = TYPE_NONE;
+        ret[i].type = TYPE_NONE;
 
     return ret;
 }
@@ -52,13 +52,13 @@ free_rt_env(Var * rt_env, unsigned size)
     unsigned i;
 
     for (i = 0; i < size; i++)
-	free_var(rt_env[i]);
+        free_var(rt_env[i]);
 
     if (size <= NUM_READY_VARS) {
-	rt_env[0].v.list = ready_size_rt_envs;
-	ready_size_rt_envs = rt_env;
+        rt_env[0].v.list = ready_size_rt_envs;
+        ready_size_rt_envs = rt_env;
     } else
-	myfree((void *) rt_env, M_RT_ENV);
+        myfree((void *) rt_env, M_RT_ENV);
 }
 
 Var *
@@ -68,7 +68,7 @@ copy_rt_env(Var * from, unsigned size)
 
     Var *ret = new_rt_env(size);
     for (i = 0; i < size; i++)
-	ret[i] = var_ref(from[i]);
+        ret[i] = var_ref(from[i]);
     return ret;
 }
 
@@ -90,32 +90,32 @@ fill_in_rt_consts(Var * env, DB_Version version)
     env[SLOT_LIST] = var_ref(v);
 
     if (version >= DBV_Float) {
-	v.v.num = (int) TYPE_INT;
-	env[SLOT_INT] = var_ref(v);
-	v.v.num = (int) _TYPE_FLOAT;
-	env[SLOT_FLOAT] = var_ref(v);
+        v.v.num = (int) TYPE_INT;
+        env[SLOT_INT] = var_ref(v);
+        v.v.num = (int) _TYPE_FLOAT;
+        env[SLOT_FLOAT] = var_ref(v);
     }
     if (version >= DBV_Map) {
-	v.v.num = (int) _TYPE_MAP;
-	env[SLOT_MAP] = var_ref(v);
+        v.v.num = (int) _TYPE_MAP;
+        env[SLOT_MAP] = var_ref(v);
     }
     if (version >= DBV_Anon) {
-	v.v.num = (int) _TYPE_ANON;
-	env[SLOT_ANON] = var_ref(v);
+        v.v.num = (int) _TYPE_ANON;
+        env[SLOT_ANON] = var_ref(v);
     }
     if (version >= DBV_Waif) {
-	v.v.num = (int) _TYPE_WAIF;
-	env[SLOT_WAIF] = var_ref(v);
+        v.v.num = (int) _TYPE_WAIF;
+        env[SLOT_WAIF] = var_ref(v);
     }
     if (version >= DBV_Bool) {
-	v.type = TYPE_INT;
-	v.v.num = (int) TYPE_BOOL;
-	env[SLOT_BOOL] = var_ref(v);
-	v.type = TYPE_BOOL;
-	v.v.truth = true;
-	env[SLOT_TRUE] = var_ref(v);
-	v.v.truth = false;
-	env[SLOT_FALSE] = var_ref(v);
+        v.type = TYPE_INT;
+        v.v.num = (int) TYPE_BOOL;
+        env[SLOT_BOOL] = var_ref(v);
+        v.type = TYPE_BOOL;
+        v.v.truth = true;
+        env[SLOT_TRUE] = var_ref(v);
+        v.v.truth = false;
+        env[SLOT_FALSE] = var_ref(v);
     }
 }
 

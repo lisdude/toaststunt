@@ -19,18 +19,18 @@
 
 /* Multi-user networking protocol implementation for TCP/IP on BSD UNIX */
 
-#include <arpa/inet.h>		/* inet_addr() */
-#include <errno.h>		/* EMFILE, EADDRNOTAVAIL, ECONNREFUSED,
-				   * ENETUNREACH, ETIMEOUT */
-#include <netinet/in.h>		/* struct sockaddr_in, INADDR_ANY, htons(),
-				   * htonl(), ntohl(), struct in_addr */
-#include <sys/socket.h>		/* socket(), AF_INET, SOCK_STREAM,
-				   * setsockopt(), SOL_SOCKET, SO_REUSEADDR,
-				   * bind(), struct sockaddr, accept(),
-				   * connect() */
-#include <stdlib.h>		/* strtoul() */
-#include <string.h>		/* memcpy() */
-#include <unistd.h>		/* close() */
+#include <arpa/inet.h>      /* inet_addr() */
+#include <errno.h>          /* EMFILE, EADDRNOTAVAIL, ECONNREFUSED,
+                             * ENETUNREACH, ETIMEOUT */
+#include <netinet/in.h>     /* struct sockaddr_in, INADDR_ANY, htons(),
+                             * htonl(), ntohl(), struct in_addr */
+#include <sys/socket.h>     /* socket(), AF_INET, SOCK_STREAM,
+                             * setsockopt(), SOL_SOCKET, SO_REUSEADDR,
+                             * bind(), struct sockaddr, accept(),
+                             * connect() */
+#include <stdlib.h>         /* strtoul() */
+#include <string.h>         /* memcpy() */
+#include <unistd.h>         /* close() */
 
 #include "config.h"
 #include "list.h"
@@ -64,7 +64,7 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
     proto->eol_out_string = "\r\n";
 
     if (!tcp_arguments(argc, argv, &port))
-	return 0;
+        return 0;
 
     memset(&tcp_hint, 0, sizeof tcp_hint);
     tcp_hint.ai_family = AF_UNSPEC;
@@ -81,11 +81,11 @@ proto_make_listener(Var desc, int *fd, const char **name, const char **ip_addres
 {
     int s, yes = 1;
     struct addrinfo hints;
-    struct addrinfo *servinfo, *p;
+    struct addrinfo * servinfo, *p;
 
     if (desc.type != TYPE_INT)
         return E_TYPE;
-    
+
     memset(&hints, 0, sizeof hints);
     hints.ai_family = (use_ipv6 ? AF_INET6 : AF_INET);
     hints.ai_socktype = SOCK_STREAM;
@@ -112,7 +112,7 @@ proto_make_listener(Var desc, int *fd, const char **name, const char **ip_addres
             freeaddrinfo(servinfo);
             return E_QUOTA;
         }
-        
+
         if (use_ipv6 && setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof yes) < 0) {
             perror("Disabling listening socket dual-stack mode for IPv6");
             close(s);
@@ -162,8 +162,8 @@ proto_listen(int fd)
 
 enum proto_accept_error
 proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
-			const char **name, const char **ip_addr, uint16_t *port,
-            sa_family_t *protocol)
+                        const char **name, const char **ip_addr, uint16_t *port,
+                        sa_family_t *protocol)
 {
     int option = 1;
     int fd;
@@ -257,14 +257,14 @@ const char *get_ntop(const struct sockaddr_storage *sa)
             return str_dup(ip6);
         default:
             return str_dup(">>unknown address<<");
-        }
+    }
 }
 
 const char *get_nameinfo(const struct sockaddr *sa)
 {
     char hostname[NI_MAXHOST] = "";
     socklen_t sa_length = (sa->sa_family == AF_INET6 ? sizeof(sockaddr_in6) : sizeof(sockaddr_in));
-    
+
     int status = getnameinfo(sa, sa_length, hostname, sizeof hostname, nullptr, 0, 0);
 
     if (status != 0) {
@@ -281,7 +281,7 @@ const char *get_nameinfo(const struct sockaddr *sa)
 const char *get_nameinfo_port(const struct sockaddr *sa)
 {
     char service[NI_MAXSERV];
-    int status = getnameinfo(sa, sizeof *sa, nullptr, 0, service, sizeof service, NI_NUMERICSERV);
+    int status = getnameinfo(sa, sizeof * sa, nullptr, 0, service, sizeof service, NI_NUMERICSERV);
 
     if (status != 0) {
         errlog("getnameinfo_port failed: %s\n", gai_strerror(status));
@@ -294,12 +294,12 @@ const char *get_nameinfo_port(const struct sockaddr *sa)
 const char *get_ipver(const struct sockaddr_storage *sa)
 {
     switch (sa->ss_family) {
-    case AF_INET:
-        return "IPv4";
-    case AF_INET6:
-        return "IPv6";
-    default:
-        return ">>unknown protocol<<";
+        case AF_INET:
+            return "IPv4";
+        case AF_INET6:
+            return "IPv6";
+        default:
+            return ">>unknown protocol<<";
     }
 }
 
@@ -322,7 +322,7 @@ public:
     ~timeout_exception() throw() override {}
 
     const char* what() const throw() override {
-	return "timeout";
+        return "timeout";
     }
 };
 
@@ -340,7 +340,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 {
     static Timer_ID id;
     int s, result;
-    struct addrinfo *servinfo, *p, hint;
+    struct addrinfo * servinfo, *p, hint;
     int yes = 1;
 
     if (!outbound_network_enabled)
@@ -349,7 +349,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     if (arglist.v.list[0].v.num != 2)
         return E_ARGS;
     else if (arglist.v.list[1].type != TYPE_STR ||
-            arglist.v.list[2].type != TYPE_INT)
+             arglist.v.list[2].type != TYPE_INT)
         return E_TYPE;
 
     const char *host_name = arglist.v.list[1].v.str;
@@ -398,7 +398,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 
     try {
         id = set_timer(server_int_option("outbound_connect_timeout", 5),
-                timeout_proc, nullptr);
+                       timeout_proc, nullptr);
         result = connect(s, p->ai_addr, p->ai_addrlen);
         cancel_timer(id);
     }
@@ -415,9 +415,9 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
                 errno == ECONNREFUSED ||
                 errno == ENETUNREACH ||
                 errno == ETIMEDOUT) {
-                    log_perror("open_network_connection error");
+            log_perror("open_network_connection error");
             return E_INVARG;
-                }
+        }
         log_perror("Connecting in proto_open_connection");
         return E_QUOTA;
     }
@@ -429,7 +429,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
         *name = get_nameinfo((struct sockaddr *)p->ai_addr);
     else
         *name = str_dup(*ip_addr);
-    
+
     *port = get_in_port((struct sockaddr_storage *)p->ai_addr);
     *protocol = servinfo->ai_family;
 
@@ -437,4 +437,4 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 
     return E_NONE;
 }
-#endif				/* OUTBOUND_NETWORK */
+#endif              /* OUTBOUND_NETWORK */

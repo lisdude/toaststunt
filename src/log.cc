@@ -77,12 +77,12 @@ do_log(const int severity, const char *fmt, va_list args)
     log_pcount = 5000;
 
     if (log_file) {
-	nowstr = ctime(&log_prev);
-	nowstr[19] = '\0';	/* kill the year and newline at the end */
-	nowstr = nowstr + 4;	/* skip the day of week */
-	f = log_file;
+        nowstr = ctime(&log_prev);
+        nowstr[19] = '\0';      /* kill the year and newline at the end */
+        nowstr = nowstr + 4;    /* skip the day of week */
+        f = log_file;
     } else {
-	f = stderr;
+        f = stderr;
     }
 
 #ifdef COLOR_LOGS
@@ -92,50 +92,50 @@ do_log(const int severity, const char *fmt, va_list args)
 #endif
 
     if (nowstr) {
-	fprintf(f, "%s: ", nowstr);
+        fprintf(f, "%s: ", nowstr);
     }
 
     if (color) {
-	if (LOG_NONE == severity)
-	    ;
-	else if (LOG_INFO1 == severity)
-	    fprintf(f, "\x1b[1m");	// bright
-	else if (LOG_INFO2 == severity)
-	    fprintf(f, "\x1b[36;1m");	// bright cyan
-	else if (LOG_INFO3 == severity)
-	    fprintf(f, "\x1b[35;1m");	// bright magenta
-	else if (LOG_INFO4 == severity)
-	    fprintf(f, "\x1b[34;1m");	// bright blue
-	else if (LOG_NOTICE == severity)
-	    fprintf(f, "\x1b[32;1m");	// bright green
-	else if (LOG_WARNING == severity)
-	    fprintf(f, "\x1b[33;1m");	// bright yellow
-	else if (LOG_ERROR == severity)
-	    fprintf(f, "\x1b[31;1m");	// bright red
+        if (LOG_NONE == severity)
+            ;
+        else if (LOG_INFO1 == severity)
+            fprintf(f, "\x1b[1m");      // bright
+        else if (LOG_INFO2 == severity)
+            fprintf(f, "\x1b[36;1m");   // bright cyan
+        else if (LOG_INFO3 == severity)
+            fprintf(f, "\x1b[35;1m");   // bright magenta
+        else if (LOG_INFO4 == severity)
+            fprintf(f, "\x1b[34;1m");   // bright blue
+        else if (LOG_NOTICE == severity)
+            fprintf(f, "\x1b[32;1m");   // bright green
+        else if (LOG_WARNING == severity)
+            fprintf(f, "\x1b[33;1m");   // bright yellow
+        else if (LOG_ERROR == severity)
+            fprintf(f, "\x1b[31;1m");   // bright red
     } else {
-	if (LOG_NONE == severity)
-	    ;
-	else if (LOG_INFO1 >= severity && LOG_INFO4 <= severity)
-	    fprintf(f, "> ");
-	else if (LOG_NOTICE == severity)
-	    fprintf(f, "!!! ");
-	else if (LOG_WARNING == severity)
-	    fprintf(f, "### ");
-	else if (LOG_ERROR == severity)
-	    fprintf(f, "*** ");
+        if (LOG_NONE == severity)
+            ;
+        else if (LOG_INFO1 >= severity && LOG_INFO4 <= severity)
+            fprintf(f, "> ");
+        else if (LOG_NOTICE == severity)
+            fprintf(f, "!!! ");
+        else if (LOG_WARNING == severity)
+            fprintf(f, "### ");
+        else if (LOG_ERROR == severity)
+            fprintf(f, "*** ");
     }
 
     vfprintf(f, fmt, args);
 
     if (color) {
-	fprintf(f, "\x1b[0m");
+        fprintf(f, "\x1b[0m");
     }
 
     fflush(f);
 }
 
 void
-oklog(const char *fmt,...)
+oklog(const char *fmt, ...)
 {
     va_list args;
 
@@ -145,7 +145,7 @@ oklog(const char *fmt,...)
 }
 
 void
-errlog(const char *fmt,...)
+errlog(const char *fmt, ...)
 {
     va_list args;
 
@@ -155,7 +155,7 @@ errlog(const char *fmt,...)
 }
 
 void
-applog(int level, const char *fmt,...)
+applog(int level, const char *fmt, ...)
 {
     va_list args;
 
@@ -180,9 +180,9 @@ reset_command_history()
 {
 #ifdef LOG_COMMANDS
     if (command_history == 0)
-	command_history = new_stream(1024);
+        command_history = new_stream(1024);
     else
-	reset_stream(command_history);
+        reset_stream(command_history);
 #endif
 }
 
@@ -201,11 +201,11 @@ add_command_to_history(Objid player, const char *command)
     time_t now = time(0);
     char *nowstr = ctime(&now);
 
-    nowstr[19] = '\0';		/* kill the year and newline at the end */
+    nowstr[19] = '\0';      /* kill the year and newline at the end */
     stream_printf(command_history, "%s: #%" PRIdN ": %s\n",
-		  nowstr + 4,	/* skip day of week */
-		  player, command);
-#endif				/* LOG_COMMANDS */
+                  nowstr + 4,   /* skip day of week */
+                  player, command);
+#endif              /* LOG_COMMANDS */
 }
 
 /**** built in functions ****/
@@ -214,26 +214,26 @@ static package
 bf_server_log(Var arglist, Byte next, void *vdata, Objid progr)
 {
     if (!is_wizard(progr)) {
-	free_var(arglist);
-	return make_error_pack(E_PERM);
+        free_var(arglist);
+        return make_error_pack(E_PERM);
     } else {
-	const char *message = arglist.v.list[1].v.str;
-	int level = LOG_NONE;
+        const char *message = arglist.v.list[1].v.str;
+        int level = LOG_NONE;
 
-	if (arglist.v.list[0].v.num == 2) {
-	    if (TYPE_INT == arglist.v.list[2].type
-	          && LOG_NONE <= arglist.v.list[2].v.num
-	          && LOG_ERROR >= arglist.v.list[2].v.num) {
-		level = arglist.v.list[2].v.num;
-	    } else if (is_true(arglist.v.list[2])) {
-		level = LOG_ERROR;
-	    }
-	}
+        if (arglist.v.list[0].v.num == 2) {
+            if (TYPE_INT == arglist.v.list[2].type
+                    && LOG_NONE <= arglist.v.list[2].v.num
+                    && LOG_ERROR >= arglist.v.list[2].v.num) {
+                level = arglist.v.list[2].v.num;
+            } else if (is_true(arglist.v.list[2])) {
+                level = LOG_ERROR;
+            }
+        }
 
-	applog(level, "> %s\n", message);
+        applog(level, "> %s\n", message);
 
-	free_var(arglist);
-	return no_var_pack();
+        free_var(arglist);
+        return no_var_pack();
     }
 }
 

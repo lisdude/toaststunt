@@ -32,17 +32,17 @@ decr_quota(Objid player)
     Var v;
 
     if (!valid(player))
-	return 1;
+        return 1;
 
     h = db_find_property(Var::new_obj(player), quota_name, &v);
     if (!h.ptr)
-	return 1;
+        return 1;
 
     if (v.type != TYPE_INT)
-	return 1;
+        return 1;
 
     if (v.v.num <= 0)
-	return 0;
+        return 0;
 
     v.v.num--;
     db_set_property_value(h, v);
@@ -58,14 +58,14 @@ incr_quota(Objid player)
     Var v;
 
     if (!valid(player))
-	return;
+        return;
 
     h = db_find_property(Var::new_obj(player), quota_name, &v);
     if (!h.ptr)
-	return;
+        return;
 
     if (v.type != TYPE_INT)
-	return;
+        return;
 
     v.v.num++;
     db_set_property_value(h, v);

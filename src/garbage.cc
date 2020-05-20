@@ -65,24 +65,24 @@ static struct pending_recycle *pending_free = nullptr;
 static struct pending_recycle *pending_head = nullptr;
 static struct pending_recycle *pending_tail = nullptr;
 
-#define FOR_EACH_ROOT(v, head, last)			\
-    for (last = NULL, head = pending_head;		\
-         head && (v = head->v, 1);			\
-         last = head, head = head ? head->next : pending_head)
+#define FOR_EACH_ROOT(v, head, last)            \
+    for (last = NULL, head = pending_head;      \
+            head && (v = head->v, 1);           \
+            last = head, head = head ? head->next : pending_head)
 
-#define REMOVE_ROOT(head, last)				\
-    do {						\
-	if (pending_head == head)			\
-	    pending_head = head->next;			\
-	if (pending_tail == head && last)		\
-	    pending_tail = last;			\
-	else if (pending_tail == head)			\
-	    pending_tail = NULL;			\
-	if (last)					\
-	    last->next = head->next;			\
-	head->next = pending_free;			\
-	pending_free = head;				\
-	head = last;					\
+#define REMOVE_ROOT(head, last)             \
+    do {                                    \
+        if (pending_head == head)           \
+            pending_head = head->next;      \
+        if (pending_tail == head && last)   \
+            pending_tail = last;            \
+        else if (pending_tail == head)      \
+            pending_tail = NULL;            \
+        if (last)                           \
+            last->next = head->next;        \
+        head->next = pending_free;          \
+        pending_free = head;                \
+        head = last;                        \
     } while (0)
 
 /* I'm sure there's a better way to do this.  Values are a union of
@@ -99,7 +99,7 @@ gc_stats(int color[])
     struct pending_recycle *head, *last;
 
     FOR_EACH_ROOT (v, head, last)
-	color[gc_get_color(VOID_PTR(v))]++;
+    color[gc_get_color(VOID_PTR(v))]++;
 }
 
 static void
@@ -117,8 +117,8 @@ static void
 gc_add_root(Var v)
 {
     if (!pending_free) {
-	pending_free = (struct pending_recycle *)mymalloc(sizeof(struct pending_recycle), M_STRUCT);
-	pending_free->next = nullptr;
+        pending_free = (struct pending_recycle *)mymalloc(sizeof(struct pending_recycle), M_STRUCT);
+        pending_free->next = nullptr;
     }
 
     struct pending_recycle *next = pending_free;
@@ -128,12 +128,12 @@ gc_add_root(Var v)
     next->next = nullptr;
 
     if (pending_tail) {
-	pending_tail->next = next;
-	pending_tail = next;
+        pending_tail->next = next;
+        pending_tail = next;
     }
     else {
-	pending_head = next;
-	pending_tail = next;
+        pending_head = next;
+        pending_tail = next;
     }
 
     gc_roots_count++;
@@ -148,11 +148,11 @@ gc_possible_root(Var v)
     assert(v.is_collection());
 
     if ((color = gc_get_color(VOID_PTR(v))) != GC_PURPLE && color != GC_GREEN && color != GC_YELLOW) {
-	gc_set_color(VOID_PTR(v), GC_PURPLE);
-	if (!gc_is_buffered(VOID_PTR(v))) {
-	    gc_set_buffered(VOID_PTR(v));
-	    gc_add_root(v);
-	}
+        gc_set_color(VOID_PTR(v), GC_PURPLE);
+        if (!gc_is_buffered(VOID_PTR(v))) {
+            gc_set_buffered(VOID_PTR(v));
+            gc_add_root(v);
+        }
     }
 }
 
@@ -170,7 +170,7 @@ do_obj(void *data, Var v)
 {
     gc_func *fp = (gc_func *)data;
     if (v.is_collection() && is_not_green(v))
-	(*fp)(v);
+        (*fp)(v);
     return 0;
 }
 
@@ -179,7 +179,7 @@ do_list(Var v, void *data, int first)
 {
     gc_func *fp = (gc_func *)data;
     if (v.is_collection() && is_not_green(v))
-	(*fp)(v);
+        (*fp)(v);
     return 0;
 }
 
@@ -188,7 +188,7 @@ do_map(Var k, Var v, void *data, int first)
 {
     gc_func *fp = (gc_func *)data;
     if (v.is_collection() && is_not_green(v))
-	(*fp)(v);
+        (*fp)(v);
     return 0;
 }
 
@@ -196,11 +196,11 @@ static void
 for_all_children(Var v, gc_func *fp)
 {
     if (v.is_object())
-	db_for_all_propvals(v, do_obj, (void *)fp);
+        db_for_all_propvals(v, do_obj, (void *)fp);
     else if (TYPE_LIST == v.type)
-	listforeach(v, do_list, (void *)fp);
+        listforeach(v, do_list, (void *)fp);
     else if (TYPE_MAP == v.type)
-	mapforeach(v, do_map, (void *)fp);
+        mapforeach(v, do_map, (void *)fp);
 }
 
 /* corresponds to `MarkGray' in Bacon and Rajan */
@@ -218,8 +218,8 @@ static void
 mark_gray(Var v)
 {
     if (gc_get_color(VOID_PTR(v)) != GC_GRAY) {
-	gc_set_color(VOID_PTR(v), GC_GRAY);
-	for_all_children(v, &cb_mark_gray);
+        gc_set_color(VOID_PTR(v), GC_GRAY);
+        for_all_children(v, &cb_mark_gray);
     }
 }
 
@@ -235,14 +235,14 @@ mark_roots(void)
     struct pending_recycle *head, *last;
 
     FOR_EACH_ROOT (v, head, last) {
-	if (gc_get_color(VOID_PTR(v)) == GC_PURPLE)
-	    mark_gray(v);
-	else {
-	    REMOVE_ROOT(head, last);
-	    gc_clear_buffered(VOID_PTR(v));
-	    if (gc_get_color(VOID_PTR(v)) == GC_BLACK && refcount(VOID_PTR(v)) == 0)
-		aux_free(v);
-	}
+        if (gc_get_color(VOID_PTR(v)) == GC_PURPLE)
+            mark_gray(v);
+        else {
+            REMOVE_ROOT(head, last);
+            gc_clear_buffered(VOID_PTR(v));
+            if (gc_get_color(VOID_PTR(v)) == GC_BLACK && refcount(VOID_PTR(v)) == 0)
+                aux_free(v);
+        }
     }
 }
 
@@ -255,7 +255,7 @@ cb_scan_black(Var v)
 {
     addref(VOID_PTR(v));
     if (gc_get_color(VOID_PTR(v)) != GC_BLACK)
-	scan_black(v);
+        scan_black(v);
 }
 
 static void
@@ -279,12 +279,12 @@ static void
 scan(Var v)
 {
     if (gc_get_color(VOID_PTR(v)) == GC_GRAY) {
-	if (refcount(VOID_PTR(v)) > 0)
-	    scan_black(v);
-	else {
-	    gc_set_color(VOID_PTR(v), GC_WHITE);
-	    for_all_children(v, &cb_scan);
-	}
+        if (refcount(VOID_PTR(v)) > 0)
+            scan_black(v);
+        else {
+            gc_set_color(VOID_PTR(v), GC_WHITE);
+            for_all_children(v, &cb_scan);
+        }
     }
 }
 
@@ -300,7 +300,7 @@ scan_roots()
     struct pending_recycle *head, *last;
 
     FOR_EACH_ROOT (v, head, last)
-	scan(v);
+    scan(v);
 }
 
 /* no correspondence in Bacon and Rajan */
@@ -312,7 +312,7 @@ cb_scan_white(Var v)
 {
     addref(VOID_PTR(v));
     if (gc_get_color(VOID_PTR(v)) != GC_PINK)
-	scan_white(v);
+        scan_white(v);
 }
 
 static void
@@ -334,8 +334,8 @@ restore_white()
     struct pending_recycle *head, *last;
 
     FOR_EACH_ROOT (v, head, last) {
-	if (gc_get_color(VOID_PTR(v)) == GC_WHITE)
-	    scan_white(v);
+        if (gc_get_color(VOID_PTR(v)) == GC_WHITE)
+            scan_white(v);
     }
 }
 
@@ -353,12 +353,12 @@ static void
 collect_white(Var v)
 {
     if (gc_get_color(VOID_PTR(v)) == GC_PINK && !gc_is_buffered(VOID_PTR(v))) {
-	gc_set_color(VOID_PTR(v), GC_BLACK);
-	for_all_children(v, &cb_collect_white);
-	if (TYPE_ANON == v.type) {
-	    assert(refcount(v.v.anon) != 0);
-	    queue_anonymous_object(v);
-	}
+        gc_set_color(VOID_PTR(v), GC_BLACK);
+        for_all_children(v, &cb_collect_white);
+        if (TYPE_ANON == v.type) {
+            assert(refcount(v.v.anon) != 0);
+            queue_anonymous_object(v);
+        }
     }
 }
 
@@ -374,9 +374,9 @@ collect_roots()
     struct pending_recycle *head, *last;
 
     FOR_EACH_ROOT (v, head, last) {
-	REMOVE_ROOT(head, last);
-	gc_clear_buffered(VOID_PTR(v));
-	collect_white(v);
+        REMOVE_ROOT(head, last);
+        gc_clear_buffered(VOID_PTR(v));
+        collect_white(v);
     }
 }
 
@@ -384,7 +384,7 @@ void
 gc_collect()
 {
     if (!pending_head)
-	return;
+        return;
 
 #ifdef LOG_GC_STATS
     oklog("GC: starting with %d root reference(s)\n", gc_roots_count);
@@ -428,11 +428,11 @@ bf_gc_stats(Var arglist, Byte next, void *vdata, Objid progr)
 
     Var k, v, r = new_map();
 
-#define PACK_COLOR(c, i)	\
-    k.type = TYPE_STR;		\
-    k.v.str = str_dup(#c);	\
-    v.type = TYPE_INT;		\
-    v.v.num = color[i];		\
+#define PACK_COLOR(c, i)    \
+    k.type = TYPE_STR;      \
+    k.v.str = str_dup(#c);  \
+    v.type = TYPE_INT;      \
+    v.v.num = color[i];     \
     r = mapinsert(r, k, v)
 
     PACK_COLOR(green, 0);

@@ -1,0 +1,11 @@
+--indent=spaces=4
+--indent-preprocessor
+--pad-oper
+--pad-comma
+--pad-header
+# --align-pointer=name
+# --align-reference=name
+--keep-one-line-statements
+--convert-tabs
+--indent-switches
+--suffix=none

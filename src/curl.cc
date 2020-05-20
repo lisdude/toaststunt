@@ -15,7 +15,7 @@ typedef struct CurlMemoryStruct {
     size_t size;
 } CurlMemoryStruct;
 
-    static size_t
+static size_t
 CurlWriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
     size_t realsize = size * nmemb;
@@ -28,7 +28,7 @@ CurlWriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
         return 0;
     }
 
-    mem->result= ptr;
+    mem->result = ptr;
     memcpy(&(mem->result[mem->size]), contents, realsize);
     mem->size += realsize;
     mem->result[mem->size] = 0;
@@ -69,7 +69,7 @@ void curl_thread_callback(Var arglist, Var *ret)
     free(chunk.result);
 }
 
-    static package
+static package
 bf_curl(Var arglist, Byte next, void *vdata, Objid progr)
 {
     if (!is_wizard(progr))
@@ -86,7 +86,7 @@ void curl_shutdown(void)
     curl_global_cleanup();
 }
 
-    void
+void
 register_curl(void)
 {
     oklog("REGISTER_CURL: Using libcurl version %s\n", curl_version());

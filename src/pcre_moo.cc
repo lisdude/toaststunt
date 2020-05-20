@@ -18,9 +18,11 @@
 
 struct StrCompare : public std::binary_function<const char*, const char*, bool>
 {
-    public:
-        bool operator() (const char* str1, const char* str2) const
-        { return strcmp(str1, str2) < 0; }
+public:
+    bool operator() (const char* str1, const char* str2) const
+    {
+        return strcmp(str1, str2) < 0;
+    }
 };
 
 static std::map<const char*, pcre_cache_entry*, StrCompare> pcre_pattern_cache;
@@ -73,7 +75,7 @@ get_pcre(const char *string, unsigned char options)
             entry->extra = pcre_study(entry->re, 0, &error);
             if (error != nullptr)
                 entry->error = str_dup(error);
-            else 
+            else
                 (void)pcre_fullinfo(entry->re, nullptr, PCRE_INFO_CAPTURECOUNT, &(entry->captures));
         }
 
@@ -84,7 +86,7 @@ get_pcre(const char *string, unsigned char options)
     return entry;
 }
 
-    static package
+static package
 bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
 {
     /* Some useful constants. */
@@ -198,12 +200,12 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
                     /* Create a list of indices for the substring */
                     Var pos = result_indices(ovector, n);
                     Var result = new_map();
-                    int substring_size = ovector[2*n+1] - ovector[2*n];
+                    int substring_size = ovector[2 * n + 1] - ovector[2 * n];
                     result = mapinsert(result, var_ref(position), pos);
 
                     /* Extract the substring itself with obnoxious printf magic */
                     char *substring = (char *)mymalloc(substring_size + 1, M_STRING);
-                    sprintf(substring, "%.*s", substring_size, subject + ovector[2*n]);
+                    sprintf(substring, "%.*s", substring_size, subject + ovector[2 * n]);
                     Var substring_var;
                     substring_var.type = TYPE_STR;
                     substring_var.v.str = substring;
@@ -262,7 +264,7 @@ void free_entry(pcre_cache_entry *entry)
     if (entry->error != nullptr)
         free_str(entry->error);
 
-    if(entry->extra != nullptr) {
+    if (entry->extra != nullptr) {
 #ifdef PCRE_CONFIG_JIT
         pcre_free_study(entry->extra);
 #else
@@ -287,12 +289,12 @@ Var result_indices(int ovector[], int n)
     pos.v.list[1].type = TYPE_INT;
     pos.v.list[2].type = TYPE_INT;
 
-    pos.v.list[2].v.num = ovector[2*n+1];
-    pos.v.list[1].v.num = ovector[2*n] + 1;
+    pos.v.list[2].v.num = ovector[2 * n + 1];
+    pos.v.list[1].v.num = ovector[2 * n] + 1;
     return pos;
 }
 
-    static package
+static package
 bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr)
 {
     const char *linebuf = arglist.v.list[1].v.str;
@@ -336,18 +338,18 @@ bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr)
     } else {
         free_var(arglist);
         char error_msg[255];
-        sprintf(error_msg, "Exec error:  %s (%d)",pcrs_strerror(err), err);
+        sprintf(error_msg, "Exec error:  %s (%d)", pcrs_strerror(err), err);
         return make_raise_pack(E_INVARG, error_msg, var_ref(zero));
     }
 }
 
-    static package
+static package
 bf_pcre_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
 {
     free_var(arglist);
 
     if (!is_wizard(progr))
-	    return make_error_pack(E_PERM);
+        return make_error_pack(E_PERM);
 
     Var ret = new_list(pcre_pattern_cache.size());
 
@@ -363,7 +365,7 @@ bf_pcre_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ret);
 }
 
-    void
+void
 pcre_shutdown(void)
 {
     for (const auto& x : pcre_pattern_cache) {

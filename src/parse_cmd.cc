@@ -39,40 +39,40 @@ parse_into_words(char *input, int *nwords)
     char *ptr = input;
 
     if (!words) {
-	max_words = 50;
-	words = (char **)mymalloc(max_words * sizeof(char *), M_STRING_PTRS);
+        max_words = 50;
+        words = (char **)mymalloc(max_words * sizeof(char *), M_STRING_PTRS);
     }
     while (*input == ' ')
-	input++;
+        input++;
 
     for (*nwords = 0; *input != '\0'; (*nwords)++) {
-	if (*nwords == max_words) {
-	    int new_max = max_words * 2;
-	    char **_new = (char **)mymalloc(new_max * sizeof(char *), M_STRING_PTRS);
-	    int i;
+        if (*nwords == max_words) {
+            int new_max = max_words * 2;
+            char **_new = (char **)mymalloc(new_max * sizeof(char *), M_STRING_PTRS);
+            int i;
 
-	    for (i = 0; i < max_words; i++)
-		_new[i] = words[i];
+            for (i = 0; i < max_words; i++)
+                _new[i] = words[i];
 
-	    myfree(words, M_STRING_PTRS);
-	    words = _new;
-	    max_words = new_max;
-	}
-	words[*nwords] = ptr;
-	while (*input != '\0' && (in_quotes || *input != ' ')) {
-	    char c = *(input++);
+            myfree(words, M_STRING_PTRS);
+            words = _new;
+            max_words = new_max;
+        }
+        words[*nwords] = ptr;
+        while (*input != '\0' && (in_quotes || *input != ' ')) {
+            char c = *(input++);
 
-	    if (c == '"')
-		in_quotes = !in_quotes;
-	    else if (c == '\\') {
-		if (*input != '\0')
-		    *(ptr++) = *(input++);
-	    } else
-		*(ptr++) = c;
-	}
-	while (*input == ' ')
-	    input++;
-	*(ptr++) = '\0';
+            if (c == '"')
+                in_quotes = !in_quotes;
+            else if (c == '\\') {
+                if (*input != '\0')
+                    *(ptr++) = *(input++);
+            } else
+                *(ptr++) = c;
+        }
+        while (*input == ' ')
+            input++;
+        *(ptr++) = '\0';
     }
 
     return words;
@@ -85,25 +85,25 @@ build_string(int argc, char *argv[])
     char *str;
 
     if (!argc)
-	return str_dup("");
+        return str_dup("");
 
     len = strlen(argv[0]);
     for (i = 1; i < argc; i++)
-	len += 1 + strlen(argv[i]);
+        len += 1 + strlen(argv[i]);
 
     str = (char *) mymalloc(len + 1, M_STRING);
 
     strcpy(str, argv[0]);
     for (i = 1; i < argc; i++) {
-	strcat(str, " ");
-	strcat(str, argv[i]);
+        strcat(str, " ");
+        strcat(str, argv[i]);
     }
 
     return str;
 }
 
-#define MAXWORDS		500	/* maximum number of words in a line */
-					/* This limit should be removed...   */
+#define MAXWORDS        500 /* maximum number of words in a line */
+/* This limit should be removed...   */
 
 Var
 parse_into_wordlist(const char *command)
@@ -116,8 +116,8 @@ parse_into_wordlist(const char *command)
     argv = parse_into_words(s, &argc);
     args = new_list(argc);
     for (i = 1; i <= argc; i++) {
-	args.v.list[i].type = TYPE_STR;
-	args.v.list[i].v.str = str_dup(argv[i - 1]);
+        args.v.list[i].type = TYPE_STR;
+        args.v.list[i].v.str = str_dup(argv[i - 1]);
     }
     free_str(s);
     return args;
@@ -136,77 +136,77 @@ parse_command(const char *command, Objid user)
     int i;
 
     while (*command == ' ')
-	command++;
+        command++;
     switch (*command) {
-    case '"':
-	verb = "say";
-	goto finish_specials;
-    case ':':
-	verb = "emote";
-	goto finish_specials;
-    case ';':
-	verb = "eval";
-	goto finish_specials;
+        case '"':
+            verb = "say";
+            goto finish_specials;
+        case ':':
+            verb = "emote";
+            goto finish_specials;
+        case ';':
+            verb = "eval";
+            goto finish_specials;
 
-      finish_specials:
-	argstr = command + 1;
-	buf = (char *) mymalloc(strlen(argstr) + strlen(verb) + 2,
-				M_STRING);
-	strcpy(buf, verb);
-	strcat(buf, " ");
-	strcat(buf, argstr);
-	break;
+finish_specials:
+            argstr = command + 1;
+            buf = (char *) mymalloc(strlen(argstr) + strlen(verb) + 2,
+                                    M_STRING);
+            strcpy(buf, verb);
+            strcat(buf, " ");
+            strcat(buf, argstr);
+            break;
 
-    default:
-	buf = str_dup(command);
-	{			/* Skip past even complexly-quoted verbs */
-	    int in_quotes = 0;
+        default:
+            buf = str_dup(command);
+            {   /* Skip past even complexly-quoted verbs */
+                int in_quotes = 0;
 
-	    argstr = command;
-	    while (*argstr && (in_quotes || *argstr != ' ')) {
-		char c = *(argstr++);
+                argstr = command;
+                while (*argstr && (in_quotes || *argstr != ' ')) {
+                    char c = *(argstr++);
 
-		if (c == '"')
-		    in_quotes = !in_quotes;
-		else if (c == '\\' && *argstr)
-		    argstr++;
-	    }
-	}
-	while (*argstr == ' ')
-	    argstr++;
-	break;
+                    if (c == '"')
+                        in_quotes = !in_quotes;
+                    else if (c == '\\' && *argstr)
+                        argstr++;
+                }
+            }
+            while (*argstr == ' ')
+                argstr++;
+            break;
     }
     argv = parse_into_words(buf, &argc);
 
     if (argc == 0) {
-	free_str(buf);
-	return nullptr;
+        free_str(buf);
+        return nullptr;
     }
     pc.verb = str_dup(argv[0]);
     pc.argstr = str_dup(argstr);
 
     pc.args = new_list(argc - 1);
     for (i = 1; i < argc; i++) {
-	pc.args.v.list[i].type = TYPE_STR;
-	pc.args.v.list[i].v.str = str_dup(argv[i]);
+        pc.args.v.list[i].type = TYPE_STR;
+        pc.args.v.list[i].v.str = str_dup(argv[i]);
     }
 
     /*
      * look for a preposition
      */
     if (argc > 1) {
-	pc.prep = db_find_prep(argc - 1, argv + 1, &pstart, &pend);
-	if (pc.prep == PREP_NONE) {
-	    pstart = argc;
-	    pend = argc;
-	} else {
-	    pstart++;
-	    pend++;
-	}
+        pc.prep = db_find_prep(argc - 1, argv + 1, &pstart, &pend);
+        if (pc.prep == PREP_NONE) {
+            pstart = argc;
+            pend = argc;
+        } else {
+            pstart++;
+            pend++;
+        }
     } else {
-	pc.prep = PREP_NONE;
-	pstart = argc;
-	pend = argc;
+        pc.prep = PREP_NONE;
+        pstart = argc;
+        pend = argc;
     }
 
     /*
@@ -214,22 +214,22 @@ parse_command(const char *command, Objid user)
      * find the iobj & dobj around it, if any
      */
     if (pc.prep != PREP_NONE) {
-	pc.prepstr = build_string(pend - pstart + 1, argv + pstart);
-	pc.iobjstr = build_string(argc - (pend + 1), argv + (pend + 1));
-	pc.iobj = match_object(user, pc.iobjstr);
+        pc.prepstr = build_string(pend - pstart + 1, argv + pstart);
+        pc.iobjstr = build_string(argc - (pend + 1), argv + (pend + 1));
+        pc.iobj = match_object(user, pc.iobjstr);
     } else {
-	pc.prepstr = str_dup("");
-	pc.iobjstr = str_dup("");
-	pc.iobj = NOTHING;
+        pc.prepstr = str_dup("");
+        pc.iobjstr = str_dup("");
+        pc.iobj = NOTHING;
     }
 
     dlen = pstart - 1;
     if (dlen == 0) {
-	pc.dobjstr = str_dup("");
-	pc.dobj = NOTHING;
+        pc.dobjstr = str_dup("");
+        pc.dobj = NOTHING;
     } else {
-	pc.dobjstr = build_string(dlen, argv + 1);
-	pc.dobj = match_object(user, pc.dobjstr);
+        pc.dobjstr = build_string(dlen, argv + 1);
+        pc.dobj = match_object(user, pc.dobjstr);
     }
 
     free_str(buf);

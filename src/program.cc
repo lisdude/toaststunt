@@ -44,12 +44,12 @@ null_program(void)
     Var code, errors;
 
     if (!p) {
-	code = new_list(0);
-	p = parse_list_as_program(code, &errors);
-	if (!p)
-	    panic_moo("Can't create the null program!");
-	free_var(code);
-	free_var(errors);
+        code = new_list(0);
+        p = parse_list_as_program(code, &errors);
+        if (!p)
+            panic_moo("Can't create the null program!");
+        free_var(code);
+        free_var(errors);
     }
     return p;
 }
@@ -71,15 +71,15 @@ program_bytes(Program * p)
     count += p->main_vector.size;
 
     for (i = 0; i < p->num_literals; i++)
-	count += value_bytes(p->literals[i]);
+        count += value_bytes(p->literals[i]);
 
     count += sizeof(Bytecodes) * p->fork_vectors_size;
     for (i = 0; i < p->fork_vectors_size; i++)
-	count += p->fork_vectors[i].size;
+        count += p->fork_vectors[i].size;
 
     count += sizeof(const char *) * p->num_var_names;
     for (i = 0; i < p->num_var_names; i++)
-	count += memo_strlen(p->var_names[i]) + 1;
+        count += memo_strlen(p->var_names[i]) + 1;
 
     return count;
 }
@@ -92,23 +92,23 @@ free_program(Program * p)
     p->ref_count--;
     if (p->ref_count == 0) {
 
-	for (i = 0; i < p->num_literals; i++)
-	    /* can't be a list--strings and floats need to be freed, though. */
-	    free_var(p->literals[i]);
-	if (p->literals)
-	    myfree(p->literals, M_LIT_LIST);
+        for (i = 0; i < p->num_literals; i++)
+            /* can't be a list--strings and floats need to be freed, though. */
+            free_var(p->literals[i]);
+        if (p->literals)
+            myfree(p->literals, M_LIT_LIST);
 
-	for (i = 0; i < p->fork_vectors_size; i++)
-	    myfree(p->fork_vectors[i].vector, M_BYTECODES);
-	if (p->fork_vectors_size)
-	    myfree(p->fork_vectors, M_FORK_VECTORS);
+        for (i = 0; i < p->fork_vectors_size; i++)
+            myfree(p->fork_vectors[i].vector, M_BYTECODES);
+        if (p->fork_vectors_size)
+            myfree(p->fork_vectors, M_FORK_VECTORS);
 
-	for (i = 0; i < p->num_var_names; i++)
-	    free_str(p->var_names[i]);
-	myfree(p->var_names, M_NAMES);
+        for (i = 0; i < p->num_var_names; i++)
+            free_str(p->var_names[i]);
+        myfree(p->var_names, M_NAMES);
 
-	myfree(p->main_vector.vector, M_BYTECODES);
+        myfree(p->main_vector.vector, M_BYTECODES);
 
-	myfree(p, M_PROGRAM);
+        myfree(p, M_PROGRAM);
     }
 }

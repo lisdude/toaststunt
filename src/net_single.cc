@@ -52,16 +52,16 @@ network_initialize(int argc, char **argv, Var * desc)
 {
     *desc = zero;
     if (argc != 0)
-	return 0;
+        return 0;
     else
-	return 1;
+        return 1;
 }
 
 enum error
 network_make_listener(server_listener sl, Var desc, network_listener * nl, const char **name)
 {
     if (listening)
-	return E_PERM;
+        return E_PERM;
 
     listening = 1;
     slistener = sl;
@@ -87,7 +87,7 @@ network_send_line(network_handle nh, const char *line, int flush_ok, bool send_n
 
 int
 network_send_bytes(network_handle nh, const char *buffer, int buflen,
-		   int flush_ok)
+                   int flush_ok)
 {
     /* Cast to (void *) to discard `const' on some systems */
     fwrite((void *) buffer, sizeof(char), buflen, stdout);
@@ -115,7 +115,7 @@ network_set_connection_binary(network_handle nh, int do_binary)
 }
 
 #define NETWORK_CO_TABLE(DEFINE, nh, value, _)
-    /* No network-specific connection options */
+/* No network-specific connection options */
 
 
 void
@@ -136,8 +136,8 @@ network_shutdown(void)
     int flags;
 
     if ((flags = fcntl(0, F_GETFL)) < 0
-	|| fcntl(0, F_SETFL, flags & ~NONBLOCK_FLAG) < 0)
-	log_perror("Setting standard input blocking again");
+            || fcntl(0, F_SETFL, flags & ~NONBLOCK_FLAG) < 0)
+        log_perror("Setting standard input blocking again");
 }
 
 static int input_suspended = 0;
@@ -166,59 +166,59 @@ network_process_io(int timeout)
     int got_some = 0;
 
     if (s == 0) {
-	int flags;
+        int flags;
 
-	s = new_stream(1000);
+        s = new_stream(1000);
 
-	if ((flags = fcntl(0, F_GETFL)) < 0
-	    || fcntl(0, F_SETFL, flags | NONBLOCK_FLAG) < 0) {
-	    log_perror("Setting standard input non-blocking");
-	    return 0;
-	}
+        if ((flags = fcntl(0, F_GETFL)) < 0
+                || fcntl(0, F_SETFL, flags | NONBLOCK_FLAG) < 0) {
+            log_perror("Setting standard input non-blocking");
+            return 0;
+        }
     }
     switch (state) {
-    case STATE_CLOSED:
-	if (listening) {
-	    sh = server_new_connection(slistener, nh, 0);
-	    state = STATE_OPEN;
-	    got_some = 1;
-	} else if (timeout > 0)
-	    sleep(timeout / 1000000);
-	break;
+        case STATE_CLOSED:
+            if (listening) {
+                sh = server_new_connection(slistener, nh, 0);
+                state = STATE_OPEN;
+                got_some = 1;
+            } else if (timeout > 0)
+                sleep(timeout / 1000000);
+            break;
 
-    case STATE_OPEN:
-	for (;;) {
-	    while (!input_suspended
-		   && (count = read(0, buffer, sizeof(buffer))) > 0) {
-		got_some = 1;
-		if (binary) {
-		    stream_add_raw_bytes_to_binary(s, buffer, count);
-		    server_receive_line(sh, reset_stream(s), 0);
-		} else
-		    for (ptr = buffer, end = buffer + count;
-			 ptr < end;
-			 ptr++) {
-			unsigned char c = *ptr;
+        case STATE_OPEN:
+            for (;;) {
+                while (!input_suspended
+                        && (count = read(0, buffer, sizeof(buffer))) > 0) {
+                    got_some = 1;
+                    if (binary) {
+                        stream_add_raw_bytes_to_binary(s, buffer, count);
+                        server_receive_line(sh, reset_stream(s), 0);
+                    } else
+                        for (ptr = buffer, end = buffer + count;
+                                ptr < end;
+                                ptr++) {
+                            unsigned char c = *ptr;
 
-			if (isgraph(c) || c == ' ' || c == '\t')
-			    stream_add_char(s, c);
+                            if (isgraph(c) || c == ' ' || c == '\t')
+                                stream_add_char(s, c);
 #ifdef INPUT_APPLY_BACKSPACE
-			else if (c == 0x08 || c == 0x7F)
-			    stream_delete_char(s);
+                            else if (c == 0x08 || c == 0x7F)
+                                stream_delete_char(s);
 #endif
-			else if (c == '\n')
-			    server_receive_line(sh, reset_stream(s), 0);
-		    }
-	    }
+                            else if (c == '\n')
+                                server_receive_line(sh, reset_stream(s), 0);
+                        }
+                }
 
-	    if (got_some || timeout <= 0)
-		goto done;
+                if (got_some || timeout <= 0)
+                    goto done;
 
-	    sleep(1);
-	    timeout -= 1000000;
-	}
+                sleep(1);
+                timeout -= 1000000;
+            }
     }
 
-  done:
+done:
     return got_some;
 }

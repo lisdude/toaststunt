@@ -34,10 +34,10 @@ static void
 init_casefold_once(void)
 {
     if (casefold[1] != 1) {
-	int i;
+        int i;
 
-	for (i = 0; i < 256; i++)
-	    casefold[i] = isupper(i) ? tolower(i) : i;
+        for (i = 0; i < 256; i++)
+            casefold[i] = isupper(i) ? tolower(i) : i;
     }
 }
 
@@ -53,60 +53,60 @@ translate_pattern(const char *pattern, int *tpatlen)
     char c;
 
     if (!s)
-	s = new_stream(100);
+        s = new_stream(100);
 
     while (*p) {
-	switch (c = *p++) {
-	case '%':
-	    c = *p++;
-	    if (!c)
-		goto fail;
-	    else if (strchr(".*+?[^$|()123456789bB<>wW", c))
-		stream_add_char(s, '\\');
-	    stream_add_char(s, c);
-	    break;
-	case '\\':
-	    stream_add_string(s, "\\\\");
-	    break;
-	case '[':
-	    /* Any '%' or '\' characters inside a charset should be copied
-	     * over without translation. */
-	    stream_add_char(s, c);
-	    c = *p++;
-	    if (c == '^') {
-		stream_add_char(s, c);
-		c = *p++;
-	    }
-	    /* This is the only place a ']' can appear and not be the end of
-	     * the charset. */
-	    if (c == ']') {
-		stream_add_char(s, c);
-		c = *p++;
-	    }
-	    while (c && c != ']') {
-		stream_add_char(s, c);
-		c = *p++;
-	    }
-	    if (!c)
-		goto fail;
-	    else
-		stream_add_char(s, c);
-	    break;
-	default:
-	    stream_add_char(s, c);
-	    break;
-	}
+        switch (c = *p++) {
+            case '%':
+                c = *p++;
+                if (!c)
+                    goto fail;
+                else if (strchr(".*+?[^$|()123456789bB<>wW", c))
+                    stream_add_char(s, '\\');
+                stream_add_char(s, c);
+                break;
+            case '\\':
+                stream_add_string(s, "\\\\");
+                break;
+            case '[':
+                /* Any '%' or '\' characters inside a charset should be copied
+                 * over without translation. */
+                stream_add_char(s, c);
+                c = *p++;
+                if (c == '^') {
+                    stream_add_char(s, c);
+                    c = *p++;
+                }
+                /* This is the only place a ']' can appear and not be the end of
+                 * the charset. */
+                if (c == ']') {
+                    stream_add_char(s, c);
+                    c = *p++;
+                }
+                while (c && c != ']') {
+                    stream_add_char(s, c);
+                    c = *p++;
+                }
+                if (!c)
+                    goto fail;
+                else
+                    stream_add_char(s, c);
+                break;
+            default:
+                stream_add_char(s, c);
+                break;
+        }
     }
 
     *tpatlen = stream_length(s);
     return reset_stream(s);
 
-  fail:
+fail:
     reset_stream(s);
     return nullptr;
 }
 
-#define MOO_SYNTAX	(RE_CONTEXT_INDEP_OPS)
+#define MOO_SYNTAX  (RE_CONTEXT_INDEP_OPS)
 
 Pattern
 new_pattern(const char *pattern, int case_matters)
@@ -124,15 +124,15 @@ new_pattern(const char *pattern, int case_matters)
     re_set_syntax(MOO_SYNTAX);
 
     if (tpattern
-	&& !re_compile_pattern((char *)tpattern, tpatlen, buf)) {
-	buf->fastmap = (char *)mymalloc(256 * sizeof(char), M_PATTERN);
-	re_compile_fastmap(buf);
-	p.ptr = buf;
+            && !re_compile_pattern((char *)tpattern, tpatlen, buf)) {
+        buf->fastmap = (char *)mymalloc(256 * sizeof(char), M_PATTERN);
+        re_compile_fastmap(buf);
+        p.ptr = buf;
     } else {
-	if (buf->buffer)
-	    free(buf->buffer);
-	myfree(buf, M_PATTERN);
-	p.ptr = nullptr;
+        if (buf->buffer)
+            free(buf->buffer);
+        myfree(buf, M_PATTERN);
+        p.ptr = nullptr;
     }
 
     return p;
@@ -140,7 +140,7 @@ new_pattern(const char *pattern, int case_matters)
 
 Match_Result
 match_pattern(Pattern p, const char *string, Match_Indices * indices,
-	      int is_reverse)
+              int is_reverse)
 {
     regexp_t buf = (regexp_t)p.ptr;
     int len = strlen(string);
@@ -148,20 +148,20 @@ match_pattern(Pattern p, const char *string, Match_Indices * indices,
     struct re_registers regs;
 
     switch (re_search(buf, (char *)string, len,
-		      is_reverse ? len : 0,
-		      is_reverse ? -len : len,
-		      &regs)) {
-    default:
-	for (i = 0; i < 10; i++) {
-	    /* Convert from 0-based open interval to 1-based closed one. */
-	    indices[i].start = regs.start[i] + 1;
-	    indices[i].end = regs.end[i];
-	}
-	return MATCH_SUCCEEDED;
-    case -1:
-	return MATCH_FAILED;
-    case -2:
-	return MATCH_ABORTED;
+                      is_reverse ? len : 0,
+                      is_reverse ? -len : len,
+                      &regs)) {
+        default:
+            for (i = 0; i < 10; i++) {
+                /* Convert from 0-based open interval to 1-based closed one. */
+                indices[i].start = regs.start[i] + 1;
+                indices[i].end = regs.end[i];
+            }
+            return MATCH_SUCCEEDED;
+        case -1:
+            return MATCH_FAILED;
+        case -2:
+            return MATCH_ABORTED;
     }
 }
 
@@ -171,8 +171,8 @@ free_pattern(Pattern p)
     regexp_t buf = (regexp_t)p.ptr;
 
     if (buf) {
-	free(buf->buffer);
-	myfree(buf->fastmap, M_PATTERN);
-	myfree(buf, M_PATTERN);
+        free(buf->buffer);
+        myfree(buf->fastmap, M_PATTERN);
+        myfree(buf, M_PATTERN);
     }
 }

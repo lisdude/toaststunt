@@ -46,16 +46,16 @@ bf_getenv(Var arglist, Byte next, void *vdata, Objid progr)
     package pack;
 
     if (!is_wizard(progr)) {
-	pack = make_error_pack(E_PERM);
+        pack = make_error_pack(E_PERM);
     }
     else {
-	const char *str;
+        const char *str;
 
-	if ((str = getenv(arglist.v.list[1].v.str)) != nullptr) {
-	    pack = make_var_pack(str_dup_to_var(raw_bytes_to_binary(str, strlen(str))));
-	} else {
-	    pack = no_var_pack();
-	}
+        if ((str = getenv(arglist.v.list[1].v.str)) != nullptr) {
+            pack = make_var_pack(str_dup_to_var(raw_bytes_to_binary(str, strlen(str))));
+        } else {
+            pack = no_var_pack();
+        }
     }
 
     free_var(arglist);

@@ -34,7 +34,7 @@
 #include <fstream>
 #include <vector>
 
-#include <sys/types.h>		/* must be first on some systems */
+#include <sys/types.h>      /* must be first on some systems */
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -99,7 +99,7 @@ typedef enum {
 } Checkpoint_Reason;
 static Checkpoint_Reason checkpoint_requested = CHKPT_OFF;
 
-static int checkpoint_finished = 0;	/* 1 = failure, 2 = success */
+static int checkpoint_finished = 0; /* 1 = failure, 2 = success */
 
 static bool reopen_logfile_requested = false;
 
@@ -124,7 +124,7 @@ static shandle *all_shandles = nullptr;
 typedef struct slistener {
     struct slistener *next, **prev;
     network_listener nlistener;
-    Objid oid;			/* listen(OID, DESC, PRINT_MESSAGES, IPV6) */
+    Objid oid;          /* listen(OID, DESC, PRINT_MESSAGES, IPV6) */
     Var desc;
     int print_messages;
     bool ipv6;
@@ -155,7 +155,7 @@ free_shandle(shandle * h)
 {
     *(h->prev) = h->next;
     if (h->next)
-	h->next->prev = h->prev;
+        h->next->prev = h->prev;
 
     free_task_queue(h->tasks);
 
@@ -203,11 +203,11 @@ static int
 start_listener(slistener * l)
 {
     if (network_listen(l->nlistener)) {
-	oklog("LISTEN: #%" PRIdN " now listening on %s [%s], port %i\n", l->oid, l->name, l->ip_addr, l->port);
-	return 1;
+        oklog("LISTEN: #%" PRIdN " now listening on %s [%s], port %i\n", l->oid, l->name, l->ip_addr, l->port);
+        return 1;
     } else {
-	errlog("LISTEN: Can't start #%" PRIdN " listening on %s [%s], port %i\n", l->oid, l->name, l->ip_addr, l->port);
-	return 0;
+        errlog("LISTEN: Can't start #%" PRIdN " listening on %s [%s], port %i\n", l->oid, l->name, l->ip_addr, l->port);
+        return 0;
     }
 }
 
@@ -219,7 +219,7 @@ free_slistener(slistener * l)
 
     *(l->prev) = l->next;
     if (l->next)
-	l->next->prev = l->prev;
+        l->next->prev = l->prev;
 
     free_var(l->desc);
     free_str(l->name);
@@ -237,7 +237,7 @@ send_shutdown_message(const char *message)
     s << "*** Shutting down: " << message << " ***";
 
     for (h = all_shandles; h; h = h->next)
-	network_send_line(h->nhandle, s.str().c_str(), 1, 1);
+        network_send_line(h->nhandle, s.str().c_str(), 1, 1);
 }
 
 static void
@@ -273,17 +273,17 @@ panic_moo(const char *message)
 
     errlog("PANIC%s: %s\n", in_child ? " (in child)" : "", message);
     if (in_panic) {
-	errlog("RECURSIVE PANIC: aborting\n");
-	abort_server();
+        errlog("RECURSIVE PANIC: aborting\n");
+        abort_server();
     }
     in_panic = 1;
 
     log_command_history();
 
-    if (in_child) {		/* We're a forked checkpointer */
-	errlog("Child shutting down parent via INT signal\n");
-	kill(parent_pid, SIGINT);
-	_exit(1);
+    if (in_child) {     /* We're a forked checkpointer */
+        errlog("Child shutting down parent via INT signal\n");
+        kill(parent_pid, SIGINT);
+        _exit(1);
     }
     print_error_backtrace("server panic", output_to_log);
     send_shutdown_message("server panic");
@@ -303,13 +303,13 @@ fork_server(const char *subtask_name)
 
     pid = fork();
     if (pid < 0) {
-	log_perror(s.str().c_str());
-	return FORK_ERROR;
+        log_perror(s.str().c_str());
+        return FORK_ERROR;
     } else if (pid == 0) {
-	in_child = true;
-	return FORK_CHILD;
+        in_child = true;
+        return FORK_CHILD;
     } else {
-	return FORK_PARENT;
+        return FORK_PARENT;
     }
 }
 
@@ -367,25 +367,25 @@ child_completed_signal(int sig)
      */
 #if HAVE_WAITPID
     while ((p = waitpid(-1, &status, WNOHANG)) > 0) {
-	if (!exec_complete(p, WEXITSTATUS(status)))
-	    checkpoint_child = p;
+        if (!exec_complete(p, WEXITSTATUS(status)))
+            checkpoint_child = p;
     }
 #else
 #if HAVE_WAIT3
     while ((p = wait3(&status, WNOHANG, 0)) > 0) {
-	if (!exec_complete(p, WEXITSTATUS(status)))
-	    checkpoint_child = p;
+        if (!exec_complete(p, WEXITSTATUS(status)))
+            checkpoint_child = p;
     }
 #else
 #if HAVE_WAIT2
     while ((p = wait2(&status, WNOHANG)) > 0) {
-	if (!exec_complete(p, WEXITSTATUS(status)))
-	    checkpoint_child = p;
+        if (!exec_complete(p, WEXITSTATUS(status)))
+            checkpoint_child = p;
     }
 #else
     p = wait(&status);
     if (!exec_complete(p, WEXITSTATUS(status)))
-	checkpoint_child = p;
+        checkpoint_child = p;
 #endif
 #endif
 #endif
@@ -393,7 +393,7 @@ child_completed_signal(int sig)
     signal(sig, child_completed_signal);
 
     if (checkpoint_child)
-	checkpoint_finished = (status == 0) + 1;	/* 1 = failure, 2 = success */
+        checkpoint_finished = (status == 0) + 1;    /* 1 = failure, 2 = success */
 }
 
 static void
@@ -401,7 +401,7 @@ setup_signals(void)
 {
     signal(SIGFPE, SIG_IGN);
     if (signal(SIGHUP, panic_signal) == SIG_IGN)
-	signal(SIGHUP, SIG_IGN);
+        signal(SIGHUP, SIG_IGN);
     signal(SIGILL, panic_signal);
     signal(SIGQUIT, panic_signal);
     signal(SIGSEGV, panic_signal);
@@ -411,8 +411,8 @@ setup_signals(void)
 
     signal(SIGINT, shutdown_signal);
     signal(SIGTERM, shutdown_signal);
-    signal(SIGUSR1, logfile_signal);	    /* logfile reopen signal */
-    signal(SIGUSR2, checkpoint_signal);		/* remote checkpoint signal */
+    signal(SIGUSR1, logfile_signal);        /* logfile reopen signal */
+    signal(SIGUSR2, checkpoint_signal);     /* remote checkpoint signal */
 
     signal(SIGCHLD, child_completed_signal);
 }
@@ -429,13 +429,13 @@ set_checkpoint_timer(int first_time)
     int interval, now = time(nullptr);
     static Timer_ID last_checkpoint_timer;
 
-   interval = server_int_option("dump_interval", 3600);
+    interval = server_int_option("dump_interval", 3600);
     if (interval < 60 || now + interval < now) {
-	interval = 3600;	/* Once per hour */
+        interval = 3600;    /* Once per hour */
     }
 
     if (!first_time)
-	cancel_timer(last_checkpoint_timer);
+        cancel_timer(last_checkpoint_timer);
     last_checkpoint_timer = set_timer(interval, checkpoint_timer, nullptr);
 }
 
@@ -445,12 +445,12 @@ object_name(Objid oid)
     static Stream *s = nullptr;
 
     if (!s)
-	s = new_stream(30);
+        s = new_stream(30);
 
     if (valid(oid))
-	stream_printf(s, "%s (#%" PRIdN ")", db_object_name(oid), oid);
+        stream_printf(s, "%s (#%" PRIdN ")", db_object_name(oid), oid);
     else
-	stream_printf(s, "#%" PRIdN "", oid);
+        stream_printf(s, "#%" PRIdN "", oid);
 
     return reset_stream(s);
 }
@@ -470,19 +470,19 @@ int
 get_server_option(Objid oid, const char *name, Var * r)
 {
     if (((valid(oid) &&
-	  db_find_property(Var::new_obj(oid), "server_options", r).ptr)
-	 || (valid(SYSTEM_OBJECT) &&
-	     db_find_property(Var::new_obj(SYSTEM_OBJECT), "server_options", r).ptr))
-	&& r->type == TYPE_OBJ
-	&& valid(r->v.obj)
-	&& db_find_property(*r, name, r).ptr)
-	return 1;
+            db_find_property(Var::new_obj(oid), "server_options", r).ptr)
+            || (valid(SYSTEM_OBJECT) &&
+                db_find_property(Var::new_obj(SYSTEM_OBJECT), "server_options", r).ptr))
+            && r->type == TYPE_OBJ
+            && valid(r->v.obj)
+            && db_find_property(*r, name, r).ptr)
+        return 1;
 
     return 0;
 }
 
 static void
-send_message(Objid listener, network_handle nh, const char *msg_name,...)
+send_message(Objid listener, network_handle nh, const char *msg_name, ...)
 {
     va_list args;
     Var msg;
@@ -490,18 +490,18 @@ send_message(Objid listener, network_handle nh, const char *msg_name,...)
 
     va_start(args, msg_name);
     if (get_server_option(listener, msg_name, &msg)) {
-	if (msg.type == TYPE_STR)
-	    network_send_line(nh, msg.v.str, 1, 1);
-	else if (msg.type == TYPE_LIST) {
-	    int i;
+        if (msg.type == TYPE_STR)
+            network_send_line(nh, msg.v.str, 1, 1);
+        else if (msg.type == TYPE_LIST) {
+            int i;
 
-	    for (i = 1; i <= msg.v.list[0].v.num; i++)
-		if (msg.v.list[i].type == TYPE_STR)
-		    network_send_line(nh, msg.v.list[i].v.str, 1, 1);
-	}
-    } else			/* Use default message */
-	while ((line = va_arg(args, const char *)) != nullptr)
-	    network_send_line(nh, line, 1, 1);
+            for (i = 1; i <= msg.v.list[0].v.num; i++)
+                if (msg.v.list[i].type == TYPE_STR)
+                    network_send_line(nh, msg.v.list[i].v.str, 1, 1);
+        }
+    } else          /* Use default message */
+        while ((line = va_arg(args, const char *)) != nullptr)
+            network_send_line(nh, line, 1, 1);
 
     va_end(args);
 }
@@ -520,9 +520,9 @@ queue_includes(Var v)
     struct pending_recycle *head = pending_head;
 
     while (head) {
-	if (head->v.v.anon == v.v.anon)
-	    return 1;
-	head = head->next;
+        if (head->v.v.anon == v.v.anon)
+            return 1;
+        head = head->next;
     }
 
     return 0;
@@ -537,8 +537,8 @@ queue_anonymous_object(Var v)
     assert(!queue_includes(v));
 
     if (!pending_free) {
-	pending_free = (struct pending_recycle *)mymalloc(sizeof(struct pending_recycle), M_STRUCT);
-	pending_free->next = nullptr;
+        pending_free = (struct pending_recycle *)mymalloc(sizeof(struct pending_recycle), M_STRUCT);
+        pending_free->next = nullptr;
     }
 
     struct pending_recycle *next = pending_free;
@@ -549,7 +549,7 @@ queue_anonymous_object(Var v)
     pending_head = next;
 
     if (!pending_tail)
-	pending_tail = next;
+        pending_tail = next;
 
     pending_count++;
 }
@@ -558,42 +558,42 @@ static void
 recycle_anonymous_objects(void)
 {
     if (!pending_head)
-	return;
+        return;
 
     struct pending_recycle *next, *head = pending_head;
     pending_head = pending_tail = nullptr;
     pending_count = 0;
 
     while (head) {
-	Var v = head->v;
+        Var v = head->v;
 
-	assert(TYPE_ANON == v.type);
+        assert(TYPE_ANON == v.type);
 
-	next = head->next;
-	head->next = pending_free;
-	pending_free = head;
-	head = next;
+        next = head->next;
+        head->next = pending_free;
+        pending_free = head;
+        head = next;
 
-	assert(!db_object_has_flag2(v, FLAG_RECYCLED));
-	assert(!db_object_has_flag2(v, FLAG_INVALID));
+        assert(!db_object_has_flag2(v, FLAG_RECYCLED));
+        assert(!db_object_has_flag2(v, FLAG_INVALID));
 
-	db_set_object_flag2(v, FLAG_RECYCLED);
+        db_set_object_flag2(v, FLAG_RECYCLED);
 
         /* the best approximation I could think of */
-	run_server_task(-1, v, "recycle", new_list(0), "", nullptr);
+        run_server_task(-1, v, "recycle", new_list(0), "", nullptr);
 
-	/* We'd like to run `db_change_parents()' to be consistent
-	 * with the pattern laid out in `bf_recycle()', but we can't
-	 * because the object can be invalid at this point due to
-	 * changes in parentage.
-	 */
-	/*db_change_parents(v, nothing, none);*/
+        /* We'd like to run `db_change_parents()' to be consistent
+         * with the pattern laid out in `bf_recycle()', but we can't
+         * because the object can be invalid at this point due to
+         * changes in parentage.
+         */
+        /*db_change_parents(v, nothing, none);*/
 
-	incr_quota(db_object_owner2(v));
+        incr_quota(db_object_owner2(v));
 
-	db_destroy_anonymous_object(v.v.anon);
+        db_destroy_anonymous_object(v.v.anon);
 
-	free_var(v);
+        free_var(v);
     }
 }
 
@@ -610,7 +610,7 @@ recycle_waifs(void)
     }
 
     std::vector<Waif*> removals;
-    for (auto &x: destroyed_waifs) {
+    for (auto &x : destroyed_waifs) {
         if (destroyed_waifs[x.first] == false) {
             run_server_task(-1, Var::new_waif(x.first), waif_recycle_verb, new_list(0), "", nullptr);
             destroyed_waifs[x.first] = true;
@@ -619,8 +619,8 @@ recycle_waifs(void)
         if (refcount(x.first) == 0) {
             removals.push_back(x.first);
         }
-      }
-      for (auto x:removals) {
+    }
+    for (auto x : removals) {
         free_waif(x);
         destroyed_waifs.erase(x);
     }
@@ -641,8 +641,8 @@ write_values_pending_finalization(void)
     struct pending_recycle *head = pending_head;
 
     while (head) {
-	dbio_write_var(head->v);
-	head = head->next;
+        dbio_write_var(head->v);
+        head = head->next;
     }
 }
 
@@ -660,15 +660,15 @@ read_values_pending_finalization(void)
     int i, count;
 
     if (dbio_scanf("%d values pending finalization\n", &count) != 1) {
-	errlog("READ_VALUES_PENDING_FINALIZATION: Bad count.\n");
-	return 0;
+        errlog("READ_VALUES_PENDING_FINALIZATION: Bad count.\n");
+        return 0;
     }
 
     free_var(pending_list);
     pending_list = new_list(count);
 
     for (i = 1; i <= count; i++) {
-	pending_list.v.list[i] = dbio_read_var();
+        pending_list.v.list[i] = dbio_read_var();
     }
 
     return 1;
@@ -681,26 +681,26 @@ main_loop(void)
 
     /* First, queue anonymous objects */
     for (i = 1; i <= pending_list.v.list[0].v.num; i++) {
-	Var v;
+        Var v;
 
-	v = pending_list.v.list[i];
+        v = pending_list.v.list[i];
 
-	/* in theory this could be any value... */
-	/* in practice this will be an anonymous object... */
-	assert(TYPE_ANON == v.type);
+        /* in theory this could be any value... */
+        /* in practice this will be an anonymous object... */
+        assert(TYPE_ANON == v.type);
 
-	if (v.v.anon != nullptr)
-	    queue_anonymous_object(var_ref(v));
+        if (v.v.anon != nullptr)
+            queue_anonymous_object(var_ref(v));
     }
     free_var(pending_list);
 
     /* Second, notify DB of disconnections for all checkpointed connections */
     for (i = 1; i <= checkpointed_connections.v.list[0].v.num; i++) {
-	Var v;
+        Var v;
 
-	v = checkpointed_connections.v.list[i];
-	call_notifier(v.v.list[1].v.obj, v.v.list[2].v.obj,
-		      "user_disconnected");
+        v = checkpointed_connections.v.list[i];
+        call_notifier(v.v.list[1].v.obj, v.v.list[2].v.obj,
+                      "user_disconnected");
     }
     free_var(checkpointed_connections);
 
@@ -710,130 +710,130 @@ main_loop(void)
 
     /* Now, we enter the main server loop */
     while (!shutdown_triggered) {
-	/* Check how long we have until the next task will be ready to run.
-	 * We only care about three cases (== 0, == 1, and > 1), so we can
-	 * map a `never' result from the task subsystem into 2.
-	 */
-	int task_useconds = next_task_start();
-	int useconds_left = task_useconds < 0 ? 1000000 : task_useconds;
-	shandle *h, *nexth;
+        /* Check how long we have until the next task will be ready to run.
+         * We only care about three cases (== 0, == 1, and > 1), so we can
+         * map a `never' result from the task subsystem into 2.
+         */
+        int task_useconds = next_task_start();
+        int useconds_left = task_useconds < 0 ? 1000000 : task_useconds;
+        shandle *h, *nexth;
 
 #ifdef ENABLE_GC
-	if (gc_run_called || gc_roots_count > GC_ROOTS_LIMIT
-	    || checkpoint_requested != CHKPT_OFF)
-	    gc_collect();
+        if (gc_run_called || gc_roots_count > GC_ROOTS_LIMIT
+                || checkpoint_requested != CHKPT_OFF)
+            gc_collect();
 #endif
 
-    if (reopen_logfile_requested) {
-        reopen_logfile_requested = false;
+        if (reopen_logfile_requested) {
+            reopen_logfile_requested = false;
 
-        FILE *new_log;
-        oklog("LOGFILE: Closing due to remote request signal.\n");
+            FILE *new_log;
+            oklog("LOGFILE: Closing due to remote request signal.\n");
 
-        new_log = fopen(get_log_file_name(), "a");
-        if (new_log) {
-            fclose(get_log_file());
-            set_log_file(new_log);
-            oklog("LOGFILE: Reopening due to remote request signal.\n");
-        } else {
-            perror("Error reopening log file.");
+            new_log = fopen(get_log_file_name(), "a");
+            if (new_log) {
+                fclose(get_log_file());
+                set_log_file(new_log);
+                oklog("LOGFILE: Reopening due to remote request signal.\n");
+            } else {
+                perror("Error reopening log file.");
+            }
         }
-    }
 
-	if (checkpoint_requested != CHKPT_OFF) {
-	    if (checkpoint_requested == CHKPT_SIGNAL)
-		oklog("CHECKPOINTING due to remote request signal.\n");
-	    checkpoint_requested = CHKPT_OFF;
-	    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_started",
-			    new_list(0), "", nullptr);
-	    network_process_io(0);
+        if (checkpoint_requested != CHKPT_OFF) {
+            if (checkpoint_requested == CHKPT_SIGNAL)
+                oklog("CHECKPOINTING due to remote request signal.\n");
+            checkpoint_requested = CHKPT_OFF;
+            run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_started",
+                            new_list(0), "", nullptr);
+            network_process_io(0);
 #ifdef UNFORKED_CHECKPOINTS
-	    call_checkpoint_notifier(db_flush(FLUSH_ALL_NOW));
+            call_checkpoint_notifier(db_flush(FLUSH_ALL_NOW));
 #else
-	    if (!db_flush(FLUSH_ALL_NOW))
-		call_checkpoint_notifier(0);
+            if (!db_flush(FLUSH_ALL_NOW))
+                call_checkpoint_notifier(0);
 #endif
-	    set_checkpoint_timer(0);
-	}
-#ifndef UNFORKED_CHECKPOINTS
-	if (checkpoint_finished) {
-	    call_checkpoint_notifier(checkpoint_finished - 1);
-	    checkpoint_finished = 0;
-	}
-#endif
-
-	recycle_anonymous_objects();
-    recycle_waifs();
-
-	network_process_io(useconds_left);
-
-	run_ready_tasks();
-
-	/* If a exec'd child process exited, deal with it here */
-	deal_with_child_exit();
-
-	{			/* Get rid of old un-logged-in or useless connections */
-	    int now = time(nullptr);
-
-	    for (h = all_shandles; h; h = nexth) {
-		Var v;
-
-		nexth = h->next;
-
-        if (nhandle_refcount(h->nhandle) > 1)
-            continue;
-
-		if (!h->outbound && h->connection_time == 0
-		    && (get_server_option(h->listener, "connect_timeout", &v)
-			? (v.type == TYPE_INT && v.v.num > 0
-			   && now - h->last_activity_time > v.v.num)
-			: (now - h->last_activity_time
-			   > DEFAULT_CONNECT_TIMEOUT))) {
-		    call_notifier(h->player, h->listener, "user_disconnected");
-            lock_connection_name_mutex(h->nhandle);
-		    oklog("TIMEOUT: #%" PRIdN " on %s\n",
-			  h->player,
-			  network_connection_name(h->nhandle));
-             unlock_connection_name_mutex(h->nhandle);
-		    if (h->print_messages)
-			send_message(h->listener, h->nhandle, "timeout_msg",
-				     "*** Timed-out waiting for login. ***",
-				     0);
-		    network_close(h->nhandle);
-		    free_shandle(h);
-		} else if (h->connection_time != 0 && !valid(h->player)) {
-            lock_connection_name_mutex(h->nhandle);
-		    oklog("RECYCLED: #%" PRIdN " on %s\n",
-			  h->player,
-			  network_connection_name(h->nhandle));
-            unlock_connection_name_mutex(h->nhandle);
-		    if (h->print_messages)
-			send_message(h->listener, h->nhandle,
-				     "recycle_msg", "*** Recycled ***", 0);
-		    network_close(h->nhandle);
-		    free_shandle(h);
-		} else if (h->disconnect_me) {
-		    call_notifier(h->player, h->listener,
-				  "user_disconnected");
-            lock_connection_name_mutex(h->nhandle);
-		    oklog("DISCONNECTED: %s on %s\n",
-			  object_name(h->player),
-			  network_connection_name(h->nhandle));
-            unlock_connection_name_mutex(h->nhandle);
-		    if (h->print_messages)
-			send_message(h->listener, h->nhandle, "boot_msg",
-				     "*** Disconnected ***", 0);
-		    network_close(h->nhandle);
-		    free_shandle(h);
-		} else if (h->switched) {
-            if (is_user(h->switched))
-                call_notifier(h->switched, h->listener, "user_disconnected");
-            if (is_user(h->player))
-                call_notifier(h->player, h->listener, "user_connected");
-            h->switched = 0;
+            set_checkpoint_timer(0);
         }
-	    }
-	}
+#ifndef UNFORKED_CHECKPOINTS
+        if (checkpoint_finished) {
+            call_checkpoint_notifier(checkpoint_finished - 1);
+            checkpoint_finished = 0;
+        }
+#endif
+
+        recycle_anonymous_objects();
+        recycle_waifs();
+
+        network_process_io(useconds_left);
+
+        run_ready_tasks();
+
+        /* If a exec'd child process exited, deal with it here */
+        deal_with_child_exit();
+
+        {   /* Get rid of old un-logged-in or useless connections */
+            int now = time(nullptr);
+
+            for (h = all_shandles; h; h = nexth) {
+                Var v;
+
+                nexth = h->next;
+
+                if (nhandle_refcount(h->nhandle) > 1)
+                    continue;
+
+                if (!h->outbound && h->connection_time == 0
+                        && (get_server_option(h->listener, "connect_timeout", &v)
+                            ? (v.type == TYPE_INT && v.v.num > 0
+                               && now - h->last_activity_time > v.v.num)
+                            : (now - h->last_activity_time
+                               > DEFAULT_CONNECT_TIMEOUT))) {
+                    call_notifier(h->player, h->listener, "user_disconnected");
+                    lock_connection_name_mutex(h->nhandle);
+                    oklog("TIMEOUT: #%" PRIdN " on %s\n",
+                          h->player,
+                          network_connection_name(h->nhandle));
+                    unlock_connection_name_mutex(h->nhandle);
+                    if (h->print_messages)
+                        send_message(h->listener, h->nhandle, "timeout_msg",
+                                     "*** Timed-out waiting for login. ***",
+                                     0);
+                    network_close(h->nhandle);
+                    free_shandle(h);
+                } else if (h->connection_time != 0 && !valid(h->player)) {
+                    lock_connection_name_mutex(h->nhandle);
+                    oklog("RECYCLED: #%" PRIdN " on %s\n",
+                          h->player,
+                          network_connection_name(h->nhandle));
+                    unlock_connection_name_mutex(h->nhandle);
+                    if (h->print_messages)
+                        send_message(h->listener, h->nhandle,
+                                     "recycle_msg", "*** Recycled ***", 0);
+                    network_close(h->nhandle);
+                    free_shandle(h);
+                } else if (h->disconnect_me) {
+                    call_notifier(h->player, h->listener,
+                                  "user_disconnected");
+                    lock_connection_name_mutex(h->nhandle);
+                    oklog("DISCONNECTED: %s on %s\n",
+                          object_name(h->player),
+                          network_connection_name(h->nhandle));
+                    unlock_connection_name_mutex(h->nhandle);
+                    if (h->print_messages)
+                        send_message(h->listener, h->nhandle, "boot_msg",
+                                     "*** Disconnected ***", 0);
+                    network_close(h->nhandle);
+                    free_shandle(h);
+                } else if (h->switched) {
+                    if (is_user(h->switched))
+                        call_notifier(h->switched, h->listener, "user_disconnected");
+                    if (is_user(h->player))
+                        call_notifier(h->player, h->listener, "user_connected");
+                    h->switched = 0;
+                }
+            }
+        }
     }
 
     applog(LOG_WARNING, "SHUTDOWN: %s\n", shutdown_message.str().c_str());
@@ -846,8 +846,8 @@ find_shandle(Objid player)
     shandle *h;
 
     for (h = all_shandles; h; h = h->next)
-	if (h->player == player)
-	    return h;
+        if (h->player == player)
+            return h;
 
     return nullptr;
 }
@@ -862,21 +862,21 @@ init_cmdline(int argc, char *argv[])
     int i;
 
     for (p = argv[0], i = 1;;) {
-	if (*p++ == '\0' && (i >= argc || p != argv[i++]))
-	    break;
+        if (*p++ == '\0' && (i >= argc || p != argv[i++]))
+            break;
     }
 
     cmdline_buffer = argv[0];
     cmdline_buflen = p - argv[0];
 }
 
-#define SERVER_CO_TABLE(DEFINE, H, VALUE, _)				\
-    DEFINE(binary, _, TYPE_INT, num,					\
-	   H->binary,							\
-	   {								\
-	       H->binary = is_true(VALUE);				\
-	       network_set_connection_binary(H->nhandle, H->binary);	\
-	   })								\
+#define SERVER_CO_TABLE(DEFINE, H, VALUE, _)                \
+    DEFINE(binary, _, TYPE_INT, num,                    \
+           H->binary,                           \
+           {                                \
+                                            H->binary = is_true(VALUE);              \
+                                            network_set_connection_binary(H->nhandle, H->binary);    \
+           })                               \
 
 static int
 server_set_connection_option(shandle * h, const char *option, Var value)
@@ -904,17 +904,17 @@ read_stdin_line(const char *prompt)
     static Stream *s = nullptr;
 
     if (!s)
-	s = new_stream(100);
+        s = new_stream(100);
 
     fflush(stdout);
 
     char *line;
 
     if ((line = linenoise(prompt)) && *line) {
-	linenoiseHistoryAdd(line);
-	stream_add_string(s, line);
-	free(line);
-	return reset_stream(s);
+        linenoiseHistoryAdd(line);
+        stream_add_string(s, line);
+        free(line);
+        return reset_stream(s);
     }
 
     return (char *)"";
@@ -947,224 +947,224 @@ emergency_mode()
     printf("(Type `help' for assistance.)\n\n");
 
     while (start_ok < 0) {
-	/* Find/create a wizard to run commands as... */
-	if (!is_wizard(wizard)) {
-	    Objid first_valid = -1;
+        /* Find/create a wizard to run commands as... */
+        if (!is_wizard(wizard)) {
+            Objid first_valid = -1;
 
-	    if (wizard >= 0)
-		printf("** Object #%" PRIdN " is not a wizard...\n", wizard);
+            if (wizard >= 0)
+                printf("** Object #%" PRIdN " is not a wizard...\n", wizard);
 
-	    for (wizard = 0; wizard <= db_last_used_objid(); wizard++)
-		if (is_wizard(wizard))
-		    break;
-		else if (valid(wizard) && first_valid < 0)
-		    first_valid = wizard;
+            for (wizard = 0; wizard <= db_last_used_objid(); wizard++)
+                if (is_wizard(wizard))
+                    break;
+                else if (valid(wizard) && first_valid < 0)
+                    first_valid = wizard;
 
-	    if (!is_wizard(wizard)) {
-		if (first_valid < 0) {
-		    first_valid = db_create_object(-1);
-		    db_change_parents(Var::new_obj(first_valid), new_list(0), none);
-		    printf("** No objects in database; created #%" PRIdN ".\n",
-			   first_valid);
-		}
-		wizard = first_valid;
-		db_set_object_flag(wizard, FLAG_WIZARD);
-		printf("** No wizards in database; wizzed #%" PRIdN ".\n", wizard);
-	    }
-	    printf("** Now running emergency commands as #%" PRIdN " ...\n\n", wizard);
-	}
+            if (!is_wizard(wizard)) {
+                if (first_valid < 0) {
+                    first_valid = db_create_object(-1);
+                    db_change_parents(Var::new_obj(first_valid), new_list(0), none);
+                    printf("** No objects in database; created #%" PRIdN ".\n",
+                           first_valid);
+                }
+                wizard = first_valid;
+                db_set_object_flag(wizard, FLAG_WIZARD);
+                printf("** No wizards in database; wizzed #%" PRIdN ".\n", wizard);
+            }
+            printf("** Now running emergency commands as #%" PRIdN " ...\n\n", wizard);
+        }
         char prompt[100];
         sprintf(prompt, "(#%" PRIdN ")%s: ", wizard, debug ? "" : "[!d]");
-	line = read_stdin_line(prompt);
+        line = read_stdin_line(prompt);
 
-	if (!line)
-	    start_ok = 0;	/* treat EOF as "quit" */
-	else if (*line == ';') {	/* eval command */
-	    Var code, errors;
-	    Program *program;
-	    Var str;
+        if (!line)
+            start_ok = 0;   /* treat EOF as "quit" */
+        else if (*line == ';') {    /* eval command */
+            Var code, errors;
+            Program *program;
+            Var str;
 
-	    str.type = TYPE_STR;
-	    code = new_list(0);
+            str.type = TYPE_STR;
+            code = new_list(0);
 
-	    if (*++line == ';')
-		line++;
-	    else {
-		str.v.str = str_dup("return");
-		code = listappend(code, str);
-	    }
+            if (*++line == ';')
+                line++;
+            else {
+                str.v.str = str_dup("return");
+                code = listappend(code, str);
+            }
 
-	    while (*line == ' ')
-		line++;
+            while (*line == ' ')
+                line++;
 
-	    if (*line == '\0') {	/* long form */
-		printf("Type one or more lines of code, ending with `.' ");
-		printf("alone on a line.\n");
-		for (;;) {
-		    line = read_stdin_line(" ");
-		    if (!strcmp(line, "."))
-			break;
-		    else {
-			str.v.str = str_dup(line);
-			code = listappend(code, str);
-		    }
-		}
-	    } else {
-		str.v.str = str_dup(line);
-		code = listappend(code, str);
-	    }
-	    str.v.str = str_dup(";");
-	    code = listappend(code, str);
+            if (*line == '\0') {    /* long form */
+                printf("Type one or more lines of code, ending with `.' ");
+                printf("alone on a line.\n");
+                for (;;) {
+                    line = read_stdin_line(" ");
+                    if (!strcmp(line, "."))
+                        break;
+                    else {
+                        str.v.str = str_dup(line);
+                        code = listappend(code, str);
+                    }
+                }
+            } else {
+                str.v.str = str_dup(line);
+                code = listappend(code, str);
+            }
+            str.v.str = str_dup(";");
+            code = listappend(code, str);
 
-	    program = parse_list_as_program(code, &errors);
-	    free_var(code);
-	    if (program) {
-		Var result;
+            program = parse_list_as_program(code, &errors);
+            free_var(code);
+            if (program) {
+                Var result;
 
-		switch (run_server_program_task(NOTHING, "emergency_mode",
-						new_list(0), NOTHING,
-						"emergency_mode", program,
-						wizard, debug, wizard, "",
-						&result)) {
-		case OUTCOME_DONE:
-		    unparse_value(s, result);
-		    printf("=> %s\n", reset_stream(s));
-		    free_var(result);
-		    break;
-		case OUTCOME_ABORTED:
-		    printf("=> *Aborted*\n");
-		    break;
-		case OUTCOME_BLOCKED:
-		    printf("=> *Suspended*\n");
-		    break;
-		}
-		free_program(program);
-	    } else {
-		int i;
+                switch (run_server_program_task(NOTHING, "emergency_mode",
+                                                new_list(0), NOTHING,
+                                                "emergency_mode", program,
+                                                wizard, debug, wizard, "",
+                                                &result)) {
+                    case OUTCOME_DONE:
+                        unparse_value(s, result);
+                        printf("=> %s\n", reset_stream(s));
+                        free_var(result);
+                        break;
+                    case OUTCOME_ABORTED:
+                        printf("=> *Aborted*\n");
+                        break;
+                    case OUTCOME_BLOCKED:
+                        printf("=> *Suspended*\n");
+                        break;
+                }
+                free_program(program);
+            } else {
+                int i;
 
-		printf("** %" PRIdN " errors during parsing:\n",
-		       errors.v.list[0].v.num);
-		for (i = 1; i <= errors.v.list[0].v.num; i++)
-		    printf("  %s\n", errors.v.list[i].v.str);
-	    }
-	    free_var(errors);
-	} else {
-	    words = parse_into_wordlist(line);
-	    nargs = words.v.list[0].v.num - 1;
-	    if (nargs < 0)
-		continue;
-	    command = words.v.list[1].v.str;
+                printf("** %" PRIdN " errors during parsing:\n",
+                       errors.v.list[0].v.num);
+                for (i = 1; i <= errors.v.list[0].v.num; i++)
+                    printf("  %s\n", errors.v.list[i].v.str);
+            }
+            free_var(errors);
+        } else {
+            words = parse_into_wordlist(line);
+            nargs = words.v.list[0].v.num - 1;
+            if (nargs < 0)
+                continue;
+            command = words.v.list[1].v.str;
 
-	    if ((!strcasecmp(command, "program")
-		 || !strcasecmp(command, ".program"))
-		&& nargs == 1) {
-		const char *verbref = words.v.list[2].v.str;
-		db_verb_handle h;
-		const char *message, *vname;
+            if ((!strcasecmp(command, "program")
+                    || !strcasecmp(command, ".program"))
+                    && nargs == 1) {
+                const char *verbref = words.v.list[2].v.str;
+                db_verb_handle h;
+                const char *message, *vname;
 
-		h = find_verb_for_programming(wizard, verbref,
-					      &message, &vname);
-		printf("%s\n", message);
-		if (h.ptr) {
-		    Var code, str, errors;
-		    const char *line;
-		    Program *program;
+                h = find_verb_for_programming(wizard, verbref,
+                                              &message, &vname);
+                printf("%s\n", message);
+                if (h.ptr) {
+                    Var code, str, errors;
+                    const char *line;
+                    Program *program;
 
-		    code = new_list(0);
-		    str.type = TYPE_STR;
+                    code = new_list(0);
+                    str.type = TYPE_STR;
 
-		    while (strcmp(line = read_stdin_line(" "), ".")) {
-			str.v.str = str_dup(line);
-			code = listappend(code, str);
-		    }
+                    while (strcmp(line = read_stdin_line(" "), ".")) {
+                        str.v.str = str_dup(line);
+                        code = listappend(code, str);
+                    }
 
-		    program = parse_list_as_program(code, &errors);
-		    if (program) {
-			db_set_verb_program(h, program);
-			printf("Verb programmed.\n");
-		    } else {
-			int i;
+                    program = parse_list_as_program(code, &errors);
+                    if (program) {
+                        db_set_verb_program(h, program);
+                        printf("Verb programmed.\n");
+                    } else {
+                        int i;
 
-			printf("** %" PRIdN " errors during parsing:\n",
-			       errors.v.list[0].v.num);
-			for (i = 1; i <= errors.v.list[0].v.num; i++)
-			    printf("  %s\n", errors.v.list[i].v.str);
-			printf("Verb not programmed.\n");
-		    }
+                        printf("** %" PRIdN " errors during parsing:\n",
+                               errors.v.list[0].v.num);
+                        for (i = 1; i <= errors.v.list[0].v.num; i++)
+                            printf("  %s\n", errors.v.list[i].v.str);
+                        printf("Verb not programmed.\n");
+                    }
 
-		    free_var(code);
-		    free_var(errors);
-		}
-	    } else if (!strcasecmp(command, "list") && nargs == 1) {
-		const char *verbref = words.v.list[2].v.str;
-		db_verb_handle h;
-		const char *message, *vname;
+                    free_var(code);
+                    free_var(errors);
+                }
+            } else if (!strcasecmp(command, "list") && nargs == 1) {
+                const char *verbref = words.v.list[2].v.str;
+                db_verb_handle h;
+                const char *message, *vname;
 
-		h = find_verb_for_programming(wizard, verbref,
-					      &message, &vname);
-		if (h.ptr)
-		    unparse_to_file(stdout, db_verb_program(h), 0, 1,
-				    MAIN_VECTOR);
-		else
-		    printf("%s\n", message);
-	    } else if (!strcasecmp(command, "disassemble") && nargs == 1) {
-		const char *verbref = words.v.list[2].v.str;
-		db_verb_handle h;
-		const char *message, *vname;
+                h = find_verb_for_programming(wizard, verbref,
+                                              &message, &vname);
+                if (h.ptr)
+                    unparse_to_file(stdout, db_verb_program(h), 0, 1,
+                                    MAIN_VECTOR);
+                else
+                    printf("%s\n", message);
+            } else if (!strcasecmp(command, "disassemble") && nargs == 1) {
+                const char *verbref = words.v.list[2].v.str;
+                db_verb_handle h;
+                const char *message, *vname;
 
-		h = find_verb_for_programming(wizard, verbref,
-					      &message, &vname);
-		if (h.ptr)
-		    disassemble_to_file(stdout, db_verb_program(h));
-		else
-		    printf("%s\n", message);
-	    } else if (!strcasecmp(command, "abort") && nargs == 0) {
-	        printf("Bye.  (%s)\n\n", "NOT saving database");
-		exit(1);
-	    } else if (!strcasecmp(command, "quit") && nargs == 0) {
-		start_ok = 0;
-	    } else if (!strcasecmp(command, "continue") && nargs == 0) {
-		start_ok = 1;
-	    } else if (!strcasecmp(command, "debug") && nargs == 0) {
-		debug = !debug;
-	    } else if (!strcasecmp(command, "wizard") && nargs == 1
-		       && sscanf(words.v.list[2].v.str, "#%" PRIdN, &wizard) == 1) {
-		printf("** Switching to wizard #%" PRIdN "...\n", wizard);
-	    } else if (!strcasecmp(command, "help") || !strcasecmp(command, "?")) {
-		printf(";EXPR                 "
-		       "Evaluate MOO expression, print result.\n");
-		printf(";;CODE                "
-		       "Execute whole MOO verb, print result.\n");
-		printf("    (For above, omitting EXPR or CODE lets you "
-		       "enter several lines\n");
-		printf("     of input at once; type a period alone on a "
-		       "line to finish.)\n");
-		printf("program OBJ:VERB      "
-		       "Set the MOO code of an existing verb.\n");
-		printf("list OBJ:VERB         "
-		       "List the MOO code of an existing verb.\n");
-		printf("disassemble OBJ:VERB  "
-		       "List the internal form of an existing verb.\n");
-		printf("debug                 "
-		       "Toggle evaluation with(out) `d' bit.\n");
-		printf("wizard #XX            "
-		       "Execute future commands as wizard #XX.\n");
-		printf("continue              "
-		       "End emergency mode, continue start-up.\n");
-		printf("quit                  "
-		       "Exit server normally, saving database.\n");
-		printf("abort                 "
-		       "Exit server *without* saving database.\n");
-		printf("help, ?               "
-		       "Print this text.\n\n");
-		printf("NOTE: *NO* forked or suspended tasks will run "
-		       "until you exit this mode.\n\n");
-	    } else {
-		printf("** Unknown or malformed command.\n");
-	    }
+                h = find_verb_for_programming(wizard, verbref,
+                                              &message, &vname);
+                if (h.ptr)
+                    disassemble_to_file(stdout, db_verb_program(h));
+                else
+                    printf("%s\n", message);
+            } else if (!strcasecmp(command, "abort") && nargs == 0) {
+                printf("Bye.  (%s)\n\n", "NOT saving database");
+                exit(1);
+            } else if (!strcasecmp(command, "quit") && nargs == 0) {
+                start_ok = 0;
+            } else if (!strcasecmp(command, "continue") && nargs == 0) {
+                start_ok = 1;
+            } else if (!strcasecmp(command, "debug") && nargs == 0) {
+                debug = !debug;
+            } else if (!strcasecmp(command, "wizard") && nargs == 1
+                       && sscanf(words.v.list[2].v.str, "#%" PRIdN, &wizard) == 1) {
+                printf("** Switching to wizard #%" PRIdN "...\n", wizard);
+            } else if (!strcasecmp(command, "help") || !strcasecmp(command, "?")) {
+                printf(";EXPR                 "
+                       "Evaluate MOO expression, print result.\n");
+                printf(";;CODE                "
+                       "Execute whole MOO verb, print result.\n");
+                printf("    (For above, omitting EXPR or CODE lets you "
+                       "enter several lines\n");
+                printf("     of input at once; type a period alone on a "
+                       "line to finish.)\n");
+                printf("program OBJ:VERB      "
+                       "Set the MOO code of an existing verb.\n");
+                printf("list OBJ:VERB         "
+                       "List the MOO code of an existing verb.\n");
+                printf("disassemble OBJ:VERB  "
+                       "List the internal form of an existing verb.\n");
+                printf("debug                 "
+                       "Toggle evaluation with(out) `d' bit.\n");
+                printf("wizard #XX            "
+                       "Execute future commands as wizard #XX.\n");
+                printf("continue              "
+                       "End emergency mode, continue start-up.\n");
+                printf("quit                  "
+                       "Exit server normally, saving database.\n");
+                printf("abort                 "
+                       "Exit server *without* saving database.\n");
+                printf("help, ?               "
+                       "Print this text.\n\n");
+                printf("NOTE: *NO* forked or suspended tasks will run "
+                       "until you exit this mode.\n\n");
+            } else {
+                printf("** Unknown or malformed command.\n");
+            }
 
-	    free_var(words);
-	}
+            free_var(words);
+        }
     }
 
     printf("Bye.  (%s)\n\n", start_ok ? "continuing" : "saving database");
@@ -1175,7 +1175,7 @@ emergency_mode()
     free_stream(s);
     in_emergency_mode = false;
     oklog("EMERGENCY_MODE: Leaving mode; %s continue...\n",
-	  start_ok ? "will" : "won't");
+          start_ok ? "will" : "won't");
     return start_ok;
 }
 
@@ -1186,19 +1186,19 @@ run_do_start_script(Var code)
     Var result;
 
     switch (run_server_task(NOTHING,
-			    Var::new_obj(SYSTEM_OBJECT), "do_start_script", code, "",
-			    &result)) {
-    case OUTCOME_DONE:
-	unparse_value(s, result);
-	oklog("SCRIPT: => %s\n", reset_stream(s));
-	free_var(result);
-	break;
-    case OUTCOME_ABORTED:
-	oklog("SCRIPT: *Aborted*\n");
-	break;
-    case OUTCOME_BLOCKED:
-	oklog("SCRIPT: *Suspended*\n");
-	break;
+                            Var::new_obj(SYSTEM_OBJECT), "do_start_script", code, "",
+                            &result)) {
+        case OUTCOME_DONE:
+            unparse_value(s, result);
+            oklog("SCRIPT: => %s\n", reset_stream(s));
+            free_var(result);
+            break;
+        case OUTCOME_ABORTED:
+            oklog("SCRIPT: *Aborted*\n");
+            break;
+        case OUTCOME_BLOCKED:
+            oklog("SCRIPT: *Suspended*\n");
+            break;
     }
 
     free_stream(s);
@@ -1225,14 +1225,14 @@ do_script_file(const char *path)
     std::string line;
 
     if (!file.is_open()) {
-	panic_moo(strerror(errno));
+        panic_moo(strerror(errno));
     }
     while (std::getline(file, line)) {
-	str = str_dup_to_var(raw_bytes_to_clean(line.c_str(), line.size()));
-	code = listappend(code, str);
+        str = str_dup_to_var(raw_bytes_to_clean(line.c_str(), line.size()));
+        code = listappend(code, str);
     }
     if (errno) {
-	panic_moo(strerror(errno));
+        panic_moo(strerror(errno));
     }
 
     run_do_start_script(code);
@@ -1259,20 +1259,20 @@ init_random(void)
     int fd;
 
     if ((fd = open(RANDOM_DEVICE, O_RDONLY)) == -1) {
-	errlog("Can't open " RANDOM_DEVICE "!\n");
-	exit(1);
+        errlog("Can't open " RANDOM_DEVICE "!\n");
+        exit(1);
     }
 
     ssize_t count = 0, total = 0;
     ssize_t required = MIN(MINIMUM_SEED_ENTROPY, sizeof(input));
 
     while (total < required) {
-	if (total)
-	    oklog("RANDOM: seeding ... (more bytes required)\n");
-	if ((count = read(fd, input + total, sizeof(input) - total)) == -1) {
-	    errlog("Can't read " RANDOM_DEVICE "!\n");
-	    exit(1);
-	}
+        if (total)
+            oklog("RANDOM: seeding ... (more bytes required)\n");
+        if ((count = read(fd, input + total, sizeof(input) - total)) == -1) {
+            errlog("Can't read " RANDOM_DEVICE "!\n");
+            exit(1);
+        }
         total += count;
     }
 
@@ -1315,12 +1315,12 @@ set_server_cmdline(const char *line)
     char *p = cmdline_buffer, *e = p + cmdline_buflen - 1;
 
     while (*line && p < e)
-	*p++ = *line++;
+        *p++ = *line++;
     while (p < e)
-	*p++ = ' ';		/* Pad with blanks, not nulls; on SunOS and
-				 * maybe other systems, nulls would confuse
-				 * `ps'.  (*sigh*)
-				 */
+        *p++ = ' ';     /* Pad with blanks, not nulls; on SunOS and
+                 * maybe other systems, nulls would confuse
+                 * `ps'.  (*sigh*)
+                 */
     *e = '\0';
 }
 
@@ -1330,9 +1330,9 @@ server_flag_option(const char *name, int defallt)
     Var v;
 
     if (get_server_option(SYSTEM_OBJECT, name, &v))
-	return is_true(v);
+        return is_true(v);
     else
-	return defallt;
+        return defallt;
 }
 
 int
@@ -1341,9 +1341,9 @@ server_int_option(const char *name, int defallt)
     Var v;
 
     if (get_server_option(SYSTEM_OBJECT, name, &v))
-	return (v.type == TYPE_INT ? v.v.num : defallt);
+        return (v.type == TYPE_INT ? v.v.num : defallt);
     else
-	return defallt;
+        return defallt;
 }
 
 double
@@ -1352,9 +1352,9 @@ server_float_option(const char *name, double defallt)
     Var v;
 
     if (get_server_option(SYSTEM_OBJECT, name, &v))
-	return (v.type == TYPE_FLOAT ? v.v.fnum : defallt);
+        return (v.type == TYPE_FLOAT ? v.v.fnum : defallt);
     else
-	return defallt;
+        return defallt;
 }
 
 const char *
@@ -1363,9 +1363,9 @@ server_string_option(const char *name, const char *defallt)
     Var v;
 
     if (get_server_option(SYSTEM_OBJECT, name, &v))
-	return (v.type == TYPE_STR ? v.v.str : nullptr);
+        return (v.type == TYPE_STR ? v.v.str : nullptr);
     else
-	return defallt;
+        return defallt;
 }
 
 static Objid next_unconnected_player = NOTHING - 1;
@@ -1380,7 +1380,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
     h->next = all_shandles;
     h->prev = &all_shandles;
     if (all_shandles)
-	all_shandles->prev = &(h->next);
+        all_shandles->prev = &(h->next);
     all_shandles = h;
 
     h->nhandle = nh;
@@ -1396,14 +1396,14 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
     h->print_messages = l ? l->print_messages : !outbound;
 
     if (l || !outbound) {
-	new_input_task(h->tasks, "", 0, 0);
-	/*
-	 * Suspend input at the network level until the above input task
-	 * is processed.  At the point when it is dequeued, tasks.c will
-	 * notice that the queued input size is below the low water mark
-	 * and resume input.
-	 */
-	task_suspend_input(h->tasks);
+        new_input_task(h->tasks, "", 0, 0);
+        /*
+         * Suspend input at the network level until the above input task
+         * is processed.  At the point when it is dequeued, tasks.c will
+         * notice that the queued input size is below the low water mark
+         * and resume input.
+         */
+        task_suspend_input(h->tasks);
     }
 
     lock_connection_name_mutex(nh);
@@ -1414,11 +1414,11 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
         oklog("CONNECT: #%" PRIdN " to %s [%s], port %i\n", h->player,
               connection_name, network_ip_address(nh), network_port(nh));
     } else {
-    oklog("ACCEPT: #%" PRIdN " on %s [%s], port %i from %s [%s], port %i\n", h->player,
-	  network_source_connection_name(nh), network_source_ip_address(nh),
-      network_source_port(nh), connection_name,
-      network_ip_address(nh), network_port(nh));
-}
+        oklog("ACCEPT: #%" PRIdN " on %s [%s], port %i from %s [%s], port %i\n", h->player,
+              network_source_connection_name(nh), network_source_ip_address(nh),
+              network_source_port(nh), connection_name,
+              network_ip_address(nh), network_port(nh));
+    }
     free_str(connection_name);
     result.ptr = h;
     return result;
@@ -1432,14 +1432,14 @@ server_refuse_connection(server_listener sl, network_handle nh)
     lock_connection_name_mutex(nh);
 
     if (l->print_messages)
-	send_message(l->oid, nh, "server_full_msg",
-		     "*** Sorry, but the server cannot accept any more"
-		     " connections right now.",
-		     "*** Please try again later.",
-		     0);
+        send_message(l->oid, nh, "server_full_msg",
+                     "*** Sorry, but the server cannot accept any more"
+                     " connections right now.",
+                     "*** Please try again later.",
+                     0);
     errlog("SERVER FULL: refusing connection on %s from %s\n",
-	   l->name, (nh));
-    
+           l->name, (nh));
+
     unlock_connection_name_mutex(nh);
 }
 
@@ -1458,11 +1458,11 @@ server_close(server_handle sh)
     shandle *h = (shandle *) sh.ptr;
 
     lock_connection_name_mutex(h->nhandle);
-    
+
     oklog("CLIENT DISCONNECTED: %s on %s\n",
-	  object_name(h->player),
-	  network_connection_name(h->nhandle));
-    
+          object_name(h->player),
+          network_connection_name(h->nhandle));
+
     unlock_connection_name_mutex(h->nhandle);
     h->disconnect_me = 1;
     call_notifier(h->player, h->listener, "user_client_disconnected");
@@ -1493,7 +1493,7 @@ player_connected_silent(Objid old_id, Objid new_id)
     shandle *new_h = find_shandle(old_id);
 
     if (!new_h)
-	panic_moo("Non-existent shandle connected");
+        panic_moo("Non-existent shandle connected");
 
     new_h->switched = new_h->player;
     new_h->player = new_id;
@@ -1501,16 +1501,16 @@ player_connected_silent(Objid old_id, Objid new_id)
 
     if (existing_h) {
         network_close(existing_h->nhandle);
-	    free_shandle(existing_h);
+        free_shandle(existing_h);
     }
     lock_connection_name_mutex(new_h->nhandle);
-	oklog("%s %s is now %s on %s\n",
+    oklog("%s %s is now %s on %s\n",
           old_id < 0 ? "CONNECTED:" : "SWITCHED:",
-	      old_name,
+          old_name,
           object_name(new_h->player),
-	      network_connection_name(new_h->nhandle));
+          network_connection_name(new_h->nhandle));
     unlock_connection_name_mutex(new_h->nhandle);
-   free_str(old_name);
+    free_str(old_name);
 }
 
 char
@@ -1529,48 +1529,48 @@ proxy_connected(Objid connection, char *command)
     shandle *existing_h = find_shandle(connection);
     int ret = 0;
     if (existing_h) {
-    applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
-    char *source, *destination = nullptr;
-    char *source_port = nullptr;
-    char *destination_port = nullptr;
-    char *split = strtok(command, " ");
+        applog(LOG_INFO3, "PROXY: Proxy command detected: %s\n", command);
+        char *source, *destination = nullptr;
+        char *source_port = nullptr;
+        char *destination_port = nullptr;
+        char *split = strtok(command, " ");
 
-    int x = 0;
-    for (x = 1; x <= 6; x++) {
-        // Just in case something goes horribly wrong...
-        if (split == nullptr) {
-            errlog("PROXY: Proxy command parsing failed!\n");
-            return 1;
+        int x = 0;
+        for (x = 1; x <= 6; x++) {
+            // Just in case something goes horribly wrong...
+            if (split == nullptr) {
+                errlog("PROXY: Proxy command parsing failed!\n");
+                return 1;
+            }
+            switch (x) {
+                case 3:
+                    source = split;        // local interface
+                    break;
+                case 4:
+                    destination = split;             // incoming connection IP
+                    break;
+                case 5:
+                    destination_port = split;        // incoming connection port
+                    break;
+                case 6:
+                    source_port = split;   // local port
+                    break;
+                default:
+                    break;
+            }
+            split = strtok(nullptr, " ");
         }
-        switch (x) {
-            case 3:
-                source = split;        // local interface
-                break;
-            case 4:
-                destination = split;             // incoming connection IP
-                break;
-            case 5:
-                destination_port = split;        // incoming connection port
-                break;
-            case 6:
-                source_port = split;   // local port
-                break;
-            default:
-                break;
+        const char *old_name = str_dup(network_connection_name(existing_h->nhandle));   // rewrite is going to free this
+        int rw = rewrite_connection_name(existing_h->nhandle, destination, destination_port, source, source_port);
+        if (rw != 0) {
+            errlog("PROXY: Proxy rewrite failed.\n");
+            ret = 1;
+        } else {
+            lock_connection_name_mutex(existing_h->nhandle);
+            applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(existing_h->nhandle));
+            unlock_connection_name_mutex(existing_h->nhandle);
         }
-        split = strtok(nullptr, " ");
-    }
-    const char *old_name = str_dup(network_connection_name(existing_h->nhandle));   // rewrite is going to free this
-    int rw = rewrite_connection_name(existing_h->nhandle, destination, destination_port, source, source_port);
-    if (rw != 0) {
-        errlog("PROXY: Proxy rewrite failed.\n");
-        ret = 1;
-    } else {
-        lock_connection_name_mutex(existing_h->nhandle);
-        applog(LOG_INFO3, "PROXY: connection_name changed from `%s` to `%s`\n", old_name, network_connection_name(existing_h->nhandle));
-        unlock_connection_name_mutex(existing_h->nhandle);
-    }
-    free_str(old_name);
+        free_str(old_name);
     } else {
         ret = -1;
     }
@@ -1584,61 +1584,61 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
     shandle *new_h = find_shandle(old_id);
 
     if (!new_h)
-	panic_moo("Non-existent shandle connected");
+        panic_moo("Non-existent shandle connected");
 
     new_h->player = new_id;
     new_h->connection_time = time(nullptr);
 
     if (existing_h) {
-	/* we now have two shandles with the same player value while
-	 * find_shandle assumes there can only be one.  This needs to
-	 * be remedied before any call_notifier() call; luckily, the
-	 * latter only needs listener value.
-	 */
-	Objid existing_listener = existing_h->listener;
-    lock_connection_name_mutex(new_h->nhandle);
-	char *name1 = str_dup(network_connection_name(existing_h->nhandle));
-	oklog("REDIRECTED: %s, was %s, now %s\n",
-	      object_name(new_id),
-	      name1,
-	      network_connection_name(new_h->nhandle));
-    unlock_connection_name_mutex(new_h->nhandle);
-	free_str(name1);
-	if (existing_h->print_messages)
-	    send_message(existing_listener, existing_h->nhandle,
-			 "redirect_from_msg",
-			 "*** Redirecting connection to new port ***", 0);
-	if (new_h->print_messages)
-	    send_message(new_h->listener, new_h->nhandle, "redirect_to_msg",
-			 "*** Redirecting old connection to this port ***", 0);
-	network_close(existing_h->nhandle);
-	free_shandle(existing_h);
-	if (existing_listener == new_h->listener)
-	    call_notifier(new_id, new_h->listener, "user_reconnected");
-	else {
-	    new_h->disconnect_me = 1;
-	    call_notifier(new_id, existing_listener,
-			  "user_client_disconnected");
-	    new_h->disconnect_me = 0;
-	    call_notifier(new_id, new_h->listener, "user_connected");
-	}
+        /* we now have two shandles with the same player value while
+         * find_shandle assumes there can only be one.  This needs to
+         * be remedied before any call_notifier() call; luckily, the
+         * latter only needs listener value.
+         */
+        Objid existing_listener = existing_h->listener;
+        lock_connection_name_mutex(new_h->nhandle);
+        char *name1 = str_dup(network_connection_name(existing_h->nhandle));
+        oklog("REDIRECTED: %s, was %s, now %s\n",
+              object_name(new_id),
+              name1,
+              network_connection_name(new_h->nhandle));
+        unlock_connection_name_mutex(new_h->nhandle);
+        free_str(name1);
+        if (existing_h->print_messages)
+            send_message(existing_listener, existing_h->nhandle,
+                         "redirect_from_msg",
+                         "*** Redirecting connection to new port ***", 0);
+        if (new_h->print_messages)
+            send_message(new_h->listener, new_h->nhandle, "redirect_to_msg",
+                         "*** Redirecting old connection to this port ***", 0);
+        network_close(existing_h->nhandle);
+        free_shandle(existing_h);
+        if (existing_listener == new_h->listener)
+            call_notifier(new_id, new_h->listener, "user_reconnected");
+        else {
+            new_h->disconnect_me = 1;
+            call_notifier(new_id, existing_listener,
+                          "user_client_disconnected");
+            new_h->disconnect_me = 0;
+            call_notifier(new_id, new_h->listener, "user_connected");
+        }
     } else {
         char *full_conn_name = full_network_connection_name(new_h->nhandle);
-	oklog("%s: %s on %s\n",
-	      is_newly_created ? "CREATED" : "CONNECTED",
-	      object_name(new_h->player),
-	      full_conn_name);
-          free(full_conn_name);
-	if (new_h->print_messages) {
-	    if (is_newly_created)
-		send_message(new_h->listener, new_h->nhandle, "create_msg",
-			     "*** Created ***", 0);
-	    else
-		send_message(new_h->listener, new_h->nhandle, "connect_msg",
-			     "*** Connected ***", 0);
-	}
-	call_notifier(new_id, new_h->listener,
-		      is_newly_created ? "user_created" : "user_connected");
+        oklog("%s: %s on %s\n",
+              is_newly_created ? "CREATED" : "CONNECTED",
+              object_name(new_h->player),
+              full_conn_name);
+        free(full_conn_name);
+        if (new_h->print_messages) {
+            if (is_newly_created)
+                send_message(new_h->listener, new_h->nhandle, "create_msg",
+                             "*** Created ***", 0);
+            else
+                send_message(new_h->listener, new_h->nhandle, "connect_msg",
+                             "*** Connected ***", 0);
+        }
+        call_notifier(new_id, new_h->listener,
+                      is_newly_created ? "user_created" : "user_connected");
     }
 }
 
@@ -1655,9 +1655,9 @@ notify(Objid player, const char *message)
     shandle *h = find_shandle(player);
 
     if (h && !h->disconnect_me)
-	network_send_line(h->nhandle, message, 1, 1);
+        network_send_line(h->nhandle, message, 1, 1);
     else if (in_emergency_mode)
-	emergency_notify(player, message);
+        emergency_notify(player, message);
 }
 
 void
@@ -1666,7 +1666,7 @@ boot_player(Objid player)
     shandle *h = find_shandle(player);
 
     if (h)
-	h->disconnect_me = 1;
+        h->disconnect_me = 1;
 }
 
 void
@@ -1676,12 +1676,12 @@ write_active_connections(void)
     shandle *h;
 
     for (h = all_shandles; h; h = h->next)
-	count++;
+        count++;
 
     dbio_printf("%" PRIdN " active connections with listeners\n", count);
 
     for (h = all_shandles; h; h = h->next)
-	dbio_printf("%" PRIdN " %" PRIdN "\n", h->player, h->listener);
+        dbio_printf("%" PRIdN " %" PRIdN "\n", h->player, h->listener);
 }
 
 int
@@ -1691,40 +1691,40 @@ read_active_connections(void)
     char c;
 
     i = dbio_scanf("%d active connections%c", &count, &c);
-    if (i == EOF) {		/* older database format */
-	checkpointed_connections = new_list(0);
-	return 1;
+    if (i == EOF) {     /* older database format */
+        checkpointed_connections = new_list(0);
+        return 1;
     } else if (i != 2) {
-	errlog("READ_ACTIVE_CONNECTIONS: Bad active connections count.\n");
-	return 0;
+        errlog("READ_ACTIVE_CONNECTIONS: Bad active connections count.\n");
+        return 0;
     } else if (c == ' ') {
-	if (strcmp(dbio_read_string(), "with listeners") != 0) {
-	    errlog("READ_ACTIVE_CONNECTIONS: Bad listeners tag.\n");
-	    return 0;
-	} else
-	    have_listeners = 1;
+        if (strcmp(dbio_read_string(), "with listeners") != 0) {
+            errlog("READ_ACTIVE_CONNECTIONS: Bad listeners tag.\n");
+            return 0;
+        } else
+            have_listeners = 1;
     } else if (c != '\n') {
-	errlog("READ_ACTIVE_CONNECTIONS: Bad EOL.\n");
-	return 0;
+        errlog("READ_ACTIVE_CONNECTIONS: Bad EOL.\n");
+        return 0;
     }
     checkpointed_connections = new_list(count);
     for (i = 1; i <= count; i++) {
-	Objid who, listener;
-	Var v;
+        Objid who, listener;
+        Var v;
 
-	if (have_listeners) {
-	    if (dbio_scanf("%d %d\n", &who, &listener) != 2) {
-		errlog("READ_ACTIVE_CONNECTIONS: Bad conn/listener pair.\n");
-		return 0;
-	    }
-	} else {
-	    who = dbio_read_num();
-	    listener = SYSTEM_OBJECT;
-	}
-	checkpointed_connections.v.list[i] = v = new_list(2);
-	v.v.list[1].type = v.v.list[2].type = TYPE_OBJ;
-	v.v.list[1].v.obj = who;
-	v.v.list[2].v.obj = listener;
+        if (have_listeners) {
+            if (dbio_scanf("%d %d\n", &who, &listener) != 2) {
+                errlog("READ_ACTIVE_CONNECTIONS: Bad conn/listener pair.\n");
+                return 0;
+            }
+        } else {
+            who = dbio_read_num();
+            listener = SYSTEM_OBJECT;
+        }
+        checkpointed_connections.v.list[i] = v = new_list(2);
+        v.v.list[1].type = v.v.list[2].type = TYPE_OBJ;
+        v.v.list[1].v.obj = who;
+        v.v.list[2].v.obj = listener;
     }
 
     return 1;
@@ -1743,7 +1743,7 @@ find_network_handle(Objid obj, network_handle **handle)
     return 0;
 }
 
-    int waif_conversion_type = _TYPE_WAIF;    /* For shame. We can remove this someday. */
+int waif_conversion_type = _TYPE_WAIF;    /* For shame. We can remove this someday. */
 
 int
 main(int argc, char **argv)
@@ -1762,72 +1762,72 @@ main(int argc, char **argv)
     argc--;
     argv++;
     while (argc > 0 && argv[0][0] == '-') {
-	/* Deal with any command-line options */
-	switch (argv[0][1]) {
-    case 'v': /* Version */
-        fprintf(stderr, "ToastStunt version %s\n", server_version);
-        exit(1);
-	case 'e':		/* Emergency wizard mode */
-	    emergency = 1;
-	    break;
-	case 'l':		/* Specified log file */
-	    if (argc > 1) {
-		log_file = argv[1];
-        set_log_file_name(log_file);
-		argc--;
-		argv++;
-	    } else
-		argc = 0;
-	    break;
-	case 'f':		/* Specified file of code */
-	    if (argc > 1) {
-		if (!script_line)
-		    script_file_first = 1;
-		script_file = argv[1];
-		argc--;
-		argv++;
-	    } else
-		argc = 0;
-	    break;
-	case 'c':		/* Specified line of code */
-	    if (argc > 1) {
-		if (!script_file)
-		    script_file_first = 0;
-		script_line = argv[1];
-		argc--;
-		argv++;
-	    } else
-		argc = 0;
-	    break;
-    case 'w':       /* Specified an old waif type for conversion */
-        if (argc > 1) {
-            waif_conversion_type = atoi(argv[1]);
-            argc--;
-            argv++;
-        } else
-            argc = 0;
-        break;
-	case 'm':		/* clear last move */
-        clear_last_move = true;
-	    break;
-    default:
-	    argc = 0;		/* Provoke usage message below */
-	}
-	argc--;
-	argv++;
+        /* Deal with any command-line options */
+        switch (argv[0][1]) {
+            case 'v': /* Version */
+                fprintf(stderr, "ToastStunt version %s\n", server_version);
+                exit(1);
+            case 'e':       /* Emergency wizard mode */
+                emergency = 1;
+                break;
+            case 'l':       /* Specified log file */
+                if (argc > 1) {
+                    log_file = argv[1];
+                    set_log_file_name(log_file);
+                    argc--;
+                    argv++;
+                } else
+                    argc = 0;
+                break;
+            case 'f':       /* Specified file of code */
+                if (argc > 1) {
+                    if (!script_line)
+                        script_file_first = 1;
+                    script_file = argv[1];
+                    argc--;
+                    argv++;
+                } else
+                    argc = 0;
+                break;
+            case 'c':       /* Specified line of code */
+                if (argc > 1) {
+                    if (!script_file)
+                        script_file_first = 0;
+                    script_line = argv[1];
+                    argc--;
+                    argv++;
+                } else
+                    argc = 0;
+                break;
+            case 'w':       /* Specified an old waif type for conversion */
+                if (argc > 1) {
+                    waif_conversion_type = atoi(argv[1]);
+                    argc--;
+                    argv++;
+                } else
+                    argc = 0;
+                break;
+            case 'm':       /* clear last move */
+                clear_last_move = true;
+                break;
+            default:
+                argc = 0;       /* Provoke usage message below */
+        }
+        argc--;
+        argv++;
     }
 
     if (log_file) {
-	FILE *f = fopen(log_file, "a");
+        FILE *f = fopen(log_file, "a");
 
-	if (f)
-	    set_log_file(f);
-	else {
-	    perror("Error opening specified log file");
-	    exit(1);
-	}
+        if (f)
+            set_log_file(f);
+        else {
+            perror("Error opening specified log file");
+            exit(1);
+        }
     } else {
-	set_log_file(stderr);
+        set_log_file(stderr);
     }
 
     applog(LOG_INFO1, " _   __           _____                ______\n");
@@ -1838,38 +1838,38 @@ main(int argc, char **argv)
     applog(LOG_INFO1, "\n");
 
     if ((emergency && (script_file || script_line))
-	|| !db_initialize(&argc, &argv)
-	|| !network_initialize(argc, argv, &desc)) {
-	fprintf(stderr, "Usage: %s [-e] [-f script-file] [-c script-line] [-l log-file] [-m] [-w waif-type] %s %s\n",
-		this_program, db_usage_string(), network_usage_string());
-	fprintf(stderr, "Options:\n");
-    fprintf(stderr, "\t-v\t\tcurrent version\n");
-	fprintf(stderr, "\t-e\t\temergency wizard mode\n");
-	fprintf(stderr, "\t-f\t\tfile to load and pass to `#0:do_start_script()'\n");
-	fprintf(stderr, "\t-c\t\tline to pass to `#0:do_start_script()'\n");
-	fprintf(stderr, "\t-l\t\toptional log file\n");
-    fprintf(stderr, "\t-m\t\tclear the last_move builtin property on all objects\n");
-    fprintf(stderr, "\t-w\t\tconvert waifs from the specified type to the proper type (check with typeof(waif) in your MOO)\n\n");
-	fprintf(stderr, "The emergency mode switch (-e) may not be used with either the file (-f) or line (-c) options.\n\n");
-	fprintf(stderr, "Both the file and line options may be specified. Their order on the command line determines the order of their invocation.\n\n");
-	fprintf(stderr, "Examples: \n");
-	fprintf(stderr, "\t%s -c '$enable_debugging();' -f development.moo Minimal.db Minimal.db.new 7777\n", this_program);
-	fprintf(stderr, "\t%s Minimal.db Minimal.db.new\n", this_program);
-	exit(1);
+            || !db_initialize(&argc, &argv)
+            || !network_initialize(argc, argv, &desc)) {
+        fprintf(stderr, "Usage: %s [-e] [-f script-file] [-c script-line] [-l log-file] [-m] [-w waif-type] %s %s\n",
+                this_program, db_usage_string(), network_usage_string());
+        fprintf(stderr, "Options:\n");
+        fprintf(stderr, "\t-v\t\tcurrent version\n");
+        fprintf(stderr, "\t-e\t\temergency wizard mode\n");
+        fprintf(stderr, "\t-f\t\tfile to load and pass to `#0:do_start_script()'\n");
+        fprintf(stderr, "\t-c\t\tline to pass to `#0:do_start_script()'\n");
+        fprintf(stderr, "\t-l\t\toptional log file\n");
+        fprintf(stderr, "\t-m\t\tclear the last_move builtin property on all objects\n");
+        fprintf(stderr, "\t-w\t\tconvert waifs from the specified type to the proper type (check with typeof(waif) in your MOO)\n\n");
+        fprintf(stderr, "The emergency mode switch (-e) may not be used with either the file (-f) or line (-c) options.\n\n");
+        fprintf(stderr, "Both the file and line options may be specified. Their order on the command line determines the order of their invocation.\n\n");
+        fprintf(stderr, "Examples: \n");
+        fprintf(stderr, "\t%s -c '$enable_debugging();' -f development.moo Minimal.db Minimal.db.new 7777\n", this_program);
+        fprintf(stderr, "\t%s Minimal.db Minimal.db.new\n", this_program);
+        exit(1);
     }
 #if NETWORK_PROTOCOL != NP_SINGLE
     if (!emergency)
-	fclose(stdout);
+        fclose(stdout);
 #endif
     if (log_file)
-	fclose(stderr);
+        fclose(stderr);
 
     parent_pid = getpid();
 
     applog(LOG_INFO1, "STARTING: Version %s (%" PRIdN "-bit) of the ToastStunt/LambdaMOO server\n", server_version, SERVER_BITS);
     oklog("          (Using %s protocol)\n", network_protocol_name());
     oklog("          (Task timeouts measured in %s seconds.)\n",
-	  virtual_timer_available()? "server CPU" : "wall-clock");
+          virtual_timer_available() ? "server CPU" : "wall-clock");
     oklog("          (Process id %" PRIdN ")\n", parent_pid);
     if (waif_conversion_type != _TYPE_WAIF)
         applog(LOG_WARNING, "(Using type '%i' for waifs; will convert to '%i' at next checkpoint)\n", waif_conversion_type, _TYPE_WAIF);
@@ -1882,15 +1882,15 @@ main(int argc, char **argv)
 
     if ((lv6 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, true)) == nullptr)
         errlog("Error creating IPv6 listener.\n");
-        
+
     if (!lv4 && !lv6) {
-	errlog("Can't create initial connection point!\n");
-	exit(1);
+        errlog("Can't create initial connection point!\n");
+        exit(1);
     }
     free_var(desc);
 
     if (!db_load())
-	exit(1);
+        exit(1);
 
     free_reordered_rt_env_values();
 
@@ -1903,16 +1903,16 @@ main(int argc, char **argv)
     reset_command_history();
 
     if (script_file_first) {
-	if (script_file)
-	    do_script_file(script_file);
-	if (script_line)
-	    do_script_line(script_line);
+        if (script_file)
+            do_script_file(script_file);
+        if (script_line)
+            do_script_line(script_line);
     }
     else {
-	if (script_line)
-	    do_script_line(script_line);
-	if (script_file)
-	    do_script_file(script_file);
+        if (script_line)
+            do_script_line(script_line);
+        if (script_file)
+            do_script_file(script_file);
     }
 
     if (!emergency || emergency_mode()) {
@@ -1930,9 +1930,9 @@ main(int argc, char **argv)
         if (!lv6_status)
             free_slistener(lv6);
 
-	main_loop();
+        main_loop();
 
-	network_shutdown();
+        network_shutdown();
     }
 
     gc_collect();
@@ -1955,17 +1955,17 @@ bf_server_version(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
     if (arglist.v.list[0].v.num > 0) {
-	r = server_version_full(arglist.v.list[1]);
+        r = server_version_full(arglist.v.list[1]);
     }
     else {
-	r.type = TYPE_STR;
-	r.v.str = str_dup(server_version);
+        r.type = TYPE_STR;
+        r.v.str = str_dup(server_version);
     }
     free_var(arglist);
     if (r.type == TYPE_ERR)
-	return make_error_pack(r.v.err);
+        return make_error_pack(r.v.err);
     else
-	return make_var_pack(r);
+        return make_var_pack(r);
 }
 
 static package
@@ -1976,9 +1976,9 @@ bf_renumber(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     if (!valid(o))
-	return make_error_pack(E_INVARG);
+        return make_error_pack(E_INVARG);
     else if (!is_wizard(progr))
-	return make_error_pack(E_PERM);
+        return make_error_pack(E_PERM);
 
     r.type = TYPE_OBJ;
     r.v.obj = db_renumber_object(o);
@@ -1991,14 +1991,14 @@ bf_reset_max_object(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     if (!is_wizard(progr))
-	return make_error_pack(E_PERM);
+        return make_error_pack(E_PERM);
 
     db_reset_last_used_objid();
     return no_var_pack();
 }
 
 /* Returns total memory usage, resident set size, shared pages, text/code, and data + stack. */
-    static package
+static package
 bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
 {
     // LINUX: Values are returned in pages. To get KB, multiply by 4.
@@ -2022,7 +2022,7 @@ bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_FILE);
 
     if (fscanf(f, "%Lf %Lf %Lf %Lf %Lf %Lf %Lf",
-                &size, &resident, &share, &text, &lib, &data, &dt) != 7)
+               &size, &resident, &share, &text, &lib, &data, &dt) != 7)
     {
         fclose(f);
         return make_error_pack(E_NACC);
@@ -2049,7 +2049,7 @@ bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
 /* Return resource usage information from the operating system.
  * Values returned: {{load averages}, user time, system time, page reclaims, page faults, block input ops, block output ops, voluntary context switches, involuntary context switches, signals received
  * Divide load averages by 65536. */
-    static package
+static package
 bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
 {
     free_var(arglist);
@@ -2072,7 +2072,7 @@ bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
     int info_ret = sysinfo(&sys_info);
 
     for (x = 0; x < 3; x++)
-        cpu.v.list[x+1].v.num = (info_ret != 0 ? 0 : sys_info.loads[x]);
+        cpu.v.list[x + 1].v.num = (info_ret != 0 ? 0 : sys_info.loads[x]);
 #else
     /*** Begin CPU load averages ***/
 #ifdef __MACH__
@@ -2080,7 +2080,7 @@ bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
     size_t size = sizeof(load);
     if (sysctlbyname("vm.loadavg", &load, &size, 0, 0) != -1) {
         for (x = 0; x < 3; x++)
-            cpu.v.list[x+1].v.num = load.ldavg[x];
+            cpu.v.list[x + 1].v.num = load.ldavg[x];
     }
 #endif
 #endif
@@ -2091,7 +2091,7 @@ bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
 
     r.v.list[1].type = TYPE_FLOAT;
     r.v.list[2].type = TYPE_FLOAT;
-    r.v.list[1].v.fnum =(double)usage.ru_utime.tv_sec + (double)usage.ru_utime.tv_usec / CLOCKS_PER_SEC;
+    r.v.list[1].v.fnum = (double)usage.ru_utime.tv_sec + (double)usage.ru_utime.tv_usec / CLOCKS_PER_SEC;
     r.v.list[2].v.fnum = (double)usage.ru_stime.tv_sec + (double)usage.ru_stime.tv_usec / CLOCKS_PER_SEC;
     r.v.list[3].v.num = usage.ru_minflt;
     r.v.list[4].v.num = usage.ru_majflt;
@@ -2107,20 +2107,20 @@ bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 /* Unceremoniously exit the server, creating a panic dump of the database. */
-    static package
+static package
 bf_panic(Var arglist, Byte next, void *vdata, Objid progr)
 {
     const char *msg;
 
-    if(!is_wizard(progr)) {
+    if (!is_wizard(progr)) {
         free_var(arglist);
         return make_error_pack(E_PERM);
     }
 
-    if(arglist.v.list[0].v.num) {
-        msg=str_dup(arglist.v.list[1].v.str);
+    if (arglist.v.list[0].v.num) {
+        msg = str_dup(arglist.v.list[1].v.str);
     } else {
-        msg="";
+        msg = "";
     }
 
     free_var(arglist);
@@ -2137,14 +2137,14 @@ bf_shutdown(Var arglist, Byte next, void *vdata, Objid progr)
     const char *message = (nargs >= 1 ? arglist.v.list[1].v.str : nullptr);
 
     if (!is_wizard(progr)) {
-	free_var(arglist);
-	return make_error_pack(E_PERM);
+        free_var(arglist);
+        return make_error_pack(E_PERM);
     }
 
     shutdown_triggered = true;
     shutdown_message << "shutdown() called by " << object_name(progr);
     if (message)
-	shutdown_message << ": " << message;
+        shutdown_message << ": " << message;
 
     free_var(arglist);
     return no_var_pack();
@@ -2155,7 +2155,7 @@ bf_dump_database(Var arglist, Byte next, void *vdata, Objid progr)
 {
     free_var(arglist);
     if (!is_wizard(progr))
-	return make_error_pack(E_PERM);
+        return make_error_pack(E_PERM);
 
     checkpoint_requested = CHKPT_FUNC;
     return no_var_pack();
@@ -2169,9 +2169,9 @@ bf_db_disk_size(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     v.type = TYPE_INT;
     if ((v.v.num = db_disk_size()) < 0)
-	return make_raise_pack(E_QUOTA, "No database file(s) available", zero);
+        return make_raise_pack(E_QUOTA, "No database file(s) available", zero);
     else
-	return make_var_pack(v);
+        return make_var_pack(v);
 }
 
 #ifdef OUTBOUND_NETWORK
@@ -2181,8 +2181,8 @@ find_slistener_by_oid(Objid obj)
     slistener *l;
 
     for (l = all_slisteners; l; l = l->next)
-	if (l->oid == obj)
-	    return l;
+        if (l->oid == obj)
+            return l;
 
     return nullptr;
 }
@@ -2209,49 +2209,49 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
         use_ipv6 = is_true(arglist.v.list[3]);
         arglist = listdelete(arglist, 3);
     }
-    
+
     if (arglist.v.list[0].v.num == 3) {
-	Objid oid;
+        Objid oid;
 
-	if (arglist.v.list[3].type != TYPE_OBJ) {
-	    return make_error_pack(E_TYPE);
-	}
-	oid = arglist.v.list[3].v.obj;
-	arglist = listdelete(arglist, 3);
+        if (arglist.v.list[3].type != TYPE_OBJ) {
+            return make_error_pack(E_TYPE);
+        }
+        oid = arglist.v.list[3].v.obj;
+        arglist = listdelete(arglist, 3);
 
-	sl.ptr = find_slistener_by_oid(oid);
-	if (!sl.ptr) {
-	    /* Create a temporary */
-	    l.print_messages = 0;
-	    l.name = "open_network_connection";
-	    l.desc = zero;
-	    l.oid = oid;
-	    sl.ptr = &l;
-	}
+        sl.ptr = find_slistener_by_oid(oid);
+        if (!sl.ptr) {
+            /* Create a temporary */
+            l.print_messages = 0;
+            l.name = "open_network_connection";
+            l.desc = zero;
+            l.oid = oid;
+            sl.ptr = &l;
+        }
     } else {
-	sl.ptr = nullptr;
+        sl.ptr = nullptr;
     }
 
     e = network_open_connection(arglist, sl, use_ipv6);
     free_var(arglist);
     if (e == E_NONE) {
-	/* The connection was successfully opened, implying that
-	 * server_new_connection was called, implying and a new negative
-	 * player number was allocated for the connection.  Thus, the old
-	 * value of next_unconnected_player is the number of our connection.
-	 */
-	r.type = TYPE_OBJ;
-	r.v.obj = next_unconnected_player + 1;
+        /* The connection was successfully opened, implying that
+         * server_new_connection was called, implying and a new negative
+         * player number was allocated for the connection.  Thus, the old
+         * value of next_unconnected_player is the number of our connection.
+         */
+        r.type = TYPE_OBJ;
+        r.v.obj = next_unconnected_player + 1;
     } else {
-	r.type = TYPE_ERR;
-	r.v.err = e;
+        r.type = TYPE_ERR;
+        r.v.err = e;
     }
     if (r.type == TYPE_ERR)
-	return make_error_pack(r.v.err);
+        return make_error_pack(r.v.err);
     else
-	return make_var_pack(r);
+        return make_var_pack(r);
 
-#else				/* !OUTBOUND_NETWORK */
+#else               /* !OUTBOUND_NETWORK */
 
     /* This function is disabled in this server. */
 
@@ -2272,18 +2272,18 @@ bf_connected_players(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
     for (h = all_shandles; h; h = h->next)
-	if ((show_all || h->connection_time != 0) && !h->disconnect_me)
-	    count++;
+        if ((show_all || h->connection_time != 0) && !h->disconnect_me)
+            count++;
 
     result = new_list(count);
     count = 0;
 
     for (h = all_shandles; h; h = h->next) {
-	if ((show_all || h->connection_time != 0) && !h->disconnect_me) {
-	    count++;
-	    result.v.list[count].type = TYPE_OBJ;
-	    result.v.list[count].v.obj = h->player;
-	}
+        if ((show_all || h->connection_time != 0) && !h->disconnect_me) {
+            count++;
+            result.v.list[count].type = TYPE_OBJ;
+            result.v.list[count].v.obj = h->player;
+        }
     }
 
     return make_var_pack(result);
@@ -2291,43 +2291,43 @@ bf_connected_players(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_connected_seconds(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (player) */
+{   /* (player) */
     Var r;
     shandle *h = find_shandle(arglist.v.list[1].v.obj);
 
     r.type = TYPE_INT;
     if (h && h->connection_time != 0 && !h->disconnect_me)
-	r.v.num = time(nullptr) - h->connection_time;
+        r.v.num = time(nullptr) - h->connection_time;
     else
-	r.v.num = -1;
+        r.v.num = -1;
     free_var(arglist);
     if (r.v.num < 0)
-	return make_error_pack(E_INVARG);
+        return make_error_pack(E_INVARG);
     else
-	return make_var_pack(r);
+        return make_var_pack(r);
 }
 
 static package
 bf_idle_seconds(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (player) */
+{   /* (player) */
     Var r;
     shandle *h = find_shandle(arglist.v.list[1].v.obj);
 
     r.type = TYPE_INT;
     if (h && !h->disconnect_me)
-	r.v.num = time(nullptr) - h->last_activity_time;
+        r.v.num = time(nullptr) - h->last_activity_time;
     else
-	r.v.num = -1;
+        r.v.num = -1;
     free_var(arglist);
     if (r.v.num < 0)
-	return make_error_pack(E_INVARG);
+        return make_error_pack(E_INVARG);
     else
-	return make_var_pack(r);
+        return make_var_pack(r);
 }
 
 static package
 bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (player [, IP | LEGACY]) */
+{   /* (player [, IP | LEGACY]) */
     Objid who = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(who);
     Var r;
@@ -2351,11 +2351,11 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
     if (!is_wizard(progr) && progr != who)
-	return make_error_pack(E_PERM);
+        return make_error_pack(E_PERM);
     else if (!r.v.str)
-	return make_error_pack(E_INVARG);
+        return make_error_pack(E_INVARG);
     else {
-	return make_var_pack(r);
+        return make_var_pack(r);
     }
 }
 
@@ -2387,8 +2387,8 @@ name_lookup_callback(Var arglist, Var * ret)
 static package
 bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
 {
-	if (!is_wizard(progr) && progr != arglist.v.list[1].v.obj)
-		return make_error_pack(E_PERM);
+    if (!is_wizard(progr) && progr != arglist.v.list[1].v.obj)
+        return make_error_pack(E_PERM);
 
     /* The main thread should keep track of nhandle refcounts to
        ensure that close_nhandle doesn't pull the rug out from
@@ -2397,46 +2397,46 @@ bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
     if (h && !h->disconnect_me)
         increment_nhandle_refcount(h->nhandle);
 
-	char *human_string = nullptr;
-	asprintf(&human_string, "name_lookup for #%" PRIdN "", arglist.v.list[1].v.obj);
-	return background_thread(name_lookup_callback, &arglist, human_string);
+    char *human_string = nullptr;
+    asprintf(&human_string, "name_lookup for #%" PRIdN "", arglist.v.list[1].v.obj);
+    return background_thread(name_lookup_callback, &arglist, human_string);
 }
 
 static package
 bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (player, string [, no_flush]) */
+{   /* (player, string [, no_flush]) */
     Objid conn = arglist.v.list[1].v.obj;
     const char *line = arglist.v.list[2].v.str;
     int no_flush = (arglist.v.list[0].v.num > 2
-		    ? is_true(arglist.v.list[3])
-		    : 0);
+                    ? is_true(arglist.v.list[3])
+                    : 0);
     int no_newline = (arglist.v.list[0].v.num > 3
-            ? is_true(arglist.v.list[4]) : 0);
+                      ? is_true(arglist.v.list[4]) : 0);
 
     shandle *h = find_shandle(conn);
     Var r;
 
     if (!is_wizard(progr) && progr != conn) {
-	free_var(arglist);
-	return make_error_pack(E_PERM);
+        free_var(arglist);
+        return make_error_pack(E_PERM);
     }
     r.type = TYPE_INT;
     if (h && !h->disconnect_me) {
-	if (h->binary) {
-	    int length;
+        if (h->binary) {
+            int length;
 
-	    line = binary_to_raw_bytes(line, &length);
-	    if (!line) {
-		free_var(arglist);
-		return make_error_pack(E_INVARG);
-	    }
-	    r.v.num = network_send_bytes(h->nhandle, line, length, !no_flush);
-	} else
-	    r.v.num = network_send_line(h->nhandle, line, !no_flush, !no_newline);
+            line = binary_to_raw_bytes(line, &length);
+            if (!line) {
+                free_var(arglist);
+                return make_error_pack(E_INVARG);
+            }
+            r.v.num = network_send_bytes(h->nhandle, line, length, !no_flush);
+        } else
+            r.v.num = network_send_line(h->nhandle, line, !no_flush, !no_newline);
     } else {
-	if (in_emergency_mode)
-	    emergency_notify(conn, line);
-	r.v.num = 1;
+        if (in_emergency_mode)
+            emergency_notify(conn, line);
+        r.v.num = 1;
     }
     free_var(arglist);
     return make_var_pack(r);
@@ -2444,13 +2444,13 @@ bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_boot_player(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (object) */
+{   /* (object) */
     Objid oid = arglist.v.list[1].v.obj;
 
     free_var(arglist);
 
     if (oid != progr && !is_wizard(progr))
-	return make_error_pack(E_PERM);
+        return make_error_pack(E_PERM);
 
     boot_player(oid);
     return no_var_pack();
@@ -2458,7 +2458,7 @@ bf_boot_player(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_set_connection_option(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (conn, option, value) */
+{   /* (conn, option, value) */
     Objid oid = arglist.v.list[1].v.obj;
     const char *option = arglist.v.list[2].v.str;
     Var value = arglist.v.list[3];
@@ -2466,23 +2466,23 @@ bf_set_connection_option(Var arglist, Byte next, void *vdata, Objid progr)
     enum error e = E_NONE;
 
     if (oid != progr && !is_wizard(progr))
-	e = E_PERM;
+        e = E_PERM;
     else if (!h || h->disconnect_me
-	     || (!server_set_connection_option(h, option, value)
-		 && !tasks_set_connection_option(h->tasks, option, value)
-		 && !network_set_connection_option(h->nhandle, option, value)))
-	e = E_INVARG;
+             || (!server_set_connection_option(h, option, value)
+                 && !tasks_set_connection_option(h->tasks, option, value)
+                 && !network_set_connection_option(h->nhandle, option, value)))
+        e = E_INVARG;
 
     free_var(arglist);
     if (e == E_NONE)
-	return no_var_pack();
+        return no_var_pack();
     else
-	return make_error_pack(e);
+        return make_error_pack(e);
 }
 
 static package
 bf_connection_options(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (conn [, opt-name]) */
+{   /* (conn [, opt-name]) */
     Objid oid = arglist.v.list[1].v.obj;
     int nargs = arglist.v.list[0].v.num;
     const char *oname = (nargs >= 2 ? arglist.v.list[2].v.str : nullptr);
@@ -2490,24 +2490,24 @@ bf_connection_options(Var arglist, Byte next, void *vdata, Objid progr)
     Var ans;
 
     if (!h || h->disconnect_me) {
-	free_var(arglist);
-	return make_error_pack(E_INVARG);
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
     } else if (oid != progr && !is_wizard(progr)) {
-	free_var(arglist);
-	return make_error_pack(E_PERM);
+        free_var(arglist);
+        return make_error_pack(E_PERM);
     }
     if (oname) {
-	if (!server_connection_option(h, oname, &ans)
-	    && !tasks_connection_option(h->tasks, oname, &ans)
-	    && !network_connection_option(h->nhandle, oname, &ans)) {
-	    free_var(arglist);
-	    return make_error_pack(E_INVARG);
-	}
+        if (!server_connection_option(h, oname, &ans)
+                && !tasks_connection_option(h->tasks, oname, &ans)
+                && !network_connection_option(h->nhandle, oname, &ans)) {
+            free_var(arglist);
+            return make_error_pack(E_INVARG);
+        }
     } else {
-	ans = new_list(0);
-	ans = server_connection_options(h, ans);
-	ans = tasks_connection_options(h->tasks, ans);
-	ans = network_connection_options(h->nhandle, ans);
+        ans = new_list(0);
+        ans = server_connection_options(h, ans);
+        ans = tasks_connection_options(h->tasks, ans);
+        ans = network_connection_options(h->nhandle, ans);
     }
 
     free_var(arglist);
@@ -2516,16 +2516,16 @@ bf_connection_options(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_connection_info(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (conn) */
+{   /* (conn) */
     Objid oid = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(oid);
 
     if (!h || h->disconnect_me) {
-	free_var(arglist);
-	return make_error_pack(E_INVARG);
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
     } else if (oid != progr && !is_wizard(progr)) {
-	free_var(arglist);
-	return make_error_pack(E_PERM);
+        free_var(arglist);
+        return make_error_pack(E_PERM);
     }
 
     // Avoid some mallocs
@@ -2560,15 +2560,15 @@ find_slistener(Var desc, bool use_ipv6)
     slistener *l;
 
     for (l = all_slisteners; l; l = l->next)
-	if (equality(desc, l->desc, 0) && l->ipv6 == use_ipv6)
-	    return l;
+        if (equality(desc, l->desc, 0) && l->ipv6 == use_ipv6)
+            return l;
 
     return nullptr;
 }
 
 static package
 bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (oid, desc) */
+{   /* (oid, desc) */
     Objid oid = arglist.v.list[1].v.obj;
     Var desc = arglist.v.list[2];
     int nargs = arglist.v.list[0].v.num;
@@ -2578,44 +2578,44 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
     slistener *l = nullptr;
 
     if (!is_wizard(progr))
-	e = E_PERM;
+        e = E_PERM;
     else if (!valid(oid) || find_slistener(desc, ipv6))
-	e = E_INVARG;
-    else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6)));	/* Do nothing; e is already set */
+        e = E_INVARG;
+    else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6)));    /* Do nothing; e is already set */
     else if (!start_listener(l))
-	e = E_QUOTA;
+        e = E_QUOTA;
 
     free_var(arglist);
     if (e == E_NONE)
-	return make_var_pack(var_ref(l->desc));
+        return make_var_pack(var_ref(l->desc));
     else
-	return make_error_pack(e);
+        return make_error_pack(e);
 }
 
 static package
 bf_unlisten(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (desc) */
+{   /* (desc) */
     Var desc = arglist.v.list[1];
     bool ipv6 = arglist.v.list[0].v.num >= 2 && is_true(arglist.v.list[2]);
     enum error e = E_NONE;
     slistener *l = nullptr;
 
     if (!is_wizard(progr))
-	e = E_PERM;
+        e = E_PERM;
     else if (!(l = find_slistener(desc, ipv6)))
-	e = E_INVARG;
+        e = E_INVARG;
 
     free_var(arglist);
     if (e == E_NONE) {
-	free_slistener(l);
-	return no_var_pack();
+        free_slistener(l);
+        return no_var_pack();
     } else
-	return make_error_pack(e);
+        return make_error_pack(e);
 }
 
 static package
 bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (find) */
+{   /* (find) */
     const int nargs = arglist.v.list[0].v.num;
     Var entry, list = new_list(0);
     bool find_listener = nargs == 1 ? true : false;
@@ -2629,14 +2629,14 @@ bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
     static const Var ipv6 = str_dup_to_var("ipv6");
 
     for (l = all_slisteners; l; l = l->next) {
-    if (!find_listener || equality(find, (find.type == TYPE_OBJ) ? Var::new_obj(l->oid) : l->desc, 0)) {
-	entry = new_map();
-	entry = mapinsert(entry, var_ref(object), Var::new_obj(l->oid));
-	entry = mapinsert(entry, var_ref(port), var_ref(l->desc));
-	entry = mapinsert(entry, var_ref(print), Var::new_int(l->print_messages));
-	entry = mapinsert(entry, var_ref(ipv6), Var::new_int(l->ipv6));
-	list = listappend(list, entry);
-    }
+        if (!find_listener || equality(find, (find.type == TYPE_OBJ) ? Var::new_obj(l->oid) : l->desc, 0)) {
+            entry = new_map();
+            entry = mapinsert(entry, var_ref(object), Var::new_obj(l->oid));
+            entry = mapinsert(entry, var_ref(port), var_ref(l->desc));
+            entry = mapinsert(entry, var_ref(print), Var::new_int(l->print_messages));
+            entry = mapinsert(entry, var_ref(ipv6), Var::new_int(l->ipv6));
+            list = listappend(list, entry);
+        }
     }
 
     free_var(arglist);
@@ -2645,7 +2645,7 @@ bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* ([connection]) */
+{   /* ([connection]) */
     int nargs = arglist.v.list[0].v.num;
     Objid conn = nargs >= 1 ? arglist.v.list[1].v.obj : 0;
     Var r;
@@ -2653,16 +2653,16 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     r.type = TYPE_INT;
     if (nargs == 0)
-	r.v.num = MAX_QUEUED_OUTPUT;
+        r.v.num = MAX_QUEUED_OUTPUT;
     else {
-	shandle *h = find_shandle(conn);
+        shandle *h = find_shandle(conn);
 
-	if (!h)
-	    return make_error_pack(E_INVARG);
-	else if (progr != conn && !is_wizard(progr))
-	    return make_error_pack(E_PERM);
+        if (!h)
+            return make_error_pack(E_INVARG);
+        else if (progr != conn && !is_wizard(progr))
+            return make_error_pack(E_PERM);
 
-	r.v.num = network_buffered_output_length(h->nhandle);
+        r.v.num = network_buffered_output_length(h->nhandle);
     }
 
     return make_var_pack(r);
@@ -2700,24 +2700,24 @@ register_server(void)
     register_function("dump_database", 0, 0, bf_dump_database);
     register_function("db_disk_size", 0, 0, bf_db_disk_size);
     register_function("open_network_connection", 0, -1,
-		      bf_open_network_connection);
+                      bf_open_network_connection);
     register_function("connected_players", 0, 1, bf_connected_players,
-		      TYPE_ANY);
+                      TYPE_ANY);
     register_function("connected_seconds", 1, 1, bf_connected_seconds,
-		      TYPE_OBJ);
+                      TYPE_OBJ);
     register_function("idle_seconds", 1, 1, bf_idle_seconds, TYPE_OBJ);
     register_function("connection_name", 1, 2, bf_connection_name, TYPE_OBJ, TYPE_INT);
     register_function("notify", 2, 4, bf_notify, TYPE_OBJ, TYPE_STR, TYPE_ANY, TYPE_ANY);
     register_function("boot_player", 1, 1, bf_boot_player, TYPE_OBJ);
     register_function("set_connection_option", 3, 3, bf_set_connection_option,
-		      TYPE_OBJ, TYPE_STR, TYPE_ANY);
+                      TYPE_OBJ, TYPE_STR, TYPE_ANY);
     register_function("connection_options", 1, 2, bf_connection_options,
-		      TYPE_OBJ, TYPE_STR);
+                      TYPE_OBJ, TYPE_STR);
     register_function("connection_info", 1, 1, bf_connection_info, TYPE_OBJ);
     register_function("connection_name_lookup", 1, 2, bf_name_lookup, TYPE_OBJ, TYPE_ANY);
     register_function("listen", 2, 4, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function("unlisten", 1, 2, bf_unlisten, TYPE_ANY, TYPE_ANY);
     register_function("listeners", 0, 1, bf_listeners, TYPE_ANY);
     register_function("buffered_output_length", 0, 1,
-		      bf_buffered_output_length, TYPE_OBJ);
+                      bf_buffered_output_length, TYPE_OBJ);
 }

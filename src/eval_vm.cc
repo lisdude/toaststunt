@@ -50,8 +50,8 @@ free_vm(vm the_vm, int stack_too)
     free_var(the_vm->local);
 
     if (stack_too)
-	for (i = the_vm->top_activ_stack; i >= 0; i--)
-	    free_activation(&the_vm->activ_stack[i], 1);
+        for (i = the_vm->top_activ_stack; i >= 0; i--)
+            free_activation(&the_vm->activ_stack[i], 1);
     myfree(the_vm->activ_stack, M_VM);
     myfree(the_vm, M_VM);
 }
@@ -75,9 +75,9 @@ suspended_lineno_of_vm(vm the_vm)
 
     top = top_activ(the_vm);
     return find_line_number(top.prog, (the_vm->top_activ_stack == 0
-				       ? the_vm->root_activ_vector
-				       : MAIN_VECTOR),
-			    top.error_pc);
+                                       ? the_vm->root_activ_vector
+                                       : MAIN_VECTOR),
+                            top.error_pc);
 }
 
 /**** read/write data base ****/
@@ -90,11 +90,11 @@ write_vm(vm the_vm)
     dbio_write_var(the_vm->local);
 
     dbio_printf("%u %d %u %u\n",
-		the_vm->top_activ_stack, the_vm->root_activ_vector,
-		the_vm->func_id, the_vm->max_stack_size);
+                the_vm->top_activ_stack, the_vm->root_activ_vector,
+                the_vm->func_id, the_vm->max_stack_size);
 
     for (i = 0; i <= the_vm->top_activ_stack; i++)
-	write_activ(the_vm->activ_stack[i]);
+        write_activ(the_vm->activ_stack[i]);
 }
 
 vm
@@ -107,17 +107,17 @@ read_vm(int task_id)
 
     Var local;
     if (dbio_input_version >= DBV_TaskLocal)
-	local = dbio_read_var();
+        local = dbio_read_var();
     else
-	local = new_map();
+        local = new_map();
 
     if (dbio_scanf("%u %d %u%c", &top, &vector, &func_id, &c) != 4
-	|| (c == ' '
-	    ? dbio_scanf("%u%c", &max, &c) != 2 || c != '\n'
-	    : (max = DEFAULT_MAX_STACK_DEPTH, c != '\n'))) {
-	free_var(local);
-	errlog("READ_VM: Bad vm header\n");
-	return nullptr;
+            || (c == ' '
+                ? dbio_scanf("%u%c", &max, &c) != 2 || c != '\n'
+                : (max = DEFAULT_MAX_STACK_DEPTH, c != '\n'))) {
+        free_var(local);
+        errlog("READ_VM: Bad vm header\n");
+        return nullptr;
     }
     the_vm = new_vm(task_id, local, top + 1);
     the_vm->max_stack_size = max;
@@ -126,10 +126,10 @@ read_vm(int task_id)
     the_vm->func_id = func_id;
 
     for (i = 0; i <= top; i++)
-	if (!read_activ(&the_vm->activ_stack[i],
-			i == 0 ? vector : MAIN_VECTOR)) {
-	    errlog("READ_VM: Bad activ number %d\n", i);
-	    return nullptr;
-	}
+        if (!read_activ(&the_vm->activ_stack[i],
+                        i == 0 ? vector : MAIN_VECTOR)) {
+            errlog("READ_VM: Bad activ number %d\n", i);
+            return nullptr;
+        }
     return the_vm;
 }
