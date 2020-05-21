@@ -52,6 +52,7 @@ typedef struct {
 } package;
 
 void register_bi_functions(void);
+void unregister_bi_functions(void);
 
 enum abort_reason {
     ABORT_KILL    = -1, 	/* kill_task(task_id()) */

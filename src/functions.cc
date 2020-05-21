@@ -528,6 +528,20 @@ bf_load_server_options(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 void
+unregister_bi_functions()
+{
+        const auto functionCount = bf_table.size();
+        for (size_t i = 0; i < functionCount; i++) {
+            free_str(bf_table[i].name);
+            free_str(bf_table[i].protect_str);
+            free_str(bf_table[i].verb_str);
+            free(bf_table[i].prototype);
+        }
+
+    bf_table.clear();
+}
+
+void
 register_functions(void)
 {
     register_function("function_info", 0, 1, bf_function_info, TYPE_STR);

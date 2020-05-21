@@ -1941,6 +1941,7 @@ main(int argc, char **argv)
     sqlite_shutdown();
     curl_shutdown();
     pcre_shutdown();
+    unregister_bi_functions();
 
     free_str(this_program);
 
