@@ -91,17 +91,18 @@ bf_url_encode(Var arglist, Byte next, void *vdata, Objid progr)
 
     CURL *curl_handle = curl_easy_init();
 
-    const char *encoded = curl_easy_escape(curl_handle, url, memo_strlen(url));
+    char *encoded = curl_easy_escape(curl_handle, url, memo_strlen(url));
 
-    if(encoded == nullptr) {
+    if (encoded == nullptr) {
         curl_easy_cleanup(curl_handle);
         return make_error_pack(E_INVARG);
     }
 
-        curl_easy_cleanup(curl_handle);
-
     r.type = TYPE_STR;
     r.v.str = str_dup(encoded);
+
+    curl_free(encoded);
+    curl_easy_cleanup(curl_handle);
 
     return make_var_pack(r);
 }
@@ -116,17 +117,18 @@ bf_url_decode(Var arglist, Byte next, void *vdata, Objid progr)
 
     CURL *curl_handle = curl_easy_init();
 
-    const char *decoded = curl_easy_unescape(curl_handle, url, memo_strlen(url), nullptr);
+    char *decoded = curl_easy_unescape(curl_handle, url, memo_strlen(url), nullptr);
 
-    if(decoded == nullptr) {
+    if (decoded == nullptr) {
         curl_easy_cleanup(curl_handle);
         return make_error_pack(E_INVARG);
     }
 
-    curl_easy_cleanup(curl_handle);
-
     r.type = TYPE_STR;
     r.v.str = str_dup(decoded);
+
+    curl_free(decoded);
+    curl_easy_cleanup(curl_handle);
 
     return make_var_pack(r);
 }
