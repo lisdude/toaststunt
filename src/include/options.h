@@ -182,12 +182,12 @@
  * function.  If neither option is supplied, the definition given to
  * OUTBOUND_NETWORK here determines the default behavior
  * (use 0 to disable by default, 1 or blank to enable by default).
- * 
+ *
  * If OUTBOUND_NETWORK is not defined at all,
  * open_network_connection() is permanently disabled and +O is ignored.
  *
  * *** THINK VERY HARD BEFORE ENABLING THIS FUNCTION ***
- * In some contexts, this could represent a serious breach of security.  
+ * In some contexts, this could represent a serious breach of security.
  *
  * Note: OUTBOUND_NETWORK may not be defined if NETWORK_PROTOCOL is NP_SINGLE.
  */
@@ -212,8 +212,8 @@
  *		    it stops reading from the connection at all.  The server
  *		    starts reading from the connection again once most of the
  *		    buffered input is consumed.
- * MAX_LINE_BYTES is the maximum amount of bytes that a line sent to the server can consist of
- *		    prior to the connection unceremoniously being closed,
+ * MAX_LINE_BYTES is the maximum amount of bytes that a line sent to the server
+ *          can consist of prior to the connection unceremoniously being closed,
  *		    to prevent memory allocation panics.
  * DEFAULT_CONNECT_TIMEOUT is the default number of seconds an un-logged-in
  *			   connection is allowed to remain idle without being
@@ -225,7 +225,7 @@
 
 #define MAX_QUEUED_OUTPUT	      65536
 #define MAX_QUEUED_INPUT	      MAX_QUEUED_OUTPUT
-#define MAX_LINE_BYTES          5242880 
+#define MAX_LINE_BYTES          5242880
 #define DEFAULT_CONNECT_TIMEOUT	300
 
 /******************************************************************************
@@ -245,7 +245,7 @@
  * Do not set either value to a number less than 1.
  */
 
-#define PATTERN_CACHE_SIZE	20
+#define PATTERN_CACHE_SIZE	    20
 #define PCRE_PATTERN_CACHE_SIZE	20
 
 /******************************************************************************
@@ -255,7 +255,7 @@
  * disable the use of $server_options.protect_<property> for those who
  * did not actually make use of protected builtin properties.  Since all
  * protect_<property> options are now cached, this #define is now deprecated.
- ****************************************************************************** 
+ ******************************************************************************
  */
 
 /* #define IGNORE_PROP_PROTECTED */
@@ -274,7 +274,7 @@
  * the next time (if it's in a loop) it will have the only reference to the
  * copy and then it can take advantage.
  *
- * NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL    
+ * NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL
  *
  * This option affects the length of certain bytecode sequences.
  * Suspended tasks in a database from a server built with this option
@@ -285,7 +285,7 @@
  * lifted in a future version of the server software.  Consider this
  * option as being BETA QUALITY until then.
  *
- * NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL    
+ * NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL
  *
  ******************************************************************************
  */
@@ -464,9 +464,12 @@
 /* #define SAVE_FINISHED_TASKS 15 */
 
 /******************************************************************************
- * For debugging tracebacks, it is possible to capture the variables for the environment prior to
- * passing them to `handle_uncaught_error', `handle_task_timeout', and `handle_lagging_task' inside the database.
- * Be aware that this includes all runtime environment variables including pre-set constants, and the information returned can be very extensive (and possibly memory intensive).
+ * For debugging tracebacks, it is possible to capture the variables for the
+ * environment prior to passing them to `handle_uncaught_error',
+ * `handle_task_timeout', and `handle_lagging_task' inside the database.
+ * Be aware that this includes all runtime environment variables including
+ * pre-set constants, and the information returned can be very extensive
+ * (and possibly memory intensive).
  ******************************************************************************
 */
 /* #define INCLUDE_RT_VARS */
@@ -513,7 +516,7 @@
  ******************************************************************************
  */
 
-/* #define TOTAL_BACKGROUND_THREADS    2 */
+#define TOTAL_BACKGROUND_THREADS    2
 #define DEFAULT_THREAD_MODE         true
 
 /******************************************************************************
@@ -527,7 +530,7 @@
  ******************************************************************************
  */
 
-/* #define NO_NAME_LOOKUP 0 */
+#define NO_NAME_LOOKUP 0
 
 /******************************************************************************
  * This constant controls the maximum recursive depth that parse_json will
