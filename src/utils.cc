@@ -428,6 +428,8 @@ compare(Var lhs, Var rhs, int case_matters)
                 return lhs.v.waif == rhs.v.waif ? 0 : 1;
             case TYPE_ANON:
                 return lhs.v.anon == rhs.v.anon ? 0 : 1;
+            case TYPE_BOOL:
+                return lhs.v.truth == rhs.v.truth ? 0 : 1;
             default:
                 panic_moo("COMPARE: Invalid value type");
         }
