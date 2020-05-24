@@ -43,6 +43,7 @@
 #cmakedefine VERSION_MAJOR @VERSION_MAJOR@
 #cmakedefine VERSION_MINOR @VERSION_MINOR@
 #cmakedefine VERSION_RELEASE @VERSION_RELEASE@
+#cmakedefine VERSION_EXT "@VERSION_EXT@"
 #ifndef VERSION_RELEASE
 // Work around VERSION_RELEASE not being defined when 0.
 #   define VERSION_RELEASE 0

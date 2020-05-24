@@ -202,6 +202,10 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
     }
     const auto f = bf_table[n];
 
+    static Stream *error_msg = nullptr;
+    if (error_msg == nullptr)
+        error_msg = new_stream(20);
+
     if (func_pc == 1) {     /* check arg types and count *ONLY* for first entry */
         int k, max;
         Var *args = arglist.v.list;
@@ -227,8 +231,17 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
          */
         if (args[0].v.num < f.minargs
                 || (f.maxargs != -1 && args[0].v.num > f.maxargs)) {
+            int num_args = args[0].v.num;
             free_var(arglist);
-            return make_error_pack(E_ARGS);
+            stream_printf(error_msg, "%s (expected", unparse_error(E_ARGS));
+            if (f.minargs != f.maxargs)
+                stream_printf(error_msg, " %i-%i", f.minargs, f.maxargs);
+            else
+                stream_printf(error_msg, " %i", f.minargs);
+
+            stream_printf(error_msg, "; got %i)", num_args);
+
+            return make_raise_pack(E_ARGS, reset_stream(error_msg), var_ref(zero));
         }
         /*
          * Check argument types
@@ -244,7 +257,11 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
                                                   || arg == TYPE_FLOAT))
                     || proto == arg)) {
                 free_var(arglist);
-                return make_error_pack(E_TYPE);
+
+                stream_printf(error_msg, "%s (args[%i] of %s() expected %s; got %s)",
+                              unparse_error(E_TYPE), k + 1, f.name, parse_type(proto), parse_type(arg));
+
+                return make_raise_pack(E_TYPE, reset_stream(error_msg), var_ref(zero));
             }
         }
     } else if (func_pc == 2 && vdata == &call_bi_func) {
@@ -343,7 +360,7 @@ make_raise_pack(enum error err, const char *msg, Var value)
 }
 
 package
-make_raise_x_not_found_pack(enum error err, const char *msg)
+make_x_not_found_pack(enum error err, const char *msg)
 {
     Var missing;
     missing.type = TYPE_STR;
@@ -530,13 +547,13 @@ bf_load_server_options(Var arglist, Byte next, void *vdata, Objid progr)
 void
 unregister_bi_functions()
 {
-        const auto functionCount = bf_table.size();
-        for (size_t i = 0; i < functionCount; i++) {
-            free_str(bf_table[i].name);
-            free_str(bf_table[i].protect_str);
-            free_str(bf_table[i].verb_str);
-            free(bf_table[i].prototype);
-        }
+    const auto functionCount = bf_table.size();
+    for (size_t i = 0; i < functionCount; i++) {
+        free_str(bf_table[i].name);
+        free_str(bf_table[i].protect_str);
+        free_str(bf_table[i].verb_str);
+        free(bf_table[i].prototype);
+    }
 
     bf_table.clear();
 }

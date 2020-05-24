@@ -177,6 +177,52 @@ parse_error(const char *e)
     return -1;
 }
 
+/*
+    This also probably doesn't belong here, but this sure is
+    a handy place for translating internal values to strings!
+*/
+const char*
+parse_type(var_type var)
+{
+    /* We can't use these two special #defines in a switch statement
+       because they're less than the minimum value of the enum. So
+       this is slightly silly, but functional. */
+
+    if (var == TYPE_NUMERIC)
+        return "number";
+    else if (var == TYPE_ANY)
+        return "any type";
+
+    switch (var) {
+        case TYPE_INT:
+            return "integer";
+        case TYPE_OBJ:
+            return "object";
+        case TYPE_ERR:
+            return "error";
+        case TYPE_STR:
+            return "string";
+        case TYPE_FLOAT:
+            return "float";
+        case TYPE_LIST:
+            return "list";
+        case TYPE_MAP:
+            return "map";
+        case TYPE_ANON:
+            return "anonymous object";
+        case TYPE_WAIF:
+            return "waif";
+        case TYPE_BOOL:
+            return "bool";
+        case TYPE_NUMERIC:
+            return "integer or float";
+        case TYPE_ANY:
+            return "any type";
+        default:
+            return "unknown type";
+    }
+}
+
 struct prec {
     enum Expr_Kind kind;
     int precedence;

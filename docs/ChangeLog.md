@@ -14,6 +14,7 @@
 - Providing a true argument to `queued_tasks()` will include all variables for any running tasks that you are authorized to examine. Additionally, a third argument has been added to the task_stack() builtin, which toggles whether variables are included with each frame for the provided task.
 - Add a `BOOL` type, to unambiguously indicate whether a value is TRUE or FALSE. The `true` and `false` variables are set at task runtime and can be overridden within verbs if needed.
 - The `parse_json` function now uses the BOOL type instead of converting to strings. Similarly, passing a boolean to `generate_json` is understood to be a BOOL.
+- Improve type mismatch errors. Tracebacks will now tell you what type was expected vs the type that you supplied. The value returned in a caught E_TYPE is now a list of the format `{{expected types}, supplied type}`. Builtin functions will now tell you which argument was incorrect and the expected / supplied type for that argument.
 
 ## 2.6.1 (Mar 10, 2020)
 - The `mapvalues` function now accepts any number of keys, the values of which will be returned by the function. If a key doesn't exist, E_RANGE is returned.

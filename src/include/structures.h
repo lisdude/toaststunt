@@ -90,7 +90,12 @@ enum error {
  * numeric equivalents of the type values, and those equivalents are
  * both DB-accessible knowledge and stored in raw form in the DB.  For
  * new complex types add both a _TYPE_XYZ definition and a TYPE_XYZ
- * definition.
+ * definition. Don't forget to add an English name for new types to unparse.cc.
+ * 
+ * Some E_TYPE errors will specifically mention all types are acceptable
+ * except a select few. When you add a new type, if applicable, add it to the
+ * PUSH_TYPE_MISMATCH call in the following places (terrible, I know):
+ * execute.cc: OP_MAP_INSERT, OP_PUSH_REF, OP_RANGE_REF, EOP_RANGESET
  */
 typedef enum {
     TYPE_INT, TYPE_OBJ, _TYPE_STR, TYPE_ERR, _TYPE_LIST, /* user-visible */

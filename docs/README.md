@@ -24,7 +24,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 - 64-bit Integers (with the choice to fall back to 32-bit integers; $maxint and $minint set automatically)
 - Network Improvements (including IPv6 connection support and threaded DNS lookups)
 - HAProxy Source IP Rewriting (see notes below if you need to disable this)
-- Boolean (BOOL) type
+- User friendly error messages in tracebacks
 
 - Waifs:
     - Call :recycle on waifs when they're destroyed
@@ -127,7 +127,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - SIGUSR1 will close and reopen the logfile, allowing it to be rotated without restarting the server.
     - '-m' command line option to clear all last_move properties in your database (and not set them again for the lifetime of the process).
     - Build system is now CMake
-    - Improved error messages when verbs, properties, or variables are not found.
+    - Boolean (BOOL) type
 
 ## Build Instructions
 ### **Debian/Ubuntu**
