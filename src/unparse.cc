@@ -214,10 +214,6 @@ parse_type(var_type var)
             return "waif";
         case TYPE_BOOL:
             return "bool";
-        case TYPE_NUMERIC:
-            return "integer or float";
-        case TYPE_ANY:
-            return "any type";
         default:
             return "unknown type";
     }
