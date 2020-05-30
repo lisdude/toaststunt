@@ -76,6 +76,10 @@ my @options =
         LOG_GC_STATS
 		COLOR_LOGS
          )],
+
+   # debugging
+   _DDEF => [qw(INCLUDE_RT_VARS
+   		 )],
    _DINT => [qw(SAVE_FINISHED_TASKS
    		 )],
 
