@@ -244,6 +244,14 @@ typedef struct Waif {
     v.v.waif = waif;
     return v;
     }
+
+    static Var
+    new_bool(int value) {
+        Var v;
+        v.type = TYPE_BOOL;
+        v.v.truth = value ? true : false;
+        return v;
+    }
 };
 
 inline Var
