@@ -364,11 +364,15 @@ make_x_not_found_pack(enum error err, const char *msg)
 {
     Var missing;
     missing.type = TYPE_STR;
-    missing.v.str = str_dup(msg);
+    missing.v.str = str_ref(msg);
     char *error_msg = nullptr;
     asprintf(&error_msg, "%s: %s", unparse_error(err), msg);
 
-    return make_raise_pack(err, error_msg, missing);
+    package p = make_raise_pack(err, error_msg, missing);
+
+    free(error_msg);
+
+    return p;
 }
 
 package
