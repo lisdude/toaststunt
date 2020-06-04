@@ -2246,6 +2246,47 @@ bf_queue_info(Var arglist, Byte next, void *vdata, Objid progr)
             res.v.list[count].v.obj = tq->player;
             count--;
         }
+    } else if (is_wizard(progr)) {
+        /* Currently keeping the map key names forever. Is this called often enough to warrant that? */
+        static Var queue_pname = str_dup_to_var("player");
+        static Var queue_handler = str_dup_to_var("handler");
+        static Var queue_connected = str_dup_to_var("connected");
+        static Var queue_total_input_length = str_dup_to_var("total_input_length");
+        static Var queue_last_input_task_id = str_dup_to_var("last_input_task_id");
+        static Var queue_suspended = str_dup_to_var("input_suspended");
+        static Var queue_usage = str_dup_to_var("usage");
+        static Var queue_num_bg_tasks = str_dup_to_var("num_bg_tasks");
+        static Var queue_hold_input = str_dup_to_var("hold_input");
+        static Var queue_disable_oob = str_dup_to_var("disable_oob");
+        static Var queue_reading = str_dup_to_var("reading");
+        static Var queue_parsing = str_dup_to_var("parsing");
+        static Var queue_vm = str_dup_to_var("reading_task_id");
+
+        Objid who = arglist.v.list[1].v.obj;
+        tqueue *tq = find_tqueue(who, 0);
+
+        if (!tq) {
+            res.type = TYPE_INT;
+            res.v.num = 0;
+        } else {
+            res = new_map();
+            res = mapinsert(res, var_ref(queue_pname), Var::new_obj(tq->player));
+            res = mapinsert(res, var_ref(queue_handler), Var::new_obj(tq->handler));
+            res = mapinsert(res, var_ref(queue_connected), Var::new_bool(tq->connected));
+            res = mapinsert(res, var_ref(queue_total_input_length), Var::new_int(tq->total_input_length));
+            res = mapinsert(res, var_ref(queue_last_input_task_id), Var::new_int(tq->last_input_task_id));
+            res = mapinsert(res, var_ref(queue_suspended), Var::new_bool(tq->input_suspended));
+            res = mapinsert(res, var_ref(queue_usage), Var::new_int(tq->usage));
+            res = mapinsert(res, var_ref(queue_num_bg_tasks), Var::new_int(tq->num_bg_tasks));
+            res = mapinsert(res, var_ref(queue_hold_input), Var::new_bool(tq->usage));
+            res = mapinsert(res, var_ref(queue_disable_oob), Var::new_bool(tq->disable_oob));
+            res = mapinsert(res, var_ref(queue_reading), Var::new_bool(tq->reading));
+            res = mapinsert(res, var_ref(queue_parsing), Var::new_bool(tq->parsing));
+            res = mapinsert(res, var_ref(queue_vm), tq->reading ?
+                            Var::new_int(tq->reading_vm->task_id) :
+                            Var::new_int(0));
+        }
+
     } else {
         Objid who = arglist.v.list[1].v.obj;
         tqueue *tq = find_tqueue(who, 0);
