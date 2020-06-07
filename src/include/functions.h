@@ -63,7 +63,6 @@ enum abort_reason {
 package make_abort_pack(enum abort_reason reason);
 package make_error_pack(enum error err);
 package make_raise_pack(enum error err, const char *msg, Var value);
-package make_x_not_found_pack(enum error err, const char *msg);
 package make_var_pack(Var v);
 package no_var_pack(void);
 package make_call_pack(Byte pc, void *data);

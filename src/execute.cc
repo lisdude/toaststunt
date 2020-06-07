@@ -17,7 +17,6 @@
 
 #include <chrono>
 #include <string.h>
-#include <stdarg.h>
 
 #include "collection.h"
 #include "config.h"
@@ -46,19 +45,19 @@
 #include "waif.h"
 #include "version.h"
 #include "background.h"
-#include "unparse.h"
 
 /* the following globals are the guts of the virtual machine: */
 static activation *activ_stack = nullptr;
 static Num max_stack_size = 0;
 static unsigned top_activ_stack;    /* points to top-of-stack
-                                       (last-occupied-slot),
-                                        not next-empty-slot */
+                       (last-occupied-slot),
+                       not next-empty-slot */
 static Num root_activ_vector;   /* root_activ_vector == MAIN_VECTOR
-                                   iff root activation is main
-                                   vector */
+                   iff root activation is main
+                   vector */
 
-/* these globals are not part of the vm because they get re-initialized after a suspend */
+/* these globals are not part of the vm because they get re-initialized
+   after a suspend */
 static int ticks_remaining;
 int task_timed_out;
 static int interpreter_is_running = 0;
@@ -97,7 +96,7 @@ static Var map_time;
 /* macros to ease indexing into activation stack */
 #define RUN_ACTIV     activ_stack[top_activ_stack]
 #define CALLER_ACTIV  activ_stack[top_activ_stack - 1]
-
+
 /**** error handling ****/
 
 typedef enum {          /* Reasons for executing a FINALLY handler */
@@ -291,12 +290,10 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
                 a->top_rt_stack = new_top;
                 if (found) {
                     *(a->top_rt_stack++) = value;
-                    /* Another exception has been raised... */
                     return 0;
                 }
-            } else {
+            } else
                 free_var(v);
-            }
         }
         if (why == FIN_EXIT) {
             a->pc = value.v.list[2].v.num;
@@ -598,7 +595,7 @@ save_hinfo:
             (void) unwind_stack(FIN_ABORT, zero, nullptr);
     }
 }
-
+
 /**** activation manipulation ****/
 
 static int
@@ -633,7 +630,7 @@ free_activation(activation * ap, char data_too)
         free_data(ap->bi_func_data);
     /* else bi_func_state will be later freed by bi_function */
 }
-
+
 
 /** Set up another activation for calling a verb
   does not change the vm in case of any error **/
@@ -784,7 +781,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass, bool
 #else
 #define bi_prop_protected(prop, progr) ((!is_wizard(progr)) && server_flag_option_cached(prop))
 #endif              /* IGNORE_PROP_PROTECTED */
-
+
 /**
   the main interpreter -- run()
   everything is just an entry point to it
@@ -815,124 +812,70 @@ run(char raise, enum error resumption_error, Var * result)
 #define TOP_RT_VALUE           (*(rts - 1))
 #define NEXT_TOP_RT_VALUE      (*(rts - 2))
 
-#define READ_BYTES(bv, nb)                      \
-    ( bv += nb,                                 \
-      (nb == 1                                  \
-       ? bv[-1]                                 \
-       : (nb == 2                               \
+#define READ_BYTES(bv, nb)          \
+    ( bv += nb,                 \
+      (nb == 1                      \
+       ? bv[-1]                 \
+       : (nb == 2               \
           ? ((unsigned) bv[-2] << 8) + bv[-1]   \
-          : (((unsigned) bv[-4] << 24)          \
+          : (((unsigned) bv[-4] << 24)      \
              + ((unsigned) bv[-3] << 16)        \
              + ((unsigned) bv[-2] << 8)         \
              + bv[-1]))))
 
 #define SKIP_BYTES(bv, nb)  ((void)(bv += nb))
 
-#define LOAD_STATE_VARIABLES()                                            \
-    do {                                                                  \
+#define LOAD_STATE_VARIABLES()                  \
+    do {                                \
         bc = ( (top_activ_stack != 0 || root_activ_vector == MAIN_VECTOR) \
-               ? RUN_ACTIV.prog->main_vector                              \
-               : RUN_ACTIV.prog->fork_vectors[root_activ_vector]);        \
-        bv = bc.vector + RUN_ACTIV.pc;                                    \
-        error_bv = bc.vector + RUN_ACTIV.error_pc;                        \
-        rts = RUN_ACTIV.top_rt_stack; /* next empty slot */               \
+               ? RUN_ACTIV.prog->main_vector            \
+               : RUN_ACTIV.prog->fork_vectors[root_activ_vector]);  \
+        bv = bc.vector + RUN_ACTIV.pc;                  \
+        error_bv = bc.vector + RUN_ACTIV.error_pc;          \
+        rts = RUN_ACTIV.top_rt_stack; /* next empty slot */         \
     } while (0)
 
-#define STORE_STATE_VARIABLES()                     \
-    do {                                            \
-        RUN_ACTIV.pc = bv - bc.vector;              \
+#define STORE_STATE_VARIABLES()         \
+    do {                        \
+        RUN_ACTIV.pc = bv - bc.vector;      \
         RUN_ACTIV.error_pc = error_bv - bc.vector;  \
-        RUN_ACTIV.top_rt_stack = rts;               \
+        RUN_ACTIV.top_rt_stack = rts;       \
     } while (0)
 
-#define RAISE_ERROR(the_err)                                \
-    do {                                                    \
-        if (RUN_ACTIV.debug) {                              \
-            STORE_STATE_VARIABLES();                        \
+#define RAISE_ERROR(the_err)                \
+    do {                            \
+        if (RUN_ACTIV.debug) {              \
+            STORE_STATE_VARIABLES();            \
             if (raise_error(make_error_pack(the_err), 0))   \
-                return OUTCOME_ABORTED;                     \
-            else {                                          \
-                LOAD_STATE_VARIABLES();                     \
-                goto next_opcode;                           \
-            }                                               \
-        }                                                   \
+                return OUTCOME_ABORTED;         \
+            else {                      \
+                LOAD_STATE_VARIABLES();         \
+                goto next_opcode;               \
+            }                       \
+        }                           \
     } while (0)
 
-#define RAISE_ERROR_WITH_VALUE(the_err, the_msg, the_value)                     \
-    do {                                                                        \
-        if (RUN_ACTIV.debug) {                                                  \
-            STORE_STATE_VARIABLES();                                            \
-            if (raise_error(make_raise_pack(the_err, the_msg, the_value), 0)) { \
-                /* No try-except */                                             \
-                free_str(the_msg);                                              \
-                return OUTCOME_ABORTED;                                         \
-            } else {                                                            \
-                LOAD_STATE_VARIABLES();                                         \
-                free_str(the_msg);                                              \
-                goto next_opcode;                                               \
-            } \
-        } \
-    } while (0)
-
-#define PUSH_ERROR(the_err)                                 \
-    do {                                                    \
+#define PUSH_ERROR(the_err)                 \
+    do {                                \
         RAISE_ERROR(the_err);   /* may not return!! */      \
-        error_var.type = TYPE_ERR;                          \
-        error_var.v.err = the_err;                          \
-        PUSH(error_var);                                    \
+        error_var.type = TYPE_ERR;                  \
+        error_var.v.err = the_err;                  \
+        PUSH(error_var);                        \
     } while (0)
 
-    /* NOTE: the_msg will be freed */
-#define PUSH_ERROR_WITH_VALUE(the_err, the_msg, the_value)                        \
-    do {                                                                          \
-        RAISE_ERROR_WITH_VALUE(the_err, the_msg, the_value); /* may not return */ \
-        free_str(the_msg);                                                        \
-        free_var(the_value);                                                      \
-        error_var.type = TYPE_ERR;                                                \
-        error_var.v.err = the_err;                                                \
-        PUSH(error_var);                                                          \
-    } while (0)
-
-#define PUSH_ERROR_UNLESS_QUOTA(the_err)                                \
-    do {                                                                \
-        if (E_QUOTA == (the_err) &&                                     \
+#define PUSH_ERROR_UNLESS_QUOTA(the_err)            \
+    do {                                \
+        if (E_QUOTA == (the_err) &&                 \
                 !server_flag_option_cached(SVO_MAX_CONCAT_CATCHABLE))   \
-        {                                                               \
-            /* simulate out-of-seconds abort resulting */               \
-            /* from monster malloc+copy taking too long */              \
-            STORE_STATE_VARIABLES();                                    \
-            abort_task(ABORT_SECONDS);                                  \
-            return OUTCOME_ABORTED;                                     \
-        }                                                               \
-        else                                                            \
-            PUSH_ERROR(the_err);                                        \
-    } while (0)
-
-#define PUSH_X_NOT_FOUND(the_err, the_missing)                                            \
-    do {                                                                                  \
-        static Stream *error_stream = nullptr;                                            \
-        if (error_stream == nullptr) {                                                    \
-            error_stream = new_stream(20);                                                \
-        }                                                                                 \
-        stream_printf(error_stream, "%s: %s", unparse_error(the_err), the_missing.v.str); \
-        char *error_message = str_dup(reset_stream(error_stream));                        \
-        PUSH_ERROR_WITH_VALUE(the_err, error_message, the_missing);                       \
-    } while (0)
-
-#define RAISE_TYPE_MISMATCH(...)                               \
-    do {                                                       \
-        char *error_msg = type_mismatch_string(__VA_ARGS__);   \
-        Var value = type_mismatch_value(__VA_ARGS__);          \
-        RAISE_ERROR_WITH_VALUE(E_TYPE, error_msg, value);      \
-        free_str(error_msg);                                   \
-        free_var(value);                                       \
-    } while (0)
-
-#define PUSH_TYPE_MISMATCH(...)                                \
-    do {                                                       \
-        char *error_msg = type_mismatch_string(__VA_ARGS__);   \
-        Var value = type_mismatch_value(__VA_ARGS__);          \
-        PUSH_ERROR_WITH_VALUE(E_TYPE, error_msg, value);       \
+        {                               \
+            /* simulate out-of-seconds abort resulting */       \
+            /* from monster malloc+copy taking too long */      \
+            STORE_STATE_VARIABLES();                \
+            abort_task(ABORT_SECONDS);              \
+            return OUTCOME_ABORTED;                 \
+        }                               \
+        else                            \
+            PUSH_ERROR(the_err);                    \
     } while (0)
 
 #define JUMP(label)     (bv = bc.vector + label)
@@ -999,12 +942,9 @@ do_test:
 
                 to = TOP_RT_VALUE;
                 from = NEXT_TOP_RT_VALUE;
-
                 if ((to.type != TYPE_INT && to.type != TYPE_OBJ)
                         || to.type != from.type) {
-                    RAISE_TYPE_MISMATCH(2,
-                                        to.type != TYPE_INT && to.type != TYPE_OBJ ? to.type : from.type,
-                                        TYPE_INT, TYPE_OBJ);
+                    RAISE_ERROR(E_TYPE);
                     free_var(POP());
                     free_var(POP());
                     JUMP(lab);
@@ -1078,7 +1018,7 @@ do_test:
                     free_var(key);
                     free_var(value);
                     free_var(map);
-                    PUSH_TYPE_MISMATCH(8, key.type, TYPE_STR, TYPE_INT, TYPE_OBJ, TYPE_ERR, TYPE_FLOAT, TYPE_ANON, TYPE_WAIF, TYPE_BOOL);
+                    PUSH_ERROR(E_TYPE);
                 } else {
                     r = mapinsert(map, key, value);
                     if (value_bytes(r) <= server_int_option_cached(SVO_MAX_MAP_VALUE_BYTES))
@@ -1109,7 +1049,7 @@ do_test:
                 if (list.type != TYPE_LIST) {
                     free_var(list);
                     free_var(tail);
-                    PUSH_TYPE_MISMATCH(1, list.type, TYPE_LIST);
+                    PUSH_ERROR(E_TYPE);
                 } else {
                     r = listappend(list, tail);
                     if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
@@ -1131,7 +1071,7 @@ do_test:
                 if (tail.type != TYPE_LIST || list.type != TYPE_LIST) {
                     free_var(list);
                     free_var(tail);
-                    PUSH_TYPE_MISMATCH(1, tail.type != TYPE_LIST ? tail.type : list.type, TYPE_LIST);
+                    PUSH_ERROR(E_TYPE);
                 } else {
                     r = listconcat(list, tail);
                     if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
@@ -1252,9 +1192,8 @@ do_test:
 
             case OP_CHECK_LIST_FOR_SPLICE:
                 if (TOP_RT_VALUE.type != TYPE_LIST) {
-                    var_type rt_value_type = TOP_RT_VALUE.type;
                     free_var(POP());
-                    PUSH_TYPE_MISMATCH(1, rt_value_type, TYPE_LIST);
+                    PUSH_ERROR(E_TYPE);
                 }
                 /* no op if top-rt-stack is a list */
                 break;
@@ -1309,7 +1248,7 @@ do_test:
                 } else if (rhs.type != lhs.type || rhs.type == TYPE_LIST || rhs.type == TYPE_MAP) {
                     free_var(rhs);
                     free_var(lhs);
-                    PUSH_TYPE_MISMATCH(1, rhs.type, lhs.type);
+                    PUSH_ERROR(E_TYPE);
                 } else {
                     switch (rhs.type) {
                         case TYPE_INT:
@@ -1369,11 +1308,9 @@ finish_comparison:
                     free_var(lhs);
                     free_var(rhs);
                 } else if (rhs.type != TYPE_LIST && rhs.type != TYPE_MAP) {
-                    var_type rhs_type = rhs.type;
-                    var_type lhs_type = lhs.type;
                     free_var(rhs);
                     free_var(lhs);
-                    PUSH_TYPE_MISMATCH(2, rhs.type, TYPE_LIST, TYPE_MAP);
+                    PUSH_ERROR(E_TYPE);
                 } else {
                     ans.type = TYPE_INT;
                     ans.v.num = ismember(lhs, rhs, 0);
@@ -1390,7 +1327,6 @@ finish_comparison:
             case OP_MOD:
             {
                 Var lhs, rhs, ans;
-                var_type lhs_type, rhs_type;
 
                 rhs = POP();    /* should be number */
                 lhs = POP();    /* should be number */
@@ -1416,21 +1352,13 @@ finish_comparison:
                 } else {
                     ans.type = TYPE_ERR;
                     ans.v.err = E_TYPE;
-                    lhs_type = lhs.type;
-                    rhs_type = rhs.type;
                 }
                 free_var(rhs);
                 free_var(lhs);
-                if (ans.type == TYPE_ERR) {
-                    if (ans.v.err == E_TYPE)
-                        PUSH_TYPE_MISMATCH(2,
-                                           lhs_type != TYPE_INT && lhs_type != TYPE_FLOAT ? lhs_type : rhs_type,
-                                           TYPE_INT, TYPE_FLOAT);
-                    else
-                        PUSH_ERROR(ans.v.err);
-                } else {
+                if (ans.type == TYPE_ERR)
+                    PUSH_ERROR(ans.v.err);
+                else
                     PUSH(ans);
-                }
             }
             break;
 
@@ -1440,10 +1368,6 @@ finish_comparison:
 
                 rhs = POP();
                 lhs = POP();
-
-                var_type lhs_type = lhs.type;
-                var_type rhs_type = rhs.type;
-
                 if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
                         && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT))
                     ans = do_add(lhs, rhs);
@@ -1470,27 +1394,10 @@ finish_comparison:
                 free_var(rhs);
                 free_var(lhs);
 
-                if (ans.type == TYPE_ERR) {
-                    /* This is maybe slightly unwieldy, but it works. It assumes lhs is the type you really wanted. */
-                    if (ans.v.err == E_TYPE) {
-                        if (lhs_type == TYPE_STR)
-                            PUSH_TYPE_MISMATCH(1, lhs_type != TYPE_STR ? lhs_type : rhs_type, TYPE_STR);
-                        else if (rhs_type == TYPE_STR && lhs_type != TYPE_INT && lhs_type != TYPE_FLOAT)
-                            PUSH_TYPE_MISMATCH(1, lhs_type, TYPE_STR);
-                        else if (lhs_type == TYPE_INT)
-                            PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_INT);
-                        else if (lhs_type == TYPE_FLOAT)
-                            PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_FLOAT);
-                        else if (lhs_type != TYPE_INT && lhs_type != TYPE_FLOAT && (rhs_type == TYPE_INT || rhs_type == TYPE_FLOAT))
-                            PUSH_TYPE_MISMATCH(1, lhs_type, rhs.type);
-                        else
-                            PUSH_TYPE_MISMATCH(3, lhs.type, TYPE_INT, TYPE_FLOAT, TYPE_STR);
-                    } else {
-                        PUSH_ERROR_UNLESS_QUOTA(ans.v.err);
-                    }
-                } else {
+                if (ans.type == TYPE_ERR)
+                    PUSH_ERROR_UNLESS_QUOTA(ans.v.err);
+                else
                     PUSH(ans);
-                }
             }
             break;
 
@@ -1525,7 +1432,6 @@ finish_comparison:
             case OP_UNARY_MINUS:
             {
                 Var arg, ans;
-                var_type arg_type;
 
                 arg = POP();
                 if (arg.type == TYPE_INT) {
@@ -1535,9 +1441,8 @@ finish_comparison:
                     ans.type = TYPE_FLOAT;
                     ans.v.fnum = -arg.v.fnum;
                 } else {
-                    arg_type = arg.type;
                     free_var(arg);
-                    PUSH_TYPE_MISMATCH(2, arg_type, TYPE_INT, TYPE_FLOAT);
+                    PUSH_ERROR(E_TYPE);
                     break;
                 }
 
@@ -1653,11 +1558,12 @@ finish_comparison:
 
                 index = TOP_RT_VALUE;
                 list = NEXT_TOP_RT_VALUE;
+
                 if (list.type == TYPE_MAP) {
                     Var value;
                     const rbnode *node;
                     if (index.is_collection() && TYPE_ANON != index.type) {
-                        PUSH_TYPE_MISMATCH(8, index.type, TYPE_STR, TYPE_INT, TYPE_OBJ, TYPE_ERR, TYPE_FLOAT, TYPE_ANON, TYPE_WAIF, TYPE_BOOL);
+                        PUSH_ERROR(E_TYPE);
                     } else if (!(node = maplookup(list, index, &value, 0))) {
                         PUSH_ERROR(E_RANGE);
                     } else {
@@ -1666,7 +1572,7 @@ finish_comparison:
                     }
                 } else if (list.type == TYPE_LIST) {
                     if (index.type != TYPE_INT) {
-                        PUSH_TYPE_MISMATCH(1, index.type, TYPE_INT);
+                        PUSH_ERROR(E_TYPE);
                     } else if (index.v.num <= 0 ||
                                index.v.num > list.v.list[0].v.num) {
                         PUSH_ERROR(E_RANGE);
@@ -1675,7 +1581,7 @@ finish_comparison:
                         list.v.list[index.v.num].type = TYPE_NONE;
                     }
                 } else {
-                    PUSH_TYPE_MISMATCH(2, list.type, TYPE_LIST, TYPE_MAP);
+                    PUSH_ERROR(E_TYPE);
                 }
             }
             break;
@@ -1690,25 +1596,22 @@ finish_comparison:
 
                 if (base.type != TYPE_MAP && base.type != TYPE_LIST
                         && base.type != TYPE_STR) {
-                    var_type base_type = base.type;
                     free_var(to);
                     free_var(from);
                     free_var(base);
-                    PUSH_TYPE_MISMATCH(3, base_type, TYPE_LIST, TYPE_MAP, TYPE_STR);
+                    PUSH_ERROR(E_TYPE);
                 } else if (base.type == TYPE_MAP
                            && ((to.is_collection() && TYPE_ANON != to.type) || (from.is_collection() && TYPE_ANON != from.type))) {
-                    var_type to_from_type = to.is_collection() ? to.type : from.type;
                     free_var(to);
                     free_var(from);
                     free_var(base);
-                    PUSH_TYPE_MISMATCH(8, to_from_type, TYPE_STR, TYPE_INT, TYPE_OBJ, TYPE_ERR, TYPE_FLOAT, TYPE_ANON, TYPE_WAIF, TYPE_BOOL);
+                    PUSH_ERROR(E_TYPE);
                 } else if ((base.type == TYPE_LIST || base.type == TYPE_STR)
                            && (to.type != TYPE_INT || from.type != TYPE_INT)) {
-                    var_type to_from_type = to.type != TYPE_INT ? to.type : from.type;
                     free_var(to);
                     free_var(from);
                     free_var(base);
-                    PUSH_TYPE_MISMATCH(1, to_from_type, TYPE_INT);
+                    PUSH_ERROR(E_TYPE);
                 } else if (base.type == TYPE_MAP) {
                     Var iterfrom, iterto;
                     int rel = compare(from, to, 0);
@@ -1769,12 +1672,9 @@ finish_comparison:
             {
                 Var value;
 
-                int var_pos = READ_BYTES(bv, bc.numbytes_var_name);
-                value = RUN_ACTIV.rt_env[var_pos];
-                if (value.type == TYPE_NONE) {
-                    Var not_found = str_ref_to_var(*(&RUN_ACTIV.prog->var_names[var_pos]));
-                    PUSH_X_NOT_FOUND(E_VARNF, not_found);
-                }
+                value = RUN_ACTIV.rt_env[READ_BYTES(bv, bc.numbytes_var_name)];
+                if (value.type == TYPE_NONE)
+                    PUSH_ERROR(E_VARNF);
                 else
                     PUSH_REF(value);
             }
@@ -1797,10 +1697,9 @@ finish_comparison:
                     else
                         PUSH_ERROR(err);
                 } else if (!obj.is_object() || propname.type != TYPE_STR) {
-                    var_type incorrect_type = propname.type != TYPE_STR ? propname.type : obj.type;
                     free_var(propname);
                     free_var(obj);
-                    PUSH_TYPE_MISMATCH(1, incorrect_type, incorrect_type == TYPE_STR ? TYPE_OBJ : TYPE_STR);
+                    PUSH_ERROR(E_TYPE);
                 } else if (!is_valid(obj)) {
                     free_var(propname);
                     free_var(obj);
@@ -1812,22 +1711,19 @@ finish_comparison:
                     h = db_find_property(obj, propname.v.str, &prop);
                     built_in = db_is_property_built_in(h);
 
+                    free_var(propname);
                     free_var(obj);
 
-                    if (!h.ptr) {
-                        PUSH_X_NOT_FOUND(E_PROPNF, propname);
-                    } else {
-                        free_var(propname);
-
-                        if (built_in
-                                ? bi_prop_protected(built_in, RUN_ACTIV.progr)
-                                : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
-                            PUSH_ERROR(E_PERM);
-                        else if (built_in)
-                            PUSH(prop); /* it's already freshly allocated */
-                        else
-                            PUSH_REF(prop);
-                    }
+                    if (!h.ptr)
+                        PUSH_ERROR(E_PROPNF);
+                    else if (built_in
+                             ? bi_prop_protected(built_in, RUN_ACTIV.progr)
+                             : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
+                        PUSH_ERROR(E_PERM);
+                    else if (built_in)
+                        PUSH(prop); /* it's already freshly allocated */
+                    else
+                        PUSH_REF(prop);
                 }
             }
             break;
@@ -1846,10 +1742,9 @@ finish_comparison:
                         PUSH(prop);
                     else
                         PUSH_ERROR(err);
-                } else if (!obj.is_object() || propname.type != TYPE_STR) {
-                    var_type incorrect_type = propname.type != TYPE_STR ? propname.type : obj.type;
-                    PUSH_TYPE_MISMATCH(1, incorrect_type, incorrect_type == TYPE_STR ? TYPE_OBJ : TYPE_STR);
-                } else if (!is_valid(obj))
+                } else if (!obj.is_object() || propname.type != TYPE_STR)
+                    PUSH_ERROR(E_TYPE);
+                else if (!is_valid(obj))
                     PUSH_ERROR(E_INVIND);
                 else {
                     db_prop_handle h;
@@ -1857,12 +1752,11 @@ finish_comparison:
 
                     h = db_find_property(obj, propname.v.str, &prop);
                     built_in = db_is_property_built_in(h);
-                    if (!h.ptr) {
-                        Var the_error = var_ref(propname);
-                        PUSH_X_NOT_FOUND(E_PROPNF, the_error);
-                    } else if (built_in
-                               ? bi_prop_protected(built_in, RUN_ACTIV.progr)
-                               : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
+                    if (!h.ptr)
+                        PUSH_ERROR(E_PROPNF);
+                    else if (built_in
+                             ? bi_prop_protected(built_in, RUN_ACTIV.progr)
+                             : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
                         PUSH_ERROR(E_PERM);
                     else if (built_in)
                         PUSH(prop); /* it's already freshly allocated */
@@ -1883,25 +1777,19 @@ finish_comparison:
                     enum error err;
 
                     err = waif_put_prop(obj.v.waif, propname.v.str, rhs, RUN_ACTIV.progr);
+                    free_var(propname);
                     free_var(obj);
                     if (err == E_NONE) {
-                        free_var(propname);
                         PUSH(rhs);
                     } else {
                         free_var(rhs);
-                        if (err == E_PROPNF)
-                            PUSH_X_NOT_FOUND(E_PROPNF, propname);
-                        else {
-                            free_var(propname);
-                            PUSH_ERROR(err);
-                        }
+                        PUSH_ERROR(err);
                     }
                 } else if (!obj.is_object() || propname.type != TYPE_STR) {
-                    var_type incorrect_type = propname.type != TYPE_STR ? propname.type : obj.type;
                     free_var(rhs);
                     free_var(propname);
                     free_var(obj);
-                    PUSH_TYPE_MISMATCH(1, incorrect_type, incorrect_type == TYPE_STR ? TYPE_OBJ : TYPE_STR);
+                    PUSH_ERROR(E_TYPE);
                 } else if (!is_valid(obj)) {
                     free_var(rhs);
                     free_var(propname);
@@ -1979,19 +1867,15 @@ finish_comparison:
                         }
                     }
 
+                    free_var(propname);
                     free_var(obj);
 
-                    if (err == E_PROPNF) {
-                        PUSH_X_NOT_FOUND(E_PROPNF, propname);
+                    if (err == E_NONE) {
+                        db_set_property_value(h, var_ref(rhs));
+                        PUSH(rhs);
                     } else {
-                        free_var(propname);
-                        if (err == E_NONE) {
-                            db_set_property_value(h, var_ref(rhs));
-                            PUSH(rhs);
-                        } else {
-                            free_var(rhs);
-                            PUSH_ERROR(err);
-                        }
+                        free_var(rhs);
+                        PUSH_ERROR(err);
                     }
                 }
             }
@@ -2009,9 +1893,8 @@ finish_comparison:
                 if (op == OP_FORK_WITH_ID)
                     id = READ_BYTES(bv, bc.numbytes_var_name);
                 if (time.type != TYPE_INT && time.type != TYPE_FLOAT) {
-                    var_type time_type = time.type;
                     free_var(time);
-                    RAISE_TYPE_MISMATCH(2, time_type, TYPE_INT, TYPE_FLOAT);
+                    RAISE_ERROR(E_TYPE);
                 }
                 when = time.type == TYPE_INT ? time.v.num : time.v.fnum;
                 free_var(time);
@@ -2097,18 +1980,13 @@ else if (obj.type == TYPE_##t1) {           \
                         err = E_TYPE;
                 }
                 free_var(obj);
+                free_var(verb);
 
                 if (err != E_NONE) {
-                    /* there is an error, RUN_ACTIV unchanged, args must be freed */
+                    /* there is an error, RUN_ACTIV unchanged,
+                                   args must be freed */
                     free_var(args);
-                    if (err == E_VERBNF) {
-                        PUSH_X_NOT_FOUND(err, verb);
-                    } else {
-                        free_var(verb);
-                        PUSH_ERROR(err);
-                    }
-                } else {
-                    free_var(verb);
+                    PUSH_ERROR(err);
                 }
             }
             break;
@@ -2214,32 +2092,25 @@ else if (obj.type == TYPE_##t1) {           \
                         if ((base.type != TYPE_MAP && base.type != TYPE_LIST
                                 && base.type != TYPE_STR)
                                 || (base.type != value.type)) {
-                            var_type base_type = base.type;
-                            var_type value_type = value.type;
                             free_var(to);
                             free_var(from);
                             free_var(base);
                             free_var(value);
-                            if (base_type != value_type)
-                                PUSH_TYPE_MISMATCH(1, value_type, base.type);
-                            else
-                                PUSH_TYPE_MISMATCH(3, base_type, TYPE_LIST, TYPE_MAP, TYPE_STR);
+                            PUSH_ERROR(E_TYPE);
                         } else if (base.type == TYPE_MAP
                                    && ((to.is_collection() && TYPE_ANON != to.type) || (from.is_collection() && TYPE_ANON != from.type))) {
-                            var_type to_from_type = to.is_collection() ? to.type : from.type;
                             free_var(to);
                             free_var(from);
                             free_var(base);
                             free_var(value);
-                            PUSH_TYPE_MISMATCH(8, to_from_type, TYPE_STR, TYPE_INT, TYPE_OBJ, TYPE_ERR, TYPE_FLOAT, TYPE_ANON, TYPE_WAIF, TYPE_BOOL);
+                            PUSH_ERROR(E_TYPE);
                         } else if ((base.type == TYPE_LIST || base.type == TYPE_STR)
                                    && (to.type != TYPE_INT || from.type != TYPE_INT)) {
-                            var_type to_from_type = to.type != TYPE_INT ? to.type : from.type;
                             free_var(to);
                             free_var(from);
                             free_var(base);
                             free_var(value);
-                            PUSH_TYPE_MISMATCH(1, to_from_type, TYPE_INT);
+                            PUSH_ERROR(E_TYPE);
                         } else if (base.type == TYPE_MAP) {
                             Var res = none;
                             Var iterfrom, iterto;
@@ -2325,7 +2196,7 @@ else if (obj.type == TYPE_##t1) {           \
                                 : var_ref(none);
                             PUSH(v);
                         } else
-                            PUSH_TYPE_MISMATCH(3, item.type, TYPE_STR, TYPE_LIST, TYPE_MAP);
+                            PUSH_ERROR(E_TYPE);
                     }
                     break;
 
@@ -2350,7 +2221,7 @@ else if (obj.type == TYPE_##t1) {           \
                                 : var_ref(none);
                             PUSH(v);
                         } else
-                            PUSH_TYPE_MISMATCH(3, item.type, TYPE_STR, TYPE_LIST, TYPE_MAP);
+                            PUSH_ERROR(E_TYPE);
                     }
                     break;
 
@@ -2390,10 +2261,7 @@ else if (obj.type == TYPE_##t1) {           \
 
                         if (e != E_NONE) {  /* skip rest of operands */
                             free_var(POP());    /* replace list with error code */
-                            if (e == E_TYPE)
-                                PUSH_TYPE_MISMATCH(1, list.type, TYPE_LIST);
-                            else
-                                PUSH_ERROR(e);
+                            PUSH_ERROR(e);
                             for (i = 1; i <= nargs; i++) {
                                 SKIP_BYTES(bv, bc.numbytes_var_name);
                                 SKIP_BYTES(bv, bc.numbytes_label);
@@ -2472,10 +2340,8 @@ else if (obj.type == TYPE_##t1) {           \
                             v = POP();
 
                         marker = POP();
-                        if (marker.type != TYPE_CATCH) {
-                            errlog("Marker is type %i with value %i\n", marker.type, marker.v.num);
+                        if (marker.type != TYPE_CATCH)
                             panic_moo("Stack marker is not TYPE_CATCH!");
-                        }
                         for (i = 0; i < marker.v.num; i++) {
                             (void) POP();   /* handler PC */
                             free_var(POP());    /* code list */
@@ -2564,7 +2430,7 @@ else if (obj.type == TYPE_##t1) {           \
 
                         if (BASE.type != TYPE_STR && BASE.type != TYPE_LIST
                                 && BASE.type != TYPE_MAP) {
-                            RAISE_TYPE_MISMATCH(3, BASE.type, TYPE_STR, TYPE_LIST, TYPE_MAP);
+                            RAISE_ERROR(E_TYPE);
                             free_var(POP());
                             free_var(POP());
                             JUMP(lab);
@@ -2626,7 +2492,7 @@ else if (obj.type == TYPE_##t1) {           \
 
                         if (BASE.type != TYPE_STR && BASE.type != TYPE_LIST
                                 && BASE.type != TYPE_MAP) {
-                            RAISE_TYPE_MISMATCH(3, BASE.type, TYPE_STR, TYPE_LIST, TYPE_MAP);
+                            RAISE_ERROR(E_TYPE);
                             free_var(POP());
                             free_var(POP());
                             JUMP(lab);
@@ -2684,7 +2550,6 @@ else if (obj.type == TYPE_##t1) {           \
                     case EOP_BITXOR:
                     {
                         Var rhs, lhs, ans;
-                        var_type lhs_type, rhs_type;
 
                         rhs = POP();
                         lhs = POP();
@@ -2701,17 +2566,12 @@ else if (obj.type == TYPE_##t1) {           \
                         } else {
                             ans.type = TYPE_ERR;
                             ans.v.err = E_TYPE;
-                            lhs_type = lhs.type;
-                            rhs_type = rhs.type;
                         }
 
                         free_var(lhs);
                         free_var(rhs);
                         if (ans.type == TYPE_ERR)
-                            if (ans.v.err == E_TYPE)
-                                PUSH_TYPE_MISMATCH(1, lhs_type != TYPE_INT ? lhs_type : rhs_type, TYPE_INT);
-                            else
-                                PUSH_ERROR(ans.v.err);
+                            PUSH_ERROR(ans.v.err);
                         else
                             PUSH(ans);
                     }
@@ -2721,15 +2581,12 @@ else if (obj.type == TYPE_##t1) {           \
                     case EOP_BITSHR:
                     {
                         Var rhs, lhs, ans;
-                        var_type lhs_type, rhs_type;
 
                         rhs = POP();
                         lhs = POP();
                         if (lhs.type != TYPE_INT || rhs.type != TYPE_INT) {
                             ans.type = TYPE_ERR;
                             ans.v.err = E_TYPE;
-                            lhs_type = lhs.type;
-                            rhs_type = rhs.type;
                         } else if (rhs.v.num > sizeof(Num) * CHAR_BIT || rhs.v.num < 0) {
                             ans.type = TYPE_ERR;
                             ans.v.err = E_INVARG;
@@ -2752,10 +2609,7 @@ else if (obj.type == TYPE_##t1) {           \
                         free_var(lhs);
                         free_var(rhs);
                         if (ans.type == TYPE_ERR)
-                            if (ans.v.err == E_TYPE)
-                                PUSH_TYPE_MISMATCH(1, lhs_type != TYPE_INT ? lhs_type : rhs_type, TYPE_INT);
-                            else
-                                PUSH_ERROR(ans.v.err);
+                            PUSH_ERROR(ans.v.err);
                         else
                             PUSH(ans);
                     }
@@ -2764,7 +2618,6 @@ else if (obj.type == TYPE_##t1) {           \
                     case EOP_COMPLEMENT:
                     {
                         Var arg, ans;
-                        var_type arg_type;
 
                         arg = POP();
                         if (arg.type == TYPE_INT) {
@@ -2773,15 +2626,11 @@ else if (obj.type == TYPE_##t1) {           \
                         } else {
                             ans.type = TYPE_ERR;
                             ans.v.err = E_TYPE;
-                            arg_type = arg.type;
                         }
 
                         free_var(arg);
                         if (ans.type == TYPE_ERR)
-                            if (ans.v.err == E_TYPE)
-                                PUSH_TYPE_MISMATCH(1, arg_type, TYPE_INT);
-                            else
-                                PUSH_ERROR(ans.v.err);
+                            PUSH_ERROR(ans.v.err);
                         else
                             PUSH(ans);
                     }
@@ -2839,8 +2688,7 @@ else if (obj.type == TYPE_##t1) {           \
                 value = RUN_ACTIV.rt_env[PUSH_n_INDEX(op)];
                 if (value.type == TYPE_NONE) {
                     free_var(value);
-                    Var not_found = str_ref_to_var(*(&RUN_ACTIV.prog->var_names[PUSH_n_INDEX(op)]));
-                    PUSH_X_NOT_FOUND(E_VARNF, not_found);
+                    PUSH_ERROR(E_VARNF);
                 } else
                     PUSH_REF(value);
             }
@@ -2883,8 +2731,7 @@ else if (obj.type == TYPE_##t1) {           \
                 Var *vp;
                 vp = &RUN_ACTIV.rt_env[PUSH_CLEAR_n_INDEX(op)];
                 if (vp->type == TYPE_NONE) {
-                    Var not_found = str_ref_to_var(*(&RUN_ACTIV.prog->var_names[PUSH_CLEAR_n_INDEX(op)]));
-                    PUSH_X_NOT_FOUND(E_VARNF, not_found);
+                    PUSH_ERROR(E_VARNF);
                 } else {
                     PUSH(*vp);
                     vp->type = TYPE_NONE;
@@ -2948,7 +2795,7 @@ else if (obj.type == TYPE_##t1) {           \
         }
     }
 }
-
+
 
 /**** manipulating data of task ****/
 
@@ -3161,7 +3008,7 @@ resume_from_previous_vm(vm the_vm, Var v)
         return run_interpreter(0, E_NONE, nullptr, 0/*bg*/, 1/*traceback*/);
     }
 }
-
+
 
 /*** external functions ***/
 
@@ -3574,11 +3421,7 @@ bf_pass(Var arglist, Byte next, void *vdata, Objid progr)
         return tail_call_pack();
 
     free_var(arglist);
-
-    if (e == E_VERBNF)
-        return make_x_not_found_pack(e, RUN_ACTIV.verb);
-    else
-        return make_error_pack(e);
+    return make_error_pack(e);
 }
 
 static package
@@ -3697,7 +3540,7 @@ register_execute(void)
     map_time = str_dup_to_var("time");
 #endif          /* SAVE_FINISHED_TASKS */
 }
-
+
 
 /**** storing to/loading from database ****/
 
@@ -3992,64 +3835,4 @@ bool get_thread_mode()
 void set_thread_mode(bool mode)
 {
     RUN_ACTIV.threaded = mode;
-}
-
-/* Create a type mismatch traceback and try-except return value.
-   The first argument is the mismatched type that was received.
-   The remaining arguments are the types that were expected. */
-char*
-type_mismatch_string(int n_args, ...)
-{
-    static Stream *error_msg = nullptr;
-    if (error_msg == nullptr)
-        error_msg = new_stream(40);
-
-    stream_printf(error_msg, "%s (expected", unparse_error(E_TYPE));
-    var_type the_var = TYPE_CLEAR;
-    va_list args;
-    va_start(args, n_args);
-
-    var_type mismatch = (var_type)va_arg(args, int);
-
-    for (int x = 1; x <= n_args; x++) {
-        var_type the_var = (var_type)va_arg(args, int);
-        stream_printf(error_msg, " %s,", parse_type((var_type)the_var));
-        if (x == n_args - 1) {
-            stream_delete_char(error_msg);
-            stream_add_string(error_msg, " or");
-        }
-    }
-    va_end(args);
-
-    stream_delete_char(error_msg); // delete the comma
-    stream_printf(error_msg, "; got %s)", parse_type(mismatch));
-
-    return str_dup(reset_stream(error_msg));
-}
-
-Var
-type_mismatch_value(int n_args, ...)
-{
-    /* Since -d verbs can't use the value anyway,
-       we won't waste time and money setting it up. */
-    if (!RUN_ACTIV.debug)
-        return var_ref(zero);
-
-    Var value_var = new_list(2);
-    Var expected_types = new_list(n_args);
-    va_list args;
-    va_start(args, n_args);
-
-    var_type mismatch = (var_type)va_arg(args, int);
-
-    for (int x = 1; x <= n_args; x++) {
-        var_type the_var = (var_type)va_arg(args, int);
-        expected_types.v.list[x] = Var::new_int(the_var);
-    }
-    va_end(args);
-
-    value_var.v.list[1] = expected_types;
-    value_var.v.list[2] = Var::new_int(mismatch & TYPE_DB_MASK);
-
-    return value_var;
 }
