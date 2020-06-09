@@ -14,6 +14,7 @@
 - Add a `BOOL` type, to unambiguously indicate whether a value is TRUE or FALSE. The `true` and `false` variables are set at task runtime and can be overridden within verbs if needed.
 - The `parse_json` function now uses the BOOL type instead of converting to strings. Similarly, passing a boolean to `generate_json` is understood to be a BOOL.
 - Add debug information about task queues to `queue_info(<object>)` when called by a wizard.
+- Fix a bug in `sort()` that could have caused a server crash.
 
 ## 2.6.1 (Mar 10, 2020)
 - The `mapvalues` function now accepts any number of keys, the values of which will be returned by the function. If a key doesn't exist, E_RANGE is returned.
