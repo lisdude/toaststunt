@@ -15,6 +15,10 @@
 - The `parse_json` function now uses the BOOL type instead of converting to strings. Similarly, passing a boolean to `generate_json` is understood to be a BOOL.
 - Add debug information about task queues to `queue_info(<object>)` when called by a wizard.
 - Fix a bug in `sort()` that could have caused a server crash.
+- Improve reporting of 'x not found' errors. Now when you get a property, verb, or variable not found error, two things happen: First, the traceback message will tell you what exactly was not found. Second, if you catch the error in a try-except, the name of the missing thing will be available as the third argument in the error list (the value).
+- Improve type mismatch error reporting. Traceback messages will now tell you what type was expected vs the type that you supplied. The value returned in a caught E_TYPE is now a list of the format `{{expected types}, supplied type}`. Builtin functions will now tell you which argument was incorrect and the expected / supplied type for that argument.`
+
+**WARNING**: This version increments the database version (DBV_Bool), making databases incompatible with previous releases.
 
 ## 2.6.1 (Mar 10, 2020)
 - The `mapvalues` function now accepts any number of keys, the values of which will be returned by the function. If a key doesn't exist, E_RANGE is returned.
