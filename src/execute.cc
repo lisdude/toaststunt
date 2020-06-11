@@ -3593,7 +3593,7 @@ bf_pass(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     if (e == E_VERBNF)
-        return make_x_not_found_pack(e, RUN_ACTIV.verb);
+        return make_x_not_found_pack(e, RUN_ACTIV.verb, RUN_ACTIV.recv);
     else
         return make_error_pack(e);
 }
