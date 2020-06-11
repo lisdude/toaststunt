@@ -908,15 +908,33 @@ run(char raise, enum error resumption_error, Var * result)
             PUSH_ERROR(the_err);                                        \
     } while (0)
 
-#define PUSH_X_NOT_FOUND(the_err, the_missing)                                            \
-    do {                                                                                  \
-        static Stream *error_stream = nullptr;                                            \
-        if (error_stream == nullptr) {                                                    \
-            error_stream = new_stream(20);                                                \
-        }                                                                                 \
-        stream_printf(error_stream, "%s: %s", unparse_error(the_err), the_missing.v.str); \
-        char *error_message = str_dup(reset_stream(error_stream));                        \
-        PUSH_ERROR_WITH_VALUE(the_err, error_message, the_missing);                       \
+    /* error the_err: an error type (e.g. E_PROPNF)
+       Var the_missing: TYPE_STR representing what is missing (e.g. the property name) [gets freed]
+       Var the_object: TYPE_OBJ representing the object that is missing the thing [gets freed]
+                       the_object can be 'nothing' to indicate that object is not applicable */
+#define PUSH_X_NOT_FOUND(the_err, the_missing, the_object)                                       \
+    do {                                                                                         \
+        static Stream *error_stream = nullptr;                                                   \
+        if (error_stream == nullptr) {                                                           \
+            error_stream = new_stream(20);                                                       \
+        }                                                                                        \
+        if (the_object.v.obj == NOTHING) {                                                       \
+            stream_printf(error_stream, "%s: %s", unparse_error(the_err), the_missing.v.str);    \
+        } else {                                                                                 \
+            char separator;                                                                      \
+            if (the_err == E_PROPNF)                                                             \
+                separator = '.';                                                                 \
+            else if (the_err == E_VERBNF)                                                        \
+                separator = ':';                                                                 \
+            stream_printf(error_stream, "%s: #%" PRIdN "%c%s%s", unparse_error(the_err),         \
+                          the_object.v.obj, separator, the_missing.v.str,                        \
+                          the_err == E_VERBNF ? "()" : "");                                      \
+        }                                                                                        \
+        char *error_message = str_dup(reset_stream(error_stream));                               \
+        Var value = new_list(2);                                                                 \
+        value.v.list[1] = the_object;                                                            \
+        value.v.list[2] = the_missing;                                                           \
+        PUSH_ERROR_WITH_VALUE(the_err, error_message, value);                                    \
     } while (0)
 
 #define RAISE_TYPE_MISMATCH(...)                               \
@@ -1773,7 +1791,7 @@ finish_comparison:
                 value = RUN_ACTIV.rt_env[var_pos];
                 if (value.type == TYPE_NONE) {
                     Var not_found = str_ref_to_var(*(&RUN_ACTIV.prog->var_names[var_pos]));
-                    PUSH_X_NOT_FOUND(E_VARNF, not_found);
+                    PUSH_X_NOT_FOUND(E_VARNF, not_found, var_ref(nothing));
                 }
                 else
                     PUSH_REF(value);
@@ -1812,12 +1830,11 @@ finish_comparison:
                     h = db_find_property(obj, propname.v.str, &prop);
                     built_in = db_is_property_built_in(h);
 
-                    free_var(obj);
-
                     if (!h.ptr) {
-                        PUSH_X_NOT_FOUND(E_PROPNF, propname);
+                        PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
                     } else {
                         free_var(propname);
+                        free_var(obj);
 
                         if (built_in
                                 ? bi_prop_protected(built_in, RUN_ACTIV.progr)
@@ -1859,7 +1876,7 @@ finish_comparison:
                     built_in = db_is_property_built_in(h);
                     if (!h.ptr) {
                         Var not_found = var_ref(propname);
-                        PUSH_X_NOT_FOUND(E_PROPNF, not_found);
+                        PUSH_X_NOT_FOUND(E_PROPNF, not_found, var_ref(obj));
                     } else if (built_in
                                ? bi_prop_protected(built_in, RUN_ACTIV.progr)
                                : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
@@ -1890,7 +1907,7 @@ finish_comparison:
                     } else {
                         free_var(rhs);
                         if (err == E_PROPNF) {
-                            PUSH_X_NOT_FOUND(E_PROPNF, propname);
+                            PUSH_X_NOT_FOUND(E_PROPNF, propname, var_ref(obj));
                         } else {
                             free_var(propname);
                             PUSH_ERROR(err);
@@ -1979,12 +1996,11 @@ finish_comparison:
                         }
                     }
 
-                    free_var(obj);
-
                     if (err == E_PROPNF) {
-                        PUSH_X_NOT_FOUND(E_PROPNF, propname);
+                        PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
                     } else {
                         free_var(propname);
+                        free_var(obj);
                         if (err == E_NONE) {
                             db_set_property_value(h, var_ref(rhs));
                             PUSH(rhs);
@@ -2096,19 +2112,20 @@ else if (obj.type == TYPE_##t1) {           \
                     else
                         err = E_TYPE;
                 }
-                free_var(obj);
 
                 if (err != E_NONE) {
                     /* there is an error, RUN_ACTIV unchanged, args must be freed */
                     free_var(args);
                     if (err == E_VERBNF) {
-                        PUSH_X_NOT_FOUND(err, verb);
+                        PUSH_X_NOT_FOUND(err, verb, obj);
                     } else {
                         free_var(verb);
+                        free_var(obj);
                         PUSH_ERROR(err);
                     }
                 } else {
                     free_var(verb);
+                    free_var(obj);
                 }
             }
             break;
@@ -2840,7 +2857,7 @@ else if (obj.type == TYPE_##t1) {           \
                 if (value.type == TYPE_NONE) {
                     free_var(value);
                     Var not_found = str_ref_to_var(*(&RUN_ACTIV.prog->var_names[PUSH_n_INDEX(op)]));
-                    PUSH_X_NOT_FOUND(E_VARNF, not_found);
+                    PUSH_X_NOT_FOUND(E_VARNF, not_found, var_ref(nothing));
                 } else
                     PUSH_REF(value);
             }
@@ -2884,7 +2901,7 @@ else if (obj.type == TYPE_##t1) {           \
                 vp = &RUN_ACTIV.rt_env[PUSH_CLEAR_n_INDEX(op)];
                 if (vp->type == TYPE_NONE) {
                     Var not_found = str_ref_to_var(*(&RUN_ACTIV.prog->var_names[PUSH_CLEAR_n_INDEX(op)]));
-                    PUSH_X_NOT_FOUND(E_VARNF, not_found);
+                    PUSH_X_NOT_FOUND(E_VARNF, not_found, var_ref(nothing));
                 } else {
                     PUSH(*vp);
                     vp->type = TYPE_NONE;
