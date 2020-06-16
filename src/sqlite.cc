@@ -57,7 +57,7 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
         free_var(arglist);
         char ohno[50];
         sprintf(ohno, "Database already open with handle: %i", dup_check);
-        return make_raise_pack(E_INVARG, ohno, var_ref(zero));
+        return make_raise_pack(E_INVARG, ohno, Var::new_int(dup_check));
     }
 
     index = allocate_handle();
@@ -102,7 +102,7 @@ bf_sqlite_close(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     if (!valid_handle(index))
-        return make_raise_pack(E_INVARG, "Invalid database handle", var_ref(zero));
+        return make_raise_pack(E_INVARG, "Invalid database handle", Var::new_int(index));
 
     sqlite_conn *handle = &sqlite_connections[index];
     if (handle->locks > 0)
@@ -429,7 +429,7 @@ bf_sqlite_interrupt(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     if (!valid_handle(index))
-        return make_raise_pack(E_INVARG, "Invalid database handle", var_ref(zero));
+        return make_raise_pack(E_INVARG, "Invalid database handle", Var::new_int(index));
 
     sqlite_conn *handle = &sqlite_connections[index];
 
