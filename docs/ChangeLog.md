@@ -17,6 +17,7 @@
 - Fix a bug in `sort()` that could have caused a server crash.
 - Improve reporting of 'x not found' errors. Now when you get a property, verb, or variable not found error, two things happen: First, the traceback message will tell you what exactly was not found. Second, if you catch the error in a try-except, the object number and name of the missing thing will be available as the third argument in the error list (the value).
 - Improve type mismatch error reporting. Traceback messages will now tell you what type was expected vs the type that you supplied. The value returned in a caught E_TYPE is now a list of the format `{{expected types}, supplied type}`. Builtin functions will now tell you which argument was incorrect and the expected / supplied type for that argument.`
+- The addition operator now accepts lists. When adding two lists together, the two will be concatenated. (e.g. {1, 2, 3} + {4, 5, 6} => {1, 2, 3, 4, 5, 6}) When adding another type to a list, it will append that value to the end of the list. (e.g. {1, 2} + #123 => {1, 2, #123})
 
 **WARNING**: This version increments the database version (DBV_Bool), making databases incompatible with previous releases.
 

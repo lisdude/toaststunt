@@ -1462,16 +1462,15 @@ finish_comparison:
                 var_type lhs_type = lhs.type;
                 var_type rhs_type = rhs.type;
 
-                if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
-                        && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT))
+                if ((lhs_type == TYPE_INT || lhs_type == TYPE_FLOAT)
+                        && (rhs_type == TYPE_INT || rhs_type == TYPE_FLOAT))
                     ans = do_add(lhs, rhs);
-                else if (lhs.type == TYPE_STR && rhs.type == TYPE_STR) {
+                else if (lhs_type == TYPE_STR && rhs_type == TYPE_STR) {
                     char *str;
                     int llen = memo_strlen(lhs.v.str);
                     int flen = llen + memo_strlen(rhs.v.str);
 
-                    if (server_int_option_cached(SVO_MAX_STRING_CONCAT)
-                            < flen) {
+                    if (server_int_option_cached(SVO_MAX_STRING_CONCAT) < flen) {
                         ans.type = TYPE_ERR;
                         ans.v.err = E_QUOTA;
                     } else {
@@ -1480,6 +1479,12 @@ finish_comparison:
                         strcpy(str + llen, rhs.v.str);
                         ans.type = TYPE_STR;
                         ans.v.str = str;
+                    }
+                } else if (lhs_type == TYPE_LIST) {
+                    if (rhs_type == TYPE_LIST) {
+                        ans = listconcat(var_ref(lhs), var_ref(rhs));
+                    } else {
+                        ans = listappend(var_ref(lhs), var_ref(rhs));
                     }
                 } else {
                     ans.type = TYPE_ERR;
