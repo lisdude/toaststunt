@@ -3903,7 +3903,7 @@ check_pc_validity(Program * prog, int which_vector, unsigned pc)
      */
     return (pc < bc->size
             && (bc->vector[pc - 1] == OP_CALL_VERB
-                || bc->vector[pc - 2] == OP_BI_FUNC_CALL));
+                || bc->vector[pc - 3] == OP_BI_FUNC_CALL));
 }
 
 int

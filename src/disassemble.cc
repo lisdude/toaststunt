@@ -37,7 +37,7 @@ struct mapping {
     const char *name;
 };
 
-struct mapping mappings[] =
+const struct mapping mappings[] =
 {
     {OP_IF, "IF"},
     {OP_WHILE, "WHILE"},
@@ -397,7 +397,7 @@ disassemble(Program * prog, Printer p, void *data)
                     }
                     break;
                     case OP_BI_FUNC_CALL:
-                        stream_printf(insn, " %s", name_func_by_num(ADD_BYTES(1)));
+                        stream_printf(insn, " %s", name_func_by_num(ADD_BYTES(2)));
                     default:
                         break;
                 }
