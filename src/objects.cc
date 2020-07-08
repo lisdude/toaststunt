@@ -57,14 +57,20 @@ make_arglist(Objid what)
     return r;
 }
 
-static bool
-all_valid(Var vars)
+static inline bool
+all_valid(const Var &vars, bool include_waifs = false)
 {
-    Var var;
-    int i, c;
-    FOR_EACH(var, vars, i, c)
-    if (!valid(var.v.obj))
+if (vars.type != TYPE_LIST)
+return false;
+
+const auto length = vars.v.list[0].v.num;
+for (int i = 1; i <= length; ++i)
+{
+const auto var = vars.v.list[i];
+if (var.type == TYPE_WAIF && include_waifs)
+continue;    if (!valid(var.v.obj))
         return false;
+}
     return true;
 }
 
@@ -1104,28 +1110,30 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
 {   /* (object) */
     Var ret = new_list(0);
     int nargs = arglist.v.list[0].v.num;
-    Var contents = arglist.v.list[1];
-    int content_length = contents.v.list[0].v.num;
-    bool check_parent = nargs == 1 ? false : true;
-    Var parent = check_parent ? arglist.v.list[2] : nothing;
-    bool check_player_flag = (nargs == 1 || (nargs > 2 && is_true(arglist.v.list[3])));
+    const Var contents = arglist.v.list[1];
+    const auto content_length = contents.v.list[0].v.num;
+    const bool check_parent = nargs == 1 ? false : true;
+    const Var parent = check_parent ? arglist.v.list[2] : nothing;
+    const bool check_player_flag = (nargs == 1 || (nargs > 2 && is_true(arglist.v.list[3])));
 
     if (check_parent && !is_obj_or_list_of_objs(parent)) {
         free_var(arglist);
         return make_error_pack(E_TYPE);
     }
-    else if (!is_list_of_objs(contents) || !all_valid(contents)) {
+    else if (!is_list_of_objs(contents, true) || !all_valid(contents, true)) {
         free_var(arglist);
         return make_error_pack(E_INVARG);
     }
 
     for (int x = 1; x <= content_length; x++) {
-        Objid oid = contents.v.list[x].v.obj;
+        const Var element = contents.v.list[x];
+
+        const Objid oid = (element.type == TYPE_OBJ? element.v.obj : element.v.waif->_class);
         if (valid(oid)
                 && (!check_parent ? 1 : multi_parent_isa(&contents.v.list[x], &parent))
                 && (!check_player_flag || (check_player_flag && is_user(oid))))
         {
-            ret = setadd(ret, contents.v.list[x]);
+            ret = setadd(ret, (element.type == TYPE_WAIF ? var_ref(element) : element));
         }
     }
 
