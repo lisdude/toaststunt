@@ -34,7 +34,7 @@
 #include "utils.h"
 #include "dependencies/xtrapbits.h"
 #include "map.h"
-#include <map>
+#include <unordered_map>
 #include "options.h"
 #include "log.h"
 
@@ -47,7 +47,7 @@ static unsigned int nonce = 0;
 static Var all_users;
 
 #ifdef USE_ANCESTOR_CACHE
-static std::map <int, Var> ancestor_cache;
+static std::unordered_map <int, Var> ancestor_cache;
 #endif /* USE_ANCESTOR_CACHE */
 
 /* used in graph traversals */

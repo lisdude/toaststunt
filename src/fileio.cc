@@ -24,7 +24,7 @@
 #include "streams.h"
 #include "server.h"
 #include "network.h"
-#include <map>
+#include <unordered_map>
 #include "tasks.h"
 #include "log.h"
 #include "fileio.h"
@@ -84,8 +84,8 @@ char file_package_version[] = "1.7";
  ***************************************************************/
 
 
-std::map <Num, file_handle> file_table;
-Num next_handle = 1;
+static std::unordered_map <Num, file_handle> file_table;
+static Num next_handle = 1;
 
 char file_handle_valid(Var fhandle) {
     Num i = fhandle.v.num;
@@ -1475,7 +1475,7 @@ static package bf_file_handles(Var arglist, Byte next, void *vdata, Objid progr)
     // We can't use file_table.size() here because it will create space for
     // invalid file handles. Easier just to listappend, I guess.
     Var r = new_list(0);
-    std::map <Num, file_handle>::iterator it;
+    std::unordered_map <Num, file_handle>::iterator it;
     for (it = file_table.begin(); it != file_table.end(); it++)
     {
         if (it->second.valid == 1)

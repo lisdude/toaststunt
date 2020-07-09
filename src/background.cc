@@ -9,6 +9,7 @@
 #include "net_multi.h"                  // network_fd shenanigans
 #include "log.h"                        // errlog
 #include "map.h"
+#include <unordered_map>
 
 /*
   A general-purpose extension for doing work in separate threads. The entrypoint (background_thread)
@@ -28,7 +29,7 @@
 */
 
 static threadpool background_pool;
-static std::map <int, background_waiter*> background_process_table;
+static std::unordered_map <int, background_waiter*> background_process_table;
 static int next_background_handle = 1;
 
 /* @forked will use the enumerator to find relevant tasks in your external queue, so everything we've spawned
