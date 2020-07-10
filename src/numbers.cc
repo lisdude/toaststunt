@@ -253,7 +253,7 @@ compare_numbers(Var a, Var b)
     do_ ## name(Var a, Var b)                   \
     {                                           \
         Var ans;                                \
-                                                \
+        \
         if (a.type != b.type) {                 \
             ans.type = TYPE_ERR;                \
             ans.v.err = E_TYPE;                 \
@@ -262,7 +262,7 @@ compare_numbers(Var a, Var b)
             ans.v.num = a.v.num op b.v.num;     \
         } else {                                \
             double d = a.v.fnum op b.v.fnum;    \
-                                                \
+            \
             if (!IS_REAL(d)) {                  \
                 ans.type = TYPE_ERR;            \
                 ans.v.err = E_FLOAT;            \
@@ -271,7 +271,7 @@ compare_numbers(Var a, Var b)
                 ans.v.fnum = d;                 \
             }                                   \
         }                                       \
-                                                \
+        \
         return ans;                             \
     }
 
@@ -287,23 +287,26 @@ do_modulus(Var a, Var b)
     if (a.type != b.type) {
         ans.type = TYPE_ERR;
         ans.v.err = E_TYPE;
-        return ans;
-    }
-    if (a.type == TYPE_INT)
-    {
-        const auto n = a.v.num;
-        const auto d = b.v.num;
-        const auto result = (n % d + d) % d;
-        ans.type = TYPE_INT;
-        ans.v.num = result;
-    }
-    else
-    {
-        const auto n = a.v.fnum;
-        const auto d = b.v.fnum;
-        const auto result = fmod((fmod(n, d) + d), d);
-        ans.type = TYPE_FLOAT;
-        ans.v.fnum = result;
+    } else if ((a.type == TYPE_INT && b.v.num == 0) || (a.type == TYPE_FLOAT && b.v.fnum == 0.0)) {
+        ans.type = TYPE_ERR;
+        ans.v.err = E_DIV;
+    } else {
+        if (a.type == TYPE_INT)
+        {
+            const auto n = a.v.num;
+            const auto d = b.v.num;
+            const auto result = (n % d + d) % d;
+            ans.type = TYPE_INT;
+            ans.v.num = result;
+        }
+        else
+        {
+            const auto n = a.v.fnum;
+            const auto d = b.v.fnum;
+            const auto result = fmod((fmod(n, d) + d), d);
+            ans.type = TYPE_FLOAT;
+            ans.v.fnum = result;
+        }
     }
     return ans;
 }
