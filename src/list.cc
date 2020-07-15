@@ -1003,7 +1003,8 @@ void sort_callback(Var arglist, Var *ret)
 
     int moo_list_pos = 0;
     for (const auto &it : s) {
-        ret->v.list[++moo_list_pos] = var_dup(arglist.v.list[1].v.list[it]);
+        ret->v.list[++moo_list_pos] = (arglist.v.list[1].v.list[it].type == TYPE_WAIF || arglist.v.list[1].v.list[it].type == TYPE_ANON) ? var_ref(arglist.v.list[1].v.list[it]) : var_dup(arglist.v.list[1].v.list[it]);
+
     }
 }
 
