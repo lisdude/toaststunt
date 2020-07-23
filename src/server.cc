@@ -103,6 +103,8 @@ static int checkpoint_finished = 0; /* 1 = failure, 2 = success */
 
 static bool reopen_logfile_requested = false;
 
+static void handle_user_defined_signal(int sig);
+
 bool clear_last_move = false;
 
 typedef struct shandle {
@@ -330,7 +332,7 @@ shutdown_signal(int sig)
 }
 
 static void
-logfile_signal(int sig)
+logfile_signal()
 {
     if (get_log_file())
         reopen_logfile_requested = true;
@@ -341,7 +343,28 @@ checkpoint_signal(int sig)
 {
     checkpoint_requested = CHKPT_SIGNAL;
 
-    signal(sig, checkpoint_signal);
+    signal(sig, handle_user_defined_signal);
+}
+
+static void
+handle_user_defined_signal(int sig)
+{
+    Var args, result;
+
+    args = new_list(1);
+    args.v.list[1].type = TYPE_STR;
+    args.v.list[1].v.str = str_dup(sig == SIGUSR1 ? "SIGUSR1" : "SIGUSR2");
+
+    if (run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "handle_signal", args, "", &result) != OUTCOME_DONE || is_true(result)) {
+        /* :handle_signal returned true; do nothing. */
+    } else if (sig == SIGUSR1) {    /* reopen logfile */
+        logfile_signal();
+    } else if (sig == SIGUSR2) {    /* remote checkpoint signal */
+        checkpoint_signal(sig);
+    }
+
+free_var(result);
+free_var(args);
 }
 
 static void
@@ -366,6 +389,7 @@ child_completed_signal(int sig)
      * it decide if it's relevant.
      */
 #if HAVE_WAITPID
+
     while ((p = waitpid(-1, &status, WNOHANG)) > 0) {
         if (!exec_complete(p, WEXITSTATUS(status)))
             checkpoint_child = p;
@@ -411,8 +435,8 @@ setup_signals(void)
 
     signal(SIGINT, shutdown_signal);
     signal(SIGTERM, shutdown_signal);
-    signal(SIGUSR1, logfile_signal);        /* logfile reopen signal */
-    signal(SIGUSR2, checkpoint_signal);     /* remote checkpoint signal */
+    signal(SIGUSR1, handle_user_defined_signal);
+    signal(SIGUSR2, handle_user_defined_signal);
 
     signal(SIGCHLD, child_completed_signal);
 }
