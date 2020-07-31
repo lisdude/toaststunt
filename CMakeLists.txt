@@ -33,7 +33,7 @@ endif()
 option(ONLY_32_BITS "Use 32-bit integers instead of 64-bit." OFF)
 
 # Compiler Flags
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 99)
 
 # These flags are shared by the RELEASE and WARN build types.

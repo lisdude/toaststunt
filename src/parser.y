@@ -25,6 +25,8 @@
 #include "my-math.h"
 #include <stdlib.h>
 #include <string.h>
+#include <functional>
+
 #include "ast.h"
 #include "code_gen.h"
 #include "config.h"
@@ -495,7 +497,8 @@ expr:
 		    unsigned f_no;
 
 		    $$ = alloc_expr(EXPR_CALL);
-		    if ((f_no = number_func_by_name($1)) == FUNC_NOT_FOUND) {
+const auto result = number_func_by_name($1);
+		    if (!result.has_value()) {
 			/* Replace with call_function("$1", @args) */
 			Expr           *fname = alloc_var(TYPE_STR);
 			Arg_List       *a = alloc_arg_list(ARG_NORMAL, fname);
@@ -503,9 +506,14 @@ expr:
 			fname->e.var.v.str = $1;
 			a->next = $3;
 			warning("Unknown built-in function: ", $1);
-			$$->e.call.func = number_func_by_name("call_function");
+/**
+* This could fail presumably, but there were no checks prior to this,
+* so I chose to leave it rather than try to abort and exclude code.
+*/
+			$$->e.call.func = *number_func_by_name("call_function");
 			$$->e.call.args = a;
 		    } else {
+						f_no = *result;
 			$$->e.call.func = f_no;
 			$$->e.call.args = $3;
 			dealloc_string($1);
