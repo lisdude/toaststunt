@@ -403,11 +403,12 @@ expr:
 		}
 	| expr '.' ':' tID
 		{
-            /* Waif properties get turned into foo.(":bar") 
+            /* Treat foo.:bar (waif properties) like foo.(":bar") 
                (we should be using  WAIF_PROP_PREFIX here...) */
 		    Expr *prop = alloc_var(TYPE_STR);
-            char *newstr = (char *)mymalloc(strlen($4) + 1, M_STRING);
+            char *newstr = (char *)mymalloc(memo_strlen($4) + 2, M_STRING);
             sprintf(newstr, ":%s", $4);
+			myfree($4, M_STRING);
 		    prop->e.var.v.str = newstr;
 		    $$ = alloc_binary(EXPR_PROP, $1, prop);
 		}
