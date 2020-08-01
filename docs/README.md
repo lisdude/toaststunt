@@ -128,6 +128,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - '-m' command line option to clear all last_move properties in your database (and not set them again for the lifetime of the process).
     - Build system is now CMake
     - Boolean (BOOL) type
+    - Allow handling of SIGUSR signals in the database with `#0:handle_signal()`
 
 ## Build Instructions
 ### **Debian/Ubuntu**
