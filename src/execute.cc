@@ -926,8 +926,9 @@ run(char raise, enum error resumption_error, Var * result)
                 separator = '.';                                                                 \
             else if (the_err == E_VERBNF)                                                        \
                 separator = ':';                                                                 \
-            stream_printf(error_stream, "%s: #%" PRIdN "%c%s%s", unparse_error(the_err),         \
-                          the_object.v.obj, separator, the_missing.v.str,                        \
+            stream_printf(error_stream, "%s: ", unparse_error(the_err));                         \
+            unparse_value(error_stream, the_object);                                             \
+            stream_printf(error_stream, "%c%s%s", separator, the_missing.v.str,                  \
                           the_err == E_VERBNF ? "()" : "");                                      \
         }                                                                                        \
         char *error_message = str_dup(reset_stream(error_stream));                               \
@@ -1813,12 +1814,16 @@ finish_comparison:
                     enum error err;
 
                     err = waif_get_prop(obj.v.waif, propname.v.str, &prop, RUN_ACTIV.progr);
-                    free_var(propname);
                     free_var(obj);
-                    if (err == E_NONE)
-                        PUSH(prop);
-                    else
-                        PUSH_ERROR(err);
+                    if (err == E_PROPNF)
+                        PUSH_X_NOT_FOUND(E_PROPNF, propname, var_ref(obj));
+                    else {
+                        free_var(propname);
+                        if (err == E_NONE)
+                            PUSH(prop);
+                        else
+                            PUSH_ERROR(err);
+                    }
                 } else if (!obj.is_object() || propname.type != TYPE_STR) {
                     var_type incorrect_type = propname.type != TYPE_STR ? propname.type : obj.type;
                     free_var(propname);
@@ -1866,6 +1871,8 @@ finish_comparison:
                     err = waif_get_prop(obj.v.waif, propname.v.str, &prop, RUN_ACTIV.progr);
                     if (err == E_NONE)
                         PUSH(prop);
+                    else if (err == E_PROPNF)
+                        PUSH_X_NOT_FOUND(E_PROPNF, propname, var_ref(obj));
                     else
                         PUSH_ERROR(err);
                 } else if (!obj.is_object() || propname.type != TYPE_STR) {
