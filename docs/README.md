@@ -216,4 +216,6 @@ Due to the way proxy detection works, if you're connecting to your MOO from loca
 
 ## Support and Development
 
-Realtime support and collaborative discussion for ToastStunt primarily takes place on the 'toaststunt' channel on ChatMUD. Barring this, the [Miriani Message Boards](https://board.toastsoft.net/) are another good resource for assistance.
+For support or collaborative discussions, you can join:
+1. [Discord](https://discord.gg/XyXP43e)
+2. The 'toaststunt' channel in ChatMUD.
