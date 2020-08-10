@@ -433,7 +433,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     /* If there's a length mismatch, it likely means the argument string
        contained ~00. Instead of truncating the string and potentially
        creating a difficult to debug situation, we raise E_INVARG. */
-    if (memo_strlen(in) != len) {
+    if (in && memo_strlen(in) != len) {
         free_str(in);
         pack = make_error_pack(E_INVARG);
         goto free_cmd;
