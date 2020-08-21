@@ -57,7 +57,10 @@ yajl_string_encode2(const yajl_print_t print,
     hexBuf[6] = 0;
 
     while (end < len) {
-        if (end < len - 2 && str[end] == '~' && (str[end + 1] == '0' || str[end + 1] == '1')) {
+        if (end < len - 1 && str[end] == '\\' && str[end + 1] == '~') {
+            beg = ++end;
+            continue;
+        } else if (end < len - 2 && (end == 0 || str[end-1] != '\\') && str[end] == '~' && (str[end + 1] == '0' || str[end + 1] == '1')) {
             char c1, c2;
             const char * escaped = NULL;
             if ((c1 = str[end + 1]) == '0' && (c2 = str[end + 2]) == '8')
