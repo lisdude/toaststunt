@@ -2943,6 +2943,7 @@ bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Objid old_player = arglist.v.list[1].v.obj;
     Objid new_player = arglist.v.list[2].v.obj;
+    bool silent = arglist.v.list[0].v.num > 2 && is_true(arglist.v.list[3]);
 
     free_var(arglist);
 
@@ -2990,9 +2991,7 @@ bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
         dead_tq->num_bg_tasks = 0;
     }
 
-    player_connected_silent(old_player, new_player);
-
-    boot_player(old_player);
+    player_switched(old_player, new_player, silent);
 
     return no_var_pack();
 }
@@ -3044,7 +3043,7 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
     register_function("set_task_local", 1, 1, bf_set_task_local, TYPE_ANY);
     register_function("task_local", 0, 0, bf_task_local);
-    register_function("switch_player", 2, 2, bf_switch_player,
-                      TYPE_OBJ, TYPE_OBJ);
+    register_function("switch_player", 2, 3, bf_switch_player,
+                      TYPE_OBJ, TYPE_OBJ, TYPE_INT);
     register_function("set_thread_mode", 0, 1, bf_set_thread_mode, TYPE_INT);
 }

@@ -8,7 +8,7 @@
 - Fix a bug in `sort()` that could have caused a server crash.
 - Fix a bug where using floats as map keys could result in lost values. (e.g. [12.1 -> 1, 12.2 -> 2] would lose 12.1)
 - Fix a bug that could cause a crash if verb code referenced a waif property with the waif property prefix. (e.g. `foo.bar.:baz`)
-- Fix a bug in `exec()` that would cause a heap overflow.
+- Fix a bug in `exec()` that would cause a heap overflow if null bytes were introduced as arguments.
 
 ### New Features
 - Apply standard task limits to threaded background tasks.
@@ -25,6 +25,7 @@
 - Improve type mismatch error reporting. Traceback messages will now tell you what type was expected vs the type that you supplied. The value returned in a caught E_TYPE is now a list of the format `{{expected types}, supplied type}`. Builtin functions will now tell you which argument was incorrect and the expected / supplied type for that argument.`
 - The addition operator now accepts lists. When adding two lists together, the two will be concatenated. (e.g. {1, 2, 3} + {4, 5, 6} => {1, 2, 3, 4, 5, 6}) When adding another type to a list, it will append that value to the end of the list. (e.g. {1, 2} + #123 => {1, 2, #123})
 - User-defined signals (SIGUSR1 and SIGUSR2) will now be passed to #0:handle_signal as strings. If this verb does not exist, or the verb returns a non-true value, the default server behavior will be assumed. If #0:handle_signal returns a true value, the server will conclude that the signal has been appropriately handled and not go any further.
+- `switch_player()` now prints standard messages by default. As such, a new argument has been added. If supplied and true, the switch will be silent and no messages printed.
 
 **WARNING**: This version increments the database version (DBV_Bool), making databases incompatible with previous releases.
 

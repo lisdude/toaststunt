@@ -115,10 +115,10 @@ typedef struct shandle {
     Objid player;
     Objid listener;
     task_queue tasks;
-    int disconnect_me;
+    bool disconnect_me;
     Objid switched;
     int outbound, binary;
-    int print_messages;
+    bool print_messages;
 } shandle;
 
 static shandle *all_shandles = nullptr;
@@ -363,8 +363,8 @@ handle_user_defined_signal(int sig)
         checkpoint_signal(sig);
     }
 
-free_var(result);
-free_var(args);
+    free_var(result);
+    free_var(args);
 }
 
 static void
@@ -524,7 +524,7 @@ send_message(Objid listener, network_handle nh, const char *msg_name, ...)
                     network_send_line(nh, msg.v.list[i].v.str, 1, 1);
         }
     } else          /* Use default message */
-        while ((line = va_arg(args, const char *)) != nullptr)
+        while ((line = va_arg(args, const char *)) != 0)
             network_send_line(nh, line, 1, 1);
 
     va_end(args);
@@ -850,10 +850,10 @@ main_loop(void)
                     network_close(h->nhandle);
                     free_shandle(h);
                 } else if (h->switched) {
-                    if (is_user(h->switched))
+                    if (h->switched != h->player && is_user(h->switched))
                         call_notifier(h->switched, h->listener, "user_disconnected");
                     if (is_user(h->player))
-                        call_notifier(h->player, h->listener, "user_connected");
+                        call_notifier(h->player, h->listener, h->switched == h->player ? "user_reconnected" : "user_connected");
                     h->switched = 0;
                 }
             }
@@ -1414,7 +1414,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
     h->switched = 0;
     h->listener = l ? l->oid : SYSTEM_OBJECT;
     h->tasks = new_task_queue(h->player, h->listener);
-    h->disconnect_me = 0;
+    h->disconnect_me = false;
     h->outbound = outbound;
     h->binary = 0;
     h->print_messages = l ? l->print_messages : !outbound;
@@ -1488,7 +1488,7 @@ server_close(server_handle sh)
           network_connection_name(h->nhandle));
 
     unlock_connection_name_mutex(h->nhandle);
-    h->disconnect_me = 1;
+    h->disconnect_me = true;
     call_notifier(h->player, h->listener, "user_client_disconnected");
     free_shandle(h);
 }
@@ -1507,34 +1507,6 @@ server_resume_input(Objid connection)
     shandle *h = find_shandle(connection);
 
     network_resume_input(h->nhandle);
-}
-
-void
-player_connected_silent(Objid old_id, Objid new_id)
-{
-    const char *old_name = str_dup(object_name(old_id));
-    shandle *existing_h = find_shandle(new_id);
-    shandle *new_h = find_shandle(old_id);
-
-    if (!new_h)
-        panic_moo("Non-existent shandle connected");
-
-    new_h->switched = new_h->player;
-    new_h->player = new_id;
-    new_h->connection_time = time(nullptr);
-
-    if (existing_h) {
-        network_close(existing_h->nhandle);
-        free_shandle(existing_h);
-    }
-    lock_connection_name_mutex(new_h->nhandle);
-    oklog("%s %s is now %s on %s\n",
-          old_id < 0 ? "CONNECTED:" : "SWITCHED:",
-          old_name,
-          object_name(new_h->player),
-          network_connection_name(new_h->nhandle));
-    unlock_connection_name_mutex(new_h->nhandle);
-    free_str(old_name);
 }
 
 char
@@ -1602,7 +1574,7 @@ proxy_connected(Objid connection, char *command)
 }
 
 void
-player_connected(Objid old_id, Objid new_id, int is_newly_created)
+player_connected(Objid old_id, Objid new_id, bool is_newly_created)
 {
     shandle *existing_h = find_shandle(new_id);
     shandle *new_h = find_shandle(old_id);
@@ -1640,10 +1612,10 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
         if (existing_listener == new_h->listener)
             call_notifier(new_id, new_h->listener, "user_reconnected");
         else {
-            new_h->disconnect_me = 1;
+            new_h->disconnect_me = true;
             call_notifier(new_id, existing_listener,
                           "user_client_disconnected");
-            new_h->disconnect_me = 0;
+            new_h->disconnect_me = false;
             call_notifier(new_id, new_h->listener, "user_connected");
         }
     } else {
@@ -1664,6 +1636,49 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
         call_notifier(new_id, new_h->listener,
                       is_newly_created ? "user_created" : "user_connected");
     }
+}
+
+void
+player_switched(Objid old_id, Objid new_id, bool silent)
+{
+    const char *old_name = str_dup(object_name(old_id));
+    shandle *existing_h = find_shandle(new_id);
+    shandle *new_h = find_shandle(old_id);
+    const char *status = nullptr;
+
+    if (!new_h)
+        panic_moo("Non-existent shandle connected");
+
+    new_h->switched = old_id;
+    new_h->player = new_id;
+    new_h->connection_time = time(nullptr);
+
+    if (existing_h) {
+        status = "REDIRECTED:";
+        new_h->switched = new_id;
+        if (!silent && existing_h->print_messages)
+            send_message(existing_h->listener, existing_h->nhandle,
+                         "redirect_from_msg",
+                         "*** Redirecting connection to new port ***", 0);
+        if (!silent && new_h->print_messages)
+            send_message(new_h->listener, new_h->nhandle, "redirect_to_msg",
+                         "*** Redirecting old connection to this port ***", 0);
+        network_close(existing_h->nhandle);
+        free_shandle(existing_h);
+    } else {
+        if (!silent && new_h->print_messages)
+            send_message(new_h->listener, new_h->nhandle, "connect_msg",
+                         "*** Connected ***", 0);
+        status = old_id < 0 ? "CONNECTED:" : "SWITCHED:";
+    }
+    lock_connection_name_mutex(new_h->nhandle);
+    oklog("%s %s is now %s on %s\n",
+          status,
+          old_name,
+          object_name(new_h->player),
+          network_connection_name(new_h->nhandle));
+    unlock_connection_name_mutex(new_h->nhandle);
+    free_str(old_name);
 }
 
 int
@@ -1690,7 +1705,7 @@ boot_player(Objid player)
     shandle *h = find_shandle(player);
 
     if (h)
-        h->disconnect_me = 1;
+        h->disconnect_me = true;
 }
 
 void
