@@ -9,6 +9,7 @@
 - Fix a bug where using floats as map keys could result in lost values. (e.g. [12.1 -> 1, 12.2 -> 2] would lose 12.1)
 - Fix a bug that could cause a crash if verb code referenced a waif property with the waif property prefix. (e.g. `foo.bar.:baz`)
 - Fix a bug in `exec()` that would cause a heap overflow if null bytes were introduced as arguments.
+- Fix a memory leak when using complex types as the third argument to `slice()`
 
 ### New Features
 - Apply standard task limits to threaded background tasks.

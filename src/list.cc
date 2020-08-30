@@ -852,7 +852,7 @@ bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
     int nargs = arglist.v.list[0].v.num;
     Var alist = arglist.v.list[1];
     Var index = (nargs < 2 ? Var::new_int(1) : arglist.v.list[2]);
-    Var default_map_value = (nargs >= 3 ? var_ref(arglist.v.list[3]) : var_ref(nothing));
+    Var default_map_value = (nargs >= 3 ? arglist.v.list[3] : nothing);
 
     // Validate the types here since we used TYPE_ANY to allow lists and ints
     if (nargs > 1 && index.type != TYPE_LIST && index.type != TYPE_INT && index.type != TYPE_STR) {
