@@ -1,6 +1,6 @@
 # ToastStunt ChangeLog
 
-## 2.6.2 (In Progress)
+## 2.6.2 (Sep 5, 2020)
 ### Bug Fixes
 - Fix a bug that would cause the number of queued tasks (as seen by `queue_info(<player>)`) to drop into the negatives, effectively disabling task limits.
 - Fix an off-by-one error in `locate_by_name()`
