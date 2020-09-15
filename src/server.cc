@@ -1451,6 +1451,8 @@ server_refuse_connection(server_listener sl, network_handle nh)
     slistener *l = (slistener *)sl.ptr;
 
     lock_connection_name_mutex(nh);
+    const char *connection_name = str_dup(network_connection_name(nh));
+    unlock_connection_name_mutex(nh);
 
     if (l->print_messages)
         send_message(l->oid, nh, "server_full_msg",
@@ -1458,10 +1460,13 @@ server_refuse_connection(server_listener sl, network_handle nh)
                      " connections right now.",
                      "*** Please try again later.",
                      0);
-    errlog("SERVER FULL: refusing connection on %s from %s\n",
-           l->name, (nh));
-
-    unlock_connection_name_mutex(nh);
+    
+    errlog("SERVER FULL: refusing connection on %s [%s], port %i from %s [%s], port %i\n",
+              network_source_connection_name(nh), network_source_ip_address(nh),
+              network_source_port(nh), connection_name,
+              network_ip_address(nh), network_port(nh));
+    
+    free_str(connection_name);
 }
 
 void
