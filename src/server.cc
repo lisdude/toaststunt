@@ -1192,9 +1192,7 @@ emergency_mode()
     }
 
     printf("Bye.  (%s)\n\n", start_ok ? "continuing" : "saving database");
-#if NETWORK_PROTOCOL != NP_SINGLE
     fclose(stdout);
-#endif
 
     free_stream(s);
     in_emergency_mode = false;
@@ -1896,10 +1894,9 @@ main(int argc, char **argv)
         fprintf(stderr, "\t%s Minimal.db Minimal.db.new\n", this_program);
         exit(1);
     }
-#if NETWORK_PROTOCOL != NP_SINGLE
     if (!emergency)
         fclose(stdout);
-#endif
+    
     if (log_file)
         fclose(stderr);
 

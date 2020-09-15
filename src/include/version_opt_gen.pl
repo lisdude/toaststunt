@@ -27,8 +27,7 @@ my @options =
   (
    #network settings
    _DENUM => [[NETWORK_PROTOCOL =>
-	       { NP_SINGLE => [],
-		 NP_TCP    => [_DINT => [qw(DEFAULT_PORT)]],
+	       { NP_TCP    => [_DINT => [qw(DEFAULT_PORT)]],
 	       }],
 	      [NETWORK_STYLE =>
 	       qw(NS_BSD

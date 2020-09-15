@@ -17,11 +17,7 @@
 
 #include "options.h"
 
-#if NETWORK_PROTOCOL == NP_SINGLE
-#  include "net_single.cc"
-#else
 #  include "net_multi.cc"
-#endif
 
 Var
 network_connection_options(network_handle nh, Var list)

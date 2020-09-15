@@ -902,7 +902,6 @@ network_set_connection_binary(network_handle nh, int do_binary)
     h->binary = do_binary;
 }
 
-#if NETWORK_PROTOCOL == NP_TCP
 #    define NETWORK_CO_TABLE(DEFINE, nh, value, _)      \
     DEFINE(client-echo, _, TYPE_INT, num,            \
            ((nhandle *)nh.ptr)->client_echo,         \
@@ -928,13 +927,6 @@ network_set_client_echo(network_handle nh, int is_on)
         telnet_cmd[1] = (char)TN_WILL;
     enqueue_output(nh, telnet_cmd, 3, 0, 1);
 }
-
-#else /* NETWORK_PROTOCOL == NP_SINGLE */
-
-#    error "NP_SINGLE ???"
-
-#endif /* NETWORK_PROTOCOL */
-
 
 #ifdef OUTBOUND_NETWORK
 

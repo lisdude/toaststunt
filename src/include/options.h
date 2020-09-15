@@ -133,38 +133,14 @@
 #define DEFAULT_LAG_THRESHOLD 5.0
 
 /******************************************************************************
- * NETWORK_PROTOCOL must be defined as one of the following:
- *
- * NP_SINGLE	The server will accept only one user at a time, communicating
- *		with them using the standard input and output streams of the
- *		server itself.
- * NP_TCP	The server will use TCP/IP protocols, such as are used by the
- *		Internet `telnet' command.
- *
- * If NP_TCP is selected, then DEFAULT_PORT is the TCP port number on which the
- * server listens when no port argument is given on the command line.
- *
+ * DEFAULT_PORT is the TCP port number on which the server listenes when no
+ * port argument is given on the command line.
  */
-
-#define NETWORK_PROTOCOL 	NP_TCP
 
 #define DEFAULT_PORT 		7777
 
 /******************************************************************************
- * If NETWORK_PROTOCOL is not defined as NP_SINGLE, then NETWORK_STYLE must be
- * defined as one of the following:
- *
- * NS_BSD	The server will use implementation techniques appropriate to a
- *		BSD-style UNIX system.
- */
-
-#define NETWORK_STYLE NS_BSD
-
-/******************************************************************************
- * If NETWORK_PROTOCOL is not defined as NP_SINGLE, then MPLEX_STYLE must be
- * defined as one of the following:
- *
- * MP_SELECT	The server will assume that the select() system call exists.
+ * MP_SELECT	 The server will assume that the select() system call exists.
  * MP_POLL	    The server will assume that the poll() system call exists.
  *
  * Usually, it works best to leave MPLEX_STYLE undefined and let the code at
@@ -188,8 +164,6 @@
  *
  * *** THINK VERY HARD BEFORE ENABLING THIS FUNCTION ***
  * In some contexts, this could represent a serious breach of security.
- *
- * Note: OUTBOUND_NETWORK may not be defined if NETWORK_PROTOCOL is NP_SINGLE.
  */
 
 /* disable by default, +O enables: */
@@ -200,7 +174,7 @@
 
 /******************************************************************************
  * The following constants define certain aspects of the server's network
- * behavior if NETWORK_PROTOCOL is not defined as NP_SINGLE.
+ * behavior.
  *
  * MAX_QUEUED_OUTPUT is the maximum number of output characters the server is
  *		     willing to buffer for any given network connection before
@@ -225,7 +199,7 @@
 
 #define MAX_QUEUED_OUTPUT	      65536
 #define MAX_QUEUED_INPUT	      MAX_QUEUED_OUTPUT
-#define MAX_LINE_BYTES          5242880
+#define MAX_LINE_BYTES           5242880
 #define DEFAULT_CONNECT_TIMEOUT	300
 
 /******************************************************************************
@@ -548,6 +522,14 @@
 #define PLAYER_HUH 0
 #endif
 
+#ifndef NETWORK_PROTOCOL
+#define NETWORK_PROTOCOL NP_TCP
+#endif
+
+#ifndef NETWORK_STYLE
+#define NETWORK_STYLE NS_BSD
+#endif
+
 #ifndef OUT_OF_BAND_PREFIX
 #define OUT_OF_BAND_PREFIX ""
 #endif
@@ -569,8 +551,7 @@
 #  error Illegal match() pattern cache size!
 #endif
 
-#define NP_SINGLE	1
-#define NP_TCP		2
+#define NP_TCP		1
 
 #define NS_BSD		1
 
@@ -579,7 +560,7 @@
 
 #include "config.h"
 
-#if NETWORK_PROTOCOL != NP_SINGLE  &&  !defined(MPLEX_STYLE)
+#if !defined(MPLEX_STYLE)
 #  if NETWORK_STYLE == NS_BSD
 #    if HAVE_POLL
 #       define MPLEX_STYLE MP_POLL
@@ -591,10 +572,6 @@
 #   endif
 #endif
 
-#if (NETWORK_PROTOCOL == NP_SINGLE) && defined(OUTBOUND_NETWORK)
-#  error You cannot define "OUTBOUND_NETWORK" with that "NETWORK_PROTOCOL"
-#endif
-
 /* make sure OUTBOUND_NETWORK has a value;
    for backward compatibility, use 1 if none given */
 #if defined(OUTBOUND_NETWORK) && (( 0 * OUTBOUND_NETWORK - 1 ) == 0)
@@ -603,7 +580,7 @@
 #endif
 
 
-#if NETWORK_PROTOCOL != NP_SINGLE && NETWORK_PROTOCOL != NP_TCP
+#if NETWORK_PROTOCOL != NP_TCP
 #  error Illegal value for "NETWORK_PROTOCOL"
 #endif
 
