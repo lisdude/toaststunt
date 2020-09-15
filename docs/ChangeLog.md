@@ -1,5 +1,9 @@
 # ToastStunt ChangeLog
 
+## 2.6.3 (In Progress)
+- Fix a memory leak in `open_network_connection()`.
+- Fix a bug where the SERVER FULL message wouldn't display the connection name properly.
+
 ## 2.6.2 (Sep 5, 2020)
 ### Bug Fixes
 - Fix a bug that would cause the number of queued tasks (as seen by `queue_info(<player>)`) to drop into the negatives, effectively disabling task limits.
