@@ -36,7 +36,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "net_multi.h"
+#include "network.h"
 
 #include "exec.h"
 #include "functions.h"

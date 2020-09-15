@@ -71,7 +71,6 @@
 #include "unparse.h"
 #include "utils.h"
 #include "version.h"
-#include "net_multi.h"  /* rewrite connection name */
 #include "waif.h" /* destroyed_waifs */
 #include "curl.h" /* curl shutdown */
 #include "background.h"

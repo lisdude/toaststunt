@@ -6,7 +6,7 @@
 #include "utils.h"                      // var_dup
 #include "server.h"                     // server options
 #include "list.h"                       // listappend
-#include "net_multi.h"                  // network_fd shenanigans
+#include "network.h"                    // network_fd shenanigans
 #include "log.h"                        // errlog
 #include "map.h"
 #include <unordered_map>

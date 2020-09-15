@@ -41,7 +41,7 @@
 #include <unistd.h>
 
 #include "log.h"
-#include "net_multi.h"
+#include "network.h"
 #include "storage.h"
 #include "tasks.h"
 
