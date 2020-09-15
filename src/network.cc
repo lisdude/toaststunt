@@ -15,32 +15,33 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
-#include "options.h"
-
 #include <ctype.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <signal.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
 #include <pthread.h>
+#include <arpa/inet.h>      /* inet_addr() */
+#include <errno.h>          /* EMFILE, EADDRNOTAVAIL, ECONNREFUSED,
+                             * ENETUNREACH, ETIMEOUT */
+#include <netinet/in.h>     /* struct sockaddr_in, INADDR_ANY, htons(),
+                             * htonl(), ntohl(), struct in_addr */
+#include <sys/socket.h>     /* socket(), AF_INET, SOCK_STREAM,
+                             * setsockopt(), SOL_SOCKET, SO_REUSEADDR,
+                             * bind(), struct sockaddr, accept(),
+                             * connect() */
+#include <stdlib.h>         /* strtoul() */
+#include <string.h>         /* memcpy() */
+#include <unistd.h>         /* close() */
+#include <netinet/tcp.h>
 
+#include "options.h"
 #include "config.h"
 #include "list.h"
 #include "log.h"
 #include "net_mplex.h"
 #include "network.h"
-#include "network.h"
-#include "options.h"
 #include "server.h"
-#include "streams.h"
-#include "structures.h"
 #include "storage.h"
 #include "timers.h"
 #include "utils.h"
@@ -61,7 +62,7 @@ static int ewouldblock = -1;
 #endif
 
 static int *pocket_descriptors = nullptr;   /* fds we keep around in case we need
-                         * one and no others are left... */
+                                             * one and no others are left... */
 
 typedef struct text_block {
     struct text_block *next;
@@ -82,14 +83,14 @@ typedef struct nhandle {
     text_block **output_tail;
     int output_length;
     int output_lines_flushed;
-    int outbound, binary;
+    bool outbound, binary;
     bool client_echo;
-    uint16_t source_port;               // port on server
-    const char *source_address;         // interface on server (resolved hostname)
-    const char *source_ipaddr;          // interface on server (IP address)
-    uint16_t destination_port;          // local port on connectee
-    const char *destination_ipaddr;     // IP address of connection
-    sa_family_t protocol_family;        // AF_INET, AF_INET6
+    uint16_t source_port;                   // port on server
+    const char *source_address;             // interface on server (resolved hostname)
+    const char *source_ipaddr;              // interface on server (IP address)
+    uint16_t destination_port;              // local port on connectee
+    const char *destination_ipaddr;         // IP address of connection
+    sa_family_t protocol_family;            // AF_INET, AF_INET6
     pthread_mutex_t *name_mutex;
     unsigned int refcount;
 } nhandle;
@@ -100,9 +101,9 @@ typedef struct nlistener {
     struct nlistener *next, **prev;
     server_listener slistener;
     int fd;
-    const char *name;               // resolved hostname
-    const char *ip_addr;            // 'raw' IP address
-    uint16_t port;                  // listening port
+    const char *name;                       // resolved hostname
+    const char *ip_addr;                    // 'raw' IP address
+    uint16_t port;                          // listening port
 } nlistener;
 
 static nlistener *all_nlisteners = nullptr;
@@ -117,7 +118,14 @@ typedef struct {
 static fd_reg *reg_fds = nullptr;
 static int max_reg_fds = 0;
 
-extern struct addrinfo tcp_hint;
+#ifdef OUTBOUND_NETWORK
+static char outbound_network_enabled = OUTBOUND_NETWORK;
+#endif
+
+static const char *bind_ipv4 = nullptr;
+static const char *bind_ipv6 = nullptr;
+
+struct addrinfo tcp_hint;
 
 void
 network_register_fd(int fd, network_fd_callback readable, network_fd_callback writable, void *data)
@@ -215,16 +223,16 @@ network_set_nonblocking(int fd)
         return 0;
     else
         return 1;
-#else
+#else /* FIONBIO */
     int flags;
 
     if ((flags = fcntl(fd, F_GETFL, 0)) < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
         return 0;
     else
         return 1;
-#endif
+#endif /* FIONBIO */
 }
-#endif
+#endif /* HAVE_ACCEPT4 */
 
 static int
 push_output(nhandle * h)
@@ -346,7 +354,7 @@ pull_input(nhandle * h)
 }
 
 static nhandle *
-new_nhandle(const int rfd, const int wfd, const int outbound, uint16_t listen_port, const char *listen_hostname,
+new_nhandle(const int rfd, const int wfd, const bool outbound, uint16_t listen_port, const char *listen_hostname,
             const char *listen_ipaddr, uint16_t local_port, const char *local_hostname,
             const char *local_ipaddr, sa_family_t protocol)
 {
@@ -376,7 +384,7 @@ new_nhandle(const int rfd, const int wfd, const int outbound, uint16_t listen_po
     h->output_length = 0;
     h->output_lines_flushed = 0;
     h->outbound = outbound;
-    h->binary = 0;
+    h->binary = false;
     h->name = local_hostname;   // already malloced by a get_network* function
     h->client_echo = 1;
     h->source_port = listen_port;
@@ -408,7 +416,7 @@ close_nhandle(nhandle * h)
         b = bb;
     }
     free_stream(h->input);
-    proto_close_connection(h->rfd, h->wfd);
+    network_close_connection(h->rfd, h->wfd);
     free_str(h->name);
     free_str(h->source_address);
     free_str(h->source_ipaddr);
@@ -418,21 +426,33 @@ close_nhandle(nhandle * h)
     myfree(h, M_NETWORK);
 }
 
-
 static void
 close_nlistener(nlistener * l)
 {
     *(l->prev) = l->next;
     if (l->next)
         l->next->prev = l->prev;
-    proto_close_listener(l->fd);
+    close_listener(l->fd);
     free_str(l->name);
     free_str(l->ip_addr);
     myfree(l, M_NETWORK);
 }
 
+void
+network_close_connection(int read_fd, int write_fd)
+{
+    /* read_fd and write_fd are the same, so we only need to deal with one. */
+    close(read_fd);
+}
+
+void
+close_listener(int fd)
+{
+    close(fd);
+}
+
 static void
-make_new_connection(server_listener sl, int rfd, int wfd, int outbound,
+make_new_connection(server_listener sl, int rfd, int wfd, bool outbound,
                     uint16_t listen_port, const char *listen_hostname,
                     const char *listen_ipaddr, uint16_t local_port,
                     const char *local_hostname, const char *local_ipaddr,
@@ -475,14 +495,14 @@ accept_new_connection(nlistener * l)
     uint16_t port;
     sa_family_t protocol;
 
-    switch (proto_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol)) {
+    switch (network_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol)) {
         case PA_OKAY:
             make_new_connection(l->slistener, rfd, wfd, 0, l->port, l->name, l->ip_addr, port, name, ip_addr, protocol);
             break;
         case PA_FULL:
             for (i = 0; i < proto.pocket_size; i++)
                 close(pocket_descriptors[i]);
-            if (proto_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol) != PA_OKAY) {
+            if (network_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol) != PA_OKAY) {
                 errlog("Can't accept connection even by emptying pockets!\n");
             } else {
                 nh.ptr = h = new_nhandle(rfd, wfd, 0, l->port, l->name, l->ip_addr, port, name, ip_addr, protocol);
@@ -495,6 +515,478 @@ accept_new_connection(nlistener * l)
             /* Do nothing.  The protocol implementation has already logged it. */
             break;
     }
+}
+
+enum accept_error
+network_accept_connection(int listener_fd, int *read_fd, int *write_fd,
+                          const char **name, const char **ip_addr, uint16_t *port,
+                          sa_family_t *protocol)
+{
+    int option = 1;
+    int fd;
+    struct sockaddr_storage addr;
+    socklen_t addr_length = sizeof addr;
+
+#if HAVE_ACCEPT4
+    fd = accept4(listener_fd, (struct sockaddr *)&addr, &addr_length, SOCK_NONBLOCK);
+#else
+    fd = accept(listener_fd, (struct sockaddr *)&addr, &addr_length);
+#endif
+    if (fd < 0) {
+        if (errno == EMFILE)
+            return PA_FULL;
+        else {
+            log_perror("Accepting new network connection");
+            return PA_OTHER;
+        }
+    }
+
+    // Disable Nagle algorithm on the socket
+    if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *) &option, sizeof(option)) < 0)
+        log_perror("Couldn't set TCP_NODELAY");
+#ifdef __linux__
+    // Disable delayed ACKs
+    if (setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, (char*) &option, sizeof(option)) < 0)
+        log_perror("Couldn't set TCP_QUICKACK");
+#endif
+
+    *read_fd = *write_fd = fd;
+
+    *ip_addr = get_ntop(&addr);
+    if (!server_int_option("no_name_lookup", NO_NAME_LOOKUP))
+        *name = get_nameinfo((struct sockaddr *)&addr);
+    else
+        *name = str_dup(*ip_addr);
+
+    *port = get_in_port(&addr);
+    *protocol = addr.ss_family;
+
+    return PA_OKAY;
+}
+
+enum error
+make_listener(Var desc, int *fd, const char **name, const char **ip_address,
+              uint16_t *port, const bool use_ipv6)
+{
+    int s, yes = 1;
+    struct addrinfo hints;
+    struct addrinfo * servinfo, *p;
+
+    if (desc.type != TYPE_INT)
+        return E_TYPE;
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = (use_ipv6 ? AF_INET6 : AF_INET);
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;        // use all the IPs
+
+    char *port_string = get_port_str(desc.v.num);
+    int rv = getaddrinfo(use_ipv6 ? bind_ipv6 : bind_ipv4, port_string, &hints, &servinfo);
+    free(port_string);
+    if (rv != 0) {
+        log_perror(gai_strerror(rv));
+        return E_QUOTA;
+    }
+
+    /* If we have multiple results, we'll bind to the first one we can. */
+    for (p = servinfo; p != nullptr; p = p->ai_next) {
+        if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
+            perror("Creating listening socket");
+            continue;
+        }
+
+        if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) < 0) {
+            perror("Setting listening socket reuseaddr");
+            close(s);
+            freeaddrinfo(servinfo);
+            return E_QUOTA;
+        }
+
+        if (use_ipv6 && setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof yes) < 0) {
+            perror("Disabling listening socket dual-stack mode for IPv6");
+            close(s);
+            freeaddrinfo(servinfo);
+            return E_QUOTA;
+        }
+
+        if (bind(s, p->ai_addr, p->ai_addrlen) < 0) {
+            perror("Binding listening socket");
+            close(s);
+            continue;
+        }
+        break;
+    }
+
+    if (p == nullptr) {
+        enum error e = E_QUOTA;
+
+        log_perror("Failed to bind to listening socket");
+        if (errno == EACCES)
+            e = E_PERM;
+        freeaddrinfo(servinfo);
+        return e;
+    }
+
+    *ip_address = get_ntop((struct sockaddr_storage *)p->ai_addr);
+    if (!server_int_option("no_name_lookup", NO_NAME_LOOKUP))
+        *name = get_nameinfo((struct sockaddr *)p->ai_addr);
+    else
+        *name = str_dup(*ip_address);
+    *port = desc.v.num;
+    *fd = s;
+
+    freeaddrinfo(servinfo);
+
+    return E_NONE;
+}
+
+void *get_in_addr(const struct sockaddr_storage *sa)
+{
+    switch (sa->ss_family) {
+        case AF_INET:
+            return &(((struct sockaddr_in*)sa)->sin_addr);
+        case AF_INET6:
+            return &(((struct sockaddr_in6*)sa)->sin6_addr);
+        default:
+            return nullptr;
+    }
+}
+
+unsigned short int get_in_port(const struct sockaddr_storage *sa)
+{
+    switch (sa->ss_family) {
+        case AF_INET:
+            return ntohs(((struct sockaddr_in*)sa)->sin_port);
+        case AF_INET6:
+            return ntohs(((struct sockaddr_in6*)sa)->sin6_port);
+        default:
+            return 0;
+    }
+}
+
+const char *get_ntop(const struct sockaddr_storage *sa)
+{
+    switch (sa->ss_family) {
+        case AF_INET:
+            char ip4[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), ip4, INET_ADDRSTRLEN);
+            return str_dup(ip4);
+        case AF_INET6:
+            char ip6[INET6_ADDRSTRLEN];
+            inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr), ip6, INET6_ADDRSTRLEN);
+            return str_dup(ip6);
+        default:
+            return str_dup(">>unknown address<<");
+    }
+}
+
+const char *get_nameinfo(const struct sockaddr *sa)
+{
+    char hostname[NI_MAXHOST] = "";
+    socklen_t sa_length = (sa->sa_family == AF_INET6 ? sizeof(sockaddr_in6) : sizeof(sockaddr_in));
+
+    int status = getnameinfo(sa, sa_length, hostname, sizeof hostname, nullptr, 0, 0);
+
+    if (status != 0) {
+        /* Don't bother reporting unrecognized family errors.
+           More than likely it's because it's IPv6 '::' */
+        if (status != EAI_FAMILY)
+            errlog("getnameinfo failed: %s\n", gai_strerror(status));
+        return get_ntop((sockaddr_storage *)sa);
+    }
+
+    return str_dup(hostname);
+}
+
+const char *get_nameinfo_port(const struct sockaddr *sa)
+{
+    char service[NI_MAXSERV];
+    int status = getnameinfo(sa, sizeof * sa, nullptr, 0, service, sizeof service, NI_NUMERICSERV);
+
+    if (status != 0) {
+        errlog("getnameinfo_port failed: %s\n", gai_strerror(status));
+        return nullptr;
+    }
+
+    return str_dup(service);
+}
+
+const char *get_ipver(const struct sockaddr_storage *sa)
+{
+    switch (sa->ss_family) {
+        case AF_INET:
+            return "IPv4";
+        case AF_INET6:
+            return "IPv6";
+        default:
+            return ">>unknown protocol<<";
+    }
+}
+
+char *get_port_str(int port)
+{
+    char *port_str = nullptr;
+    asprintf(&port_str, "%d", port);
+    return port_str;
+}
+
+#ifdef OUTBOUND_NETWORK
+class timeout_exception: public std::exception
+{
+public:
+    timeout_exception() throw() {}
+
+    ~timeout_exception() throw() override {}
+
+    const char* what() const throw() override {
+        return "timeout";
+    }
+};
+
+static void
+timeout_proc(Timer_ID id, Timer_Data data)
+{
+    throw timeout_exception();
+}
+
+enum error
+open_connection(Var arglist, int *read_fd, int *write_fd,
+                const char **name, const char **ip_addr,
+                uint16_t *port, sa_family_t *protocol,
+                bool use_ipv6)
+{
+    static Timer_ID id;
+    int s, result;
+    struct addrinfo * servinfo, *p, hint;
+    int yes = 1;
+
+    if (!outbound_network_enabled)
+        return E_PERM;
+
+    if (arglist.v.list[0].v.num != 2)
+        return E_ARGS;
+    else if (arglist.v.list[1].type != TYPE_STR ||
+             arglist.v.list[2].type != TYPE_INT)
+        return E_TYPE;
+
+    const char *host_name = arglist.v.list[1].v.str;
+    int host_port = arglist.v.list[2].v.num;
+
+    memset(&hint, 0, sizeof hint);
+    hint.ai_family = use_ipv6 ? AF_INET6 : AF_INET;
+    hint.ai_socktype = SOCK_STREAM;
+    hint.ai_flags = AI_PASSIVE;
+
+    char *port_string = get_port_str(host_port);
+    int rv = getaddrinfo(host_name, get_port_str(host_port), &hint, &servinfo);
+    free(port_string);
+    if (rv != 0) {
+        errlog("open_connection getaddrinfo error: %s\n", gai_strerror(rv));
+        return E_INVARG;
+    }
+
+    /* If we have multiple results, we'll bind to the first one we can. */
+    for (p = servinfo; p != nullptr; p = p->ai_next) {
+        if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+            if (errno != EMFILE)
+                log_perror("Making socket in open_connection");
+            continue;
+        }
+
+        if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+            perror("Setting listening socket options");
+            close(s);
+            freeaddrinfo(servinfo);
+            return E_QUOTA;
+        }
+
+        break;
+    }
+
+    if (p == nullptr) {
+        enum error e = E_QUOTA;
+
+        log_perror("Failed to bind to listening socket");
+        if (errno == EACCES)
+            e = E_PERM;
+        freeaddrinfo(servinfo);
+        return e;
+    }
+
+    try {
+        id = set_timer(server_int_option("outbound_connect_timeout", 5),
+                       timeout_proc, nullptr);
+        result = connect(s, p->ai_addr, p->ai_addrlen);
+        cancel_timer(id);
+    }
+    catch (timeout_exception& exception) {
+        result = -1;
+        errno = ETIMEDOUT;
+        reenable_timers();
+    }
+
+    if (result < 0) {
+        close(s);
+        freeaddrinfo(servinfo);
+        if (errno == EADDRNOTAVAIL ||
+                errno == ECONNREFUSED ||
+                errno == ENETUNREACH ||
+                errno == ETIMEDOUT) {
+            log_perror("open_network_connection error");
+            return E_INVARG;
+        }
+        log_perror("Connecting in open_connection");
+        return E_QUOTA;
+    }
+
+    *read_fd = *write_fd = s;
+
+    *ip_addr = get_ntop((struct sockaddr_storage *)p->ai_addr);
+    if (!server_int_option("no_name_lookup", NO_NAME_LOOKUP))
+        *name = get_nameinfo((struct sockaddr *)p->ai_addr);
+    else
+        *name = str_dup(*ip_addr);
+
+    *port = get_in_port((struct sockaddr_storage *)p->ai_addr);
+    *protocol = servinfo->ai_family;
+
+    freeaddrinfo(servinfo);
+
+    return E_NONE;
+}
+#endif              /* OUTBOUND_NETWORK */
+
+static int
+tcp_arguments(int argc, char **argv, int *pport)
+{
+    char *p = nullptr;
+
+    for ( ; argc > 0; argc--, argv++) {
+        if (argc > 0
+                && (argv[0][0] == '-' || argv[0][0] == '+')
+                && argv[0][1] == 'O'
+                && argv[0][2] == 0
+           ) {
+#ifdef OUTBOUND_NETWORK
+            outbound_network_enabled = (argv[0][0] == '+');
+#else
+            if (argv[0][0] == '+') {
+                fprintf(stderr, "Outbound network not supported.\n");
+                oklog("CMDLINE: *** Ignoring %s (outbound network not supported)\n", argv[0]);
+            }
+#endif
+        }
+        else if (0 == strcmp(argv[0], "-4")) {
+            if (argc <= 1)
+                return 0;
+            argc--;
+            argv++;
+            bind_ipv4 = str_dup(argv[0]);
+            oklog("CMDLINE: IPv4 source address restricted to %s\n", argv[0]);
+        } else if (0 == strcmp(argv[0], "-6")) {
+            if (argc <= 1)
+                return 0;
+            argc--;
+            argv++;
+            bind_ipv6 = str_dup(argv[0]);
+            oklog("CMDLINE: IPv6 source address restricted to %s\n", argv[0]);
+        } else {
+            if (p != nullptr) /* strtoul always sets p */
+                return 0;
+            if (0 == strcmp(argv[0], "-p")) {
+                if (argc <= 1)
+                    return 0;
+                argc--;
+                argv++;
+            }
+            *pport = strtoul(argv[0], &p, 10);
+            if (*p != '\0')
+                return 0;
+            oklog("CMDLINE: Initial port = %d\n", *pport);
+        }
+    }
+#ifdef OUTBOUND_NETWORK
+    oklog("CMDLINE: Outbound network connections %s.\n",
+          outbound_network_enabled ? "enabled" : "disabled");
+#endif
+    return 1;
+}
+
+/*************************
+ * External entry points *
+ *************************/
+
+const char *
+network_usage_string(void)
+{
+    return "[+O|-O] [-4 ipv4_address] [-6 ipv6_address] [[-p] port]";
+}
+
+int
+network_initialize(int argc, char **argv, Var * desc)
+{
+    int port = DEFAULT_PORT;
+
+    proto.pocket_size = 1;
+    proto.believe_eof = 1;
+    proto.eol_out_string = "\r\n";
+
+    if (!tcp_arguments(argc, argv, &port))
+        return 0;
+
+    memset(&tcp_hint, 0, sizeof tcp_hint);
+    tcp_hint.ai_family = AF_UNSPEC;
+    tcp_hint.ai_socktype = SOCK_STREAM;
+
+    desc->type = TYPE_INT;
+    desc->v.num = port;
+
+    eol_length = strlen(proto.eol_out_string);
+    get_pocket_descriptors();
+
+    /* we don't care about SIGPIPE, we notice it in mplex_wait() and write() */
+    signal(SIGPIPE, SIG_IGN);
+
+    return 1;
+}
+
+enum error
+network_make_listener(server_listener sl, Var desc, network_listener * nl,
+                      const char **name, const char **ip_address,
+                      uint16_t *port, bool use_ipv6)
+{
+    int fd;
+    enum error e = make_listener(desc, &fd, name, ip_address, port, use_ipv6);
+    nlistener *listener;
+
+    if (e == E_NONE) {
+        nl->ptr = listener = (nlistener *) mymalloc(sizeof(nlistener), M_NETWORK);
+        listener->fd = fd;
+        listener->slistener = sl;
+        listener->name = str_dup(*name);
+        listener->ip_addr = str_dup(*ip_address);
+        listener->port = *port;
+        if (all_nlisteners)
+            all_nlisteners->prev = &(listener->next);
+        listener->next = all_nlisteners;
+        listener->prev = &all_nlisteners;
+        all_nlisteners = listener;
+    }
+    return e;
+}
+
+int
+network_listen(network_listener nl)
+{
+    if (!nl.ptr)
+        return 0;
+
+    nlistener *l = (nlistener *) nl.ptr;
+
+    int status = listen(l->fd, 5);
+    if (status < 0)
+        log_perror("Failed to listen");
+    return status < 0 ? 0 : 1;
 }
 
 static int
@@ -536,74 +1028,6 @@ enqueue_output(network_handle nh, const char *line, int line_length, int add_eol
     h->output_length += length;
 
     return 1;
-}
-
-
-/*************************
- * External entry points *
- *************************/
-
-const char *
-network_protocol_name(void)
-{
-    return proto_name();
-}
-
-const char *
-network_usage_string(void)
-{
-    return proto_usage_string();
-}
-
-int
-network_initialize(int argc, char **argv, Var * desc)
-{
-    if (!proto_initialize(&proto, desc, argc, argv))
-        return 0;
-
-    eol_length = strlen(proto.eol_out_string);
-    get_pocket_descriptors();
-
-    /* we don't care about SIGPIPE, we notice it in mplex_wait() and write() */
-    signal(SIGPIPE, SIG_IGN);
-
-    return 1;
-}
-
-enum error
-network_make_listener(server_listener sl, Var desc, network_listener * nl,
-                      const char **name, const char **ip_address,
-                      uint16_t *port, bool use_ipv6)
-{
-    int fd;
-    enum error e = proto_make_listener(desc, &fd, name, ip_address, port, use_ipv6);
-    nlistener *listener;
-
-    if (e == E_NONE) {
-        nl->ptr = listener = (nlistener *) mymalloc(sizeof(nlistener), M_NETWORK);
-        listener->fd = fd;
-        listener->slistener = sl;
-        listener->name = str_dup(*name);
-        listener->ip_addr = str_dup(*ip_address);
-        listener->port = *port;
-        if (all_nlisteners)
-            all_nlisteners->prev = &(listener->next);
-        listener->next = all_nlisteners;
-        listener->prev = &all_nlisteners;
-        all_nlisteners = listener;
-    }
-    return e;
-}
-
-int
-network_listen(network_listener nl)
-{
-    if (!nl.ptr)
-        return 0;
-
-    nlistener *l = (nlistener *) nl.ptr;
-
-    return proto_listen(l->fd);
 }
 
 int
@@ -680,7 +1104,7 @@ network_process_io(int timeout)
     }
 }
 
-int
+bool
 network_is_localhost(const network_handle nh)
 {
     const nhandle *h = (nhandle *) nh.ptr;
@@ -890,7 +1314,7 @@ network_protocol(const network_handle nh)
 }
 
 void
-network_set_connection_binary(network_handle nh, int do_binary)
+network_set_connection_binary(network_handle nh, bool do_binary)
 {
     nhandle *h = (nhandle *) nh.ptr;
 
@@ -924,7 +1348,6 @@ network_set_client_echo(network_handle nh, int is_on)
 }
 
 #ifdef OUTBOUND_NETWORK
-
 enum error
 network_open_connection(Var arglist, server_listener sl, bool use_ipv6)
 {
@@ -935,13 +1358,13 @@ network_open_connection(Var arglist, server_listener sl, bool use_ipv6)
     sa_family_t protocol;
     enum error e;
 
-    e = proto_open_connection(arglist, &rfd, &wfd, &name, &ip_addr, &port, &protocol, use_ipv6);
+    e = open_connection(arglist, &rfd, &wfd, &name, &ip_addr, &port, &protocol, use_ipv6);
     if (e == E_NONE)
         make_new_connection(sl, rfd, wfd, 1, 0, nullptr, nullptr, port, name, ip_addr, protocol);
 
     return e;
 }
-#endif
+#endif /* OUTBOUND_NETWORK */
 
 void
 network_close(network_handle h)

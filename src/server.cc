@@ -116,7 +116,7 @@ typedef struct shandle {
     task_queue tasks;
     bool disconnect_me;
     Objid switched;
-    int outbound, binary;
+    bool outbound, binary;
     bool print_messages;
 } shandle;
 
@@ -1392,7 +1392,7 @@ server_string_option(const char *name, const char *defallt)
 static Objid next_unconnected_player = NOTHING - 1;
 
 server_handle
-server_new_connection(server_listener sl, network_handle nh, int outbound)
+server_new_connection(server_listener sl, network_handle nh, bool outbound)
 {
     slistener *l = (slistener *)sl.ptr;
     shandle *h = (shandle *)mymalloc(sizeof(shandle), M_NETWORK);
@@ -1413,7 +1413,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
     h->tasks = new_task_queue(h->player, h->listener);
     h->disconnect_me = false;
     h->outbound = outbound;
-    h->binary = 0;
+    h->binary = false;
     h->print_messages = l ? l->print_messages : !outbound;
 
     if (l || !outbound) {
@@ -1506,12 +1506,12 @@ server_resume_input(Objid connection)
     network_resume_input(h->nhandle);
 }
 
-char
+bool
 is_localhost(Objid connection)
 {
     shandle *existing_h = find_shandle(connection);
     if (!existing_h)
-        return 0;
+        return false;
     else
         return network_is_localhost(existing_h->nhandle);
 }
@@ -1895,14 +1895,13 @@ main(int argc, char **argv)
     }
     if (!emergency)
         fclose(stdout);
-    
+
     if (log_file)
         fclose(stderr);
 
     parent_pid = getpid();
 
     applog(LOG_INFO1, "STARTING: Version %s (%" PRIdN "-bit) of the ToastStunt/LambdaMOO server\n", server_version, SERVER_BITS);
-    oklog("          (Using %s protocol)\n", network_protocol_name());
     oklog("          (Task timeouts measured in %s seconds.)\n",
           virtual_timer_available() ? "server CPU" : "wall-clock");
     oklog("          (Process id %" PRIdN ")\n", parent_pid);

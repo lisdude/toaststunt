@@ -174,7 +174,6 @@ set(src_CXXSRCS
     src/match.cc
     src/network.cc
     src/net_mplex.cc
-    src/net_bsd_tcp.cc
     src/numbers.cc
     src/objects.cc
     src/parse_cmd.cc

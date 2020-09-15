@@ -16,19 +16,16 @@
  *****************************************************************************/
 
 /*
- * This describes the complete set of procedures that a network implementation
- * must provide.  See 'server.h' for the complete set of procedures such an
+ * See 'server.h' for the complete set of procedures the network
  * implementation is expected to use from the rest of the server.
  */
 
 #ifndef Network_H
 #define Network_H 1
 
-#include "config.h"
-#include "options.h"
 #include "structures.h"
 #include "streams.h"
-#include <netdb.h>
+#include <netdb.h>      // sa_family_t
 
 typedef struct {		/* Network's handle on a connection */
     void *ptr;
@@ -58,30 +55,7 @@ struct proto {
 				 * line of output on connections. */
 };
 
-extern const char *proto_name(void);
-				/* Returns a string naming the protocol. */
-
-extern const char *proto_usage_string(void);
-				/* Returns a string giving the syntax of any
-				 * extra, protocol-specific command-line
-				 * arguments, such as a port number.
-				 */
-
-extern int proto_initialize(struct proto *proto, Var * desc,
-			    int argc, char **argv);
-				/* ARGC and ARGV refer to just the protocol-
-				 * specific command-line arguments, if any,
-				 * which always come after any protocol-
-				 * independent args.  Returns true iff those
-				 * arguments were valid.  On success, all of
-				 * the fields of PROTO should be filled in with
-				 * values appropriate for the protocol, and
-				 * *DESC should be a MOO value to pass to
-				 * proto_make_listener() in order to create the
-				 * server's initial listening point.
-				 */
-
-extern enum error proto_make_listener(Var desc, int *fd,
+extern enum error make_listener(Var desc, int *fd,
 				      const char **name, const char **ip_address,
 					  uint16_t *port, const bool use_ipv6);
 				/* DESC is the second argument in a call to the
@@ -100,25 +74,17 @@ extern enum error proto_make_listener(Var desc, int *fd,
 				 *
 				 * NOTE: It is more than okay for the server
 				 * still to be refusing connections.  The
-				 * server's call to proto_listen() marks the
+				 * server's call to network_listen() marks the
 				 * time by which the server must start
 				 * accepting connections.
 				 */
 
-extern int proto_listen(int fd);
-				/* Prepare for accepting connections on the
-				 * given file descriptor, returning true if
-				 * successful.  FD was returned by a call to
-				 * proto_make_listener().
-				 */
-
-
-enum proto_accept_error {
+enum accept_error {
     PA_OKAY, PA_FULL, PA_OTHER
 };
 
-extern enum proto_accept_error
- proto_accept_connection(int listener_fd,
+extern enum accept_error
+ network_accept_connection(int listener_fd,
 			 int *read_fd, int *write_fd,
 			 const char **name, const char **ip_addr,
 			 uint16_t *port, sa_family_t *protocol);
@@ -129,7 +95,7 @@ extern enum proto_accept_error
 				 * PA_OTHER for other failures (in which case a
 				 * message should have been output to the
 				 * server log).  LISTENER_FD was returned by a
-				 * call to proto_make_listener().  On
+				 * call to make_listener().  On
 				 * successful return, *READ_FD and *WRITE_FD
 				 * should be file descriptors on which input
 				 * and output for the new connection can be
@@ -141,7 +107,7 @@ extern enum proto_accept_error
 
 #ifdef OUTBOUND_NETWORK
 
-extern enum error proto_open_connection(Var arglist,
+extern enum error open_connection(Var arglist,
 					int *read_fd, int *write_fd,
 					const char **name, const char **ip_addr,
 					uint16_t *port, sa_family_t *protocol, bool use_ipv6);
@@ -150,7 +116,7 @@ extern enum error proto_open_connection(Var arglist,
 				 * to be opened.  If the arguments are OK for
 				 * this protocol and the connection is success-
 				 * fully made, then *READ_FD and *WRITE_FD
-				 * should be set as proto_accept_connection()
+				 * should be set as network_accept_connection()
 				 * does, *LOCAL_NAME a human-readable string
 				 * naming the local endpoint of the connection,
 				 * *REMOTE_NAME a string naming the remote
@@ -160,23 +126,18 @@ extern enum error proto_open_connection(Var arglist,
 
 #endif				/* OUTBOUND_NETWORK */
 
-extern void proto_close_connection(int read_fd, int write_fd);
+extern void network_close_connection(int read_fd, int write_fd);
 				/* Close the given file descriptors, which were
-				 * returned by proto_accept_connection(),
+				 * returned by network_accept_connection(),
 				 * performing whatever extra clean-ups are
 				 * required by the protocol.
 				 */
 
-extern void proto_close_listener(int fd);
+extern void close_listener(int fd);
 				/* Close FD, which was returned by a call to
-				 * proto_make_listener(), performing whatever
+				 * network_make_listener(), performing whatever
 				 * extra clean-ups are required by the
 				 * protocol.
-				 */
-
-extern const char *network_protocol_name(void);
-				/* Returns a string naming the networking
-				 * protocol in use.
 				 */
 
 extern const char *network_usage_string(void);
@@ -187,13 +148,16 @@ extern const char *network_usage_string(void);
 
 extern int network_initialize(int argc, char **argv,
 			      Var * desc);
-				/* ARGC and ARGV refer to just the network-
-				 * specific arguments, if any, which always
-				 * come after any network-independent args.
-				 * Returns true iff those arguments were valid.
-				 * On success, *DESC should be a MOO value to
-				 * pass to network_make_listener() in order to
-				 * create the server's initial listening point.
+				/* ARGC and ARGV refer to just the protocol-
+				 * specific command-line arguments, if any,
+				 * which always come after any protocol-
+				 * independent args.  Returns true iff those
+				 * arguments were valid.  On success, all of
+				 * the fields of PROTO should be filled in with
+				 * values appropriate for the protocol, and
+				 * *DESC should be a MOO value to pass to
+				 * network_make_listener() in order to create the
+				 * server's initial listening point.
 				 */
 
 extern enum error network_make_listener(server_listener sl, Var desc,
@@ -225,9 +189,10 @@ extern enum error network_make_listener(server_listener sl, Var desc,
 				 */
 
 extern int network_listen(network_listener nl);
-				/* The network should begin accepting
-				 * connections on the given listening point,
-				 * returning true iff this is now possible.
+				/* Prepare for accepting connections on the
+				 * given file descriptor, returning true if
+				 * successful.  FD was returned by a call to
+				 * network_make_listener().
 				 */
 
 extern int network_send_line(network_handle nh, const char *line,
@@ -281,7 +246,7 @@ extern void network_resume_input(network_handle nh);
 				 * given connection.
 				 */
 
-extern void network_set_connection_binary(network_handle, int);
+extern void network_set_connection_binary(network_handle, bool);
 				/* Set the given connection into or out of
 				 * `binary input mode'.
 				 */
@@ -364,8 +329,6 @@ extern int network_set_connection_option(network_handle nh,
 				 */
 
 #ifdef OUTBOUND_NETWORK
-#include "structures.h"
-
 extern enum error network_open_connection(Var arglist, server_listener sl, bool use_ipv6);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
@@ -459,12 +422,11 @@ extern int network_set_nonblocking(int fd);
 				 */
 #endif
 
-#include "streams.h"
-#include "network.h"
-
 extern int rewrite_connection_name(network_handle nh, const char *destination, const char *destination_port, const char *source, const char *source_port);
 extern int network_name_lookup_rewrite(Objid obj, const char *name);
-extern int network_is_localhost(network_handle nh);
+extern bool network_is_localhost(network_handle nh);
+				/* Return true if the network handle's destination IP address
+				   is coming from 127.0.0.1 or ::1 */
 extern void lock_connection_name_mutex(const network_handle nh);
 extern void unlock_connection_name_mutex(const network_handle nh);
 extern void increment_nhandle_refcount(const network_handle nh);
