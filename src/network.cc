@@ -778,7 +778,7 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
     hint.ai_flags = AI_PASSIVE;
 
     char *port_string = get_port_str(host_port);
-    int rv = getaddrinfo(host_name, get_port_str(host_port), &hint, &servinfo);
+    int rv = getaddrinfo(host_name, port_string, &hint, &servinfo);
     free(port_string);
     if (rv != 0) {
         errlog("open_connection getaddrinfo error: %s\n", gai_strerror(rv));
