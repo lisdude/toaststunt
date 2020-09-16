@@ -1,7 +1,8 @@
 # ToastStunt ChangeLog
 
 ## 2.6.3 (In Progress)
-- Fix a memory leak in `open_network_connection()`.
+- Fix a memory leak in `open_network_connection()` after a successful connection.
+- Fix a memory leak in `open_network_connection()` when providing an invalid argument for the listener.
 - Fix a bug where the SERVER FULL message wouldn't display the connection name properly.
 
 ## 2.6.2 (Sep 5, 2020)

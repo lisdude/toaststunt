@@ -2254,6 +2254,7 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
         Objid oid;
 
         if (arglist.v.list[3].type != TYPE_OBJ) {
+            free_var(arglist);
             return make_error_pack(E_TYPE);
         }
         oid = arglist.v.list[3].v.obj;
