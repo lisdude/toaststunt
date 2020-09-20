@@ -94,7 +94,6 @@ bf_url_encode(Var arglist, Byte next, void *vdata, Objid progr)
     char *encoded = curl_easy_escape(curl_handle, url, memo_strlen(url));
 
     if (encoded == nullptr) {
-        curl_easy_cleanup(curl_handle);
         return make_error_pack(E_INVARG);
     }
 
@@ -117,7 +116,6 @@ bf_url_decode(Var arglist, Byte next, void *vdata, Objid progr)
     char *decoded = curl_easy_unescape(curl_handle, url, memo_strlen(url), nullptr);
 
     if (decoded == nullptr) {
-        curl_easy_cleanup(curl_handle);
         return make_error_pack(E_INVARG);
     }
 
@@ -143,7 +141,8 @@ register_curl(void)
     oklog("REGISTER_CURL: Using libcurl version %s\n", curl_version());
     curl_global_init(CURL_GLOBAL_ALL);
     curl_handle = curl_easy_init();
-    register_function("curl", 1, 2, bf_curl, TYPE_STR, TYPE_ANY);
+ 
+   register_function("curl", 1, 2, bf_curl, TYPE_STR, TYPE_ANY);
     register_function("url_encode", 1, 1, bf_url_encode, TYPE_STR);
     register_function("url_decode", 1, 1, bf_url_decode, TYPE_STR);
 }
