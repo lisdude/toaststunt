@@ -114,6 +114,8 @@ typedef struct nlistener {
     uint16_t port;                          // listening port
 #ifdef USE_TLS
     bool use_tls;
+    const char *tls_certificate_path;
+    const char *tls_key_path;
 #endif
 } nlistener;
 
@@ -505,6 +507,10 @@ close_nlistener(nlistener * l)
     close_listener(l->fd);
     free_str(l->name);
     free_str(l->ip_addr);
+    if (l->tls_key_path)
+        free_str(l->tls_certificate_path);
+    if (l->tls_key_path)
+        free_str(l->tls_key_path);
     myfree(l, M_NETWORK);
 }
 
@@ -569,16 +575,18 @@ accept_new_connection(nlistener * l)
 #ifdef USE_TLS
     SSL *tls = nullptr;
     bool use_tls = l->use_tls;
+    const char *certificate_path = l->tls_certificate_path;
+    const char *key_path = l->tls_key_path;
 #endif
 
-    switch (network_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol USE_TLS_BOOL SSL_CONTEXT_2_ARG)) {
+    switch (network_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol USE_TLS_BOOL SSL_CONTEXT_2_ARG TLS_CERT_PATH)) {
         case PA_OKAY:
             make_new_connection(l->slistener, rfd, wfd, 0, l->port, l->name, l->ip_addr, port, name, ip_addr, protocol SSL_CONTEXT_1_ARG);
             break;
         case PA_FULL:
             for (i = 0; i < proto.pocket_size; i++)
                 close(pocket_descriptors[i]);
-            if (network_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol USE_TLS_BOOL SSL_CONTEXT_2_ARG) != PA_OKAY) {
+            if (network_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol USE_TLS_BOOL SSL_CONTEXT_2_ARG TLS_CERT_PATH) != PA_OKAY) {
                 errlog("Can't accept connection even by emptying pockets!\n");
             } else {
                 nh.ptr = h = new_nhandle(rfd, wfd, 0, l->port, l->name, l->ip_addr, port, name, ip_addr, protocol SSL_CONTEXT_1_ARG);
@@ -596,7 +604,7 @@ accept_new_connection(nlistener * l)
 enum accept_error
 network_accept_connection(int listener_fd, int *read_fd, int *write_fd,
                           const char **name, const char **ip_addr, uint16_t *port,
-                          sa_family_t *protocol USE_TLS_BOOL_DEF SSL_CONTEXT_2_DEF)
+                          sa_family_t *protocol USE_TLS_BOOL_DEF SSL_CONTEXT_2_DEF TLS_CERT_PATH_DEF)
 {
     int option = 1;
     int fd;
@@ -626,6 +634,28 @@ network_accept_connection(int listener_fd, int *read_fd, int *write_fd,
         } else {
             SSL_set_fd(*tls, fd);
             SSL_set_accept_state(*tls);
+            bool cert_success = true;
+            if (certificate_path != nullptr)
+                if (SSL_use_certificate_file(*tls, certificate_path, SSL_FILETYPE_PEM) <= 0) {
+                    errlog("TLS: Error loading certificate from argument: %s\n", certificate_path);
+                    cert_success = false;
+                }
+            if (cert_success && key_path != nullptr)
+                if (SSL_use_PrivateKey_file(*tls, key_path, SSL_FILETYPE_PEM) <= 0) {
+                    errlog("TLS: Error loading private key from argument: %s\n", key_path);
+                    cert_success = false;
+                }
+            if (cert_success && certificate_path != nullptr && key_path != nullptr && !SSL_check_private_key(*tls)) {
+                errlog("TLS: Private key (%s) does not match certificate (%s)!\n", key_path, certificate_path);
+                cert_success = false;
+            }
+
+            if (!cert_success) {
+                close_listener(fd);
+                SSL_shutdown(*tls);
+                SSL_free(*tls);
+                return PA_OTHER;
+            }
         }
     }
 #endif
@@ -1106,7 +1136,7 @@ network_initialize(int argc, char **argv, Var * desc)
 enum error
 network_make_listener(server_listener sl, Var desc, network_listener * nl,
                       const char **name, const char **ip_address,
-                      uint16_t *port, bool use_ipv6 USE_TLS_BOOL_DEF)
+                      uint16_t *port, bool use_ipv6 USE_TLS_BOOL_DEF TLS_CERT_PATH_DEF)
 {
     int fd;
     enum error e = make_listener(desc, &fd, name, ip_address, port, use_ipv6);
@@ -1121,6 +1151,8 @@ network_make_listener(server_listener sl, Var desc, network_listener * nl,
         listener->port = *port;
 #ifdef USE_TLS
         listener->use_tls = use_tls;
+        listener->tls_certificate_path = certificate_path;
+        listener->tls_key_path = key_path;
 #endif
         if (all_nlisteners)
             all_nlisteners->prev = &(listener->next);

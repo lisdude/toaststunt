@@ -97,7 +97,7 @@ extern enum accept_error
  network_accept_connection(int listener_fd,
 			 int *read_fd, int *write_fd,
 			 const char **name, const char **ip_addr,
-			 uint16_t *port, sa_family_t *protocol USE_TLS_BOOL_DEF SSL_CONTEXT_2_DEF);
+			 uint16_t *port, sa_family_t *protocol USE_TLS_BOOL_DEF SSL_CONTEXT_2_DEF TLS_CERT_PATH_DEF);
 				/* Accept a new connection on LISTENER_FD,
 				 * returning PA_OKAY if successful, PA_FULL if
 				 * unsuccessful only because there aren't
@@ -173,7 +173,7 @@ extern int network_initialize(int argc, char **argv,
 extern enum error network_make_listener(server_listener sl, Var desc,
 					network_listener * nl, 
 					const char **name, const char **ip_address,
-					uint16_t *port, bool use_ipv6 USE_TLS_BOOL_DEF);
+					uint16_t *port, bool use_ipv6 USE_TLS_BOOL_DEF TLS_CERT_PATH_DEF);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
 				 * be used as a specification of a new local

@@ -171,7 +171,7 @@ free_shandle(shandle * h)
 }
 
 static slistener *
-new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_ipv6 USE_TLS_BOOL_DEF)
+new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_ipv6 USE_TLS_BOOL_DEF TLS_CERT_PATH_DEF)
 {
     slistener *listener = (slistener *)mymalloc(sizeof(slistener), M_NETWORK);
     server_listener sl;
@@ -180,7 +180,7 @@ new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_
     uint16_t port;
 
     sl.ptr = listener;
-    e = network_make_listener(sl, desc, &(listener->nlistener), &name, &ip_address, &port, use_ipv6 USE_TLS_BOOL);
+    e = network_make_listener(sl, desc, &(listener->nlistener), &name, &ip_address, &port, use_ipv6 USE_TLS_BOOL TLS_CERT_PATH);
 
     if (ee)
         *ee = e;
@@ -1925,13 +1925,15 @@ main(int argc, char **argv)
 #ifdef USE_TLS
 // TODO: Do something interesting here, maybe with a command line argument.
     bool use_tls = false;
+    const char *certificate_path = nullptr;
+    const char *key_path = nullptr;
 #endif
 
     // Listen on both IPv4 and IPv6
-    if ((lv4 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, false USE_TLS_BOOL)) == nullptr)
+    if ((lv4 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, false USE_TLS_BOOL TLS_CERT_PATH)) == nullptr)
         errlog("Error creating IPv4 listener.\n");
 
-    if ((lv6 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, true USE_TLS_BOOL)) == nullptr)
+    if ((lv6 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, true USE_TLS_BOOL TLS_CERT_PATH)) == nullptr)
         errlog("Error creating IPv6 listener.\n");
 
     if (!lv4 && !lv6) {
@@ -2658,11 +2660,17 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
     slistener *l = nullptr;
 #ifdef USE_TLS
     bool use_tls = false;
+    const char *certificate_path = nullptr;
+    const char *key_path = nullptr;
 #endif
 
     /* maplookup doesn't consume the key, so we make some static values to save recreation every time
        Additional shared keys exist at the top of server.cc */
     static Var print_messages_key = str_dup_to_var("print-messages");
+#ifdef USE_TLS
+    static Var tls_cert = str_dup_to_var("certificate");
+    static Var tls_key_key = str_dup_to_var("key");
+#endif
 
     if (arglist.v.list[0].v.num >= 3) {
         Var options = arglist.v.list[3];
@@ -2676,6 +2684,13 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
             }
             use_tls = true;
         }
+
+        if (maplookup(options, tls_cert, &value, 0) != nullptr && is_true(value))
+            certificate_path = str_dup(value.v.str);
+
+        if (maplookup(options, tls_key_key, &value, 0) != nullptr && is_true(value))
+            key_path = str_dup(value.v.str);
+
 #endif
 
         if (maplookup(options, ipv6_key, &value, 0) != nullptr && is_true(value))
@@ -2689,7 +2704,7 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
         e = E_PERM;
     else if (!valid(oid) || find_slistener(desc, ipv6))
         e = E_INVARG;
-    else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6 USE_TLS_BOOL)));    /* Do nothing; e is already set */
+    else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6 USE_TLS_BOOL TLS_CERT_PATH)));    /* Do nothing; e is already set */
     else if (!start_listener(l))
         e = E_QUOTA;
 
