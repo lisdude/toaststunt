@@ -1469,6 +1469,22 @@ network_protocol(const network_handle nh)
     }
 }
 
+int
+network_handle_is_tls(const network_handle nh)
+{
+    const nhandle *h = (nhandle *)nh.ptr;
+
+    return h->tls != nullptr;
+}
+
+int
+nlistener_is_tls(const void *sl)
+{
+    const nlistener *l = (nlistener *)sl;
+
+    return l->use_tls;
+}
+
 void
 network_set_connection_binary(network_handle nh, bool do_binary)
 {

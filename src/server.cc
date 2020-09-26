@@ -155,7 +155,7 @@ static Var pending_list = new_list(0);
    are used by functions like listen() and open_network_connection() */
 static Var ipv6_key = str_dup_to_var("ipv6");
 #ifdef USE_TLS
-static Var tls_key = str_dup_to_var("tls");
+static Var tls_key = str_dup_to_var("TLS");
 #endif
 
 static void
@@ -2627,6 +2627,9 @@ bf_connection_info(Var arglist, Byte next, void *vdata, Objid progr)
     ret = mapinsert(ret, var_ref(dest_port), Var::new_int(network_port(nh)));
     ret = mapinsert(ret, var_ref(dest_ip), str_ref_to_var(network_ip_address(nh)));
     ret = mapinsert(ret, var_ref(protocol), str_dup_to_var(network_protocol(nh)));
+#ifdef USE_TLS
+    ret = mapinsert(ret, var_ref(tls_key), Var::new_int(network_handle_is_tls(nh)));
+#endif
 
     free_var(arglist);
     return make_var_pack(ret);
@@ -2731,7 +2734,6 @@ bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
     static const Var object = str_dup_to_var("object");
     static const Var port = str_dup_to_var("port");
     static const Var print = str_dup_to_var("print_messages");
-    static const Var ipv6 = str_dup_to_var("ipv6");
 
     for (l = all_slisteners; l; l = l->next) {
         if (!find_listener || equality(find, (find.type == TYPE_OBJ) ? Var::new_obj(l->oid) : l->desc, 0)) {
@@ -2739,7 +2741,8 @@ bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
             entry = mapinsert(entry, var_ref(object), Var::new_obj(l->oid));
             entry = mapinsert(entry, var_ref(port), var_ref(l->desc));
             entry = mapinsert(entry, var_ref(print), Var::new_int(l->print_messages));
-            entry = mapinsert(entry, var_ref(ipv6), Var::new_int(l->ipv6));
+            entry = mapinsert(entry, var_ref(ipv6_key), Var::new_int(l->ipv6));
+            entry = mapinsert(entry, var_ref(tls_key), Var::new_int(nlistener_is_tls(l->nlistener.ptr)));
             list = listappend(list, entry);
         }
     }

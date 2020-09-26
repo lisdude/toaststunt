@@ -406,6 +406,8 @@ int network_parse_proxy_string(char *command, Stream *new_connection_name, struc
                  * for the connection. */
 
 extern char *get_port_str(int port);
+extern int network_handle_is_tls(network_handle);
+extern int nlistener_is_tls(const void *);
 
 typedef void (*network_fd_callback) (int fd, void *data);
 
