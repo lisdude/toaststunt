@@ -122,15 +122,15 @@
  * updated.
  */
 
-#define DEFAULT_MAX_STACK_DEPTH	50
+#define DEFAULT_MAX_STACK_DEPTH	 50
 
-#define DEFAULT_FG_TICKS	60000
-#define DEFAULT_BG_TICKS	30000
+#define DEFAULT_FG_TICKS         60000
+#define DEFAULT_BG_TICKS         30000
 
-#define DEFAULT_FG_SECONDS	5
-#define DEFAULT_BG_SECONDS	3
+#define DEFAULT_FG_SECONDS       5
+#define DEFAULT_BG_SECONDS       3
 
-#define DEFAULT_LAG_THRESHOLD 5.0
+#define DEFAULT_LAG_THRESHOLD    5.0
 
 /******************************************************************************
  * DEFAULT_PORT is the TCP port number on which the server listenes when no
@@ -173,6 +173,19 @@
 #define OUTBOUND_NETWORK 1
 
 /******************************************************************************
+ * The server supports secure TLS connections using the OpenSSL library.
+ * If USE_TLS is defined, you will be able to listen() for TLS connections
+ * and connect to TLS servers using open_network_connection().
+ * If VERIFY_TLS_PEERS is defined, the peer certificate must be signed with a CA
+ * or the connection will fail.
+ */
+
+#define USE_TLS
+#define VERIFY_TLS_PEERS
+#define DEFAULT_TLS_CERT    "/etc/letsencrypt/live/fullchain.pem"
+#define DEFAULT_TLS_KEY     "/etc/letsencrypt/live/privkey.pem"
+
+/******************************************************************************
  * The following constants define certain aspects of the server's network
  * behavior.
  *
@@ -197,10 +210,10 @@
  *			   accepted by a given listener L.
  */
 
-#define MAX_QUEUED_OUTPUT	      65536
-#define MAX_QUEUED_INPUT	      MAX_QUEUED_OUTPUT
-#define MAX_LINE_BYTES           5242880
-#define DEFAULT_CONNECT_TIMEOUT	300
+#define MAX_QUEUED_OUTPUT         65536
+#define MAX_QUEUED_INPUT          MAX_QUEUED_OUTPUT
+#define MAX_LINE_BYTES            5242880
+#define DEFAULT_CONNECT_TIMEOUT   300
 
 /******************************************************************************
  * On connections that have not been set to binary mode, the server normally
@@ -219,8 +232,8 @@
  * Do not set either value to a number less than 1.
  */
 
-#define PATTERN_CACHE_SIZE	    20
-#define PCRE_PATTERN_CACHE_SIZE	20
+#define PATTERN_CACHE_SIZE      20
+#define PCRE_PATTERN_CACHE_SIZE 20
 
 /******************************************************************************
  * Prior to 1.8.4 property lookups were required on every reference to a

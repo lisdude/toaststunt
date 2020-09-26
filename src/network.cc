@@ -64,6 +64,10 @@ static int ewouldblock = -1;
 static int *pocket_descriptors = nullptr;   /* fds we keep around in case we need
                                              * one and no others are left... */
 
+#ifdef USE_TLS
+SSL_CTX *tls_ctx;
+#endif
+
 typedef struct text_block {
     struct text_block *next;
     int length;
@@ -93,6 +97,10 @@ typedef struct nhandle {
     sa_family_t protocol_family;            // AF_INET, AF_INET6
     pthread_mutex_t *name_mutex;
     unsigned int refcount;
+#ifdef USE_TLS
+    SSL *tls;                               // TLS context; not TLS if null
+    bool connected;
+#endif
 } nhandle;
 
 static nhandle *all_nhandles = nullptr;
@@ -104,6 +112,9 @@ typedef struct nlistener {
     const char *name;                       // resolved hostname
     const char *ip_addr;                    // 'raw' IP address
     uint16_t port;                          // listening port
+#ifdef USE_TLS
+    bool use_tls;
+#endif
 } nlistener;
 
 static nlistener *all_nlisteners = nullptr;
@@ -209,7 +220,6 @@ free_text_block(text_block * b)
     myfree(b, M_NETWORK);
 }
 
-#ifndef HAVE_ACCEPT4
 int
 network_set_nonblocking(int fd)
 {
@@ -232,11 +242,14 @@ network_set_nonblocking(int fd)
         return 1;
 #endif /* FIONBIO */
 }
-#endif /* HAVE_ACCEPT4 */
 
 static int
 push_output(nhandle * h)
 {
+#ifdef USE_TLS
+    if (h->tls && !h->connected)
+        return 1;
+#endif
     text_block *b;
     int count;
 
@@ -251,16 +264,33 @@ push_output(nhandle * h)
                 h->output_lines_flushed == 1 ? "" : "s",
                 h->output_lines_flushed == 1 ? "has" : "have", proto.eol_out_string);
         length = strlen(buf);
-        count = write(h->wfd, buf, length);
+#ifdef USE_TLS
+        if (h->tls)
+            count = SSL_write(h->tls, buf, length);
+        else
+#endif
+            count = write(h->wfd, buf, length);
         if (count == length)
             h->output_lines_flushed = 0;
         else
             return count >= 0 || errno == eagain || errno == ewouldblock;
     }
     while ((b = h->output_head) != nullptr) {
-        count = write(h->wfd, b->start, b->length);
-        if (count < 0)
+#ifdef USE_TLS
+        if (h->tls)
+            count = SSL_write(h->tls, b->start, b->length);
+        else
+#endif
+            count = write(h->wfd, b->start, b->length);
+        if (count < 0) {
+#ifdef USE_TLS
+            if (h->tls) {
+                SSL_get_error(h->tls, count);
+                errlog("TLS: Error pushing output: %s\n", ERR_error_string(ERR_get_error(), nullptr));
+            }
+#endif
             return (errno == eagain || errno == ewouldblock);
+        }
         h->output_length -= count;
         if (count == b->length) {
             h->output_head = b->next;
@@ -297,7 +327,39 @@ pull_input(nhandle * h)
     char buffer[1024];
     char *ptr, *end;
 
-    if ((count = read(h->rfd, buffer, sizeof(buffer))) > 0) {
+#ifdef USE_TLS
+    if (h->tls) {
+        if (!h->connected) {
+            int tls_success = SSL_accept(h->tls);
+            switch (SSL_get_error(h->tls, tls_success)) {
+                case SSL_ERROR_WANT_READ:
+                case SSL_ERROR_WANT_WRITE:
+                    return 1;
+                    break;
+                case SSL_ERROR_NONE:
+                    h->connected = true;
+                    break;
+                default:
+                    errlog("TLS: Accept failed: %s\n", ERR_error_string(ERR_get_error(), nullptr));
+                    return 0;
+            }
+
+            oklog("TLS: %s. Cipher = %s\n", SSL_state_string_long(h->tls), SSL_get_cipher(h->tls));
+            return 1;
+        } else {
+            count = SSL_read(h->tls, buffer, sizeof(buffer));
+
+            if (count < 0) {
+                if (SSL_get_error(h->tls, count) == SSL_ERROR_WANT_READ)
+                    return 1;
+                else
+                    errlog("TLS: Error pulling input: %s\n", ERR_error_string(ERR_get_error(), nullptr));
+            }
+        }
+    } else
+#endif
+        count = read(h->rfd, buffer, sizeof(buffer));
+    if (count > 0) {
         if (h->binary) {
             stream_add_raw_bytes_to_binary(s, buffer, count);
             server_receive_line(h->shandle, reset_stream(s), false);
@@ -356,15 +418,13 @@ pull_input(nhandle * h)
 static nhandle *
 new_nhandle(const int rfd, const int wfd, const bool outbound, uint16_t listen_port, const char *listen_hostname,
             const char *listen_ipaddr, uint16_t local_port, const char *local_hostname,
-            const char *local_ipaddr, sa_family_t protocol)
+            const char *local_ipaddr, sa_family_t protocol SSL_CONTEXT_1_DEF)
 {
     nhandle *h;
 
-#ifndef HAVE_ACCEPT4
     if (!network_set_nonblocking(rfd)
             || (rfd != wfd && !network_set_nonblocking(wfd)))
         log_perror("Setting connection non-blocking");
-#endif
 
     h = (nhandle *) mymalloc(sizeof(nhandle), M_NETWORK);
 
@@ -396,6 +456,10 @@ new_nhandle(const int rfd, const int wfd, const bool outbound, uint16_t listen_p
     h->name_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
     pthread_mutex_init(h->name_mutex, nullptr);
     h->refcount = 1;
+#ifdef USE_TLS
+    h->tls = tls;
+    h->connected = false;
+#endif
 
     return h;
 }
@@ -423,6 +487,12 @@ close_nhandle(nhandle * h)
     free_str(h->destination_ipaddr);
     pthread_mutex_destroy(h->name_mutex);
     free(h->name_mutex);
+#ifdef USE_TLS
+    if (h->tls) {
+        SSL_shutdown(h->tls);
+        SSL_free(h->tls);
+    }
+#endif
     myfree(h, M_NETWORK);
 }
 
@@ -451,19 +521,21 @@ close_listener(int fd)
     close(fd);
 }
 
-static void
+static nhandle *
 make_new_connection(server_listener sl, int rfd, int wfd, bool outbound,
                     uint16_t listen_port, const char *listen_hostname,
                     const char *listen_ipaddr, uint16_t local_port,
                     const char *local_hostname, const char *local_ipaddr,
-                    sa_family_t protocol)
+                    sa_family_t protocol SSL_CONTEXT_1_DEF)
 {
     nhandle *h;
     network_handle nh;
 
     nh.ptr = h = new_nhandle(rfd, wfd, outbound, listen_port, listen_hostname,
-                             listen_ipaddr, local_port, local_hostname, local_ipaddr, protocol);
+                             listen_ipaddr, local_port, local_hostname, local_ipaddr, protocol SSL_CONTEXT_1_ARG);
     h->shandle = server_new_connection(sl, nh, outbound);
+
+    return h;
 }
 
 static void
@@ -494,18 +566,22 @@ accept_new_connection(nlistener * l)
     const char *ip_addr;
     uint16_t port;
     sa_family_t protocol;
+#ifdef USE_TLS
+    SSL *tls = nullptr;
+    bool use_tls = l->use_tls;
+#endif
 
-    switch (network_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol)) {
+    switch (network_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol USE_TLS_BOOL SSL_CONTEXT_2_ARG)) {
         case PA_OKAY:
-            make_new_connection(l->slistener, rfd, wfd, 0, l->port, l->name, l->ip_addr, port, name, ip_addr, protocol);
+            make_new_connection(l->slistener, rfd, wfd, 0, l->port, l->name, l->ip_addr, port, name, ip_addr, protocol SSL_CONTEXT_1_ARG);
             break;
         case PA_FULL:
             for (i = 0; i < proto.pocket_size; i++)
                 close(pocket_descriptors[i]);
-            if (network_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol) != PA_OKAY) {
+            if (network_accept_connection(l->fd, &rfd, &wfd, &name, &ip_addr, &port, &protocol USE_TLS_BOOL SSL_CONTEXT_2_ARG) != PA_OKAY) {
                 errlog("Can't accept connection even by emptying pockets!\n");
             } else {
-                nh.ptr = h = new_nhandle(rfd, wfd, 0, l->port, l->name, l->ip_addr, port, name, ip_addr, protocol);
+                nh.ptr = h = new_nhandle(rfd, wfd, 0, l->port, l->name, l->ip_addr, port, name, ip_addr, protocol SSL_CONTEXT_1_ARG);
                 server_refuse_connection(l->slistener, nh);
                 decrement_nhandle_refcount(nh);
             }
@@ -520,7 +596,7 @@ accept_new_connection(nlistener * l)
 enum accept_error
 network_accept_connection(int listener_fd, int *read_fd, int *write_fd,
                           const char **name, const char **ip_addr, uint16_t *port,
-                          sa_family_t *protocol)
+                          sa_family_t *protocol USE_TLS_BOOL_DEF SSL_CONTEXT_2_DEF)
 {
     int option = 1;
     int fd;
@@ -540,6 +616,19 @@ network_accept_connection(int listener_fd, int *read_fd, int *write_fd,
             return PA_OTHER;
         }
     }
+
+#ifdef USE_TLS
+    if (use_tls) {
+        if (!tls_ctx || !(*tls = SSL_new(tls_ctx))) {
+            errlog("TLS: Error creating context\n");
+            close_listener(fd);
+            return PA_OTHER;
+        } else {
+            SSL_set_fd(*tls, fd);
+            SSL_set_accept_state(*tls);
+        }
+    }
+#endif
 
     // Disable Nagle algorithm on the socket
     if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *) &option, sizeof(option)) < 0)
@@ -753,7 +842,7 @@ enum error
 open_connection(Var arglist, int *read_fd, int *write_fd,
                 const char **name, const char **ip_addr,
                 uint16_t *port, sa_family_t *protocol,
-                bool use_ipv6)
+                bool use_ipv6 USE_TLS_BOOL_DEF SSL_CONTEXT_2_DEF)
 {
     static Timer_ID id;
     int s, result;
@@ -763,7 +852,7 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
     if (!outbound_network_enabled)
         return E_PERM;
 
-    if (arglist.v.list[0].v.num != 2)
+    if (arglist.v.list[0].v.num < 2)
         return E_ARGS;
     else if (arglist.v.list[1].type != TYPE_STR ||
              arglist.v.list[2].type != TYPE_INT)
@@ -817,6 +906,30 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
         id = set_timer(server_int_option("outbound_connect_timeout", 5),
                        timeout_proc, nullptr);
         result = connect(s, p->ai_addr, p->ai_addrlen);
+#ifdef USE_TLS
+        if (use_tls) {
+            if (!tls_ctx) {
+                result = -1;
+                errno = TLS_FAIL;
+            } else if (!(*tls = SSL_new(tls_ctx))) {
+                errlog("TLS: Error creating context\n");
+                result = -1;
+                errno = TLS_FAIL;
+            } else {
+                SSL_set_fd(*tls, s);
+                SSL_set_connect_state(*tls);
+                int tls_success = SSL_connect(*tls);
+                if (tls_success <= 0) {
+                    SSL_get_error(*tls, tls_success);
+                    errlog("TLS: Connect failed: %s\n", ERR_error_string(ERR_get_error(), nullptr));
+                    result = -1;
+                    errno = TLS_CONNECT_FAIL;
+                } else {
+                    oklog("TLS: %s. Cipher = %s\n", SSL_state_string_long(*tls), SSL_get_cipher(*tls));
+                }
+            }
+        }
+#endif
         cancel_timer(id);
     }
     catch (timeout_exception& exception) {
@@ -834,7 +947,16 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
                 errno == ETIMEDOUT) {
             log_perror("open_network_connection error");
             return E_INVARG;
+#ifdef USE_TLS
+        } else if (errno == TLS_FAIL) {
+            return E_INVARG;
+        } else if (errno == TLS_CONNECT_FAIL) {
+            SSL_shutdown(*tls);
+            SSL_free(*tls);
+            return E_INVARG;
+#endif
         }
+
         log_perror("Connecting in open_connection");
         return E_QUOTA;
     }
@@ -941,6 +1063,37 @@ network_initialize(int argc, char **argv, Var * desc)
     desc->type = TYPE_INT;
     desc->v.num = port;
 
+#ifdef USE_TLS
+    SSL_load_error_strings();
+    SSL_library_init();
+
+    tls_ctx = SSL_CTX_new(TLS_method());
+    if (!tls_ctx) {
+        errlog("NETWORK: Failed to initialize OpenSSL context. TLS is unavailable.\n");
+        ERR_print_errors_fp(stderr);
+    } else {
+        if (SSL_CTX_use_certificate_file(tls_ctx, DEFAULT_TLS_CERT, SSL_FILETYPE_PEM) <= 0)
+            errlog("TLS: Failed to load certificate file!\n");
+
+        if (SSL_CTX_use_PrivateKey_file(tls_ctx, DEFAULT_TLS_KEY, SSL_FILETYPE_PEM) <= 0)
+            errlog("TLS: Failed to load private key!\n");
+
+        if (!SSL_CTX_check_private_key(tls_ctx))
+            errlog("TLS: Private key does not match the certificate!\n");
+
+#ifdef VERIFY_TLS_PEERS
+        if (!SSL_CTX_load_verify_locations(tls_ctx, "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/"))
+            errlog("TLS: Unable to set default CA path. Certification verification will fail.\n");
+
+        if (!SSL_CTX_set_default_verify_paths(tls_ctx))
+            errlog("TLS: Unable to load CA!\n");
+
+        SSL_CTX_set_verify(tls_ctx, SSL_VERIFY_PEER, nullptr);
+#endif
+        oklog("NETWORK: Using %s\n", SSLeay_version(SSLEAY_VERSION));
+    }
+#endif /* USE_SSL */
+
     eol_length = strlen(proto.eol_out_string);
     get_pocket_descriptors();
 
@@ -953,7 +1106,7 @@ network_initialize(int argc, char **argv, Var * desc)
 enum error
 network_make_listener(server_listener sl, Var desc, network_listener * nl,
                       const char **name, const char **ip_address,
-                      uint16_t *port, bool use_ipv6)
+                      uint16_t *port, bool use_ipv6 USE_TLS_BOOL_DEF)
 {
     int fd;
     enum error e = make_listener(desc, &fd, name, ip_address, port, use_ipv6);
@@ -966,6 +1119,9 @@ network_make_listener(server_listener sl, Var desc, network_listener * nl,
         listener->name = str_dup(*name);
         listener->ip_addr = str_dup(*ip_address);
         listener->port = *port;
+#ifdef USE_TLS
+        listener->use_tls = use_tls;
+#endif
         if (all_nlisteners)
             all_nlisteners->prev = &(listener->next);
         listener->next = all_nlisteners;
@@ -1349,7 +1505,7 @@ network_set_client_echo(network_handle nh, int is_on)
 
 #ifdef OUTBOUND_NETWORK
 enum error
-network_open_connection(Var arglist, server_listener sl, bool use_ipv6)
+network_open_connection(Var arglist, server_listener sl, bool use_ipv6 USE_TLS_BOOL_DEF)
 {
     int rfd, wfd;
     const char *name;
@@ -1357,10 +1513,18 @@ network_open_connection(Var arglist, server_listener sl, bool use_ipv6)
     uint16_t port;
     sa_family_t protocol;
     enum error e;
+    nhandle *h;
+#ifdef USE_TLS
+    SSL *tls = nullptr;
+#endif
 
-    e = open_connection(arglist, &rfd, &wfd, &name, &ip_addr, &port, &protocol, use_ipv6);
-    if (e == E_NONE)
-        make_new_connection(sl, rfd, wfd, 1, 0, nullptr, nullptr, port, name, ip_addr, protocol);
+    e = open_connection(arglist, &rfd, &wfd, &name, &ip_addr, &port, &protocol, use_ipv6 USE_TLS_BOOL SSL_CONTEXT_2_ARG);
+    if (e == E_NONE) {
+        h = make_new_connection(sl, rfd, wfd, 1, 0, nullptr, nullptr, port, name, ip_addr, protocol SSL_CONTEXT_1_ARG);
+#ifdef USE_TLS
+        h->connected = true;
+#endif
+    }
 
     return e;
 }

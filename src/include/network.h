@@ -27,6 +27,16 @@
 #include "streams.h"
 #include <netdb.h>      // sa_family_t
 
+#ifdef USE_TLS
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
+#define TLS_FAIL            -9999
+#define TLS_CONNECT_FAIL    -9998
+
+extern SSL_CTX *tls_ctx;
+#endif
+
 typedef struct {		/* Network's handle on a connection */
     void *ptr;
 } network_handle;
@@ -87,7 +97,7 @@ extern enum accept_error
  network_accept_connection(int listener_fd,
 			 int *read_fd, int *write_fd,
 			 const char **name, const char **ip_addr,
-			 uint16_t *port, sa_family_t *protocol);
+			 uint16_t *port, sa_family_t *protocol USE_TLS_BOOL_DEF SSL_CONTEXT_2_DEF);
 				/* Accept a new connection on LISTENER_FD,
 				 * returning PA_OKAY if successful, PA_FULL if
 				 * unsuccessful only because there aren't
@@ -110,7 +120,7 @@ extern enum accept_error
 extern enum error open_connection(Var arglist,
 					int *read_fd, int *write_fd,
 					const char **name, const char **ip_addr,
-					uint16_t *port, sa_family_t *protocol, bool use_ipv6);
+					uint16_t *port, sa_family_t *protocol, bool use_ipv6 USE_TLS_BOOL_DEF SSL_CONTEXT_2_DEF);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be opened.  If the arguments are OK for
@@ -163,7 +173,7 @@ extern int network_initialize(int argc, char **argv,
 extern enum error network_make_listener(server_listener sl, Var desc,
 					network_listener * nl, 
 					const char **name, const char **ip_address,
-					uint16_t *port, bool use_ipv6);
+					uint16_t *port, bool use_ipv6 USE_TLS_BOOL_DEF);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
 				 * be used as a specification of a new local
@@ -329,7 +339,7 @@ extern int network_set_connection_option(network_handle nh,
 				 */
 
 #ifdef OUTBOUND_NETWORK
-extern enum error network_open_connection(Var arglist, server_listener sl, bool use_ipv6);
+extern enum error network_open_connection(Var arglist, server_listener sl, bool use_ipv6 USE_TLS_BOOL_DEF);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be made.  If the arguments are OK and the

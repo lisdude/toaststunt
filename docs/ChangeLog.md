@@ -1,9 +1,16 @@
 # ToastStunt ChangeLog
 
-## 2.6.3 (In Progress)
+## 2.7.0 (In Progress)
+### Bug Fixes
 - Fix a memory leak in `open_network_connection()` after a successful connection.
-- Fix a memory leak in `open_network_connection()` when providing an invalid argument for the listener.
 - Fix a bug where the SERVER FULL message wouldn't display the connection name properly.
+
+### New Features
+- Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificat and key must be configured properly in options.h. See warnings at the end of this changelog for important information about these changes.
+
+### *** COMPATIBILITY WARNINGS ***
+- The arguments for `listen()` have changed! Listen now accepts an optional third argument as a map. This map takes over the previous arguments and has the keys: ipv6, tls, and print-messages. So if you wanted everything, you would use: `listen(#0, 1234, ["ipv6" -> 1, "tls" -> 1, "print-messages" -> 1]`
+- The arguments for `open_network_connection()` have changed! All previous optional arguments have been folded into a single optional third MAP argument. It accepts the keys: ipv6, listener, tls. So if you wanted to open a TLS connection to an IPv6 address using #6 as the listener, you would do: `open_network_connection("2607:5300:60:4be0::", 1234, ["ipv6" -> 1, "listener" -> #6, "tls" -> 1])`
 
 ## 2.6.2 (Sep 5, 2020)
 ### Bug Fixes

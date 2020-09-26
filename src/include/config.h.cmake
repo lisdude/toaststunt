@@ -78,3 +78,24 @@
 #cmakedefine CURL_FOUND
 #cmakedefine PCRE_FOUND
 #cmakedefine SQLITE3_FOUND
+#cmakedefine OPENSSL_FOUND
+
+#ifndef OPENSSL_FOUND
+ #undef USE_TLS
+ #define USE_TLS_BOOL
+ #define USE_TLS_BOOL_DEF
+ #define SSL_CONTEXT_1_ARG
+ #define SSL_CONTEXT_1_DEF
+ #define SSL_CONTEXT_2_ARG
+ #define SSL_CONTEXT_2_DEF
+#else
+/* With TLS being optional and needing to pass around so many arguments,
+ * I decided this would look nicer than splitting everything up
+ * with #ifdefs everywhere... */
+ #define USE_TLS_BOOL , use_tls
+ #define USE_TLS_BOOL_DEF , bool use_tls
+ #define SSL_CONTEXT_2_ARG , &tls
+ #define SSL_CONTEXT_2_DEF , SSL **tls
+ #define SSL_CONTEXT_1_ARG , tls
+ #define SSL_CONTEXT_1_DEF , SSL *tls
+#endif

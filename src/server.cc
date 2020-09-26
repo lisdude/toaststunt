@@ -151,6 +151,13 @@ static unsigned int pending_count = 0;
 /* used once when the server loads the database */
 static Var pending_list = new_list(0);
 
+/* maplookup doesn't consume the key, so here are common map keys that
+   are used by functions like listen() and open_network_connection() */
+static Var ipv6_key = str_dup_to_var("ipv6");
+#ifdef USE_TLS
+static Var tls_key = str_dup_to_var("tls");
+#endif
+
 static void
 free_shandle(shandle * h)
 {
@@ -164,7 +171,7 @@ free_shandle(shandle * h)
 }
 
 static slistener *
-new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_ipv6)
+new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_ipv6 USE_TLS_BOOL_DEF)
 {
     slistener *listener = (slistener *)mymalloc(sizeof(slistener), M_NETWORK);
     server_listener sl;
@@ -173,7 +180,7 @@ new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_
     uint16_t port;
 
     sl.ptr = listener;
-    e = network_make_listener(sl, desc, &(listener->nlistener), &name, &ip_address, &port, use_ipv6);
+    e = network_make_listener(sl, desc, &(listener->nlistener), &name, &ip_address, &port, use_ipv6 USE_TLS_BOOL);
 
     if (ee)
         *ee = e;
@@ -1460,12 +1467,12 @@ server_refuse_connection(server_listener sl, network_handle nh)
                      " connections right now.",
                      "*** Please try again later.",
                      0);
-    
+
     errlog("SERVER FULL: refusing connection on %s [%s], port %i from %s [%s], port %i\n",
-              network_source_connection_name(nh), network_source_ip_address(nh),
-              network_source_port(nh), connection_name,
-              network_ip_address(nh), network_port(nh));
-    
+           network_source_connection_name(nh), network_source_ip_address(nh),
+           network_source_port(nh), connection_name,
+           network_ip_address(nh), network_port(nh));
+
     free_str(connection_name);
 }
 
@@ -1915,11 +1922,16 @@ main(int argc, char **argv)
 
     register_bi_functions();
 
+#ifdef USE_TLS
+// TODO: Do something interesting here, maybe with a command line argument.
+    bool use_tls = false;
+#endif
+
     // Listen on both IPv4 and IPv6
-    if ((lv4 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, false)) == nullptr)
+    if ((lv4 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, false USE_TLS_BOOL)) == nullptr)
         errlog("Error creating IPv4 listener.\n");
 
-    if ((lv6 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, true)) == nullptr)
+    if ((lv6 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, true USE_TLS_BOOL)) == nullptr)
         errlog("Error creating IPv6 listener.\n");
 
     if (!lv4 && !lv6) {
@@ -2232,48 +2244,73 @@ static package
 bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
 {
 #ifdef OUTBOUND_NETWORK
+    /* STR <host>, INT <port>[, MAP <options>]
+    Options: ipv6 -> INT, listener -> OBJ, tls -> INT, tls_verify -> INT */
 
     Var r;
     enum error e;
     server_listener sl;
     slistener l;
-    int nargs = arglist.v.list[0].v.num;
     bool use_ipv6 = false;
+#ifdef USE_TLS
+    bool use_tls = false;
+    bool verify_tls = false;
+#endif
 
     if (!is_wizard(progr)) {
         free_var(arglist);
         return make_error_pack(E_PERM);
     }
 
-    if (nargs >= 3) {
-        use_ipv6 = is_true(arglist.v.list[3]);
-        arglist = listdelete(arglist, 3);
+    /* maplookup doesn't consume the key, so we may as well make these static instead
+       of recreating and freeing them every time this function gets run...
+       Additional shared keys exist at the top of server.cc */
+    static Var listener_key = str_dup_to_var("listener");
+#ifdef USE_TLS
+    static Var tls_verify_key = str_dup_to_var("tls_verify");
+#endif
+
+    sl.ptr = nullptr;
+
+    if (arglist.v.list[0].v.num >= 3) {
+        Var options = arglist.v.list[3];
+        Var value;
+
+#ifdef USE_TLS
+        if (maplookup(options, tls_key, &value, 0) != nullptr && is_true(value)) {
+            if (!tls_ctx) {
+                free_var(arglist);
+                return make_raise_pack(E_PERM, "TLS is not enabled", value);
+            }
+            use_tls = true;
+        }
+
+        if (maplookup(options, tls_verify_key, &value, 0) != nullptr && is_true(value))
+            verify_tls = true;
+#endif /* USE_TLS */
+
+        if (maplookup(options, ipv6_key, &value, 0) != nullptr && is_true(value))
+            use_ipv6 = true;
+
+        if (maplookup(options, listener_key, &value, 0) != nullptr) {
+            if (value.type != TYPE_OBJ) {
+                free_var(arglist);
+                return make_raise_pack(E_TYPE, "listener should be an object", value);
+            }
+
+            sl.ptr = find_slistener_by_oid(value.v.obj);
+            if (!sl.ptr) {
+                /* Create a temporary */
+                l.print_messages = 0;
+                l.name = "open_network_connection";
+                l.desc = zero;
+                l.oid = value.v.obj;
+                sl.ptr = &l;
+            }
+        }
     }
 
-    if (arglist.v.list[0].v.num == 3) {
-        Objid oid;
-
-        if (arglist.v.list[3].type != TYPE_OBJ) {
-            free_var(arglist);
-            return make_error_pack(E_TYPE);
-        }
-        oid = arglist.v.list[3].v.obj;
-        arglist = listdelete(arglist, 3);
-
-        sl.ptr = find_slistener_by_oid(oid);
-        if (!sl.ptr) {
-            /* Create a temporary */
-            l.print_messages = 0;
-            l.name = "open_network_connection";
-            l.desc = zero;
-            l.oid = oid;
-            sl.ptr = &l;
-        }
-    } else {
-        sl.ptr = nullptr;
-    }
-
-    e = network_open_connection(arglist, sl, use_ipv6);
+    e = network_open_connection(arglist, sl, use_ipv6 USE_TLS_BOOL);
     free_var(arglist);
     if (e == E_NONE) {
         /* The connection was successfully opened, implying that
@@ -2612,17 +2649,44 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
 {   /* (oid, desc) */
     Objid oid = arglist.v.list[1].v.obj;
     Var desc = arglist.v.list[2];
-    int nargs = arglist.v.list[0].v.num;
-    int print_messages = nargs >= 3 && is_true(arglist.v.list[3]);
-    bool ipv6 = nargs >= 4 && is_true(arglist.v.list[4]);
+    int print_messages = 0;
+    bool ipv6 = false;
     enum error e;
     slistener *l = nullptr;
+#ifdef USE_TLS
+    bool use_tls = false;
+#endif
+
+    /* maplookup doesn't consume the key, so we make some static values to save recreation every time
+       Additional shared keys exist at the top of server.cc */
+    static Var print_messages_key = str_dup_to_var("print-messages");
+
+    if (arglist.v.list[0].v.num >= 3) {
+        Var options = arglist.v.list[3];
+        Var value;
+
+#ifdef USE_TLS
+        if (maplookup(options, tls_key, &value, 0) != nullptr && is_true(value)) {
+            if (!tls_ctx) {
+                free_var(arglist);
+                return make_raise_pack(E_PERM, "TLS is not enabled", value);
+            }
+            use_tls = true;
+        }
+#endif
+
+        if (maplookup(options, ipv6_key, &value, 0) != nullptr && is_true(value))
+            ipv6 = true;
+
+        if (maplookup(options, print_messages_key, &value, 0) != nullptr && is_true(value))
+            print_messages = 1;
+    }
 
     if (!is_wizard(progr))
         e = E_PERM;
     else if (!valid(oid) || find_slistener(desc, ipv6))
         e = E_INVARG;
-    else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6)));    /* Do nothing; e is already set */
+    else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6 USE_TLS_BOOL)));    /* Do nothing; e is already set */
     else if (!start_listener(l))
         e = E_QUOTA;
 
@@ -2740,8 +2804,8 @@ register_server(void)
     register_function("shutdown", 0, 1, bf_shutdown, TYPE_STR);
     register_function("dump_database", 0, 0, bf_dump_database);
     register_function("db_disk_size", 0, 0, bf_db_disk_size);
-    register_function("open_network_connection", 0, -1,
-                      bf_open_network_connection);
+    register_function("open_network_connection", 2, 3, bf_open_network_connection,
+                      TYPE_STR, TYPE_INT, TYPE_MAP);
     register_function("connected_players", 0, 1, bf_connected_players,
                       TYPE_ANY);
     register_function("connected_seconds", 1, 1, bf_connected_seconds,
@@ -2756,7 +2820,7 @@ register_server(void)
                       TYPE_OBJ, TYPE_STR);
     register_function("connection_info", 1, 1, bf_connection_info, TYPE_OBJ);
     register_function("connection_name_lookup", 1, 2, bf_name_lookup, TYPE_OBJ, TYPE_ANY);
-    register_function("listen", 2, 4, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
+    register_function("listen", 2, 3, bf_listen, TYPE_OBJ, TYPE_ANY, TYPE_MAP);
     register_function("unlisten", 1, 2, bf_unlisten, TYPE_ANY, TYPE_ANY);
     register_function("listeners", 0, 1, bf_listeners, TYPE_ANY);
     register_function("buffered_output_length", 0, 1,
