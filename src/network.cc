@@ -135,6 +135,10 @@ static int max_reg_fds = 0;
 static char outbound_network_enabled = OUTBOUND_NETWORK;
 #endif
 
+#ifdef USE_TLS
+bool initial_connection_point_tls = false;
+#endif
+
 static const char *bind_ipv4 = nullptr;
 static const char *bind_ipv6 = nullptr;
 
@@ -507,10 +511,12 @@ close_nlistener(nlistener * l)
     close_listener(l->fd);
     free_str(l->name);
     free_str(l->ip_addr);
+#ifdef USE_TLS
     if (l->tls_key_path)
         free_str(l->tls_certificate_path);
     if (l->tls_key_path)
         free_str(l->tls_key_path);
+#endif
     myfree(l, M_NETWORK);
 }
 
@@ -1028,6 +1034,17 @@ tcp_arguments(int argc, char **argv, int *pport)
             }
 #endif
         }
+        else if (argc > 0 && (argv[0][0] == '-' || argv[0][0] == '+') && (argv[0][1] == 'T' || argv[0][1] == 't') && argv[0][2] == 0) {
+#ifdef USE_TLS
+            initial_connection_point_tls = (argv[0][0] == '+');
+            oklog("CMDLINE: TLS %s for initial listening ports.\n", initial_connection_point_tls ? "enabled" : "disabled");
+#else
+            if (argv[0][0] == '+') {
+                fprintf(stderr, "TLS not supported.\n");
+                oklog("CMDLINE: *** Ignoring %s (TLS not supported)\n", argv[0]);
+            }
+#endif
+        }
         else if (0 == strcmp(argv[0], "-4")) {
             if (argc <= 1)
                 return 0;
@@ -1071,7 +1088,7 @@ tcp_arguments(int argc, char **argv, int *pport)
 const char *
 network_usage_string(void)
 {
-    return "[+O|-O] [-4 ipv4_address] [-6 ipv6_address] [[-p] port]";
+    return "[+O|-O] [+T|-T] [-4 ipv4_address] [-6 ipv6_address] [[-p] port]";
 }
 
 int
@@ -1501,6 +1518,7 @@ network_protocol(const network_handle nh)
     }
 }
 
+#ifdef USE_TLS
 int
 network_handle_is_tls(const network_handle nh)
 {
@@ -1516,6 +1534,7 @@ nlistener_is_tls(const void *sl)
 
     return l->use_tls;
 }
+#endif /* USE_TLS */
 
 void
 network_set_connection_binary(network_handle nh, bool do_binary)

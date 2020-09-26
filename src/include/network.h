@@ -34,6 +34,8 @@
 #define TLS_FAIL            -9999
 #define TLS_CONNECT_FAIL    -9998
 
+extern bool initial_connection_point_tls;
+
 extern SSL_CTX *tls_ctx;
 #endif
 

@@ -1923,8 +1923,7 @@ main(int argc, char **argv)
     register_bi_functions();
 
 #ifdef USE_TLS
-// TODO: Do something interesting here, maybe with a command line argument.
-    bool use_tls = false;
+    bool use_tls = initial_connection_point_tls;
     const char *certificate_path = nullptr;
     const char *key_path = nullptr;
 #endif
@@ -2757,7 +2756,9 @@ bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
             entry = mapinsert(entry, var_ref(port), var_ref(l->desc));
             entry = mapinsert(entry, var_ref(print), Var::new_int(l->print_messages));
             entry = mapinsert(entry, var_ref(ipv6_key), Var::new_int(l->ipv6));
+#ifdef USE_TLS
             entry = mapinsert(entry, var_ref(tls_key), Var::new_int(nlistener_is_tls(l->nlistener.ptr)));
+#endif
             list = listappend(list, entry);
         }
     }

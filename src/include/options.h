@@ -178,6 +178,10 @@
  * and connect to TLS servers using open_network_connection().
  * If VERIFY_TLS_PEERS is defined, the peer certificate must be signed with a CA
  * or the connection will fail.
+ * 
+ * The +T and -T command line options can explicitly enable and disable this
+ * function. If neither option is supplied, the definition given to
+ * USE_TLS here determines the default behavior.
  */
 
 #define USE_TLS
@@ -572,6 +576,29 @@
 #define MP_POLL		2
 
 #include "config.h"
+
+#ifndef USE_TLS
+ #define USE_TLS_BOOL
+ #define TLS_CERT_PATH
+ #define TLS_CERT_PATH_DEF
+ #define USE_TLS_BOOL_DEF
+ #define SSL_CONTEXT_1_ARG
+ #define SSL_CONTEXT_1_DEF
+ #define SSL_CONTEXT_2_ARG
+ #define SSL_CONTEXT_2_DEF
+#else
+/* With TLS being optional and needing to pass around so many arguments,
+ * I decided this would look nicer than splitting everything up
+ * with ifdefs everywhere... */
+ #define USE_TLS_BOOL , use_tls
+ #define USE_TLS_BOOL_DEF , bool use_tls
+ #define TLS_CERT_PATH , certificate_path, key_path
+ #define TLS_CERT_PATH_DEF , const char *certificate_path, const char *key_path
+ #define SSL_CONTEXT_2_ARG , &tls
+ #define SSL_CONTEXT_2_DEF , SSL **tls
+ #define SSL_CONTEXT_1_ARG , tls
+ #define SSL_CONTEXT_1_DEF , SSL *tls
+#endif
 
 #if !defined(MPLEX_STYLE)
 #  if NETWORK_STYLE == NS_BSD
