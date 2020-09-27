@@ -641,14 +641,17 @@ network_accept_connection(int listener_fd, int *read_fd, int *write_fd,
             SSL_set_fd(*tls, fd);
             SSL_set_accept_state(*tls);
             bool cert_success = true;
+            int tls_success = 0;
             if (certificate_path != nullptr)
-                if (SSL_use_certificate_chain_file(*tls, certificate_path) <= 0) {
-                    errlog("TLS: Error loading certificate from argument: %s\n", certificate_path);
+                if ((tls_success = SSL_use_certificate_chain_file(*tls, certificate_path)) <= 0) {
+                    SSL_get_error(*tls, tls_success);
+                    errlog("TLS: Error loading certificate (%s) from argument: %s\n", certificate_path, ERR_error_string(ERR_get_error(), nullptr));
                     cert_success = false;
                 }
             if (cert_success && key_path != nullptr)
-                if (SSL_use_PrivateKey_file(*tls, key_path, SSL_FILETYPE_PEM) <= 0) {
-                    errlog("TLS: Error loading private key from argument: %s\n", key_path);
+                if ((tls_success = SSL_use_PrivateKey_file(*tls, key_path, SSL_FILETYPE_PEM)) <= 0) {
+                    SSL_get_error(*tls, tls_success);
+                    errlog("TLS: Error loading private key (%s) from argument: %s\n", key_path, ERR_error_string(ERR_get_error(), nullptr));
                     cert_success = false;
                 }
             if (cert_success && certificate_path != nullptr && key_path != nullptr && !SSL_check_private_key(*tls)) {
@@ -1119,18 +1122,25 @@ network_initialize(int argc, char **argv, Var * desc)
         errlog("NETWORK: Failed to initialize OpenSSL context. TLS is unavailable.\n");
         ERR_print_errors_fp(stderr);
     } else {
-        if (SSL_CTX_use_certificate_chain_file(tls_ctx, DEFAULT_TLS_CERT) <= 0)
-            errlog("TLS: Failed to load certificate file!\n");
+        char error_msg[256];
+        if (SSL_CTX_use_certificate_chain_file(tls_ctx, DEFAULT_TLS_CERT) <= 0) {
+            ERR_error_string_n(ERR_get_error(), error_msg, 256);
+            errlog("TLS: Failed to load default certificate: %s\n", error_msg);
+        }
 
-        if (SSL_CTX_use_PrivateKey_file(tls_ctx, DEFAULT_TLS_KEY, SSL_FILETYPE_PEM) <= 0)
-            errlog("TLS: Failed to load private key!\n");
+        if (SSL_CTX_use_PrivateKey_file(tls_ctx, DEFAULT_TLS_KEY, SSL_FILETYPE_PEM) <= 0) {
+            ERR_error_string_n(ERR_get_error(), error_msg, 256);
+            errlog("TLS: Failed to load default private key: %s\n", error_msg);
+        }
 
-        if (!SSL_CTX_check_private_key(tls_ctx))
-            errlog("TLS: Private key does not match the certificate!\n");
+        if (!SSL_CTX_check_private_key(tls_ctx)) {
+            ERR_error_string_n(ERR_get_error(), error_msg, 256);
+            errlog("TLS: Private key does not match the certificate: %s\n", error_msg);
+        }
 
 #ifdef VERIFY_TLS_PEERS
         if (!SSL_CTX_set_default_verify_paths(tls_ctx))
-            errlog("TLS: Unable to load CA!\n");
+            errlog("TLS: Unable to load CA! Peer verification will likely fail.\n");
 
         SSL_CTX_set_verify(tls_ctx, SSL_VERIFY_PEER, nullptr);
 #endif
