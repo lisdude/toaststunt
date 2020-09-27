@@ -642,7 +642,7 @@ network_accept_connection(int listener_fd, int *read_fd, int *write_fd,
             SSL_set_accept_state(*tls);
             bool cert_success = true;
             if (certificate_path != nullptr)
-                if (SSL_use_certificate_file(*tls, certificate_path, SSL_FILETYPE_PEM) <= 0) {
+                if (SSL_use_certificate_chain_file(*tls, certificate_path) <= 0) {
                     errlog("TLS: Error loading certificate from argument: %s\n", certificate_path);
                     cert_success = false;
                 }
@@ -1119,7 +1119,7 @@ network_initialize(int argc, char **argv, Var * desc)
         errlog("NETWORK: Failed to initialize OpenSSL context. TLS is unavailable.\n");
         ERR_print_errors_fp(stderr);
     } else {
-        if (SSL_CTX_use_certificate_file(tls_ctx, DEFAULT_TLS_CERT, SSL_FILETYPE_PEM) <= 0)
+        if (SSL_CTX_use_certificate_chain_file(tls_ctx, DEFAULT_TLS_CERT) <= 0)
             errlog("TLS: Failed to load certificate file!\n");
 
         if (SSL_CTX_use_PrivateKey_file(tls_ctx, DEFAULT_TLS_KEY, SSL_FILETYPE_PEM) <= 0)
