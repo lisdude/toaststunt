@@ -1129,9 +1129,6 @@ network_initialize(int argc, char **argv, Var * desc)
             errlog("TLS: Private key does not match the certificate!\n");
 
 #ifdef VERIFY_TLS_PEERS
-        if (!SSL_CTX_load_verify_locations(tls_ctx, "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/"))
-            errlog("TLS: Unable to set default CA path. Certification verification will fail.\n");
-
         if (!SSL_CTX_set_default_verify_paths(tls_ctx))
             errlog("TLS: Unable to load CA!\n");
 
