@@ -2655,8 +2655,9 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
     Var desc = arglist.v.list[2];
     int print_messages = 0;
     bool ipv6 = false;
-    enum error e;
+    enum error e = E_NONE;
     slistener *l = nullptr;
+    char error_msg[100];
 #ifdef USE_TLS
     bool use_tls = false;
     const char *certificate_path = nullptr;
@@ -2678,18 +2679,30 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
 #ifdef USE_TLS
         if (maplookup(options, tls_key, &value, 0) != nullptr && is_true(value)) {
             if (!tls_ctx) {
-                free_var(arglist);
-                return make_raise_pack(E_PERM, "TLS is not enabled", value);
+                e = E_INVARG;
+                sprintf(error_msg, "TLS is not enabled");
+            } else {
+                use_tls = true;
             }
-            use_tls = true;
         }
 
-        if (maplookup(options, tls_cert, &value, 0) != nullptr && is_true(value))
-            certificate_path = str_dup(value.v.str);
+        if (maplookup(options, tls_cert, &value, 0) != nullptr) {
+            if (value.type != TYPE_STR) {
+                e = E_INVARG;
+                sprintf(error_msg, "Certificate path should be a string");
+            } else {
+                certificate_path = str_dup(value.v.str);
+            }
+        }
 
-        if (maplookup(options, tls_key_key, &value, 0) != nullptr && is_true(value))
-            key_path = str_dup(value.v.str);
-
+        if (maplookup(options, tls_key_key, &value, 0) != nullptr) {
+            if (value.type != TYPE_STR) {
+                e = E_INVARG;
+                sprintf(error_msg, "Private key path should be a string");
+            } else {
+                key_path = str_dup(value.v.str);
+            }
+        }
 #endif
 
         if (maplookup(options, ipv6_key, &value, 0) != nullptr && is_true(value))
@@ -2699,19 +2712,32 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
             print_messages = 1;
     }
 
-    if (!is_wizard(progr))
-        e = E_PERM;
-    else if (!valid(oid) || find_slistener(desc, ipv6))
-        e = E_INVARG;
-    else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6 USE_TLS_BOOL TLS_CERT_PATH)));    /* Do nothing; e is already set */
-    else if (!start_listener(l))
-        e = E_QUOTA;
+    if (e == E_NONE) {
+        if (!is_wizard(progr)) {
+            e = E_PERM;
+            sprintf(error_msg, "Permission denied");
+        } else if (!valid(oid) || find_slistener(desc, ipv6)) {
+            e = E_INVARG;
+            sprintf(error_msg, "Invalid argument");
+        } else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6 USE_TLS_BOOL TLS_CERT_PATH))) {
+            /* Do nothing; e is already set */
+        } else if (!start_listener(l)) {
+            e = E_QUOTA;
+            sprintf(error_msg, "Failed to listen on port");
+        }
+    }
 
     free_var(arglist);
+    
     if (e == E_NONE)
         return make_var_pack(var_ref(l->desc));
-    else
-        return make_error_pack(e);
+    else {
+        if (certificate_path)
+            free_str(certificate_path);
+        if (key_path)
+            free_str(key_path);
+        return make_raise_pack(e, error_msg, var_ref(zero));
+    }
 }
 
 static package
