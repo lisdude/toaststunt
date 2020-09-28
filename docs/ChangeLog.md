@@ -2,14 +2,14 @@
 
 ## 2.7.0 (In Progress)
 ### Bug Fixes
-- Fix a memory leak in `open_network_connection()` after a successful connection.
+- Fix a memory leak in `open_network_connection()` that occurred after a successful connection.
 - Fix a bug where the SERVER FULL message wouldn't display the connection name properly.
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key must be configured properly in options.h. See warnings at the end of this changelog for important information about these changes.
 - Add a command line switch (`+t`) to enable TLS on default listening ports.
 
-### *** COMPATIBILITY WARNINGS ***
+*** COMPATIBILITY WARNINGS ***
 - The arguments for `listen()` have changed! Listen now accepts an optional third argument as a map. This map takes over the previous arguments and has the keys: ipv6, tls, certificate, key, print-messages. So if you wanted everything, you would use: `listen(#0, 1234, ["ipv6" -> 1, "tls" -> 1, "certificate" -> "/etc/certs/something.pem", "key" -> "/etc/certs/privkey.pem", "print-messages" -> 1]`
 - The arguments for `open_network_connection()` have changed! All previous optional arguments have been folded into a single optional third MAP argument. It accepts the keys: ipv6, listener, tls. So if you wanted to open a TLS connection to an IPv6 address using #6 as the listener, you would do: `open_network_connection("2607:5300:60:4be0::", 1234, ["ipv6" -> 1, "listener" -> #6, "tls" -> 1])`
 
@@ -30,7 +30,7 @@
 - Add math functions `cbrt()`, `atan2`, `asinh`, `atanh`, and `acosh`.
 - Add support for the SQLite `REGEXP` operator.
 - Add an `sqlite_interrupt(<handle>)` function to abort long-running SQLite queries.
-- Allow for retrieval of runtime environment variables from a running task, unhandled exceptions or timeouts, and lagging tasks via `handle_uncaught_error`, `handle_task_timeout`, and `handle_lagging_task`, respectively. TO control automatic inclusion of runtime environment variables, set the `INCLUDE_RT_VARS` server option. Variables will be added to the end of the stack frame as a map.
+- Allow for retrieval of runtime environment variables from a running task, unhandled exceptions or timeouts, and lagging tasks via `handle_uncaught_error`, `handle_task_timeout`, and `handle_lagging_task`, respectively. To control automatic inclusion of runtime environment variables, set the `INCLUDE_RT_VARS` server option. Variables will be added to the end of the stack frame as a map.
 - Providing a true argument to `queued_tasks()` will include all variables for any running tasks that you are authorized to examine. Additionally, a third argument has been added to the task_stack() builtin, which toggles whether variables are included with each frame for the provided task.
 - Add a `BOOL` type, to unambiguously indicate whether a value is TRUE or FALSE. The `true` and `false` variables are set at task runtime and can be overridden within verbs if needed.
 - The `parse_json` function now uses the BOOL type instead of converting to strings. Similarly, passing a boolean to `generate_json` is understood to be a BOOL.

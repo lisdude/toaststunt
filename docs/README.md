@@ -22,9 +22,13 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 - Simplex Noise
 - [Argon2id Hashing](https://github.com/P-H-C/phc-winner-argon2)
 - 64-bit Integers (with the choice to fall back to 32-bit integers; $maxint and $minint set automatically)
-- Network Improvements (including IPv6 connection support and threaded DNS lookups)
 - HAProxy Source IP Rewriting (see notes below if you need to disable this)
 - User friendly traceback error messages
+
+- Networking improvements:
+    - IPv6 connection support
+    - Threaded DNS lookups
+    - Secure TLS connections in `listen()` and `open_network_connection()`
 
 - Waifs:
     - Call :recycle on waifs when they're destroyed
