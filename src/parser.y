@@ -42,6 +42,7 @@
 #include "sym_table.h"
 #include "utils.h"
 #include "version.h"
+#include "waif.h"
 
 static Stmt            *prog_start;
 static int              dollars_ok;
@@ -406,10 +407,11 @@ expr:
             /* Treat foo.:bar (waif properties) like foo.(":bar") 
                (we should be using  WAIF_PROP_PREFIX here...) */
 		    Expr *prop = alloc_var(TYPE_STR);
-            char *newstr = (char *)mymalloc(memo_strlen($4) + 2, M_STRING);
-            sprintf(newstr, ":%s", $4);
-			myfree($4, M_STRING);
-		    prop->e.var.v.str = newstr;
+			char *newstr;
+            asprintf(&newstr, "%c%s", WAIF_PROP_PREFIX, $4);
+			dealloc_string($4);
+		    prop->e.var.v.str = alloc_string(newstr);
+			free(newstr);
 		    $$ = alloc_binary(EXPR_PROP, $1, prop);
 		}
 	| expr '.' '(' expr ')'
