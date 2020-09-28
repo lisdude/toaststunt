@@ -428,9 +428,15 @@ new_nhandle(const int rfd, const int wfd, const bool outbound, uint16_t listen_p
 {
     nhandle *h;
 
-    if (!network_set_nonblocking(rfd)
-            || (rfd != wfd && !network_set_nonblocking(wfd)))
-        log_perror("Setting connection non-blocking");
+#ifdef HAVE_ACCEPT4
+    if (outbound) {
+#else
+    {
+#endif
+        if (!network_set_nonblocking(rfd)
+                || (rfd != wfd && !network_set_nonblocking(wfd)))
+            log_perror("Setting connection non-blocking");
+    }
 
     h = (nhandle *) mymalloc(sizeof(nhandle), M_NETWORK);
 
