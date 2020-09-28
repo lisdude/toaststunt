@@ -1138,6 +1138,8 @@ network_initialize(int argc, char **argv, Var * desc)
             errlog("TLS: Private key does not match the certificate: %s\n", error_msg);
         }
 
+        SSL_CTX_set_session_id_context(tls_ctx, (const unsigned char*)"ToastStunt", 10);
+
 #ifdef VERIFY_TLS_PEERS
         if (!SSL_CTX_set_default_verify_paths(tls_ctx))
             errlog("TLS: Unable to load CA! Peer verification will likely fail.\n");
