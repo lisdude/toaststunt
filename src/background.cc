@@ -100,7 +100,13 @@ background_suspender(vm the_vm, void *data)
     // Register so we can write to the pipe and resume the main loop if the MOO is idle
     network_register_fd(w->fd[0], network_callback, nullptr, data);
 
-    thpool_add_work(*(w->pool), run_callback, data);
+    int add_work_success = thpool_add_work(*(w->pool), run_callback, data);
+
+    if (add_work_success < 0) {
+        errlog("Error adding work to thread pool\n");
+        deallocate_background_waiter(w);
+        return E_QUOTA;
+    }
 
     return E_NONE;
 }
