@@ -2720,6 +2720,7 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
             e = E_INVARG;
             sprintf(error_msg, "Invalid argument");
         } else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6 USE_TLS_BOOL TLS_CERT_PATH))) {
+            sprintf(error_msg, unparse_error(e));
             /* Do nothing; e is already set */
         } else if (!start_listener(l)) {
             e = E_QUOTA;
@@ -2728,7 +2729,7 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     free_var(arglist);
-    
+
     if (e == E_NONE)
         return make_var_pack(var_ref(l->desc));
     else {
