@@ -279,7 +279,15 @@ push_output(nhandle * h)
         if (count == length)
             h->output_lines_flushed = 0;
         else
+#ifdef USE_TLS
+        {
+            int error = SSL_get_error(h->tls, count);
+            errlog("TLS: Error pushing output (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
+            return count > 0 || error == SSL_ERROR_SYSCALL;
+        }
+#else
             return count >= 0 || errno == eagain || errno == ewouldblock;
+#endif
     }
     while ((b = h->output_head) != nullptr) {
 #ifdef USE_TLS
@@ -288,8 +296,8 @@ push_output(nhandle * h)
         else
 #endif
             count = write(h->wfd, b->start, b->length);
-        if (count < 0) {
 #ifdef USE_TLS
+        if (count <= 0) {
             if (h->tls) {
                 int error = SSL_get_error(h->tls, count);
                 if (error == SSL_ERROR_SYSCALL)
@@ -297,6 +305,8 @@ push_output(nhandle * h)
                 else
                     errlog("TLS: Error pushing output (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
             }
+#else
+        if (count < 0) {
 #endif
             return (errno == eagain || errno == ewouldblock);
         }
@@ -361,7 +371,7 @@ pull_input(nhandle * h)
         } else {
             count = SSL_read(h->tls, buffer, sizeof(buffer));
 
-            if (count < 0) {
+            if (count <= 0) {
                 error = SSL_get_error(h->tls, count);
                 if (error == SSL_ERROR_WANT_READ || SSL_ERROR_SYSCALL)
                     return 1;
@@ -369,9 +379,11 @@ pull_input(nhandle * h)
                     errlog("TLS: Error pulling input (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
             }
         }
-    } else
+    } else {
 #endif
         count = read(h->rfd, buffer, sizeof(buffer));
+    }
+
     if (count > 0) {
         if (h->binary) {
             stream_add_raw_bytes_to_binary(s, buffer, count);
@@ -423,9 +435,10 @@ pull_input(nhandle * h)
             free_stream(oob);
         }
         return 1;
-    } else
+    } else {
         return (count == 0 && !proto.believe_eof)
                || (count < 0 && (errno == eagain || errno == ewouldblock));
+    }
 }
 
 static nhandle *
