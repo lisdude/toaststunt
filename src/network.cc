@@ -1313,19 +1313,26 @@ network_process_io(int timeout)
 {
     nhandle *h, *hnext;
     nlistener *l;
+    bool pending_tls = false;
 
     mplex_clear();
     for (l = all_nlisteners; l; l = l->next)
         mplex_add_reader(l->fd);
     for (h = all_nhandles; h; h = h->next) {
         if (!h->input_suspended)
+        {
             mplex_add_reader(h->rfd);
+#ifdef USE_TLS
+            if (h->tls && SSL_pending(h->tls))
+                pending_tls = true;
+#endif
+        }
         if (h->output_head)
             mplex_add_writer(h->wfd);
     }
     add_registered_fds();
 
-    if (mplex_wait(timeout))
+    if (!pending_tls && mplex_wait(timeout))
         return 0;
     else {
         for (l = all_nlisteners; l; l = l->next)
