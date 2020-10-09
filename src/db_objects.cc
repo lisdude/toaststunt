@@ -1159,16 +1159,26 @@ dbpriv_set_all_users(Var v)
 }
 
 int
-db_object_isa(Var object, Var parent)
+db_object_isa(const Var object, const Var parent)
 {
     if (equality(object, parent, 0))
         return 1;
 
     Object *o, *t;
 
-    o = (TYPE_OBJ == object.type) ?
-        dbpriv_find_object(object.v.obj) :
-        object.v.anon;
+    switch(object.type)
+    {
+        case TYPE_OBJ:
+            o = dbpriv_find_object(object.v.obj);
+        break;
+        case TYPE_WAIF:
+        if (object.v.waif->_class == parent.v.obj)
+            return 1;
+        o = dbpriv_find_object(object.v.waif->_class);
+break;
+default:
+        o = object.v.anon;
+}
 
     Var ancestor, ancestors = enlist_var(var_ref(o->parents));
 

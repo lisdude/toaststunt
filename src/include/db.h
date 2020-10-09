@@ -25,24 +25,30 @@
 #include "structures.h"
 
 static inline bool
-is_list_of_objs(Var v)
+is_list_of_objs(const Var& v, bool include_waifs=false)
 {
-    int i;
+    int i = 0;;
 
-    if (TYPE_LIST != v.type)
+    if (v.type != TYPE_LIST)
 	return false;
 
-    for (i = 1; i <= v.v.list[0].v.num; i++)
-	if (TYPE_OBJ != v.v.list[i].type)
-	    return false;
+    const auto length = v.v.list[0].v.num;
+    for (i = 1; i <= length; i++)
+    {
+        const auto vartype = v.v.list[i].type;
+    if (include_waifs && vartype == TYPE_WAIF)
+continue;
+    if (vartype != TYPE_OBJ)
+            return false;
+    }
 
     return true;
 }
 
 static inline bool
-is_obj_or_list_of_objs(Var v)
+is_obj_or_list_of_objs(const Var &v, bool include_waifs=false)
 {
-    return v.is_obj() || is_list_of_objs(v);
+    return (include_waifs && v.type == TYPE_WAIF) || v.is_obj() || is_list_of_objs(v, include_waifs);
 }
 
 /**** file system ****/
@@ -303,7 +309,7 @@ extern Var db_all_users(void);
 				 * to make it persistent.
 				 */
 
-extern int db_object_isa(Var, Var);
+extern int db_object_isa(const Var, const Var);
 
 
 /**** properties *****/
