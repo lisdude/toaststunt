@@ -766,7 +766,7 @@ main_loop(void)
                 set_log_file(new_log);
                 oklog("LOGFILE: Reopening due to remote request signal.\n");
             } else {
-                perror("Error reopening log file.");
+                log_perror("Error reopening log file");
             }
         }
 

@@ -745,26 +745,26 @@ make_listener(Var desc, int *fd, const char **name, const char **ip_address,
     /* If we have multiple results, we'll bind to the first one we can. */
     for (p = servinfo; p != nullptr; p = p->ai_next) {
         if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
-            perror("Creating listening socket");
+            log_perror("Error creating listening socket");
             continue;
         }
 
         if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) < 0) {
-            perror("Setting listening socket reuseaddr");
+            log_perror("Error setting listening socket reuseaddr");
             close(s);
             freeaddrinfo(servinfo);
             return E_QUOTA;
         }
 
         if (use_ipv6 && setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof yes) < 0) {
-            perror("Disabling listening socket dual-stack mode for IPv6");
+            log_perror("Error disabling listening socket dual-stack mode for IPv6");
             close(s);
             freeaddrinfo(servinfo);
             return E_QUOTA;
         }
 
         if (bind(s, p->ai_addr, p->ai_addrlen) < 0) {
-            perror("Binding listening socket");
+            log_perror("Error binding listening socket");
             close(s);
             continue;
         }
@@ -943,12 +943,12 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
     for (p = servinfo; p != nullptr; p = p->ai_next) {
         if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
             if (errno != EMFILE)
-                log_perror("Making socket in open_connection");
+                log_perror("Error making socket in open_connection");
             continue;
         }
 
         if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-            perror("Setting listening socket options");
+            log_perror("Error setting listening socket options");
             close(s);
             freeaddrinfo(servinfo);
             return E_QUOTA;
