@@ -607,7 +607,7 @@
 #    elif HAVE_SELECT
 #      define MPLEX_STYLE MP_SELECT
 #    else
-#      #error Couldn not find select() or poll()!
+#      #error Could not find select() or poll()!
 #    endif
 #   endif
 #endif
