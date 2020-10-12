@@ -139,7 +139,7 @@ background_thread(void (*callback)(Var, Var*), Var* data, char *human_title, thr
         w->pool = (the_pool == nullptr ? &background_pool : the_pool);
         if (pipe(w->fd) == -1)
         {
-            errlog("Failed to create pipe for background thread\n");
+            log_perror("Failed to create pipe for background thread");
             deallocate_background_waiter(w);
             return make_error_pack(E_QUOTA);
         }
@@ -163,6 +163,8 @@ bool can_create_thread()
 /* Insert the background waiter into the process table. */
 void initialize_background_waiter(background_waiter *waiter)
 {
+    waiter->fd[0] = -1;
+    waiter->fd[1] = -1;
     waiter->handle = next_background_handle;
     background_process_table[next_background_handle] = waiter;
     next_background_handle++;
@@ -174,8 +176,10 @@ void deallocate_background_waiter(background_waiter *waiter)
 {
     int handle = waiter->handle;
     network_unregister_fd(waiter->fd[0]);
-    close(waiter->fd[0]);
-    close(waiter->fd[1]);
+    if (waiter->fd[0] >= 0)
+        close(waiter->fd[0]);
+    if (waiter->fd[1] >= 0)
+        close(waiter->fd[1]);
     free_var(waiter->return_value);
     free_var(waiter->data);
     free(waiter->human_title);
