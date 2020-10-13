@@ -182,12 +182,18 @@
  * The +T and -T command line options can explicitly enable and disable this
  * function. If neither option is supplied, the definition given to
  * USE_TLS here determines the default behavior.
+ * 
+ * If LOG_TLS_CONNECTIONS is defined, each connection will be accompanied by
+ * a TLS negotiation message which includes the ciphersuite. The ciphersuite is
+ * also available from the connection_info() built-in function, which will be
+ * unaffected by this option.
  */
 
 #define USE_TLS
 #define VERIFY_TLS_PEERS
 #define DEFAULT_TLS_CERT    "/etc/letsencrypt/live/fullchain.pem"
 #define DEFAULT_TLS_KEY     "/etc/letsencrypt/live/privkey.pem"
+#define LOG_TLS_CONNECTIONS
 
 /******************************************************************************
  * The following constants define certain aspects of the server's network

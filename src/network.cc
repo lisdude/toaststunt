@@ -365,8 +365,9 @@ pull_input(nhandle * h)
                     errlog("TLS: Accept failed (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
                     return 0;
             }
-
+#ifdef LOG_TLS_CONNECTIONS
             oklog("TLS: %s for %s. Cipher: %s\n", SSL_state_string_long(h->tls), h->name, SSL_get_cipher(h->tls));
+#endif
             return 1;
         } else {
             count = SSL_read(h->tls, buffer, sizeof(buffer));
@@ -990,7 +991,9 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
                     result = -1;
                     errno = TLS_CONNECT_FAIL;
                 } else {
+#ifdef LOG_TLS_CONNECTIONS
                     oklog("TLS: %s. Cipher: %s\n", SSL_state_string_long(*tls), SSL_get_cipher(*tls));
+#endif
                 }
             }
         }
