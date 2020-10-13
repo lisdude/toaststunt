@@ -2629,7 +2629,7 @@ bf_connection_info(Var arglist, Byte next, void *vdata, Objid progr)
     ret = mapinsert(ret, var_ref(dest_ip), str_ref_to_var(network_ip_address(nh)));
     ret = mapinsert(ret, var_ref(protocol), str_dup_to_var(network_protocol(nh)));
 #ifdef USE_TLS
-    ret = mapinsert(ret, var_ref(tls_key), Var::new_int(network_handle_is_tls(nh)));
+    ret = mapinsert(ret, var_ref(tls_key), tls_connection_info(nh));
 #endif
 
     free_var(arglist);
