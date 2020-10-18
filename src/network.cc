@@ -381,10 +381,9 @@ pull_input(nhandle * h)
                     errlog("TLS: Error pulling input (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
             }
         }
-    } else {
+    } else
 #endif
         count = read(h->rfd, buffer, sizeof(buffer));
-    }
 
     if (count > 0) {
         if (h->binary) {

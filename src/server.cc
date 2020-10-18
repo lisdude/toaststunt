@@ -2733,10 +2733,12 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
     if (e == E_NONE)
         return make_var_pack(var_ref(l->desc));
     else {
+#ifdef USE_TLS
         if (certificate_path)
             free_str(certificate_path);
         if (key_path)
             free_str(key_path);
+#endif
         return make_raise_pack(e, error_msg, var_ref(zero));
     }
 }
