@@ -58,6 +58,7 @@ yajl_string_encode2(const yajl_print_t print,
 
     while (end < len) {
         if (end < len - 1 && str[end] == '\\' && str[end + 1] == '~') {
+            print(ctx, (const char *) (str + beg), end - beg);
             beg = ++end;
             continue;
         } else if (end < len - 2 && (end == 0 || str[end-1] != '\\') && str[end] == '~' && (str[end + 1] == '0' || str[end + 1] == '1')) {
