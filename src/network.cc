@@ -281,11 +281,17 @@ push_output(nhandle * h)
             h->output_lines_flushed = 0;
         else
 #ifdef USE_TLS
-        {
-            int error = SSL_get_error(h->tls, count);
-            errlog("TLS: Error pushing output (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
-            return count > 0 || error == SSL_ERROR_SYSCALL;
-        }
+            if (h->tls)
+            {
+                int error = SSL_get_error(h->tls, count);
+                errlog("TLS: Error pushing output (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
+                ERR_clear_error();
+                return count > 0;
+            } else {
+                /* Do whatever we would have done if TLS hadn't been defined
+                   since we aren't actually a TLS connection... */
+                return count >= 0 || errno == eagain || errno == ewouldblock;
+            }
 #else
             return count >= 0 || errno == eagain || errno == ewouldblock;
 #endif
