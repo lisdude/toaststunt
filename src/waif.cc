@@ -223,8 +223,15 @@ alloc_waif_propvals(Waif *w, int clear)
     return p;
 }
 
+static int
+map_refers_to(Var key, Var value, void *data, int first)
+{
+    Var *new_var = (Var*)data;
+    return refers_to(key, *new_var, true) || refers_to(value, *new_var, true);
+}
+
 int
-refers_to(Var target, Var key)
+refers_to(Var target, Var key, bool waif_self_check)
 {
     int i;
     Var *p;
@@ -234,22 +241,26 @@ refers_to(Var target, Var key)
             if (target.v.list == key.v.list)
                 return 1;
             for (i = 1; i <= target.v.list[0].v.num; ++i)
-                if (refers_to(target.v.list[i], key))
+                if (refers_to(target.v.list[i], key, true))
                     return 1;
             return 0;
         case TYPE_WAIF:
-            if (target.v.waif == key.v.waif)
+            if (waif_self_check && target.v.waif == key.v.waif)
                 return 1;
             p = target.v.waif->propvals;
             i = count_waif_propvals(target.v.waif);
             while (i-- > 0)
-                if (refers_to(*p++, key))
+                if (refers_to(*p++, key, true))
                     return 1;
             return 0;
         case TYPE_FLOAT:
             return target.v.fnum == key.v.fnum;
         case TYPE_STR:
             return target.v.str == key.v.str;
+        case TYPE_MAP:
+            return mapforeach(target, map_refers_to, &key);
+
+
     }
     return 0;
 }
@@ -371,6 +382,26 @@ alloc_propval_offset(Waif *w, int idx)
     return result;
 }
 
+static void
+invalidate_waif(Waif *waif)
+{
+    int cnt;
+    cnt = count_waif_propvals(waif);
+    free_waif_propdefs(waif->propdefs);
+    waif->propdefs = nullptr;
+    for (int i = 0; i < cnt; ++i)
+        free_var(waif->propvals[i]);
+    if (waif->propvals) {
+        myfree(waif->propvals, M_WAIF_XTRA);
+        waif->propvals = nullptr;
+    }
+    waif_class_count[waif->_class]--;
+    if (waif_class_count[waif->_class] <= 0)
+        waif_class_count.erase(waif->_class);
+    waif->_class = NOTHING;
+    waif_class_count[waif->_class]++;
+}
+
 /* When class object properties change, waifs are not immediately updated.
  * The next time they're accessed their old propdef list is reconciled with
  * the current one and their propvals adjusted accordingly.
@@ -391,20 +422,7 @@ update_waif_propdefs(Waif *waif)
      * Mark the waif invalid so that future renumbers() won't hose us.
      */
     if (!classp) {
-        cnt = count_waif_propvals(waif);
-        free_waif_propdefs(waif->propdefs);
-        waif->propdefs = nullptr;
-        for (i = 0; i < cnt; ++i)
-            free_var(waif->propvals[i]);
-        if (waif->propvals) {
-            myfree(waif->propvals, M_WAIF_XTRA);
-            waif->propvals = nullptr;
-        }
-        waif_class_count[waif->_class]--;
-        if (waif_class_count[waif->_class] <= 0)
-            waif_class_count.erase(waif->_class);
-        waif->_class = NOTHING;
-        waif_class_count[waif->_class]++;
+        invalidate_waif(waif);
         return;
     }
 
@@ -787,7 +805,7 @@ waif_put_prop(Waif *w, const char *name, Var val, Objid progr)
 
         me.type = TYPE_WAIF;
         me.v.waif = w;
-        if (refers_to(val, me))
+        if (refers_to(val, me, true))
             return E_RECMOVE;
     }
 
@@ -1029,12 +1047,14 @@ void
 waif_after_loading()
 {
     int i;
+    int self_reference = 0;
 
     /* This part is no fun.  Now that all of the objs are loaded, go
      * generate waif_propdefs for them and backfill all of the waifs
      * we loaded.  If this is abominably slow due to memory thrashing,
      * I recommend qsort()ing the pointers.
      */
+    oklog("VALIDATE: Check for self-referential waifs ...\n");
     for (i = 0; i < waif_count; ++i) {
         Waif *w = saved_waifs[i];
         Object *o = dbpriv_find_object(w->_class);
@@ -1049,7 +1069,16 @@ waif_after_loading()
         if (!o->waif_propdefs)
             gen_waif_propdefs(o);
         w->propdefs = ref_waif_propdefs((WaifPropdefs *)o->waif_propdefs);
+
+        Var me = Var::new_waif(w);
+        if (refers_to(me, me, false))
+        {
+            self_reference++;
+            invalidate_waif(w);
+        }
     }
     myfree(saved_waifs, M_WAIF_XTRA);
-}
 
+    if (self_reference > 0)
+        errlog("VALIDATE: Invalidated %i self-referential waif%s.\n", self_reference, self_reference > 1 ? "s" : "");
+}
