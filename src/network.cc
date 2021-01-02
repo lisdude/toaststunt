@@ -307,10 +307,8 @@ push_output(nhandle * h)
         if (count <= 0) {
             if (h->tls) {
                 int error = SSL_get_error(h->tls, count);
-                if (error == SSL_ERROR_SYSCALL)
-                    return 1;
-                else
-                    errlog("TLS: Error pushing output (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
+                errlog("TLS: Error pushing output (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
+                ERR_clear_error();
             }
 #else
         if (count < 0) {
@@ -359,11 +357,14 @@ pull_input(nhandle * h)
         if (!h->connected) {
             int tls_success = SSL_accept(h->tls);
             error = SSL_get_error(h->tls, tls_success);
+            ERR_clear_error();
             switch (error) {
                 case SSL_ERROR_WANT_READ:
                 case SSL_ERROR_WANT_WRITE:
-                case SSL_ERROR_SYSCALL:
                     return 1;
+                    break;
+                case SSL_ERROR_SYSCALL:
+                    return 0;
                     break;
                 case SSL_ERROR_NONE:
                     h->connected = true;
@@ -381,10 +382,20 @@ pull_input(nhandle * h)
 
             if (count <= 0) {
                 error = SSL_get_error(h->tls, count);
-                if (error == SSL_ERROR_WANT_READ || SSL_ERROR_SYSCALL)
-                    return 1;
-                else
-                    errlog("TLS: Error pulling input (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
+                ERR_clear_error();
+                switch (error) {
+                    case SSL_ERROR_WANT_READ:
+                    case SSL_ERROR_WANT_WRITE:
+                    case SSL_ERROR_SSL:
+                        return 1;
+                        break;
+                    case SSL_ERROR_SYSCALL:
+                        return 0;
+                        break;
+                    default:
+                        errlog("TLS: Error pulling input (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
+                        return 0;
+                }
             }
         }
     } else
@@ -680,12 +691,14 @@ network_accept_connection(int listener_fd, int *read_fd, int *write_fd,
                     SSL_get_error(*tls, tls_success);
                     errlog("TLS: Error loading certificate (%s) from argument: %s\n", certificate_path, ERR_error_string(ERR_get_error(), nullptr));
                     cert_success = false;
+                    ERR_clear_error();
                 }
             if (cert_success && key_path != nullptr)
                 if ((tls_success = SSL_use_PrivateKey_file(*tls, key_path, SSL_FILETYPE_PEM)) <= 0) {
                     SSL_get_error(*tls, tls_success);
                     errlog("TLS: Error loading private key (%s) from argument: %s\n", key_path, ERR_error_string(ERR_get_error(), nullptr));
                     cert_success = false;
+                    ERR_clear_error();
                 }
             if (cert_success && certificate_path != nullptr && key_path != nullptr && !SSL_check_private_key(*tls)) {
                 errlog("TLS: Private key (%s) does not match certificate (%s)!\n", key_path, certificate_path);
@@ -996,6 +1009,7 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
                     errlog("TLS: Connect failed: %s\n", ERR_error_string(ERR_get_error(), nullptr));
                     result = -1;
                     errno = TLS_CONNECT_FAIL;
+                    ERR_clear_error();
                 } else {
 #ifdef LOG_TLS_CONNECTIONS
                     oklog("TLS: %s. Cipher: %s\n", SSL_state_string_long(*tls), SSL_get_cipher(*tls));
