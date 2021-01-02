@@ -1593,12 +1593,14 @@ tls_connection_info(const network_handle nh)
 {
     static Var cyphersuite_key_name = str_dup_to_var("cyphersuite");
     static Var active_key_name = str_dup_to_var("active");
+    static Var tls_version = str_dup_to_var("version");
     const nhandle *h = (nhandle *)nh.ptr;
     Var ret = new_map();
 
     ret = mapinsert(ret, var_ref(active_key_name), Var::new_int(h->tls != nullptr));
     if (h->tls) {
         ret = mapinsert(ret, var_ref(cyphersuite_key_name), str_dup_to_var(SSL_get_cipher(h->tls)));
+        ret = mapinsert(ret, var_ref(tls_version), str_dup_to_var(SSL_get_version(h->tls)));
     }
 
     return ret;
