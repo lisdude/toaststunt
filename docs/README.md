@@ -2,18 +2,21 @@
 
 ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of features and improvements that were found useful while developing [Miriani](https://www.toastsoft.net) and [ChatMud](https://www.chatmud.com/), a mostly complete list of which can be found below.
 
-* [Features](#features)
-* [ChangeLog](ChangeLog.md)
-* [Build Instructions](#build-instructions)
-  * [Debian/Ubuntu](#debian-ubuntu)
-  * [REL/CentOS](#rel-centos)
-  * [Gentoo](#gentoo)
-  * [FreeBSD](#freebsd)
-  * [macOS](#macos)
-* [Function Documentation](https://github.com/lisdude/toaststunt-documentation)
-* [ToastCore](https://github.com/lisdude/toastcore)
-* [Support and Development](#support-and-development)
-* [Stunt Information](README.stunt)
+- [ToastStunt](#toaststunt)
+  - [Features](#features)
+  - [Build Instructions](#build-instructions)
+    - [**Docker**](#docker)
+    - [**Debian/Ubuntu**](#debianubuntu)
+    - [**REL/CentOS**](#relcentos)
+    - [**Gentoo**](#gentoo)
+    - [**FreeBSD**](#freebsd)
+    - [**macOS**](#macos)
+  - [**Notes**](#notes)
+    - [Argon2](#argon2)
+    - [CMake Build Options](#cmake-build-options)
+    - [Stuck seeding from /dev/random](#stuck-seeding-from-devrandom)
+    - [Login screen not showing](#login-screen-not-showing)
+  - [Support and Development](#support-and-development)
 
 ## Features
 
@@ -135,6 +138,12 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - Allow handling of SIGUSR signals in the database with `#0:handle_signal()`
 
 ## Build Instructions
+
+### **Docker**
+A Docker image based on Ubuntu 20 is provided. 
+You must init git submodules because the image will build argon2 from the provided sources (see below).
+
+
 ### **Debian/Ubuntu**
 ```bash
 apt install build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev
