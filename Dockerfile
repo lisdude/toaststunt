@@ -1,5 +1,3 @@
-#FROM alpine:3.12.3
-#RUN apk add --no-cache bison gperf build-base perl
 FROM ubuntu:20.10
 RUN apt update 
 RUN apt install -y build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev
