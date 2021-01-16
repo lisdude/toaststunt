@@ -224,10 +224,18 @@ int proxy_connected(Objid connection, char *command);
 		 value = MAX_STRING;										\
 	     stream_alloc_maximum = value + 1;							\
 	   }))															\
-								\
+								                                    \
   DEFINE( SVO_MAX_CONCAT_CATCHABLE, max_concat_catchable,			\
 	  flag, 0, /* already canonical */								\
-	  )
+	  )																\
+                                                                    \
+  DEFINE( SVO_MAX_QUEUED_OUTPUT, max_queued_output,			        \
+  																	\
+	  int, MAX_QUEUED_OUTPUT,									    \
+	 _STATEMENT({													\
+	     if (0 < value && value < MIN_MAX_QUEUED_OUTPUT)		    \
+		 value = MIN_MAX_QUEUED_OUTPUT;						        \
+	   }))															\
 
 /* List of all category (2) and (3) cached server options */
 enum Server_Option {

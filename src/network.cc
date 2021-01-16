@@ -1262,12 +1262,12 @@ enqueue_output(network_handle nh, const char *line, int line_length, int add_eol
     char *buffer;
     text_block *block;
 
-    if (h->output_length != 0 && h->output_length + length > MAX_QUEUED_OUTPUT) {   /* must flush... */
+    if (h->output_length != 0 && h->output_length + length > server_flag_option_cached(SVO_MAX_QUEUED_OUTPUT)) {   /* must flush... */
         int to_flush;
         text_block *b;
 
         (void)push_output(h);
-        to_flush = h->output_length + length - MAX_QUEUED_OUTPUT;
+        to_flush = h->output_length + length - server_flag_option_cached(SVO_MAX_QUEUED_OUTPUT);
         if (to_flush > 0 && !flush_ok)
             return 0;
         while (to_flush > 0 && (b = h->output_head)) {
