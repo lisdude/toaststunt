@@ -282,13 +282,12 @@ push_network_buffer_overflow(nhandle *h)
     if (h->tls)
     {
         int error = SSL_get_error(h->tls, count);
-        if (error == SSL_ERROR_WANT_WRITE) {
+        if (error == SSL_ERROR_WANT_WRITE || error == SSL_ERROR_WANT_READ || errno == eagain || errno == ewouldblock)
             h->want_write = true;
-        } else {
-            errlog("TLS: Error pushing output (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
-        }
+        else
+            errlog("TLS: Error pushing output (error %i) (errno %i) from %s: %s\n", error, errno, h->name, ERR_error_string(ERR_get_error(), nullptr));
         ERR_clear_error();
-        return count > 0 || error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE;
+        return count > 0 || error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE || errno == eagain || errno == ewouldblock;
     }
 #endif
 
@@ -327,12 +326,12 @@ push_output(nhandle * h)
         if (count <= 0) {
             if (h->tls) {
                 int error = SSL_get_error(h->tls, count);
-                if (error == SSL_ERROR_WANT_WRITE)
+                if (error == SSL_ERROR_WANT_WRITE || error == SSL_ERROR_WANT_READ || errno == eagain || errno == ewouldblock)
                     h->want_write = true;
                 else
                     errlog("TLS: Error pushing output (error %i) (errno %i) from %s: %s\n", error, errno, h->name, ERR_error_string(ERR_get_error(), nullptr));
                 ERR_clear_error();
-                return (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE);
+                return (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE || errno == eagain || errno == ewouldblock);
             }
 #else
         if (count < 0) {
