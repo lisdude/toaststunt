@@ -31,6 +31,7 @@ extern void register_server(void);
 extern void register_tasks(void);
 extern void register_verbs(void);
 extern void register_yajl(void);
+extern void register_xml(void);
 extern void register_base64(void);
 extern void register_fileio(void);
 extern void register_system(void);
