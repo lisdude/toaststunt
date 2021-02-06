@@ -9,6 +9,7 @@
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key must be configured properly in options.h. See warnings at the end of this changelog for important information about these changes.
 - Add a command line switch (`+t`) to enable TLS on default listening ports.
+- MAX_QUEUED_OUTPUT can be overridden in-database by adding the property `$server_options.max_queued_output` and calling `load_server_options()`.
 
 ### *** COMPATIBILITY WARNINGS ***
 - The arguments for `listen()` have changed! Listen now accepts an optional third argument as a map. This map takes over the previous arguments and has the keys: ipv6, tls, certificate, key, print-messages. So if you wanted everything, you would use: `listen(#0, 1234, ["ipv6" -> 1, "tls" -> 1, "certificate" -> "/etc/certs/something.pem", "key" -> "/etc/certs/privkey.pem", "print-messages" -> 1]`

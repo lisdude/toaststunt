@@ -1121,8 +1121,7 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
 
     for (int x = 1; x <= content_length; x++) {
         Objid oid = contents.v.list[x].v.obj;
-        if (valid(oid)
-                && (!check_parent ? 1 : multi_parent_isa(&contents.v.list[x], &parent))
+        if ((!check_parent ? 1 : multi_parent_isa(&contents.v.list[x], &parent))
                 && (!check_player_flag || (check_player_flag && is_user(oid))))
         {
             ret = setadd(ret, contents.v.list[x]);

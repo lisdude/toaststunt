@@ -192,55 +192,63 @@ int proxy_connected(Objid connection, char *command);
  *            {value = fn(value);},// canonicalizer
  *          )
  */
-#define SERVER_OPTIONS_CACHED_MISC(DEFINE, value)		\
-								\
-  DEFINE( SVO_MAX_LIST_VALUE_BYTES, max_list_value_bytes,		\
-									\
-	  int, DEFAULT_MAX_LIST_VALUE_BYTES,				\
-	 _STATEMENT({							\
-	     if (0 < value && value < MIN_LIST_VALUE_BYTES_LIMIT)	\
-		 value = MIN_LIST_VALUE_BYTES_LIMIT;			\
+#define SERVER_OPTIONS_CACHED_MISC(DEFINE, value)					\
+																	\
+  DEFINE( SVO_MAX_LIST_VALUE_BYTES, max_list_value_bytes,			\
+  																	\
+	  int, DEFAULT_MAX_LIST_VALUE_BYTES,							\
+	 _STATEMENT({													\
+	     if (0 < value && value < MIN_LIST_VALUE_BYTES_LIMIT)		\
+		 value = MIN_LIST_VALUE_BYTES_LIMIT;						\
 	     else if (0 >= value || MAX_LIST_VALUE_BYTES_LIMIT < value)	\
-		 value = MAX_LIST_VALUE_BYTES_LIMIT;			\
-	   }))								\
-								\
-  DEFINE( SVO_MAX_MAP_VALUE_BYTES, max_list_value_bytes,		\
-									\
-	  int, DEFAULT_MAX_MAP_VALUE_BYTES,				\
-	 _STATEMENT({							\
-	     if (0 < value && value < MIN_MAP_VALUE_BYTES_LIMIT)	\
-		 value = MIN_MAP_VALUE_BYTES_LIMIT;			\
+		 value = MAX_LIST_VALUE_BYTES_LIMIT;						\
+	   }))															\
+	   																\
+  DEFINE( SVO_MAX_MAP_VALUE_BYTES, max_list_value_bytes,			\
+																	\
+	  int, DEFAULT_MAX_MAP_VALUE_BYTES,								\
+	 _STATEMENT({													\
+	     if (0 < value && value < MIN_MAP_VALUE_BYTES_LIMIT)		\
+		 value = MIN_MAP_VALUE_BYTES_LIMIT;							\
 	     else if (0 >= value || MAX_MAP_VALUE_BYTES_LIMIT < value)	\
-		 value = MAX_MAP_VALUE_BYTES_LIMIT;			\
-	   }))								\
-								\
-  DEFINE( SVO_MAX_STRING_CONCAT, max_string_concat,		\
-								\
-	  int, DEFAULT_MAX_STRING_CONCAT,			\
-	 _STATEMENT({						\
-	     if (0 < value && value < MIN_STRING_CONCAT_LIMIT)	\
-		 value = MIN_STRING_CONCAT_LIMIT;		\
-	     else if (value <= 0 || MAX_STRING < value)		\
-		 value = MAX_STRING;				\
-	     stream_alloc_maximum = value + 1;			\
-	   }))							\
-								\
-  DEFINE( SVO_MAX_CONCAT_CATCHABLE, max_concat_catchable,	\
-	  flag, 0, /* already canonical */			\
-	  )
+		 value = MAX_MAP_VALUE_BYTES_LIMIT;							\
+	   }))															\
+																	\
+  DEFINE( SVO_MAX_STRING_CONCAT, max_string_concat,					\
+																	\
+	  int, DEFAULT_MAX_STRING_CONCAT,								\
+	 _STATEMENT({													\
+	     if (0 < value && value < MIN_STRING_CONCAT_LIMIT)			\
+		 value = MIN_STRING_CONCAT_LIMIT;							\
+	     else if (value <= 0 || MAX_STRING < value)					\
+		 value = MAX_STRING;										\
+	     stream_alloc_maximum = value + 1;							\
+	   }))															\
+								                                    \
+  DEFINE( SVO_MAX_CONCAT_CATCHABLE, max_concat_catchable,			\
+	  flag, 0, /* already canonical */								\
+	  )																\
+                                                                    \
+  DEFINE( SVO_MAX_QUEUED_OUTPUT, max_queued_output,			        \
+  																	\
+	  int, MAX_QUEUED_OUTPUT,									    \
+	 _STATEMENT({													\
+	     if (0 < value && value < MIN_MAX_QUEUED_OUTPUT)		    \
+		 value = MIN_MAX_QUEUED_OUTPUT;						        \
+	   }))															\
 
 /* List of all category (2) and (3) cached server options */
 enum Server_Option {
 
-# define _BP_DEF(PROPERTY,property)		\
-      SVO_PROTECT_##PROPERTY = BP_##PROPERTY,	\
+# define _BP_DEF(PROPERTY,property)									\
+      SVO_PROTECT_##PROPERTY = BP_##PROPERTY,						\
 
     BUILTIN_PROPERTIES(_BP_DEF)
 
 # undef _BP_DEF
 
-# define _SVO_DEF(SVO_MISC_OPTION,_1,_2,_3,_4)	\
-      SVO_MISC_OPTION,				\
+# define _SVO_DEF(SVO_MISC_OPTION,_1,_2,_3,_4)						\
+      SVO_MISC_OPTION,												\
 
     SERVER_OPTIONS_CACHED_MISC(_SVO_DEF,@)
 
@@ -280,27 +288,27 @@ extern int read_active_connections(void);
 
 
 /* Body for *_connection_option() */
-#define CONNECTION_OPTION_GET(TABLE,HANDLE,OPTION,VALUE)	\
-    _STATEMENT({						\
-	TABLE(_CONNECT_OPTION_GET_SINGLE, (HANDLE), @,		\
-	      _RMPAREN2((OPTION),(VALUE)))			\
-	return 0;						\
+#define CONNECTION_OPTION_GET(TABLE,HANDLE,OPTION,VALUE)		\
+    _STATEMENT({												\
+	TABLE(_CONNECT_OPTION_GET_SINGLE, (HANDLE), @,				\
+	      _RMPAREN2((OPTION),(VALUE)))							\
+	return 0;													\
     })
 
 /* Body for *_set_connection_option() */
-#define CONNECTION_OPTION_SET(TABLE,HANDLE,OPTION,VALUE)	\
+#define CONNECTION_OPTION_SET(TABLE,HANDLE,OPTION,VALUE)		\
     _STATEMENT({						\
-	TABLE(_CONNECT_OPTION_SET_SINGLE, (HANDLE), (VALUE),	\
-	      _RMPAREN2((OPTION),(VALUE)))			\
-	return 0;						\
+	TABLE(_CONNECT_OPTION_SET_SINGLE, (HANDLE), (VALUE),		\
+	      _RMPAREN2((OPTION),(VALUE)))							\
+	return 0;													\
     })
 
 /* Body for *_connection_options() */
-#define CONNECTION_OPTION_LIST(TABLE,HANDLE,LIST)	\
-    _STATEMENT({					\
-	TABLE(_CONNECT_OPTION_LIST_SINGLE, (HANDLE), @,	\
-	      (LIST))					\
-	return (LIST);					\
+#define CONNECTION_OPTION_LIST(TABLE,HANDLE,LIST)				\
+    _STATEMENT({												\
+	TABLE(_CONNECT_OPTION_LIST_SINGLE, (HANDLE), @,				\
+	      (LIST))												\
+	return (LIST);												\
     })
 
 /* All of the above require a TABLE of connection options #defined
@@ -329,33 +337,33 @@ extern int read_active_connections(void);
 #define _STATEMENT(STMT) do STMT while (0)
 
 #define _CONNECT_OPTION_GET_SINGLE(NAME, OPTION, VALUE,		\
-				   TYPE_FOO, VFOO_MEMBER,	\
-				   GETVALUE, SETVALUE)		\
-    if (!strcasecmp(OPTION, #NAME)) {				\
-	VALUE->type  = (TYPE_FOO);				\
-	VALUE->v.VFOO_MEMBER = (GETVALUE);			\
-	return 1;						\
+				   TYPE_FOO, VFOO_MEMBER,					\
+				   GETVALUE, SETVALUE)						\
+    if (!strcasecmp(OPTION, #NAME)) {						\
+	VALUE->type  = (TYPE_FOO);								\
+	VALUE->v.VFOO_MEMBER = (GETVALUE);						\
+	return 1;												\
     }
 
 #define _CONNECT_OPTION_SET_SINGLE(NAME, OPTION, VALUE,		\
-				   TYPE_FOO, VFOO_MEMBER,	\
-				   GETVALUE, SETVALUE)		\
-    if (!strcasecmp(OPTION, #NAME)) {				\
-	SETVALUE;						\
-	return 1;						\
+				   TYPE_FOO, VFOO_MEMBER,					\
+				   GETVALUE, SETVALUE)						\
+    if (!strcasecmp(OPTION, #NAME)) {						\
+	SETVALUE;												\
+	return 1;												\
     }
 
-#define _CONNECT_OPTION_LIST_SINGLE(NAME, LIST,			\
-				    TYPE_FOO, VFOO_MEMBER,	\
-				    GETVALUE, SETVALUE)		\
-    {								\
-	Var pair = new_list(2);					\
-	pair.v.list[1].type = TYPE_STR;				\
-	pair.v.list[1].v.str = str_dup(#NAME);			\
-	pair.v.list[2].type = (TYPE_FOO);			\
-	pair.v.list[2].v.VFOO_MEMBER = (GETVALUE);		\
-	LIST = listappend(LIST, pair);				\
-    }								\
+#define _CONNECT_OPTION_LIST_SINGLE(NAME, LIST,				\
+				    TYPE_FOO, VFOO_MEMBER,					\
+				    GETVALUE, SETVALUE)						\
+    {														\
+	Var pair = new_list(2);									\
+	pair.v.list[1].type = TYPE_STR;							\
+	pair.v.list[1].v.str = str_dup(#NAME);					\
+	pair.v.list[2].type = (TYPE_FOO);						\
+	pair.v.list[2].v.VFOO_MEMBER = (GETVALUE);				\
+	LIST = listappend(LIST, pair);							\
+    }														\
 
 /* Called when a fatal error occurs. */
 extern void panic_moo(const char *message);

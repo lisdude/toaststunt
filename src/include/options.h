@@ -218,12 +218,24 @@
  *			   overridden by defining the `connect_timeout'
  *			   property on $server_options or on L, for connections
  *			   accepted by a given listener L.
+ *
+ * If defined in the database, $server_options.max_queued_output will override
+ * the default value specified here.
  */
 
 #define MAX_QUEUED_OUTPUT         65536
 #define MAX_QUEUED_INPUT          MAX_QUEUED_OUTPUT
 #define MAX_LINE_BYTES            5242880
 #define DEFAULT_CONNECT_TIMEOUT   300
+
+/* In order to avoid weirdness from these limits being set too small,
+ * we impose the following (arbitrary) respective minimum values.
+ * That is, a positive value for $server_options.max_queued_output that
+ * is less than MIN_MAX_QUEUED_OUTPUT will be silently increased, and
+ * likewise for the other options.
+ */
+
+#define MIN_MAX_QUEUED_OUTPUT         2048
 
 /******************************************************************************
  * On connections that have not been set to binary mode, the server normally

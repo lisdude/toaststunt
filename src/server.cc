@@ -2806,7 +2806,7 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     r.type = TYPE_INT;
     if (nargs == 0)
-        r.v.num = MAX_QUEUED_OUTPUT;
+        r.v.num = server_flag_option_cached(SVO_MAX_QUEUED_OUTPUT);
     else {
         shandle *h = find_shandle(conn);
 
