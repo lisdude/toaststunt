@@ -123,6 +123,7 @@ find_package(CURL)
 find_package(ASPELL)
 find_package(SQLite3)
 find_package(OpenSSL)
+find_package(Expat)
 
 # Millions of source files
 set(src_CSRCS
@@ -173,6 +174,7 @@ set(src_CXXSRCS
     src/functions.cc
     src/garbage.cc
     src/json.cc
+	src/xml.cc
     ${KEYWORDS}
     src/log.cc
     src/list.cc
@@ -226,6 +228,8 @@ include_directories(${NETTLE_INCLUDE_DIRS})
 target_link_libraries(moo ${NETTLE_LIBRARIES})
 include_directories(${ARGON2_INCLUDE_DIRS})
 target_link_libraries(moo ${ARGON2_LIBRARIES})
+include_directories(@{EXPAT_INCLUDE_DIRS})
+target_link_libraries(moo ${EXPAT_LIBRARIES})
 
 if(CMAKE_USE_PTHREADS_INIT)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")

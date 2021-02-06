@@ -171,7 +171,6 @@ bf_log_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
 }
 #endif
 
-
 void
 register_extensions()
 {
