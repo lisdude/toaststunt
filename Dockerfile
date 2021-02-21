@@ -1,6 +1,6 @@
 FROM ubuntu:20.10
 RUN apt update 
-RUN apt install -y build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev
+RUN apt install -y build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev libargon2-dev
 
 WORKDIR /toaststunt
 COPY src /toaststunt/src/
