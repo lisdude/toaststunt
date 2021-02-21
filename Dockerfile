@@ -7,12 +7,7 @@ COPY src /toaststunt/src/
 
 COPY CMakeLists.txt  /toaststunt/
 COPY CMakeModules  /toaststunt/CMakeModules
-RUN ls /toaststunt/CMakeModules
 
-
-# PRE ARGON BUILD
-WORKDIR /toaststunt/src/dependencies/phc-winner-argon2
-RUN make && make install PREFIX=/usr
 
 WORKDIR /toaststunt/
 RUN pwd ;  mkdir build && cd build && cmake ../
