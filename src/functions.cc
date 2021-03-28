@@ -66,6 +66,7 @@ register_bi_functions()
         register_tasks,
         register_verbs,
         register_yajl,
+		register_xml,
         register_base64,
         register_fileio,
         register_system,

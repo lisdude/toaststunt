@@ -79,6 +79,7 @@
 #cmakedefine PCRE_FOUND
 #cmakedefine SQLITE3_FOUND
 #cmakedefine OPENSSL_FOUND
+#cmakedefine EXPAT_FOUND
 
 #ifndef OPENSSL_FOUND
  #undef USE_TLS
