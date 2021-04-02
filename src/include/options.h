@@ -484,6 +484,13 @@
 /* #define INCLUDE_RT_VARS */
 
 /******************************************************************************
+* The server can include args and argstr in traceback stacks
+ ******************************************************************************
+*/
+/* #define INCLUDE_RT_ARGS */
+/* #define INCLUDE_RT_ARGSTR */
+
+/******************************************************************************
  * The server supports 64-bit integers. If you don't want the added memory usage
  * and don't need the larger integers, you can disable that here. NOTE: Disabling
  * this option and loading a database that has saved 64-bit integers will probably
