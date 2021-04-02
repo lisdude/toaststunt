@@ -446,15 +446,23 @@ make_rt_var_map(Var * rt_env, const char **var_names, unsigned size)
 
 static Var
 make_stack_list(activation * stack, int start, int end, int include_end,
-                int root_vector, int line_numbers_too, int include_variables, Objid progr)
+                int root_vector, int line_numbers_too, int include_variables, Objid progr, int include_args, int include_argstr)
 {
     Var r, rt_vars;
-    int count = 0, listlen = 5, i, j, k;
+    int count = 0, listlen = 5, i, j, k, ln_p, iv_p, a_p, as_p;
 
     if (line_numbers_too)
         listlen++;
+        ln_p=listlen;
     if (include_variables)
         listlen++;
+        iv_p=listlen;
+    if (include_args)
+        listlen++;
+        a_p=listlen;
+    if (include_argstr)
+        listlen++;
+        as_p=listlen;
 
     for (i = end; i >= start; i--) {
         if (include_end || i != end)
@@ -476,16 +484,29 @@ make_stack_list(activation * stack, int start, int end, int include_end,
             v.v.list[4] = anonymizing_var_ref(stack[i].vloc, progr);
             v.v.list[5] = Var::new_obj(stack[i].player);
             if (line_numbers_too) {
-                v.v.list[include_variables ? listlen - 1 : listlen].type = TYPE_INT;
-                v.v.list[include_variables ? listlen - 1 : listlen].v.num = find_line_number(stack[i].prog,
+                v.v.list[ln_p].type = TYPE_INT;
+                v.v.list[ln_p].v.num = find_line_number(stack[i].prog,
                         (i == 0 ? root_vector
                          : MAIN_VECTOR),
                         stack[i].error_pc);
             }
             if (include_variables) {
-                v.v.list[listlen].type = TYPE_MAP;
-                v.v.list[listlen] = make_rt_var_map(stack[i].rt_env, stack[i].prog->var_names, stack[i].prog->num_var_names);
+                v.v.list[iv_p].type = TYPE_MAP;
+                v.v.list[iv_p] = make_rt_var_map(stack[i].rt_env, stack[i].prog->var_names, stack[i].prog->num_var_names);
             }
+            if(include_args) {
+                v.v.list[a_p].type = TYPE_LIST;
+                if(stack[i].rt_env[SLOT_ARGS].type != TYPE_LIST) {
+                    v.v.list[a_p] = new_list(0);
+                } else {
+                    v.v.list[a_p] = stack[i].rt_env[SLOT_ARGS];
+}
+            }
+            if(include_argstr) {
+                v.v.list[as_p].type = TYPE_STR;
+                v.v.list[as_p] = stack[i].rt_env[SLOT_ARGSTR];
+            }
+
         }
         if (i != start && stack[i].bi_func_pc) {
             v = r.v.list[j++] = new_list(listlen);
@@ -500,13 +521,26 @@ make_stack_list(activation * stack, int start, int end, int include_end,
             v.v.list[5].type = TYPE_OBJ;
             v.v.list[5].v.obj = stack[i].player;
             if (line_numbers_too) {
-                v.v.list[include_variables ? listlen - 1 : listlen].type = TYPE_INT;
-                v.v.list[include_variables ? listlen - 1 : listlen].v.num = stack[i].bi_func_pc;
+                v.v.list[ln_p].type = TYPE_INT;
+                v.v.list[ln_p].v.num = stack[i].bi_func_pc;
             }
             if (include_variables) {
-                v.v.list[listlen].type = TYPE_MAP;
-                v.v.list[listlen] = make_rt_var_map(stack[i].rt_env, stack[i].prog->var_names, stack[i].prog->num_var_names);
+                v.v.list[iv_p].type = TYPE_MAP;
+                v.v.list[iv_p] = make_rt_var_map(stack[i].rt_env, stack[i].prog->var_names, stack[i].prog->num_var_names);
             }
+            if(include_args) {
+                v.v.list[a_p].type = TYPE_LIST;
+                if(stack[i].rt_env[SLOT_ARGS].type!=TYPE_LIST) {
+                    v.v.list[a_p] = new_list(0);
+                } else {
+                    v.v.list[a_p] = stack[i].rt_env[SLOT_ARGS];
+}
+            }
+            if(include_argstr) {
+                v.v.list[as_p].type = TYPE_STR;
+                v.v.list[as_p] = stack[i].rt_env[SLOT_ARGSTR];
+            }
+
         }
     }
 
@@ -534,6 +568,9 @@ raise_error(package p, enum outcome *outcome)
     /* ASSERT: p.kind == package::BI_RAISE */
     int handler_activ = find_handler_activ(p.u.raise.code);
     int include_vars = server_int_option("INCLUDE_RT_VARS", 0);
+    int include_args= server_int_option("INCLUDE_RT_ARGS", 0);
+    int include_argstr = server_int_option("INCLUDE_RT_ARGSTR", 0);
+
     Finally_Reason why;
     Var value;
 
@@ -553,7 +590,7 @@ raise_error(package p, enum outcome *outcome)
     value.v.list[4] = make_stack_list(activ_stack, handler_activ,
                                       top_activ_stack, 1,
                                       root_activ_vector, 1, include_vars,
-                                      NOTHING);
+                                      NOTHING, include_args, include_argstr);
 
     if (why == FIN_UNCAUGHT) {
         save_handler_info("handle_uncaught_error", value);
@@ -589,7 +626,7 @@ save_hinfo:
             value.v.list[1].v.str = str_dup(htag);
             value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
                                               root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0),
-                                              NOTHING);
+                                              NOTHING, server_int_option("INCLUDE_RT_ARGS", 0),server_int_option("INCLUDE_RT_ARGSTR", 0));
             value.v.list[3] = error_backtrace_list(msg);
             save_handler_info("handle_task_timeout", value);
         /* fall through */
@@ -3062,7 +3099,9 @@ run_interpreter(char raise, enum error e,
         if (handle.ptr)
         {
             Var lag_info = new_list(2);
-            lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, 0, root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0), RUN_ACTIV.progr);
+            int include_args = server_int_option("INCLUDE_RT_ARGS", 0);
+            int include_argstr = server_int_option("INCLUDE_RT_ARGSTR", 0);
+            lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, 0, root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0), RUN_ACTIV.progr,include_args, include_argstr);
             lag_info.v.list[2] = total_cputime;
             do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task", lag_info, handle, activ_stack[0].player, "", nullptr, 0);
         }
@@ -3659,7 +3698,7 @@ bf_callers(Var arglist, Byte next, void *vdata, Objid progr)
 
     return make_var_pack(make_stack_list(activ_stack, 0, top_activ_stack, 0,
                                          root_activ_vector, line_numbers_too, 0,
-                                         progr));
+                                         progr, 0, 0));
 }
 
 static package
@@ -3677,13 +3716,14 @@ bf_task_stack(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_INVARG);
     if (!is_wizard(progr) && progr != owner)
         return make_error_pack(E_PERM);
-
+    int include_args= server_int_option("INCLUDE_RT_ARGS", 0);
+    int include_argstr = server_int_option("INCLUDE_RT_ARGSTR", 0);
     return make_var_pack(make_stack_list(the_vm->activ_stack, 0,
                                          the_vm->top_activ_stack, 1,
                                          the_vm->root_activ_vector,
                                          line_numbers_too,
                                          stack_vars,
-                                         progr));
+                                         progr, include_args, include_argstr));
 }
 
 void
