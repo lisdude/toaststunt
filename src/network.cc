@@ -1549,7 +1549,7 @@ lookup_network_connection_name(const network_handle nh, const char **name)
 
     pthread_mutex_lock(h->name_mutex);
 
-    struct addrinfo *address;
+    struct addrinfo *address = 0;
     int status = getaddrinfo(h->destination_ipaddr, nullptr, &tcp_hint, &address);
     if (status < 0) {
         // Better luck next time.
@@ -1558,7 +1558,8 @@ lookup_network_connection_name(const network_handle nh, const char **name)
     } else {
         *name = get_nameinfo(address->ai_addr);
     }
-    freeaddrinfo(address);
+    if (address)
+        freeaddrinfo(address);
     pthread_mutex_unlock(h->name_mutex);
     return retval;
 }
