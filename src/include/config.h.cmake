@@ -83,7 +83,3 @@
 #ifndef OPENSSL_FOUND
  #undef USE_TLS
 #endif
-
-#ifdef ENABLE_GC
-#  cmakedefine01 USING_GC
-#endif
