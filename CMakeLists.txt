@@ -166,7 +166,6 @@ set(src_CXXSRCS
     src/extensions.cc
     src/fileio.cc
     src/functions.cc
-    src/garbage.cc
     src/json.cc
     ${KEYWORDS}
     src/log.cc
@@ -202,6 +201,10 @@ set(src_CXXSRCS
     src/argon2.cc
     src/spellcheck.cc
     src/curl.cc)
+
+if(USING_GC)
+    list(APPEND src_CXXSRCS src/garbage.cc)
+endif()
 
 set(src_GRAMMAR
     ${BISON_MOOParser_OUTPUTS})

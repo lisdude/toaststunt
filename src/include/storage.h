@@ -38,8 +38,10 @@ typedef enum GC_Color {
 
 typedef struct reference_overhead {
     unsigned int count:28;
+#ifdef ENABLE_GC
     unsigned int buffered:1;
     GC_Color color:3;
+ #endif
 } reference_overhead;
 
 static inline int
@@ -60,6 +62,7 @@ refcount(const void *ptr)
     return ((reference_overhead *)ptr)[-1].count;
 }
 
+#ifdef ENABLE_GC
 static inline void
 gc_set_buffered(const void *ptr)
 {
@@ -89,6 +92,7 @@ gc_get_color(const void *ptr)
 {
     return ((reference_overhead *)ptr)[-1].color;
 }
+#endif
 
 typedef enum Memory_Type {
     M_AST_POOL, M_AST, M_PROGRAM, M_PVAL, M_NETWORK, M_STRING, M_VERBDEF,

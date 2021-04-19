@@ -119,7 +119,9 @@ list_dup(Var list)
     for (i = 1; i <= n; i++)
         _new.v.list[i] = var_ref(list.v.list[i]);
 
+#ifdef ENABLE_GC
     gc_set_color(_new.v.list, gc_get_color(list.v.list));
+#endif
 
     return _new;
 }

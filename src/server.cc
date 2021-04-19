@@ -51,7 +51,9 @@
 #include "exec.h"
 #include "execute.h"
 #include "functions.h"
+#ifdef ENABLE_GC
 #include "garbage.h"
+#endif
 #include "list.h"
 #include "log.h"
 #include "map.h"
@@ -1987,7 +1989,9 @@ main(int argc, char **argv)
         network_shutdown();
     }
 
+#ifdef ENABLE_GC
     gc_collect();
+#endif
     db_shutdown();
     db_clear_ancestor_cache();
     sqlite_shutdown();

@@ -633,8 +633,9 @@ map_dup(Var map)
         if (!rbinsert(_new.v.tree, &node))
             panic_moo("MAP_DUP: rbinsert failed");
     }
-
+#ifdef ENABLE_GC
     gc_set_color(_new.v.tree, gc_get_color(map.v.tree));
+#endif
 
     return _new;
 }
