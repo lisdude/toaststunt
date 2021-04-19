@@ -18,6 +18,9 @@
 #include <stdarg.h>
 #include <vector>
 #include <functional>
+#include <unordered_map>
+#include <string>
+#include <optional>
 
 #include "bf_register.h"
 #include "config.h"
@@ -33,7 +36,36 @@
 #include "unparse.h"
 #include "utils.h"
 
-typedef std::function<void()> registry;
+using namespace std;
+
+typedef function<void()> registry;
+struct bft_entry {
+    const char *name;
+    const char *protect_str;
+    const char *verb_str;
+    int minargs;
+    int maxargs;
+    var_type *prototype;
+    bf_type func;
+    bf_read_type read;
+    bf_write_type write;
+    int _protected;
+};
+
+static std::vector<bft_entry> bf_table;
+static unordered_map<short, string> id_to_name;
+static unordered_map<string, short> name_to_id;
+
+static void add_functions_to_table ()
+{
+    const auto function_count = bf_table.size();
+    for (size_t index = 0; index < function_count; ++index)
+    {
+        const auto name = bf_table[index].name;
+        id_to_name[index] = name;
+        name_to_id[name] = index;
+    }
+}
 
 void
 register_bi_functions()
@@ -84,25 +116,10 @@ register_bi_functions()
     {
         callback();
     }
+add_functions_to_table();
 }
 
 /*** register ***/
-
-struct bft_entry {
-    const char *name;
-    const char *protect_str;
-    const char *verb_str;
-    int minargs;
-    int maxargs;
-    var_type *prototype;
-    bf_type func;
-    bf_read_type read;
-    bf_write_type write;
-    int _protected;
-};
-
-static std::vector<bft_entry> bf_table;
-
 static void
 register_common(const char *name, int minargs, int maxargs, bf_type func,
                 bf_read_type read, bf_write_type write, va_list args)
@@ -167,22 +184,21 @@ static const char *func_not_found_msg = "no such function";
 const char *
 name_func_by_num(unsigned n)
 {   /* used by unparse only */
-    if (n >= bf_table.size())
+    const auto result = id_to_name.find(n);
+    if (result == id_to_name.end())
         return func_not_found_msg;
     else
-        return bf_table[n].name;
+        return result->second.c_str();
 }
 
-unsigned
+std::optional<unsigned>
 number_func_by_name(const char *name)
 {   /* used by parser only */
-
-    const auto functionCount = bf_table.size();
-    for (size_t i = 0; i < functionCount; ++i)
-        if (!strcasecmp(name, bf_table[i].name))
-            return i;
-
-    return FUNC_NOT_FOUND;
+    const auto result = name_to_id.find(name);
+    if (result == name_to_id.end())
+        return nullopt;
+    else
+        return result->second;
 }
 
 /*** calling built-in functions ***/
@@ -483,12 +499,12 @@ bf_function_info(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
 
     if (arglist.v.list[0].v.num == 1) {
-        const auto i = number_func_by_name(arglist.v.list[1].v.str);
-        if (i == FUNC_NOT_FOUND) {
+        const auto result = number_func_by_name(arglist.v.list[1].v.str);
+        if (!result.has_value()) {
             free_var(arglist);
             return make_error_pack(E_INVARG);
         }
-        r = function_description(i);
+        r = function_description(*result);
     } else {
         const auto functionCount = bf_table.size();
         r = new_list(functionCount);

@@ -19,6 +19,7 @@
 #define Functions_h 1
 
 #include <stdio.h>
+#include <optional>
 
 #include "config.h"
 #include "execute.h"
@@ -76,10 +77,9 @@ typedef package(*bf_type) (Var, Byte, void *, Objid);
 typedef void (*bf_write_type) (void *vdata);
 typedef void *(*bf_read_type) (void);
 
-#define FUNC_NOT_FOUND   -1
-   
+  
 extern const char *name_func_by_num(unsigned);
-extern unsigned number_func_by_name(const char *);
+extern std::optional<unsigned> number_func_by_name(const char *);
 
 extern void register_function(const char *, int, int, bf_type,...);
 extern void register_function_with_read_write(const char *, int, int,

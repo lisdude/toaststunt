@@ -16,6 +16,7 @@
  *****************************************************************************/
 
 #include <chrono>
+#include <optional>
 #include <string.h>
 #include <stdarg.h>
 
@@ -47,6 +48,8 @@
 #include "version.h"
 #include "background.h"
 #include "unparse.h"
+
+using namespace std;
 
 /* the following globals are the guts of the virtual machine: */
 static activation *activ_stack = nullptr;
@@ -3043,9 +3046,9 @@ run_interpreter(char raise, enum error e,
     total_cputime.type = TYPE_FLOAT;
 
     interpreter_is_running = 1;
-    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
     ret = run(raise, e, result);
-    std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
+    chrono::duration<double> elapsed = chrono::high_resolution_clock::now() - start;
     total_cputime.v.fnum = elapsed.count();
     interpreter_is_running = 0;
 
@@ -3361,12 +3364,13 @@ bf_call_function(Var arglist, Byte next, void *vdata, Objid progr)
     if (next == 1) {        /* first call */
         const char *fname = arglist.v.list[1].v.str;
 
-        fnum = number_func_by_name(fname);
-        if (fnum == FUNC_NOT_FOUND) {
+        const auto result = number_func_by_name(fname);
+        if (!result.has_value()) {
             p = make_raise_pack(E_INVARG, "Unknown built-in function",
                                 var_ref(arglist.v.list[1]));
             free_var(arglist);
         } else {
+            fnum = *result;
             arglist = listdelete(arglist, 1);
             p = call_bi_func(fnum, arglist, next, progr, vdata);
         }
@@ -3406,9 +3410,12 @@ bf_call_function_read(void)
 
     if (!strncmp(line, hdr, hlen)) {
         line += hlen;
-        if ((s->fnum = number_func_by_name(line)) == FUNC_NOT_FOUND)
+        const auto result = number_func_by_name(line);
+        if (!result.has_value())
             errlog("CALL_FUNCTION: Unknown built-in function: %s\n", line);
-        else if (read_bi_func_data(s->fnum, &s->data, pc_for_bi_func_data()))
+
+        s->fnum = *result;
+        if (read_bi_func_data(s->fnum, &s->data, pc_for_bi_func_data()))
             return s;
     }
     return nullptr;
@@ -3998,10 +4005,12 @@ read_activ(activation * a, int which_vector)
     }
     if (a->bi_func_pc != 0) {
         func_name = dbio_read_string();
-        if ((i = number_func_by_name(func_name)) == FUNC_NOT_FOUND) {
+        const auto result = number_func_by_name(func_name);
+        if (!result.has_value()) {
             errlog("READ_ACTIV: Unknown built-in function `%s'\n", func_name);
             return 0;
         }
+        i = *result;
         a->bi_func_id = i;
         if (!read_bi_func_data(a->bi_func_id, &a->bi_func_data,
                                &a->bi_func_pc)) {
