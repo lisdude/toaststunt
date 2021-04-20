@@ -176,7 +176,7 @@ listset(Var list, Var value, int pos)
 
 #ifdef MEMO_VALUE_BYTES
     /* reset the memoized size */
-    ((int *)(_new.v.list))[-2] = 0;
+    ((int *)(_new.v.list))[MEMO_OFFSET] = 0;
 #endif
 
     free_var(_new.v.list[pos]);
@@ -201,7 +201,7 @@ doinsert(Var list, Var value, int pos)
         list.v.list = (Var *) myrealloc(list.v.list, (size + 1) * sizeof(Var), M_LIST);
 #ifdef MEMO_VALUE_BYTES
         /* reset the memoized size */
-        ((int *)(list.v.list))[-2] = 0;
+        ((int *)(list.v.list))[MEMO_OFFSET] = 0;
 #endif
         list.v.list[0].v.num = size;
         list.v.list[pos] = value;
@@ -521,7 +521,7 @@ list_sizeof(Var *list)
     int i, len, size;
 
 #ifdef MEMO_VALUE_BYTES
-    if ((size = (((int *)(list))[-2])))
+    if ((size = (((int *)(list))[MEMO_OFFSET])))
         return size;
 #endif
 
@@ -532,7 +532,7 @@ list_sizeof(Var *list)
     }
 
 #ifdef MEMO_VALUE_BYTES
-    (((int *)(list))[-2]) = size;
+    (((int *)(list))[MEMO_OFFSET]) = size;
 #endif
 
     return size;

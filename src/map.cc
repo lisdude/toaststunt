@@ -649,7 +649,7 @@ map_sizeof(rbtree *tree)
     int size;
 
 #ifdef MEMO_VALUE_BYTES
-    if ((size = (((int *)(tree))[-2])))
+    if ((size = (((int *)(tree))[MEMO_OFFSET])))
         return size;
 #endif
 
@@ -661,7 +661,7 @@ map_sizeof(rbtree *tree)
     }
 
 #ifdef MEMO_VALUE_BYTES
-    (((int *)(tree))[-2]) = size;
+    (((int *)(tree))[MEMO_OFFSET]) = size;
 #endif
 
     return size;
@@ -688,7 +688,7 @@ mapinsert(Var map, Var key, Var value)
 
 #ifdef MEMO_VALUE_BYTES
     /* reset the memoized size */
-    ((int *)(_new.v.tree))[-2] = 0;
+    ((int *)(_new.v.tree))[MEMO_OFFSET] = 0;
 #endif
 
     rbnode node;
@@ -999,7 +999,7 @@ bf_mapdelete(Var arglist, Byte next, void *vdata, Objid progr)
 
 #ifdef MEMO_VALUE_BYTES
     /* reset the memoized size */
-    ((int *)(r.v.tree))[-2] = 0;
+    ((int *)(r.v.tree))[MEMO_OFFSET] = 0;
 #endif
 
     rbnode node;

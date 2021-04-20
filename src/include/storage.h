@@ -19,9 +19,22 @@
 #define Storage_h 1
 
 #include <string.h>
+#include <atomic>
 
 #include "options.h"
 
+#define REFCOUNT_OFFSET     -1
+
+#if defined(MEMO_STRLEN) || defined(MEMO_VALUE_BYTES)
+#   define MEMO_OFFSET         REFCOUNT_OFFSET - 1
+#else
+#   define MEMO_OFFSET         REFCOUNT_OFFSET
+#endif
+#ifdef ENABLE_GC
+#   define GC_OFFSET           MEMO_OFFSET - 1
+#endif
+
+#ifdef ENABLE_GC
 /* See "Concurrent Cycle Collection in Reference Counted Systems",
  * (Bacon and Rajan, 2001) for a description of the cycle collection
  * algorithm and the colors.
@@ -36,61 +49,59 @@ typedef enum GC_Color {
     GC_PINK
 } GC_Color;
 
-typedef struct reference_overhead {
-    unsigned int count:28;
-#ifdef ENABLE_GC
+typedef struct gc_overhead {
     unsigned int buffered:1;
     GC_Color color:3;
+} gc_overhead;
  #endif
-} reference_overhead;
 
 static inline int
 addref(const void *ptr)
 {
-    return ++((reference_overhead *)ptr)[-1].count;
+    return ++((std::atomic_uint *)ptr)[REFCOUNT_OFFSET];
 }
 
 static inline int
 delref(const void *ptr)
 {
-    return --((reference_overhead *)ptr)[-1].count;
+    return --((std::atomic_uint *)ptr)[REFCOUNT_OFFSET];
 }
 
 static inline int
 refcount(const void *ptr)
 {
-    return ((reference_overhead *)ptr)[-1].count;
+    return ((std::atomic_uint *)ptr)[REFCOUNT_OFFSET].load();
 }
 
 #ifdef ENABLE_GC
 static inline void
 gc_set_buffered(const void *ptr)
 {
-    ((reference_overhead *)ptr)[-1].buffered = 1;
+    ((gc_overhead *)ptr)[GC_OFFSET].buffered = 1;
 }
 
 static inline void
 gc_clear_buffered(const void *ptr)
 {
-    ((reference_overhead *)ptr)[-1].buffered = 0;
+    ((gc_overhead *)ptr)[GC_OFFSET].buffered = 0;
 }
 
 static inline int
 gc_is_buffered(const void *ptr)
 {
-    return ((reference_overhead *)ptr)[-1].buffered;
+    return ((gc_overhead *)ptr)[GC_OFFSET].buffered;
 }
 
 static inline void
 gc_set_color(const void *ptr, GC_Color color)
 {
-    ((reference_overhead *)ptr)[-1].color = color;
+    ((gc_overhead *)ptr)[GC_OFFSET].color = color;
 }
 
 static inline GC_Color
 gc_get_color(const void *ptr)
 {
-    return ((reference_overhead *)ptr)[-1].color;
+    return ((gc_overhead *)ptr)[GC_OFFSET].color;
 }
 #endif
 
@@ -114,10 +125,7 @@ typedef enum Memory_Type {
     M_WAIF, M_WAIF_XTRA,
 
     /* to be used when no more specific type applies */
-    M_STRUCT, M_ARRAY,
-
-    Sizeof_Memory_Type
-
+    M_STRUCT, M_ARRAY
 } Memory_Type;
 
 extern char *str_dup(const char *);
@@ -139,7 +147,7 @@ free_str(const char *s)
  * Using the same mechanism as ref_count.h uses to hide Value ref counts,
  * keep a memozied strlen in the storage with the string.
  */
-#define memo_strlen(X)		((void)0, (((int *)(X))[-2]))
+#define memo_strlen(X)		((void)0, (((int *)(X))[MEMO_OFFSET]))
 #else
 #define memo_strlen(X)		strlen(X)
 
