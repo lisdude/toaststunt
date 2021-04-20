@@ -46,6 +46,7 @@
 #include "timers.h"
 #include "utils.h"
 #include "map.h"
+#include <atomic>
 
 static struct proto proto;
 static int eol_length;      /* == strlen(proto.eol_out_string) */
@@ -97,7 +98,7 @@ typedef struct nhandle {
     const char *destination_ipaddr;         // IP address of connection
     sa_family_t protocol_family;            // AF_INET, AF_INET6
     pthread_mutex_t *name_mutex;
-    unsigned int refcount;
+    std::atomic_uint refcount;
 #ifdef USE_TLS
     SSL *tls;                               // TLS context; not TLS if null
     bool connected;
@@ -265,7 +266,7 @@ push_network_buffer_overflow(nhandle *h)
             h->output_lines_flushed == 1 ? "" : "s",
             h->output_lines_flushed == 1 ? "has" : "have", proto.eol_out_string);
     length = strlen(buf);
-    
+
 #ifdef USE_TLS
     if (h->tls)
         count = SSL_write(h->tls, buf, length);
@@ -1422,7 +1423,7 @@ network_process_io(int timeout)
         for (h = all_nhandles; h; h = hnext) {
             hnext = h->next;
             if (((mplex_is_readable(h->rfd) && !pull_input(h))
-                    || (mplex_is_writable(h->wfd) && !push_output(h))) && h->refcount == 1) {
+                    || (mplex_is_writable(h->wfd) && !push_output(h))) && h->refcount.load() == 1) {
                 server_close(h->shandle);
                 network_handle nh;
                 nh.ptr = h;
@@ -1524,14 +1525,14 @@ decrement_nhandle_refcount(const network_handle nh)
     nhandle *h = (nhandle *)nh.ptr;
     h->refcount--;
 
-    if (h->refcount <= 0)
+    if (h->refcount.load() <= 0)
         close_nhandle(h);
 }
 
 int
 nhandle_refcount(const network_handle nh)
 {
-    return ((nhandle*)nh.ptr)->refcount;
+    return ((nhandle*)nh.ptr)->refcount.load();
 }
 
 const char *
