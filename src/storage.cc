@@ -155,14 +155,3 @@ myfree(void *ptr, Memory_Type type)
 
     free((char *) ptr - refcount_overhead(type));
 }
-
-/* XXX stupid fix for non-gcc compilers, already in storage.h */
-#ifdef NEVER
-void
-free_str(const char *s)
-{
-    if (delref(s) == 0)
-        myfree((void *) s, M_STRING);
-}
-
-#endif
