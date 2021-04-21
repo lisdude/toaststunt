@@ -163,6 +163,7 @@ bool can_create_thread()
 /* Insert the background waiter into the process table. */
 void initialize_background_waiter(background_waiter *waiter)
 {
+    waiter->active = false;
     waiter->fd[0] = -1;
     waiter->fd[1] = -1;
     waiter->handle = next_background_handle;
