@@ -1435,11 +1435,16 @@ finish_comparison:
                 } else {
                     ans.type = TYPE_ERR;
                     ans.v.err = E_TYPE;
+                }
+                
+                if (ans.type == TYPE_ERR) {
                     lhs_type = lhs.type;
                     rhs_type = rhs.type;
                 }
+                
                 free_var(rhs);
                 free_var(lhs);
+                
                 if (ans.type == TYPE_ERR) {
                     if (ans.v.err == E_TYPE)
                         PUSH_TYPE_MISMATCH(2,
@@ -1456,17 +1461,15 @@ finish_comparison:
             case OP_ADD:
             {
                 Var rhs, lhs, ans;
+                var_type lhs_type, rhs_type;
 
                 rhs = POP();
                 lhs = POP();
 
-                var_type lhs_type = lhs.type;
-                var_type rhs_type = rhs.type;
-
-                if ((lhs_type == TYPE_INT || lhs_type == TYPE_FLOAT)
-                        && (rhs_type == TYPE_INT || rhs_type == TYPE_FLOAT))
+                if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
+                        && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT))
                     ans = do_add(lhs, rhs);
-                else if (lhs_type == TYPE_STR && rhs_type == TYPE_STR) {
+                else if (lhs.type == TYPE_STR && rhs.type == TYPE_STR) {
                     char *str;
                     int llen = memo_strlen(lhs.v.str);
                     int flen = llen + memo_strlen(rhs.v.str);
@@ -1481,8 +1484,8 @@ finish_comparison:
                         ans.type = TYPE_STR;
                         ans.v.str = str;
                     }
-                } else if (lhs_type == TYPE_LIST) {
-                    if (rhs_type == TYPE_LIST) {
+                } else if (lhs.type == TYPE_LIST) {
+                    if (rhs.type == TYPE_LIST) {
                         ans = listconcat(var_ref(lhs), var_ref(rhs));
                     } else {
                         ans = listappend(var_ref(lhs), var_ref(rhs));
@@ -1491,6 +1494,12 @@ finish_comparison:
                     ans.type = TYPE_ERR;
                     ans.v.err = E_TYPE;
                 }
+
+                if (ans.type == TYPE_ERR) {
+                    lhs_type = lhs.type;
+                    rhs_type = rhs.type;
+                }
+
                 free_var(rhs);
                 free_var(lhs);
 
@@ -2762,6 +2771,8 @@ else if (obj.type == TYPE_##t1) {           \
                         } else if (rhs.v.num > sizeof(Num) * CHAR_BIT || rhs.v.num < 0) {
                             ans.type = TYPE_ERR;
                             ans.v.err = E_INVARG;
+                            lhs_type = lhs.type;
+                            rhs_type = rhs.type;
                         } else if (rhs.v.num == sizeof(Num) * CHAR_BIT) {
                             ans.type = TYPE_INT;
                             ans.v.num = 0;
@@ -2780,6 +2791,7 @@ else if (obj.type == TYPE_##t1) {           \
 
                         free_var(lhs);
                         free_var(rhs);
+
                         if (ans.type == TYPE_ERR)
                             if (ans.v.err == E_TYPE)
                                 PUSH_TYPE_MISMATCH(1, lhs_type != TYPE_INT ? lhs_type : rhs_type, TYPE_INT);
