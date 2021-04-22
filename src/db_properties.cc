@@ -415,18 +415,6 @@ struct contents_data {
     int i;
 };
 
-static int
-add_to_list(void *data, Objid c)
-{
-    struct contents_data *d = (struct contents_data *)data;
-
-    d->i++;
-    d->r.v.list[d->i].type = TYPE_OBJ;
-    d->r.v.list[d->i].v.obj = c;
-
-    return 0;
-}
-
 static void
 get_bi_value(db_prop_handle h, Var * value)
 {
