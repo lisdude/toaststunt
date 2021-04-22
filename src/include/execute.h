@@ -137,7 +137,4 @@ extern Var make_rt_var_map(Var * rt_env, const char **var_names, unsigned size);
 extern bool get_thread_mode();
 extern void set_thread_mode(bool mode);
 
-char* type_mismatch_string(int n_args, ...);
-Var type_mismatch_value(int n_args, ...);
-
 #endif

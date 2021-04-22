@@ -94,6 +94,9 @@ static Var map_suspended;
 static Var map_time;
 #endif              /* SAVE_FINISHED_TASKS */
 
+static char* type_mismatch_string(int n_args, ...);
+static Var type_mismatch_value(int n_args, ...);
+
 /* macros to ease indexing into activation stack */
 #define RUN_ACTIV     activ_stack[top_activ_stack]
 #define CALLER_ACTIV  activ_stack[top_activ_stack - 1]
@@ -4038,7 +4041,7 @@ void set_thread_mode(bool mode)
 /* Create a type mismatch traceback and try-except return value.
    The first argument is the mismatched type that was received.
    The remaining arguments are the types that were expected. */
-char*
+static char*
 type_mismatch_string(int n_args, ...)
 {
     static Stream *error_msg = nullptr;
@@ -4068,7 +4071,7 @@ type_mismatch_string(int n_args, ...)
     return str_dup(reset_stream(error_msg));
 }
 
-Var
+static Var
 type_mismatch_value(int n_args, ...)
 {
     /* Since -d verbs can't use the value anyway,
