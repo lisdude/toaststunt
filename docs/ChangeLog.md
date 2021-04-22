@@ -7,6 +7,7 @@
 - Fix a bug where a waif could refer to itself in a map. It now correctly returns E_RECMOVE. The server will also now validate waifs at startup to ensure there are no self-referential waifs. If one is found, it's invalidated.
 - Fix a race condition that could result in a server crash.
 - Fix an issue that could cause friendly error messages to display 'unknown type'.
+- The stack list passed to `handle_lagging_task()` now actually includes the verb that was causing the lag, rather than just the verb(s) that called it.
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key must be configured properly in options.h. See warnings at the end of this changelog for important information about these changes.

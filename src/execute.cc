@@ -3072,12 +3072,12 @@ run_interpreter(char raise, enum error e,
     double lag_threshold = server_float_option("task_lag_threshold", DEFAULT_LAG_THRESHOLD);
     if (total_cputime.v.fnum >= lag_threshold && lag_threshold >= 0.1)
     {
-        errlog("LAG: %f seconds\n", total_cputime.v.fnum);
+        errlog("LAG: %f seconds caused by #%" PRIdN ":%s\n", total_cputime.v.fnum, RUN_ACTIV.vloc.v.obj, RUN_ACTIV.verbname);
         db_verb_handle handle = db_find_callable_verb(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task");
         if (handle.ptr)
         {
             Var lag_info = new_list(2);
-            lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, 0, root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0), RUN_ACTIV.progr);
+            lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, 1, root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0), RUN_ACTIV.progr);
             lag_info.v.list[2] = total_cputime;
             do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task", lag_info, handle, activ_stack[0].player, "", nullptr, 0);
         }
