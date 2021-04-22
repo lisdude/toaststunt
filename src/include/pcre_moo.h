@@ -20,9 +20,6 @@ struct pcre_cache_entry {
     unsigned int cache_hits;
 };
 
-void free_entry(pcre_cache_entry *);
-void delete_cache_entry(const char *pattern);
-Var result_indices(int ovector[], int n);
 extern void pcre_shutdown(void);
 
 #ifdef SQLITE3_FOUND

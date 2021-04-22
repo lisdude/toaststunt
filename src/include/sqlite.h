@@ -37,16 +37,4 @@ extern const char *file_resolve_path(const char *);             // from fileio.c
 extern int parse_number(const char *, int *, int);              // from numbers.cc
 extern int parse_float(const char *, double *);                 // from numbers.cc
 
-// Other helper functions
-bool valid_handle(int handle);
-int next_handle();
-int allocate_handle();
-void deallocate_handle(int handle, bool shutdown);
-int database_already_open(const char *path);
-int callback(void *, int, char **, char **);
-void sanitize_string_for_moo(char *);
-Var string_to_moo_type(char *, bool, bool);
-Stream* object_to_string(Var *);
-void sqlite_shutdown();
-
 #endif /* EXTENSION_SQLITE_H */

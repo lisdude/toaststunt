@@ -23,6 +23,191 @@ static std::unordered_map <int, sqlite_conn> sqlite_connections;
 // Next database handle. This will get reset to 1 when all connections get closed.
 static int next_sqlite_handle = 1;
 
+/* The MOO database really dislikes newlines, so we'll want to strip them.
+ * I like what MOOSQL did here by replacing them with tabs, so we'll do that.
+ * TODO: Check the performance impact of this being on by default with long strings. */
+static void sanitize_string_for_moo(char *string)
+{
+    if (!string)
+        return;
+
+    char *p = string;
+
+    while (*p)
+    {
+        if (*p == '\n')
+            *p = '\t';
+
+        ++p;
+    }
+}
+
+/* Take a result string and convert it into a MOO type.
+ * Return a Var of the appropriate MOO type for the value.
+ * TODO: Try to parse strings containing MOO lists? */
+static Var string_to_moo_type(char* str, bool parse_objects, bool sanitize_string)
+{
+    Var s;
+
+    if (str == nullptr)
+    {
+        s.type = TYPE_STR;
+        s.v.str = str_dup("NULL");
+        return s;
+    }
+
+    double double_test = 0.0;
+    Num int_test = 0;
+
+    if (str[0] == '#' && parse_objects && parse_number(str + 1, &int_test, 0) == 1)
+    {
+        // Add one to the pointer to skip over the # and check the rest for numeracy
+        s.type = TYPE_OBJ;
+        s.v.obj = int_test;
+    } else if (parse_number(str, &int_test, 0) == 1) {
+        s.type = TYPE_INT;
+        s.v.num = int_test;
+    } else if (parse_float(str, &double_test) == 1)
+    {
+        s.type = TYPE_FLOAT;
+        s.v.fnum = double_test;
+    } else {
+        if (sanitize_string)
+            sanitize_string_for_moo(str);
+        s.type = TYPE_STR;
+        s.v.str = str_dup(str);
+    }
+    return s;
+}
+
+/* Return true if a handle is valid and active. */
+static bool valid_handle(int handle)
+{
+    if (handle < 0 || handle >= next_sqlite_handle || sqlite_connections.count(handle) == 0)
+        return false;
+
+    return true;
+}
+
+/* Return the index of the next handle.
+ * If we've exceeded our maximum connection limit, -1 will be returned.
+ * Otherwise, a valid SQLite handle integer is returned. */
+static int next_handle()
+{
+    if (sqlite_connections.size() >= server_int_option("sqlite_max_handles", SQLITE_MAX_HANDLES))
+        return -1;
+
+    return next_sqlite_handle;
+}
+
+/* Create an empty connection and add it to the open connection map. */
+static int allocate_handle()
+{
+    int handle = next_handle();
+    if (handle == -1)
+        return -1;
+
+    next_sqlite_handle++;
+
+    sqlite_conn connection;
+    connection.path = nullptr;
+    connection.options = SQLITE_PARSE_TYPES | SQLITE_PARSE_OBJECTS;
+    connection.locks = 0;
+
+    sqlite_connections[handle] = connection;
+
+    return handle;
+}
+
+/* Free up memory and remove a handle from the connection map. */
+static void deallocate_handle(int handle, bool shutdown)
+{
+    sqlite_conn conn = sqlite_connections[handle];
+
+    sqlite3_close(conn.id);
+    if (conn.path != nullptr)
+        free_str(conn.path);
+    if (!shutdown)
+        sqlite_connections.erase(handle);
+
+    if (sqlite_connections.size() == 0)
+        next_sqlite_handle = 1;
+}
+
+/* Check if a database at 'path' is already open.
+ * If so, return its handle. Otherwise, return -1. */
+static int database_already_open(const char *path)
+{
+    for (auto &it : sqlite_connections)
+    {
+        if (it.second.path != nullptr && strcmp(it.second.path, path) == 0)
+            return it.first;
+    }
+
+    return -1;
+}
+
+/* The callback function that sqlite will call on each row. */
+static int callback(void *index, int argc, char **argv, char **azColName)
+{
+    sqlite_result *thread_handle = (sqlite_result*)index;
+    sqlite_conn *handle = thread_handle->connection;
+
+    Var ret = new_list(0);
+
+    for (int i = 0; i < argc; i++)
+    {
+        Var s;
+        if (!(handle->options & SQLITE_PARSE_TYPES))
+        {
+            s.type = TYPE_STR;
+
+            if (handle->options & SQLITE_SANITIZE_STRINGS)
+                sanitize_string_for_moo(argv[i]);
+
+            s.v.str = str_dup(argv[i]);
+        } else {
+            s = string_to_moo_type(argv[i], handle->options & SQLITE_PARSE_OBJECTS, handle->options & SQLITE_SANITIZE_STRINGS);
+        }
+
+        if (thread_handle->include_headers) {
+            Var tmp_value = new_list(2);
+            tmp_value.v.list[1] = str_dup_to_var(azColName[i]);
+            tmp_value.v.list[2] = s;
+            ret = listappend(ret, tmp_value);
+        } else {
+            ret = listappend(ret, s);
+        }
+    }
+
+    thread_handle->last_result = listappend(thread_handle->last_result, ret);
+
+    return 0;
+}
+
+/* Converts a MOO object (supplied to a prepared statement) into a string similar to
+ * tostr(#xxx) */
+static Stream* object_to_string(Var *thing)
+{
+    static Stream *s = nullptr;
+
+    if (!s)
+        s = new_stream(11);
+
+    stream_printf(s, "#%d", thing->v.num);
+
+    return s;
+}
+
+/* Clean up when the server shuts down. */
+void sqlite_shutdown()
+{
+    for (auto const& x : sqlite_connections)
+        deallocate_handle(x.first, true);
+}
+
+/* -------------------------------------------------------- */
+
 /* Open an SQLite database.
  * Args: STR <path to database>, [INT options] */
 static package
@@ -163,7 +348,7 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
 /* The function responsible for the actual execute call.
  * Contains functionality shared by both the threaded and
  * unthreaded builtins. */
-void sqlite_execute_thread_callback(Var args, Var *r)
+static void sqlite_execute_thread_callback(Var args, Var *r)
 {
     int index = args.v.list[1].v.num;
     if (!valid_handle(index))
@@ -268,7 +453,7 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
 /* The function responsible for the actual query call.
  * Contains functionality shared by both the threaded and
  * unthreaded builtins. */
-void sqlite_query_thread_callback(Var args, Var *r)
+static void sqlite_query_thread_callback(Var args, Var *r)
 {
     int index = args.v.list[1].v.num;
 
@@ -305,7 +490,6 @@ void sqlite_query_thread_callback(Var args, Var *r)
     //sqlite3_db_release_memory(thread_handle->connection->id);
     myfree(thread_handle, M_STRUCT);
 }
-
 
 /* Execute an SQL command.
  * Args: INT <database handle>, STR <query>, BOOL <threaded> */
@@ -436,192 +620,6 @@ bf_sqlite_interrupt(Var arglist, Byte next, void *vdata, Objid progr)
     sqlite3_interrupt(handle->id);
 
     return no_var_pack();
-}
-
-/* -------------------------------------------------------- */
-
-/* Return true if a handle is valid and active. */
-bool valid_handle(int handle)
-{
-    if (handle < 0 || handle >= next_sqlite_handle || sqlite_connections.count(handle) == 0)
-        return false;
-
-    return true;
-}
-
-/* Return the index of the next handle.
- * If we've exceeded our maximum connection limit, -1 will be returned.
- * Otherwise, a valid SQLite handle integer is returned. */
-int next_handle()
-{
-    if (sqlite_connections.size() >= server_int_option("sqlite_max_handles", SQLITE_MAX_HANDLES))
-        return -1;
-
-    return next_sqlite_handle;
-}
-
-/* Create an empty connection and add it to the open connection map. */
-int allocate_handle()
-{
-    int handle = next_handle();
-    if (handle == -1)
-        return -1;
-
-    next_sqlite_handle++;
-
-    sqlite_conn connection;
-    connection.path = nullptr;
-    connection.options = SQLITE_PARSE_TYPES | SQLITE_PARSE_OBJECTS;
-    connection.locks = 0;
-
-    sqlite_connections[handle] = connection;
-
-    return handle;
-}
-
-/* Free up memory and remove a handle from the connection map. */
-void deallocate_handle(int handle, bool shutdown)
-{
-    sqlite_conn conn = sqlite_connections[handle];
-
-    sqlite3_close(conn.id);
-    if (conn.path != nullptr)
-        free_str(conn.path);
-    if (!shutdown)
-        sqlite_connections.erase(handle);
-
-    if (sqlite_connections.size() == 0)
-        next_sqlite_handle = 1;
-}
-
-
-/* Check if a database at 'path' is already open.
- * If so, return its handle. Otherwise, return -1. */
-int database_already_open(const char *path)
-{
-    for (auto &it : sqlite_connections)
-    {
-        if (it.second.path != nullptr && strcmp(it.second.path, path) == 0)
-            return it.first;
-    }
-
-    return -1;
-}
-
-/* The callback function that sqlite will call on each row. */
-int callback(void *index, int argc, char **argv, char **azColName)
-{
-    sqlite_result *thread_handle = (sqlite_result*)index;
-    sqlite_conn *handle = thread_handle->connection;
-
-    Var ret = new_list(0);
-
-    for (int i = 0; i < argc; i++)
-    {
-        Var s;
-        if (!(handle->options & SQLITE_PARSE_TYPES))
-        {
-            s.type = TYPE_STR;
-
-            if (handle->options & SQLITE_SANITIZE_STRINGS)
-                sanitize_string_for_moo(argv[i]);
-
-            s.v.str = str_dup(argv[i]);
-        } else {
-            s = string_to_moo_type(argv[i], handle->options & SQLITE_PARSE_OBJECTS, handle->options & SQLITE_SANITIZE_STRINGS);
-        }
-
-        if (thread_handle->include_headers) {
-            Var tmp_value = new_list(2);
-            tmp_value.v.list[1] = str_dup_to_var(azColName[i]);
-            tmp_value.v.list[2] = s;
-            ret = listappend(ret, tmp_value);
-        } else {
-            ret = listappend(ret, s);
-        }
-    }
-
-    thread_handle->last_result = listappend(thread_handle->last_result, ret);
-
-    return 0;
-}
-
-/* The MOO database really dislikes newlines, so we'll want to strip them.
- * I like what MOOSQL did here by replacing them with tabs, so we'll do that.
- * TODO: Check the performance impact of this being on by default with long strings. */
-void sanitize_string_for_moo(char *string)
-{
-    if (!string)
-        return;
-
-    char *p = string;
-
-    while (*p)
-    {
-        if (*p == '\n')
-            *p = '\t';
-
-        ++p;
-    }
-}
-
-/* Take a result string and convert it into a MOO type.
- * Return a Var of the appropriate MOO type for the value.
- * TODO: Try to parse strings containing MOO lists? */
-Var string_to_moo_type(char* str, bool parse_objects, bool sanitize_string)
-{
-    Var s;
-
-    if (str == nullptr)
-    {
-        s.type = TYPE_STR;
-        s.v.str = str_dup("NULL");
-        return s;
-    }
-
-    double double_test = 0.0;
-    Num int_test = 0;
-
-    if (str[0] == '#' && parse_objects && parse_number(str + 1, &int_test, 0) == 1)
-    {
-        // Add one to the pointer to skip over the # and check the rest for numeracy
-        s.type = TYPE_OBJ;
-        s.v.obj = int_test;
-    } else if (parse_number(str, &int_test, 0) == 1) {
-        s.type = TYPE_INT;
-        s.v.num = int_test;
-    } else if (parse_float(str, &double_test) == 1)
-    {
-        s.type = TYPE_FLOAT;
-        s.v.fnum = double_test;
-    } else {
-        if (sanitize_string)
-            sanitize_string_for_moo(str);
-        s.type = TYPE_STR;
-        s.v.str = str_dup(str);
-    }
-    return s;
-}
-
-/* Converts a MOO object (supplied to a prepared statement) into a string similar to
- * tostr(#xxx) */
-Stream* object_to_string(Var *thing)
-{
-    static Stream *s = nullptr;
-
-    if (!s)
-        s = new_stream(11);
-
-    stream_printf(s, "#%d", thing->v.num);
-
-    return s;
-}
-
-/* Clean up when the server shuts down. */
-void sqlite_shutdown()
-{
-    for (auto const& x : sqlite_connections)
-        deallocate_handle(x.first, true);
 }
 
 void

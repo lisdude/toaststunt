@@ -87,7 +87,7 @@ char file_package_version[] = "1.7";
 static std::unordered_map <Num, file_handle> file_table;
 static Num next_handle = 1;
 
-char file_handle_valid(Var fhandle) {
+static char file_handle_valid(Var fhandle) {
     Num i = fhandle.v.num;
     if (fhandle.type != TYPE_INT)
         return 0;
@@ -98,27 +98,27 @@ char file_handle_valid(Var fhandle) {
     return file_table[i].valid;
 }
 
-FILE *file_handle_file(Var fhandle) {
+static FILE *file_handle_file(Var fhandle) {
     Num i = fhandle.v.num;
     return file_table[i].file;
 }
 
-const char *file_handle_name(Var fhandle) {
+static const char *file_handle_name(Var fhandle) {
     Num i = fhandle.v.num;
     return file_table[i].name;
 }
 
-file_type file_handle_type(Var fhandle) {
+static file_type file_handle_type(Var fhandle) {
     Num i = fhandle.v.num;
     return file_table[i].type;
 }
 
-file_mode file_handle_mode(Var fhandle) {
+static file_mode file_handle_mode(Var fhandle) {
     Num i = fhandle.v.num;
     return file_table[i].mode;
 }
 
-void file_handle_destroy(Var fhandle) {
+static void file_handle_destroy(Var fhandle) {
     Num i = fhandle.v.num;
     free_str(file_table[i].name);
     file_table.erase(i);
@@ -126,14 +126,14 @@ void file_handle_destroy(Var fhandle) {
         next_handle = 1;
 }
 
-Num file_allocate_next_handle(void) {
+static Num file_allocate_next_handle(void) {
     while (file_table.count(next_handle) != 0)
         next_handle++;
 
     return next_handle;
 }
 
-Var file_handle_new(const char *name, file_type type, file_mode mode) {
+static Var file_handle_new(const char *name, file_type type, file_mode mode) {
     Num handle = file_allocate_next_handle();
 
     if (file_table.size() >= server_int_option("file_io_max_files", FILE_IO_MAX_FILES))
@@ -156,7 +156,7 @@ Var file_handle_new(const char *name, file_type type, file_mode mode) {
     return r;
 }
 
-void file_handle_set_file(Var fhandle, FILE *f) {
+static void file_handle_set_file(Var fhandle, FILE *f) {
     Num i = fhandle.v.num;
     file_table[i].file = f;
 }
@@ -172,7 +172,7 @@ void file_handle_set_file(Var fhandle, FILE *f) {
  *  NULL if not.
  */
 
-const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode) {
+static const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode) {
     static char buffer[4] = {0, 0, 0, 0};
     int p = 0;
     file_type t;
@@ -226,7 +226,7 @@ const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode
  * Various error handlers
  ***************************************************************/
 
-package
+static package
 file_make_error(const char *errtype, const char *msg) {
     package p;
     Var value;
@@ -243,7 +243,7 @@ file_make_error(const char *errtype, const char *msg) {
     return p;
 }
 
-package file_raise_errno(const char *value_str) {
+static package file_raise_errno(const char *value_str) {
     char *strerr;
 
     if (errno) {
@@ -255,11 +255,11 @@ package file_raise_errno(const char *value_str) {
 
 }
 
-package file_raise_notokcall(const char *funcid, Objid progr) {
+static package file_raise_notokcall(const char *funcid, Objid progr) {
     return make_error_pack(E_PERM);
 }
 
-package file_raise_notokfilename(const char *funcid, const char *pathname) {
+static package file_raise_notokfilename(const char *funcid, const char *pathname) {
     Var p;
 
     p.type = TYPE_STR;
@@ -272,11 +272,11 @@ package file_raise_notokfilename(const char *funcid, const char *pathname) {
  * Security verification
  ***************************************************************/
 
-int file_verify_caller(Objid progr) {
+static int file_verify_caller(Objid progr) {
     return is_wizard(progr);
 }
 
-int file_verify_path(const char *pathname) {
+static int file_verify_path(const char *pathname) {
     /*
     *  A pathname is OK does not contain a
      *  any of instances the substring "/."
@@ -299,14 +299,14 @@ int file_verify_path(const char *pathname) {
  * Common code for FHANDLE-using functions
  **************************************************************/
 
-FILE *file_handle_file_safe(Var handle) {
+static FILE *file_handle_file_safe(Var handle) {
     if (!file_handle_valid(handle))
         return nullptr;
     else
         return file_handle_file(handle);
 }
 
-const char *file_handle_name_safe(Var handle) {
+static const char *file_handle_name_safe(Var handle) {
     if (!file_handle_valid(handle))
         return nullptr;
     else
@@ -573,7 +573,7 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
  * STR file_readlines(FHANDLE handle, INT start, INT end)
  */
 
-void free_line_buffer(line_buffer *head, int strings_too) {
+static void free_line_buffer(line_buffer *head, int strings_too) {
     line_buffer *next;
     if (head) {
         next = head->next;
@@ -589,7 +589,7 @@ void free_line_buffer(line_buffer *head, int strings_too) {
     }
 }
 
-line_buffer *new_line_buffer(char *line) {
+static line_buffer *new_line_buffer(char *line) {
     line_buffer *p = (line_buffer *)mymalloc(sizeof(line_buffer), M_STRUCT);
     p->line = line;
     p->next = nullptr;
@@ -989,7 +989,7 @@ bf_file_eof(Var arglist, Byte next, void *vdata, Objid progr)
  * (internal) int(statok) file_stat(Var filespec, package *r, struct stat *buf)
  */
 
-int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
+static int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
     int statok = 0;
 
     if (!file_verify_caller(progr)) {
@@ -1022,7 +1022,7 @@ int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
     return statok;
 }
 
-const char *file_type_string(mode_t st_mode) {
+static const char *file_type_string(mode_t st_mode) {
     if (S_ISREG(st_mode))
         return "reg";
     else if (S_ISDIR(st_mode))
@@ -1037,7 +1037,7 @@ const char *file_type_string(mode_t st_mode) {
         return "unknown";
 }
 
-const char *file_mode_string(mode_t st_mode) {
+static const char *file_mode_string(mode_t st_mode) {
     static Stream *s = nullptr;
     if (!s)
         s = new_stream(4);
@@ -1223,7 +1223,7 @@ bf_file_stat(Var arglist, Byte next, void *vdata, Objid progr)
  * LIST file_list(STR pathname, [ANY detailed])
  */
 
-int file_list_select(const struct dirent *d) {
+static int file_list_select(const struct dirent *d) {
     const char *name = d->d_name;
     int l = strlen(name);
     if ((l == 1) && (name[0] == '.'))
@@ -1419,7 +1419,7 @@ bf_file_rename(Var arglist, Byte next, void *vdata, Objid progr)
  */
 
 
-int file_chmodstr_to_mode(const char *modespec, mode_t *newmode) {
+static int file_chmodstr_to_mode(const char *modespec, mode_t *newmode) {
     mode_t m = 0;
     int i = 0, fct = 1;
 

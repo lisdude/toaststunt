@@ -27,6 +27,10 @@ public:
 
 static std::map<const char*, pcre_cache_entry*, StrCompare> pcre_pattern_cache;
 
+static void free_entry(pcre_cache_entry *);
+static void delete_cache_entry(const char *pattern);
+static Var result_indices(int ovector[], int n);
+
 static struct pcre_cache_entry *
 get_pcre(const char *string, unsigned char options)
 {
@@ -90,8 +94,8 @@ static package
 bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
 {
     /* Some useful constants. */
-    static Var match = str_dup_to_var("match");
-    static Var position = str_dup_to_var("position");
+    static const Var match = str_dup_to_var("match");
+    static const Var position = str_dup_to_var("position");
     /**************************/
 
     const char *subject, *pattern;
@@ -256,7 +260,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ret);
 }
 
-void free_entry(pcre_cache_entry *entry)
+static void free_entry(pcre_cache_entry *entry)
 {
     if (entry->re != nullptr)
         pcre_free(entry->re);
@@ -275,7 +279,7 @@ void free_entry(pcre_cache_entry *entry)
     free(entry);
 }
 
-void delete_cache_entry(const char *pattern)
+static void delete_cache_entry(const char *pattern)
 {
     auto it = pcre_pattern_cache.find(pattern);
     free_str(it->first);
@@ -283,7 +287,7 @@ void delete_cache_entry(const char *pattern)
 }
 
 /* Create a two element list with the substring indices. */
-Var result_indices(int ovector[], int n)
+static Var result_indices(int ovector[], int n)
 {
     Var pos = new_list(2);
     pos.v.list[1].type = TYPE_INT;
