@@ -24,15 +24,6 @@ typedef struct background_waiter {
 
 // User-visible functions
 extern package background_thread(void (*callback)(Var, Var*), Var* data, char *human_title, threadpool *the_pool = nullptr);
-extern bool can_create_thread();
 extern void make_error_map(enum error error_type, const char *msg, Var *ret);
-
-// Other helper functions
-void deallocate_background_waiter(background_waiter *waiter);
-void initialize_background_waiter(background_waiter *waiter);
-void run_callback(void *bw);
-
-// Example functions
-void background_test_callback(Var args, Var *ret);
 
 #endif /* EXTENSION_BACKGROUND_H */
