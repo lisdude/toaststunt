@@ -8,6 +8,7 @@
 - Fix a race condition that could result in a server crash.
 - Fix an issue that could cause friendly error messages to display 'unknown type'.
 - The stack list passed to `handle_lagging_task()` now actually includes the verb that was causing the lag, rather than just the verb(s) that called it.
+- Detect 32-bit architectures and set the ONLY_32_BITS option appropriately.
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key must be configured properly in options.h. See warnings at the end of this changelog for important information about these changes.
@@ -161,7 +162,7 @@
 - `random()` is now seeded with more than 32 bits.
 - Added a `reseed_random()` function to reseed the random number generator.
 - Add a `finished_tasks()` function to track the execution time of tasks as they finish. This can be disabled with the `SAVE_FINISHED_TASKS` option in options.h.
-- Add support for calling `$sysobj:handle_lagging_task()` when a task's execution time exceeds that set in `$server_options.tag_lag_threshold`
+- Add support for calling `$sysobj:handle_lagging_task()` when a task's execution time exceeds that set in `$server_options.task_lag_threshold`
 - Add `$server_options.finished_tasks_limit` to override the number of finished tasks that get saved.
 
 ## 2.5.4 (Apr 19, 2019)
