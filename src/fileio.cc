@@ -773,7 +773,7 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
         type = file_handle_type(fhandle);
 
 try_again:
-        read = fread(buffer, sizeof(char), read_length, f);
+        read = fread(buffer, sizeof(char), MIN(read_length, (record_length - len)), f);
         if (!read && !len) {
             /*
              * No more to read.  This is only an error if nothing

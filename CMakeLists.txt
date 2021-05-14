@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 7)
 set(VERSION_RELEASE 0)
-set(VERSION_EXT "_19")
+set(VERSION_EXT "_20")
 project(ToastStunt VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_RELEASE} LANGUAGES CXX C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
@@ -53,10 +53,11 @@ set(CMAKE_C_FLAGS_WARN   "${SHARED_COMPILE_FLAGS} -Wall -Wno-unused-parameter -W
 set(CMAKE_CXX_FLAGS_WARN "${CMAKE_C_FLAGS_WARN}")
 
 # Check for memory leaks: Minimal optimizations, debug enabled, and sanitize address
-set(CMAKE_C_FLAGS_LEAKCHECK  "-O1 -g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+# fsanitize options: address, undefined
+set(CMAKE_C_FLAGS_LEAKCHECK  "-O0 -g -fsanitize=undefined -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 set(CMAKE_CXX_FLAGS_LEAKCHECK "${CMAKE_C_FLAGS_LEAKCHECK}")
 if(CMAKE_BUILD_TYPE MATCHES "LeakCheck")
-    set(EXTRA_LINKER_FLAGS "-fsanitize=address")
+    set(EXTRA_LINKER_FLAGS "-fsanitize=undefined")
 endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
