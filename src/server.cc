@@ -83,7 +83,7 @@ extern "C" {
 #include "dependencies/linenoise.h"
 }
 
-#define RANDOM_DEVICE "/dev/random"
+#define RANDOM_DEVICE "/dev/urandom"
 
 static pid_t parent_pid;
 static bool in_child = false;
@@ -1272,15 +1272,9 @@ static void
 init_random(void)
 {
     long seed;
+    unsigned char soskey[32];
 
-    sha256_ctx context;
-    unsigned char input[32];
-    unsigned char output[32];
-
-    memset(input, 0, sizeof(input));
-    memset(output, 0, sizeof(output));
-
-    sha256_init(&context);
+    memset(soskey, 0, sizeof(soskey));
 
 #ifndef TEST
 
@@ -1294,19 +1288,14 @@ init_random(void)
     }
 
     ssize_t count = 0, total = 0;
-    ssize_t required = MIN(MINIMUM_SEED_ENTROPY, sizeof(input));
 
-    while (total < required) {
-        if (total)
-            oklog("RANDOM: seeding ... (more bytes required)\n");
-        if ((count = read(fd, input + total, sizeof(input) - total)) == -1) {
+    while (total < sizeof(soskey)) {
+        if ((count = read(fd, soskey + total, sizeof(soskey) - total)) == -1) {
             errlog("Can't read " RANDOM_DEVICE "!\n");
             exit(1);
         }
         total += count;
     }
-
-    sha256_update(&context, sizeof(input), input);
 
     close(fd);
 
@@ -1316,9 +1305,7 @@ init_random(void)
 
 #endif
 
-    sha256_digest(&context, sizeof(output), output);
-
-    sosemanuk_schedule(&key_context, output, sizeof(output));
+    sosemanuk_schedule(&key_context, soskey, sizeof(soskey));
 
     sosemanuk_init(&run_context, &key_context, nullptr, 0);
 

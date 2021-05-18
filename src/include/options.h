@@ -402,23 +402,6 @@
 #define FILE_IO_MAX_FILES     256
 
 /******************************************************************************
- * Minimum number of bytes of entropy (random data) to use to seed the
- * built-in pseudo-random number generator.  The server will read at
- * least this many bytes from /dev/random (or the configured source).
- * Since the source may block until sufficient entropy is available, a
- * large value (which is good for security) may delay startup.
- * Entropy is usually specified in bits, so multiply this value by
- * eight (8 bits) to get the minimum number of bits.  The default is
- * 20 bytes (160 bits).  Since the bytes are SHA256 hashed before
- * being used to seed a SOSEMANUK stream cypher running as a random
- * number generator, there is little value in setting this greater
- * than 32 bytes.
- ******************************************************************************
- */
-
-#define MINIMUM_SEED_ENTROPY 32
-
-/******************************************************************************
  * Enable log output colorization.
  ******************************************************************************
  */
