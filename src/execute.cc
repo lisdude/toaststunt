@@ -3041,14 +3041,18 @@ run_interpreter(char raise, enum error e,
     handler_verb_args = zero;
     handler_verb_name = nullptr;
 
+    Var object = var_dup(RUN_ACTIV.vloc);
+    Var verb = str_ref_to_var(RUN_ACTIV.verbname);
+    Var progr = var_dup(Var::new_obj(RUN_ACTIV.progr));
+
 #ifdef SAVE_FINISHED_TASKS
     Var postmortem = new_map();
 
     postmortem = mapinsert(postmortem, var_ref(map_this), Var::new_obj(RUN_ACTIV._this.v.obj));
     postmortem = mapinsert(postmortem, var_ref(map_player), Var::new_obj(RUN_ACTIV.player));
-    postmortem = mapinsert(postmortem, var_ref(map_programmer), Var::new_obj(RUN_ACTIV.progr));
+    postmortem = mapinsert(postmortem, var_ref(map_programmer), Var::new_obj(progr.v.obj));
     postmortem = mapinsert(postmortem, var_ref(map_receiver), Var::new_obj(RUN_ACTIV.recv));
-    postmortem = mapinsert(postmortem, var_ref(map_object), Var::new_obj(RUN_ACTIV.vloc.v.obj));
+    postmortem = mapinsert(postmortem, var_ref(map_object), Var::new_obj(object.v.obj));
     postmortem = mapinsert(postmortem, var_ref(map_verb), strcmp(RUN_ACTIV.verb, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verb));
     postmortem = mapinsert(postmortem, var_ref(map_fullverb), strcmp(RUN_ACTIV.verbname, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verbname));
     postmortem = mapinsert(postmortem, var_ref(map_foreground), Var::new_int(is_fg));
@@ -3072,12 +3076,12 @@ run_interpreter(char raise, enum error e,
     double lag_threshold = server_float_option("task_lag_threshold", DEFAULT_LAG_THRESHOLD);
     if (total_cputime.v.fnum >= lag_threshold && lag_threshold >= 0.1)
     {
-        errlog("LAG: %f seconds caused by #%" PRIdN ":%s\n", total_cputime.v.fnum, RUN_ACTIV.vloc.v.obj, RUN_ACTIV.verbname);
+        errlog("LAG: %f seconds caused by #%" PRIdN ":%s\n", total_cputime.v.fnum, object.v.obj, verb.v.str);
         db_verb_handle handle = db_find_callable_verb(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task");
         if (handle.ptr)
         {
             Var lag_info = new_list(2);
-            lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, 1, root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0), RUN_ACTIV.progr);
+            lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, top_activ_stack > 1 ? 1 : 0, root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0), progr.v.obj);
             lag_info.v.list[2] = total_cputime;
             do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task", lag_info, handle, activ_stack[0].player, "", nullptr, 0);
         }
