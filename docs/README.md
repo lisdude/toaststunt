@@ -206,12 +206,6 @@ There are a few build options available to developers:
 
 To change the build, use: `cmake -D CMAKE_BUILD_TYPE:STRING=BuildNameHere ../`
 
-### Stuck seeding from /dev/random
-It can take some time to seed if your system is low on entropy. If you find startup hangs here, there are a couple of options:
-
-1. Install `haveged` to generate entropy.
-2. Edit `options.h` and change the value of MINIMUM_SEED_ENTROPY to something smaller, like 20.
-
 ### Login screen not showing
 Due to the way proxy detection works, if you're connecting to your MOO from localhost, you won't see the login screen. This is a minor inconvenience and shouldn't affect your ability to actually use your MOO. However, if it bothers you, you can disable HAProxy rewriting:
 

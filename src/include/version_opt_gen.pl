@@ -89,8 +89,6 @@ my @options =
    _DSTR => [qw(OUT_OF_BAND_PREFIX
 		OUT_OF_BAND_QUOTE_PREFIX
 	      )],
-   _DINT => [qw(MINIMUM_SEED_ENTROPY
-   		  )],
 
    # execution limits
    _DINT => [qw(DEFAULT_MAX_STACK_DEPTH
