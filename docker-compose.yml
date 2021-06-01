@@ -1,0 +1,16 @@
+version: '2'
+
+services:
+  dev_server:
+    image: toaststunt:2.7.0_10
+    build:
+      context: .
+    # Server port can be re-mapped outside container below
+    # Just change the left side of the following line:     
+    ports:
+      - 7777:7777
+    environment:
+      # OTHER EXAMPLES: CORE_TO_LOAD=test-cores/toastcore
+      - CORE_TO_LOAD=Minimal      
+    volumes:
+      - ./:/cores
