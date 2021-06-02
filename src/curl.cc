@@ -15,7 +15,7 @@ static CURL *curl_handle = nullptr;
 typedef struct CurlMemoryStruct {
     char *result;
     size_t size;
-} CurlMemoryStruct;
+};
 
 static size_t
 CurlWriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
@@ -38,25 +38,20 @@ CurlWriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
     return realsize;
 }
 
-static void curl_thread_callback(Var arglist, Var *ret)
+void curl_thread_callback(Var arglist, Var *ret)
 {
-    int nargs = arglist.v.list[0].v.num;
-    CURL *curl_handle;
     CURLcode res;
     CurlMemoryStruct chunk;
 
     chunk.result = (char*)malloc(1);
     chunk.size = 0;
 
-    curl_handle = curl_easy_init();
     curl_easy_setopt(curl_handle, CURLOPT_URL, arglist.v.list[1].v.str);
     curl_easy_setopt(curl_handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, CurlWriteMemoryCallback);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
-    if (nargs > 1 && is_true(arglist.v.list[2]))
-        curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1L);
 
     res = curl_easy_perform(curl_handle);
 
@@ -68,16 +63,48 @@ static void curl_thread_callback(Var arglist, Var *ret)
     }
 
     curl_easy_cleanup(curl_handle);
+    free_var(arglist);
     free(chunk.result);
 }
 
 static package
-bf_curl(Var arglist, Byte next, void *vdata, Objid progr)
+bf_curl_get(Var arglist, Byte next, void *vdata, Objid progr)
 {
     if (!is_wizard(progr))
+    {
+        free_var(arglist);
         return make_error_pack(E_PERM);
+    }
 
+    curl_handle = curl_easy_init();
     char *human_string = nullptr;
+    asprintf(&human_string, "curl %s", arglist.v.list[1].v.str);
+
+    if (arglist.v.list[0].v.num > 1 && is_true(arglist.v.list[2]))
+        curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1L);
+
+    return background_thread(curl_thread_callback, &arglist, human_string);
+}
+
+
+static package
+bf_curl_post(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (!is_wizard(progr))
+    {
+        free_var(arglist);
+        return make_error_pack(E_PERM);
+    }
+
+    curl_handle = curl_easy_init();
+    char *human_string = nullptr;
+    const char *data = arglist.v.list[2].v.str;
+
+    if (arglist.v.list[0].v.num > 2 && is_true(arglist.v.list[3]))
+        curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1L);
+
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, (long) strlen(data));
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, data);
     asprintf(&human_string, "curl %s", arglist.v.list[1].v.str);
 
     return background_thread(curl_thread_callback, &arglist, human_string);
@@ -141,8 +168,9 @@ register_curl(void)
     oklog("REGISTER_CURL: Using libcurl version %s\n", curl_version());
     curl_global_init(CURL_GLOBAL_ALL);
     curl_handle = curl_easy_init();
- 
-   register_function("curl", 1, 2, bf_curl, TYPE_STR, TYPE_ANY);
+
+    register_function("curl_get", 1, 2, bf_curl_get, TYPE_STR, TYPE_ANY);
+    register_function("curl_post", 2, 3, bf_curl_post, TYPE_STR, TYPE_STR, TYPE_ANY);
     register_function("url_encode", 1, 1, bf_url_encode, TYPE_STR);
     register_function("url_decode", 1, 1, bf_url_decode, TYPE_STR);
 }
