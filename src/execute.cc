@@ -2182,7 +2182,7 @@ else if (obj.type == TYPE_##t1) {           \
                 unsigned func_id;
                 Var args;
 
-                func_id = READ_BYTES(bv, 1);    /* 1 == numbytes of func_id */
+                func_id = READ_BYTES(bv, 2);    /* 1 == numbytes of func_id */
                 args = POP();   /* should be list */
                 if (args.type != TYPE_LIST) {
                     free_var(args);
@@ -3943,7 +3943,7 @@ check_pc_validity(Program * prog, int which_vector, unsigned pc)
      */
     return (pc < bc->size
             && (bc->vector[pc - 1] == OP_CALL_VERB
-                || bc->vector[pc - 2] == OP_BI_FUNC_CALL));
+                || bc->vector[pc - 3] == OP_BI_FUNC_CALL));
 }
 
 int

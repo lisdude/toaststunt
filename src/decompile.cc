@@ -388,7 +388,7 @@ finish_binary:
                 e = alloc_expr(EXPR_CALL);
                 e->e.call.args = a->e.list;
                 dealloc_node(a);
-                e->e.call.func = READ_BYTES(1);
+                e->e.call.func = READ_BYTES(2);
                 push_expr((Expr *)HOT_OP1(a, e));
             }
             break;

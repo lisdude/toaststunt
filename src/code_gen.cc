@@ -188,6 +188,13 @@ emit_byte(Byte b, State * state)
 }
 
 static void
+emit_function_id(unsigned id, state* state)
+{
+    emit_byte(static_cast<Byte>((id >> 8) & 0x000000ff), state);
+    emit_byte(static_cast<Byte>(id&0x000000ff), state);
+}
+
+static void
 emit_extended_byte(Byte b, State * state)
 {
     emit_byte(OP_EXTENDED, state);
@@ -809,7 +816,7 @@ generate_expr(Expr * expr, State * state)
         case EXPR_CALL:
             generate_arg_list(expr->e.call.args, state);
             emit_byte(OP_BI_FUNC_CALL, state);
-            emit_byte(expr->e.call.func, state);
+            emit_function_id(expr->e.call.func, state);
             break;
         case EXPR_VERB:
             generate_expr(expr->e.verb.obj, state);
