@@ -40,12 +40,16 @@ CurlWriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 
 void curl_thread_callback(Var arglist, Var *ret)
 {
+
+
+    CURL *curl_handle;
     CURLcode res;
     CurlMemoryStruct chunk;
 
     chunk.result = (char*)malloc(1);
     chunk.size = 0;
 
+    curl_handle = curl_easy_init();
     curl_easy_setopt(curl_handle, CURLOPT_URL, arglist.v.list[1].v.str);
     curl_easy_setopt(curl_handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, CurlWriteMemoryCallback);
@@ -76,7 +80,6 @@ bf_curl_get(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    curl_handle = curl_easy_init();
     char *human_string = nullptr;
     asprintf(&human_string, "curl %s", arglist.v.list[1].v.str);
 
@@ -96,7 +99,6 @@ bf_curl_post(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    curl_handle = curl_easy_init();
     char *human_string = nullptr;
     const char *data = arglist.v.list[2].v.str;
 
