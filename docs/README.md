@@ -155,7 +155,7 @@ make -j2
 
 ### **Gentoo**
 ```bash
-emerge dev-db/sqlite app-text/aspell app-crypt/argon2 cmake
+emerge dev-db/sqlite app-text/aspell app-dicts/aspell-en app-crypt/argon2 cmake
 mkdir build && cd build
 cmake ../
 make -j2
