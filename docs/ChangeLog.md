@@ -10,6 +10,8 @@
 - The stack list passed to `handle_lagging_task()` now actually includes the verb that was causing the lag, rather than just the verb(s) that called it.
 - Detect 32-bit architectures and set the ONLY_32_BITS option appropriately.
 - Fix a bug that would cause `file_read()` to over-read if the number of bytes specified was larger than the buffer.
+- Fix a (rare) crash in the lag profiler.
+- Fix an issue where threaded SQLite calls could set the number of locks incorrectly, which would allow a connection to be closed while it was still doing work.
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key must be configured properly in options.h. See warnings at the end of this changelog for important information about these changes.

@@ -2,6 +2,7 @@
 #define EXTENSION_SQLITE_H
 
 #include <sqlite3.h>
+#include <atomic>
 
 #include "structures.h"
 #include "streams.h"
@@ -19,7 +20,7 @@ typedef struct sqlite_conn
     sqlite3 *id;
     char *path;
     unsigned char options;
-    int locks;
+    std::atomic_uint locks;
 } sqlite_conn;
 
 /* In order to ensure thread safety, the last result should be unique

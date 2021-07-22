@@ -19,7 +19,7 @@
 #endif
 
 // Map of open connections
-static std::unordered_map <int, sqlite_conn> sqlite_connections;
+static std::unordered_map <int, sqlite_conn*> sqlite_connections;
 // Next database handle. This will get reset to 1 when all connections get closed.
 static int next_sqlite_handle = 1;
 
@@ -109,10 +109,10 @@ static int allocate_handle()
 
     next_sqlite_handle++;
 
-    sqlite_conn connection;
-    connection.path = nullptr;
-    connection.options = SQLITE_PARSE_TYPES | SQLITE_PARSE_OBJECTS;
-    connection.locks = 0;
+    sqlite_conn *connection = (sqlite_conn*)malloc(sizeof(sqlite_conn));
+    connection->path = nullptr;
+    connection->options = SQLITE_PARSE_TYPES | SQLITE_PARSE_OBJECTS;
+    connection->locks = 0;
 
     sqlite_connections[handle] = connection;
 
@@ -122,13 +122,15 @@ static int allocate_handle()
 /* Free up memory and remove a handle from the connection map. */
 static void deallocate_handle(int handle, bool shutdown)
 {
-    sqlite_conn conn = sqlite_connections[handle];
+    sqlite_conn *conn = sqlite_connections[handle];
 
-    sqlite3_close(conn.id);
-    if (conn.path != nullptr)
-        free_str(conn.path);
-    if (!shutdown)
+    sqlite3_close(conn->id);
+    if (conn->path != nullptr)
+        free_str(conn->path);
+    if (!shutdown) {
+        free(conn);
         sqlite_connections.erase(handle);
+    }
 
     if (sqlite_connections.size() == 0)
         next_sqlite_handle = 1;
@@ -140,7 +142,7 @@ static int database_already_open(const char *path)
 {
     for (auto &it : sqlite_connections)
     {
-        if (it.second.path != nullptr && strcmp(it.second.path, path) == 0)
+        if (it.second->path != nullptr && strcmp(it.second->path, path) == 0)
             return it.first;
     }
 
@@ -246,7 +248,7 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     index = allocate_handle();
-    sqlite_conn *handle = &sqlite_connections[index];
+    sqlite_conn *handle = sqlite_connections[index];
 
     if (arglist.v.list[0].v.num >= 2)
         handle->options = arglist.v.list[2].v.num;
@@ -289,8 +291,8 @@ bf_sqlite_close(Var arglist, Byte next, void *vdata, Objid progr)
     if (!valid_handle(index))
         return make_raise_pack(E_INVARG, "Invalid database handle", Var::new_int(index));
 
-    sqlite_conn *handle = &sqlite_connections[index];
-    if (handle->locks > 0)
+    sqlite_conn *handle = sqlite_connections[index];
+    if (handle->locks.load() > 0)
         return make_raise_pack(E_PERM, "Handle can't be closed until all worker threads are finished", var_ref(zero));
 
     deallocate_handle(index, false);
@@ -333,14 +335,14 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
     if (!valid_handle(index))
         return make_error_pack(E_INVARG);
 
-    sqlite_conn *handle = &sqlite_connections[index];
+    sqlite_conn *handle = sqlite_connections[index];
 
     Var ret = new_map();
     ret = mapinsert(ret, str_dup_to_var("path"), str_dup_to_var(handle->path));
     ret = mapinsert(ret, str_dup_to_var("parse_types"), Var::new_int(handle->options & SQLITE_PARSE_TYPES ? 1 : 0));
     ret = mapinsert(ret, str_dup_to_var("parse_objects"), Var::new_int(handle->options & SQLITE_PARSE_OBJECTS ? 1 : 0));
     ret = mapinsert(ret, str_dup_to_var("sanitize_strings"), Var::new_int(handle->options & SQLITE_SANITIZE_STRINGS ? 1 : 0));
-    ret = mapinsert(ret, str_dup_to_var("locks"), Var::new_int(handle->locks));
+    ret = mapinsert(ret, str_dup_to_var("locks"), Var::new_int(handle->locks.load()));
 
     return make_var_pack(ret);
 }
@@ -359,7 +361,7 @@ static void sqlite_execute_thread_callback(Var args, Var *r)
     }
 
     const char *query = args.v.list[2].v.str;
-    sqlite_conn *handle = &sqlite_connections[index];
+    sqlite_conn *handle = sqlite_connections[index];
     sqlite3_stmt *stmt;
 
     int rc = sqlite3_prepare_v2(handle->id, query, -1, &stmt, nullptr);
@@ -468,7 +470,7 @@ static void sqlite_query_thread_callback(Var args, Var *r)
     char *err_msg = nullptr;
 
     sqlite_result *thread_handle = (sqlite_result*)mymalloc(sizeof(sqlite_result), M_STRUCT);
-    thread_handle->connection = &sqlite_connections[index];
+    thread_handle->connection = sqlite_connections[index];
     thread_handle->last_result = new_list(0);
     thread_handle->include_headers = args.v.list[0].v.num > 2 && is_true(args.v.list[3]);
 
@@ -525,7 +527,7 @@ bf_sqlite_last_insert_row_id(Var arglist, Byte next, void *vdata, Objid progr)
     if (!valid_handle(index))
         return make_error_pack(E_INVARG);
 
-    sqlite_conn *handle = &sqlite_connections[index];
+    sqlite_conn *handle = sqlite_connections[index];
 
     Var r;
     r.type = TYPE_INT;
@@ -589,7 +591,7 @@ bf_sqlite_limit(Var arglist, Byte next, void *vdata, Objid progr)
     if (category < 0 || category > max_categories - 1)
         return make_error_pack(E_INVARG);
 
-    sqlite_conn *handle = &sqlite_connections[index];
+    sqlite_conn *handle = sqlite_connections[index];
 
     Var r;
     r.type = TYPE_INT;
@@ -615,7 +617,7 @@ bf_sqlite_interrupt(Var arglist, Byte next, void *vdata, Objid progr)
     if (!valid_handle(index))
         return make_raise_pack(E_INVARG, "Invalid database handle", Var::new_int(index));
 
-    sqlite_conn *handle = &sqlite_connections[index];
+    sqlite_conn *handle = sqlite_connections[index];
 
     sqlite3_interrupt(handle->id);
 
