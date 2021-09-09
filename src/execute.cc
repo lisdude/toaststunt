@@ -929,6 +929,8 @@ run(char raise, enum error resumption_error, Var * result)
                 separator = '.';                                                                 \
             else if (the_err == E_VERBNF)                                                        \
                 separator = ':';                                                                 \
+            else                                                                                 \
+                separator = ' ';                                                                 \
             stream_printf(error_stream, "%s: ", unparse_error(the_err));                         \
             unparse_value(error_stream, the_object);                                             \
             stream_printf(error_stream, "%c%s%s", separator, the_missing.v.str,                  \
@@ -1439,15 +1441,15 @@ finish_comparison:
                     ans.type = TYPE_ERR;
                     ans.v.err = E_TYPE;
                 }
-                
+
                 if (ans.type == TYPE_ERR) {
                     lhs_type = lhs.type;
                     rhs_type = rhs.type;
                 }
-                
+
                 free_var(rhs);
                 free_var(lhs);
-                
+
                 if (ans.type == TYPE_ERR) {
                     if (ans.v.err == E_TYPE)
                         PUSH_TYPE_MISMATCH(2,
