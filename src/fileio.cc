@@ -149,6 +149,7 @@ static Var file_handle_new(const char *name, file_type type, file_mode mode) {
         file.name = str_dup(name);
         file.type = type;
         file.mode = mode;
+        file.file = nullptr;
         file_table[handle] = file;
         next_handle++;
     }
