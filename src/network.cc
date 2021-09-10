@@ -265,7 +265,7 @@ push_network_buffer_overflow(nhandle *h)
     int length;
 
     sprintf(buf,
-            "%s>> Network buffer overflow: %u line%s of output to you %s been lost <<%s",
+            "%s>> Network buffer overflow: %i line%s of output to you %s been lost <<%s",
             proto.eol_out_string,
             h->output_lines_flushed,
             h->output_lines_flushed == 1 ? "" : "s",

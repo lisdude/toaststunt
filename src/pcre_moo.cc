@@ -178,7 +178,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
             free_entry(entry);
             delete_cache_entry(pattern);
             free_var(arglist);
-            sprintf(err, "Too many iterations of matching loop: %d", loops);
+            sprintf(err, "Too many iterations of matching loop: %u", loops);
             return make_raise_pack(E_MAXREC, err, var_ref(zero));
         } else {
             /* We'll use a bit array to indicate which index matches are superfluous. e.g. which results
