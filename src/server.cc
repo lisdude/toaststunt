@@ -389,6 +389,7 @@ call_checkpoint_notifier(int successful)
 static void
 child_completed_signal(int sig)
 {
+    int tmp_errno = errno;
     pid_t p;
     pid_t checkpoint_child = 0;
     int status;
@@ -426,6 +427,8 @@ child_completed_signal(int sig)
 
     if (checkpoint_child)
         checkpoint_finished = (status == 0) + 1;    /* 1 = failure, 2 = success */
+
+    errno = tmp_errno;
 }
 
 static void
