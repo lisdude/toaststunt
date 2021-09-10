@@ -525,20 +525,19 @@ bf_abs(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-#define MATH_FUNC(name)                               \
-    static package                            \
-    bf_ ## name(Var arglist, Byte next, void *vdata, Objid progr) \
-    {                                 \
-        const double d = arglist.v.list[1].v.fnum;                \
-        errno = 0;                            \
-        const auto result = name(arglist.v.list[1].v.fnum);                       \
-        free_var(arglist);                        \
-        if (errno == EDOM)                        \
-            return make_error_pack(E_INVARG);             \
-        else if (errno != 0  ||  !IS_REAL(result))            \
-            return make_error_pack(E_FLOAT);              \
-        else                              \
-            return make_float_pack(result);           \
+#define MATH_FUNC(name)                                                             \
+    static package                                                                  \
+    bf_ ## name(Var arglist, Byte next, void *vdata, Objid progr)                   \
+    {                                                                               \
+        errno = 0;                                                                  \
+        const auto result = name(arglist.v.list[1].v.fnum);                         \
+        free_var(arglist);                                                          \
+        if (errno == EDOM)                                                          \
+            return make_error_pack(E_INVARG);                                       \
+        else if (errno != 0  ||  !IS_REAL(result))                                  \
+            return make_error_pack(E_FLOAT);                                        \
+        else                                                                        \
+            return make_float_pack(result);                                         \
     }
 
 MATH_FUNC(sqrt)
