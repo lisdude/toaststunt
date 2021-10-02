@@ -461,7 +461,7 @@
  *       this option if you're sure you don't mind this.
  ******************************************************************************
 */
-/* #define UNSAFE_FIO */
+ #define UNSAFE_FIO
 
 /******************************************************************************
  * When functions leave the interpreter, the server can store certain information
