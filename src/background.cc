@@ -32,6 +32,72 @@ static threadpool background_pool;
 static std::unordered_map <int, background_waiter*> background_process_table;
 static int next_background_handle = 1;
 
+/* Make sure creating a new thread won't exceed MAX_BACKGROUND_THREADS or $server_options.max_background_threads */
+static bool can_create_thread()
+{
+    // Make sure we don't overrun the background thread limit.
+    if (background_process_table.size() > server_int_option("max_background_threads", MAX_BACKGROUND_THREADS))
+        return false;
+    else
+        return true;
+}
+
+/* Insert the background waiter into the process table. */
+static void initialize_background_waiter(background_waiter *waiter)
+{
+    waiter->active = false;
+    waiter->fd[0] = -1;
+    waiter->fd[1] = -1;
+    waiter->handle = next_background_handle;
+    background_process_table[next_background_handle] = waiter;
+    next_background_handle++;
+}
+
+/* Remove the background waiter from the process table, free any memory,
+ * and reset the maximum handle if there are no threads running. */
+static void deallocate_background_waiter(background_waiter *waiter)
+{
+    const int handle = waiter->handle;
+    network_unregister_fd(waiter->fd[0]);
+    if (waiter->fd[0] >= 0)
+        close(waiter->fd[0]);
+    if (waiter->fd[1] >= 0)
+        close(waiter->fd[1]);
+    free_var(waiter->return_value);
+    free_var(waiter->data);
+    free(waiter->human_title);
+    myfree(waiter, M_STRUCT);
+    background_process_table.erase(handle);
+
+    if (background_process_table.size() == 0)
+        next_background_handle = 1;
+}
+
+/* Since threaded functions can only return Vars, not packages, we instead
+ * create and return an 'error map'. Which is just a map with the keys:
+ * error, which is an error type, and message, which is the error string. */
+void make_error_map(enum error error_type, const char *msg, Var *ret)
+{
+    static const Var error_key = str_dup_to_var("error");
+    static const Var message_key = str_dup_to_var("message");
+
+    Var err;
+    err.type = TYPE_ERR;
+    err.v.err = error_type;
+
+    *ret = new_map();
+    *ret = mapinsert(*ret, var_ref(error_key), err);
+    *ret = mapinsert(*ret, var_ref(message_key), str_dup_to_var(msg));
+}
+
+static threadpool *thread_pool_by_name(const char* pool)
+{
+    if (!strcmp(pool, "MAIN"))
+        return &background_pool;
+
+    return nullptr;
+}
+
 /* @forked will use the enumerator to find relevant tasks in your external queue, so everything we've spawned
  * will need to return TEA_CONTINUE to get counted. The enumerator handles cases where you kill_task from inside the MOO. */
 static task_enum_action
@@ -43,7 +109,7 @@ background_enumerator(task_closure closure, void *data)
         {
             char *thread_name = nullptr;
             asprintf(&thread_name, "waiting on thread %d", it.first);
-            task_enum_action tea = (*closure) (it.second->the_vm, thread_name, data);
+            const task_enum_action tea = (*closure) (it.second->the_vm, thread_name, data);
             free(thread_name);
 
             if (tea == TEA_KILL) {
@@ -60,7 +126,7 @@ background_enumerator(task_closure closure, void *data)
 
 /* The default thread callback function: Responsible for calling the function specified in the original
  * background function call and then passing it off to the network callback to resume the MOO task. */
-void run_callback(void *bw)
+static void run_callback(void *bw)
 {
     background_waiter *w = (background_waiter*)bw;
 
@@ -72,7 +138,7 @@ void run_callback(void *bw)
 
 /* The function called by the network when data has been read. This is the final stage and
  * is responsible for actually resuming the task and cleaning up the associated mess. */
-void network_callback(int fd, void *data)
+static void network_callback(int fd, void *data)
 {
     background_waiter *w = (background_waiter*)data;
 
@@ -100,7 +166,7 @@ background_suspender(vm the_vm, void *data)
     // Register so we can write to the pipe and resume the main loop if the MOO is idle
     network_register_fd(w->fd[0], network_callback, nullptr, data);
 
-    int add_work_success = thpool_add_work(*(w->pool), run_callback, data);
+    const int add_work_success = thpool_add_work(*(w->pool), run_callback, data);
 
     if (add_work_success < 0) {
         errlog("Error adding work to thread pool\n");
@@ -116,7 +182,7 @@ background_suspender(vm the_vm, void *data)
 package
 background_thread(void (*callback)(Var, Var*), Var* data, char *human_title, threadpool *the_pool)
 {
-    bool threading_enabled = get_thread_mode();
+    const bool threading_enabled = get_thread_mode();
     if (threading_enabled && !can_create_thread())
     {
         errlog("Can't create a new thread\n");
@@ -148,66 +214,6 @@ background_thread(void (*callback)(Var, Var*), Var* data, char *human_title, thr
     }
 }
 
-/********************************************************************************************************/
-
-/* Make sure creating a new thread won't exceed MAX_BACKGROUND_THREADS or $server_options.max_background_threads */
-bool can_create_thread()
-{
-    // Make sure we don't overrun the background thread limit.
-    if (background_process_table.size() > server_int_option("max_background_threads", MAX_BACKGROUND_THREADS))
-        return false;
-    else
-        return true;
-}
-
-/* Insert the background waiter into the process table. */
-void initialize_background_waiter(background_waiter *waiter)
-{
-    waiter->fd[0] = -1;
-    waiter->fd[1] = -1;
-    waiter->handle = next_background_handle;
-    background_process_table[next_background_handle] = waiter;
-    next_background_handle++;
-}
-
-/* Remove the background waiter from the process table, free any memory,
- * and reset the maximum handle if there are no threads running. */
-void deallocate_background_waiter(background_waiter *waiter)
-{
-    int handle = waiter->handle;
-    network_unregister_fd(waiter->fd[0]);
-    if (waiter->fd[0] >= 0)
-        close(waiter->fd[0]);
-    if (waiter->fd[1] >= 0)
-        close(waiter->fd[1]);
-    free_var(waiter->return_value);
-    free_var(waiter->data);
-    free(waiter->human_title);
-    myfree(waiter, M_STRUCT);
-    background_process_table.erase(handle);
-
-    if (background_process_table.size() == 0)
-        next_background_handle = 1;
-}
-
-/* Since threaded functions can only return Vars, not packages, we instead
- * create and return an 'error map'. Which is just a map with the keys:
- * error, which is an error type, and message, which is the error string. */
-void make_error_map(enum error error_type, const char *msg, Var *ret)
-{
-    static Var error_key = str_dup_to_var("error");
-    static Var message_key = str_dup_to_var("message");
-
-    Var err;
-    err.type = TYPE_ERR;
-    err.v.err = error_type;
-
-    *ret = new_map();
-    *ret = mapinsert(*ret, var_ref(error_key), err);
-    *ret = mapinsert(*ret, var_ref(message_key), str_dup_to_var(msg));
-}
-/********************************************************************************************************/
-
 static package
 bf_threads(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -230,7 +236,7 @@ bf_threads(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_thread_info(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    int handle = arglist.v.list[1].v.num;
+    const int handle = arglist.v.list[1].v.num;
     free_var(arglist);
 
     if (!is_wizard(progr))
@@ -245,14 +251,6 @@ bf_thread_info(Var arglist, Byte next, void *vdata, Objid progr)
     ret.v.list[2] = Var::new_int(w->active);
 
     return make_var_pack(ret);
-}
-
-static threadpool *thread_pool_by_name(const char* pool)
-{
-    if (!strcmp(pool, "MAIN"))
-        return &background_pool;
-
-    return nullptr;
 }
 
 /* Allows the database to control the thread pools. It's entirely possible
@@ -292,23 +290,10 @@ static package bf_thread_pool(Var arglist, Byte next, void *vdata, Objid progr)
     return no_var_pack();
 }
 
-
-/********************************************************************************************************/
-
 #ifdef BACKGROUND_TEST
-/* The background testing function. Accepts a string argument and a time argument. Its goal is simply
- * to spawn a helper thread, sleep, and then return the string back to you. */
-static package
-bf_background_test(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    char *human_string = nullptr;
-    asprintf(&human_string, "background_test suspending for %" PRIdN " with string \"%s\"", arglist.v.list[2].v.num, arglist.v.list[1].v.str);
-    return background_thread(background_test_callback, &arglist, human_string);
-}
-
 /* The actual callback function for our background_test function. This function does all of the actual work
  * for the background_test. Receives a pointer to the relevant background_waiter struct. */
-void background_test_callback(Var args, Var *ret)
+static void background_test_callback(Var args, Var *ret)
 {
     int wait = (args.v.list[0].v.num >= 2 ? args.v.list[2].v.num : 5);
 
@@ -319,6 +304,16 @@ void background_test_callback(Var args, Var *ret)
         ret->v.str = str_dup("Hello, world.");
     else
         ret->v.str = str_dup(args.v.list[1].v.str);
+}
+
+/* The background testing function. Accepts a string argument and a time argument. Its goal is simply
+ * to spawn a helper thread, sleep, and then return the string back to you. */
+static package
+bf_background_test(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    char *human_string = nullptr;
+    asprintf(&human_string, "background_test suspending for %" PRIdN " with string \"%s\"", arglist.v.list[2].v.num, arglist.v.list[1].v.str);
+    return background_thread(background_test_callback, &arglist, human_string);
 }
 #endif
 

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 7)
 set(VERSION_RELEASE 0)
-set(VERSION_EXT "_13")
+set(VERSION_EXT "_20")
 project(ToastStunt VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_RELEASE} LANGUAGES CXX C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
@@ -31,6 +31,11 @@ endif()
 
 # Compile Options
 option(ONLY_32_BITS "Use 32-bit integers instead of 64-bit." OFF)
+
+# Fall back to 32-bit mode if the target doesn't support 64-bit
+if( CMAKE_SIZEOF_VOID_P EQUAL 4 )
+    set(ONLY_32_BITS true)
+endif()
 
 # Compiler Flags
 set(CMAKE_CXX_STANDARD 11)

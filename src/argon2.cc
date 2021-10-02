@@ -10,7 +10,7 @@
 #include "map.h"
 #include "background.h"
 
-void argon2_thread_callback(Var arglist, Var *r)
+static void argon2_thread_callback(Var arglist, Var *r)
 {
     const int nargs = arglist.v.list[0].v.num;
 
@@ -73,7 +73,7 @@ bf_argon2(Var arglist, Byte next, void *vdata, Objid progr)
 #endif
 }
 
-void argon2_verify_thread_callback(Var arglist, Var *r)
+static void argon2_verify_thread_callback(Var arglist, Var *r)
 {
     const char *encoded = arglist.v.list[1].v.str;
     const char *str = arglist.v.list[2].v.str;

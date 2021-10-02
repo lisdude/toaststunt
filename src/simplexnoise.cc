@@ -6,7 +6,6 @@
 #include "numbers.h"
 #include <math.h>
 #include "log.h"
-#include "simplexnoise.h"
 
 /* SimplexNoise1234, Simplex noise with true analytic
  * derivative in 1D to 4D.
@@ -102,28 +101,28 @@ unsigned char perm[512] = {151, 160, 137, 91, 90, 15,
  * double SLnoise = (noise(x,y,z) + 1.0) * 0.5;
  */
 
-double  grad1( int hash, double x ) {
+static double  grad1( int hash, double x ) {
     int h = hash & 15;
     double grad = 1.0f + (h & 7);   // Gradient value 1.0, 2.0, ..., 8.0
     if (h & 8) grad = -grad;       // Set a random sign for the gradient
     return ( grad * x );           // Multiply the gradient with the distance
 }
 
-double  grad2( int hash, double x, double y ) {
+static double  grad2( int hash, double x, double y ) {
     int h = hash & 7;      // Convert low 3 bits of hash code
     double u = h < 4 ? x : y; // into 8 simple gradient directions,
     double v = h < 4 ? y : x; // and compute the dot product with (x,y).
     return ((h & 1) ? -u : u) + ((h & 2) ? -2.0f * v : 2.0f * v);
 }
 
-double  grad3( int hash, double x, double y, double z ) {
+static double  grad3( int hash, double x, double y, double z ) {
     int h = hash & 15;     // Convert low 4 bits of hash code into 12 simple
     double u = h < 8 ? x : y; // gradient directions, and compute dot product.
     double v = h < 4 ? y : h == 12 || h == 14 ? x : z; // Fix repeats at h = 12 to 15
     return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
 }
 
-double  grad4( int hash, double x, double y, double z, double t ) {
+static double  grad4( int hash, double x, double y, double z, double t ) {
     int h = hash & 31;      // Convert low 5 bits of hash code into 32 simple
     double u = h < 24 ? x : y; // gradient directions, and compute dot product.
     double v = h < 16 ? y : z;
@@ -146,7 +145,7 @@ static unsigned char simplex[64][4] = {
 };
 
 // 1D simplex noise
-double snoise1(double x) {
+static double snoise1(double x) {
 
     int i0 = FASTFLOOR(x);
     int i1 = i0 + 1;
@@ -172,7 +171,7 @@ double snoise1(double x) {
 }
 
 // 2D simplex noise
-double snoise2(double x, double y) {
+static double snoise2(double x, double y) {
 
 #define F2 0.366025403 // F2 = 0.5*(sqrt(3.0)-1.0)
 #define G2 0.211324865 // G2 = (3.0-Math.sqrt(3.0))/6.0
@@ -245,7 +244,7 @@ double snoise2(double x, double y) {
 }
 
 // 3D simplex noise
-double snoise3(double x, double y, double z) {
+static double snoise3(double x, double y, double z) {
 // Simple skewing factors for the 3D case
 #define F3 0.333333333
 #define G3 0.166666667
@@ -385,7 +384,7 @@ double snoise3(double x, double y, double z) {
 
 
 // 4D simplex noise
-double snoise4(double x, double y, double z, double w) {
+static double snoise4(double x, double y, double z, double w) {
 
     // The skewing and unskewing factors are hairy again for the 4D case
 #define F4 0.309016994 // F4 = (Math.sqrt(5.0)-1.0)/4.0

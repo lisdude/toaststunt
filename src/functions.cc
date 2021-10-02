@@ -16,8 +16,6 @@
  *****************************************************************************/
 
 #include <stdarg.h>
-#include <vector>
-#include <functional>
 
 #include "bf_register.h"
 #include "config.h"
@@ -33,57 +31,60 @@
 #include "unparse.h"
 #include "utils.h"
 
-typedef std::function<void()> registry;
+/*****************************************************************************
+ * This is the table of procedures that register MOO built-in functions.  To
+ * add new built-in functions to the server, add to the list below the name of
+ * a C function that will register your new MOO built-ins; your C function will
+ * be called exactly once, during server initialization.  Also add a
+ * declaration of that C function to `bf_register.h' and add the necessary .c
+ * files to the `CSRCS' line in the Makefile.
+ ****************************************************************************/
+
+typedef void (*registry) ();
+
+static registry bi_function_registries[] =
+{
+#ifdef ENABLE_GC
+        register_gc,
+#endif
+    register_collection,
+    register_disassemble,
+    register_extensions,
+    register_execute,
+    register_functions,
+    register_list,
+    register_log,
+    register_map,
+    register_numbers,
+    register_objects,
+    register_property,
+    register_server,
+    register_tasks,
+    register_verbs,
+    register_yajl,
+    register_base64,
+    register_fileio,
+    register_system,
+    register_exec,
+    register_crypto,
+    register_sqlite,
+    register_pcre,
+    register_background,
+    register_waif,
+    register_simplexnoise,
+    register_argon2,
+    register_spellcheck,
+    register_curl
+};
 
 void
 register_bi_functions()
 {
-    /*****************************************************************************
-     * This is the table of procedures that register MOO built-in functions.  To
-     * add new built-in functions to the server, add to the list below the name of
-     * a C function that will register your new MOO built-ins; your C function will
-     * be called exactly once, during server initialization.  Also add a
-     * declaration of that C function to `bf_register.h' and add the necessary .c
-     * files to the `CSRCS' line in the Makefile.
-     ****************************************************************************/
-    const std::vector<registry> registry_callbacks =
-    {
-#ifdef ENABLE_GC
-        register_gc,
-#endif
-        register_collection,
-        register_disassemble,
-        register_extensions,
-        register_execute,
-        register_functions,
-        register_list,
-        register_log,
-        register_map,
-        register_numbers,
-        register_objects,
-        register_property,
-        register_server,
-        register_tasks,
-        register_verbs,
-        register_yajl,
-        register_base64,
-        register_fileio,
-        register_system,
-        register_exec,
-        register_crypto,
-        register_sqlite,
-        register_pcre,
-        register_background,
-        register_waif,
-        register_simplexnoise,
-        register_argon2,
-        register_spellcheck,
-        register_curl
-    };
-    for (const auto& callback : registry_callbacks)
-    {
-        callback();
-    }
+    int loop, num_registries =
+    sizeof(bi_function_registries) / sizeof(bi_function_registries[0]);
+
+    for (loop = 0; loop < num_registries; loop++)
+	(void) (*(bi_function_registries[loop])) ();
 }
 
 /*** register ***/
@@ -101,9 +102,10 @@ struct bft_entry {
     int _protected;
 };
 
-static std::vector<bft_entry> bf_table;
+static struct bft_entry bf_table[MAX_FUNC];
+static unsigned top_bf_table = 0;
 
-static void
+static unsigned
 register_common(const char *name, int minargs, int maxargs, bf_type func,
                 bf_read_type read, bf_write_type write, va_list args)
 {
@@ -114,73 +116,81 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
     if (!s)
         s = new_stream(30);
 
-    bft_entry entry;
-    entry.name = str_dup(name);
+    if (top_bf_table == MAX_FUNC) {
+	errlog("too many functions.  %s cannot be registered.\n", name);
+	return 0;
+    }
+    bf_table[top_bf_table].name = str_dup(name);
     stream_printf(s, "protect_%s", name);
-    entry.protect_str = str_dup(reset_stream(s));
+    bf_table[top_bf_table].protect_str = str_dup(reset_stream(s));
     stream_printf(s, "bf_%s", name);
-    entry.verb_str = str_dup(reset_stream(s));
-    entry.minargs = minargs;
-    entry.maxargs = maxargs;
-    entry.func = func;
-    entry.read = read;
-    entry.write = write;
-    entry._protected = 0;
+    bf_table[top_bf_table].verb_str = str_dup(reset_stream(s));
+    bf_table[top_bf_table].minargs = minargs;
+    bf_table[top_bf_table].maxargs = maxargs;
+    bf_table[top_bf_table].func = func;
+    bf_table[top_bf_table].read = read;
+    bf_table[top_bf_table].write = write;
+    bf_table[top_bf_table]._protected = 0;
 
     if (num_arg_types > 0)
-        entry.prototype =
-            (var_type *)mymalloc(num_arg_types * sizeof(var_type), M_PROTOTYPE);
+	bf_table[top_bf_table].prototype =
+	    (var_type *)mymalloc(num_arg_types * sizeof(var_type), M_PROTOTYPE);
     else
-        entry.prototype = nullptr;
+	bf_table[top_bf_table].prototype = nullptr;
     for (va_index = 0; va_index < num_arg_types; va_index++)
-        entry.prototype[va_index] = (var_type)va_arg(args, int);
-    bf_table.push_back(entry);
+	bf_table[top_bf_table].prototype[va_index] = (var_type)va_arg(args, int);
+
+    return top_bf_table++;
 }
 
-void
+unsigned
 register_function(const char *name, int minargs, int maxargs,
                   bf_type func, ...)
 {
     va_list args;
+    unsigned ans;
 
     va_start(args, func);
-    register_common(name, minargs, maxargs, func, nullptr, nullptr, args);
+    ans = register_common(name, minargs, maxargs, func, nullptr, nullptr, args);
     va_end(args);
+    return ans;
 }
 
-void
+unsigned
 register_function_with_read_write(const char *name, int minargs, int maxargs,
                                   bf_type func, bf_read_type read,
                                   bf_write_type write, ...)
 {
     va_list args;
-
+    unsigned ans;
 
     va_start(args, write);
-    register_common(name, minargs, maxargs, func, read, write, args);
+    ans = register_common(name, minargs, maxargs, func, read, write, args);
     va_end(args);
+    return ans;
 }
 
 /*** looking up functions -- by name or num ***/
 
 static const char *func_not_found_msg = "no such function";
+
 const char *
 name_func_by_num(unsigned n)
-{   /* used by unparse only */
-    if (n >= bf_table.size())
-        return func_not_found_msg;
+{				/* used by unparse only */
+    if (n >= top_bf_table)
+	return func_not_found_msg;
     else
         return bf_table[n].name;
 }
 
 unsigned
 number_func_by_name(const char *name)
-{   /* used by parser only */
+{				/* used by parser only */
+    unsigned i;
 
-    const auto functionCount = bf_table.size();
-    for (size_t i = 0; i < functionCount; ++i)
-        if (!strcasecmp(name, bf_table[i].name))
-            return i;
+    for (i = 0; i < top_bf_table; i++)
+	if (!strcasecmp(name, bf_table[i].name))
+	    return i;
 
     return FUNC_NOT_FOUND;
 }
@@ -193,14 +203,14 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
 /* requires arglist.type == TYPE_LIST
    call_bi_func will free arglist */
 {
-    const auto functionCount = bf_table.size();
+    struct bft_entry *f;
 
-    if (n >= functionCount) {
-        errlog("CALL_BI_FUNC: Unknown function number: %d\n", n);
-        free_var(arglist);
-        return no_var_pack();
+    if (n >= top_bf_table) {
+	errlog("CALL_BI_FUNC: Unknown function number: %d\n", n);
+	free_var(arglist);
+	return no_var_pack();
     }
-    const auto f = bf_table[n];
+    f = bf_table + n;
 
     static Stream *error_msg = nullptr;
     if (error_msg == nullptr)
@@ -213,9 +223,9 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
         /*
          * Check permissions, if protected
          */
-        if ((!caller().is_obj() || caller().v.obj != SYSTEM_OBJECT) && f._protected) {
+        if ((!caller().is_obj() || caller().v.obj != SYSTEM_OBJECT) && f->_protected) {
             /* Try calling #0:bf_FUNCNAME(@ARGS) instead */
-            enum error e = call_verb2(SYSTEM_OBJECT, f.verb_str, Var::new_obj(SYSTEM_OBJECT), arglist, 0, get_thread_mode());
+            enum error e = call_verb2(SYSTEM_OBJECT, f->verb_str, Var::new_obj(SYSTEM_OBJECT), arglist, 0, get_thread_mode());
 
             if (e == E_NONE)
                 return tail_call_pack();
@@ -229,15 +239,15 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
          * Check argument count
          * (Can't always check in the compiler, because of @)
          */
-        if (args[0].v.num < f.minargs
-                || (f.maxargs != -1 && args[0].v.num > f.maxargs)) {
+        if (args[0].v.num < f->minargs
+                || (f->maxargs != -1 && args[0].v.num > f->maxargs)) {
             int num_args = args[0].v.num;
             free_var(arglist);
             stream_printf(error_msg, "%s (expected", unparse_error(E_ARGS));
-            if (f.minargs != f.maxargs)
-                stream_printf(error_msg, " %i-%i", f.minargs, f.maxargs);
+            if (f->minargs != f->maxargs)
+                stream_printf(error_msg, " %i-%i", f->minargs, f->maxargs);
             else
-                stream_printf(error_msg, " %i", f.minargs);
+                stream_printf(error_msg, " %i", f->minargs);
 
             stream_printf(error_msg, "; got %i)", num_args);
 
@@ -246,10 +256,10 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
         /*
          * Check argument types
          */
-        max = (f.maxargs == -1) ? f.minargs : args[0].v.num;
+        max = (f->maxargs == -1) ? f->minargs : args[0].v.num;
 
         for (k = 0; k < max; k++) {
-            var_type proto = f.prototype[k];
+            var_type proto = f->prototype[k];
             var_type arg = args[k + 1].type;
 
             if (!(proto == TYPE_ANY
@@ -259,7 +269,7 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
                 free_var(arglist);
 
                 stream_printf(error_msg, "%s (args[%i] of %s() expected %s; got %s)",
-                              unparse_error(E_TYPE), k + 1, f.name, parse_type(proto), parse_type(arg));
+                              unparse_error(E_TYPE), k + 1, f->name, parse_type(proto), parse_type(arg));
 
                 return make_raise_pack(E_TYPE, reset_stream(error_msg), var_ref(zero));
             }
@@ -273,16 +283,15 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
     /*
      * do the function
      */
-    return (*(f.func)) (arglist, func_pc, vdata, progr);
+    return (*(f->func)) (arglist, func_pc, vdata, progr);
     /* f->func is responsible for freeing/using up arglist. */
 }
 
 void
 write_bi_func_data(void *vdata, Byte f_id)
 {
-    const auto functionCount = bf_table.size();
-    if (f_id >= functionCount)
-        errlog("WRITE_BI_FUNC_DATA: Unknown function number: %d\n", f_id);
+    if (f_id >= top_bf_table)
+	errlog("WRITE_BI_FUNC_DATA: Unknown function number: %d\n", f_id);
     else if (bf_table[f_id].write)
         (*(bf_table[f_id].write)) (vdata);
 }
@@ -299,11 +308,11 @@ int
 read_bi_func_data(Byte f_id, void **bi_func_state, Byte * bi_func_pc)
 {
     pc_for_bi_func_data_being_read = bi_func_pc;
-    const auto functionCount = bf_table.size();
-    if (f_id >= functionCount) {
-        errlog("READ_BI_FUNC_DATA: Unknown function number: %d\n", f_id);
-        *bi_func_state = nullptr;
-        return 0;
+
+    if (f_id >= top_bf_table) {
+	errlog("READ_BI_FUNC_DATA: Unknown function number: %d\n", f_id);
+	*bi_func_state = nullptr;
+	return 0;
     } else if (bf_table[f_id].read) {
         *bi_func_state = (*(bf_table[f_id].read)) ();
         if (*bi_func_state == nullptr) {
@@ -481,19 +490,19 @@ static package
 bf_function_info(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
+    unsigned int i;
 
     if (arglist.v.list[0].v.num == 1) {
-        const auto i = number_func_by_name(arglist.v.list[1].v.str);
-        if (i == FUNC_NOT_FOUND) {
-            free_var(arglist);
-            return make_error_pack(E_INVARG);
-        }
-        r = function_description(i);
+	i = number_func_by_name(arglist.v.list[1].v.str);
+	if (i == FUNC_NOT_FOUND) {
+	    free_var(arglist);
+	    return make_error_pack(E_INVARG);
+	}
+	r = function_description(i);
     } else {
-        const auto functionCount = bf_table.size();
-        r = new_list(functionCount);
-        for (size_t i = 0; i < functionCount; i++)
-            r.v.list[i + 1] = function_description(i);
+	r = new_list(top_bf_table);
+	for (i = 0; i < top_bf_table; i++)
+	    r.v.list[i + 1] = function_description(i);
     }
 
     free_var(arglist);
@@ -503,12 +512,13 @@ bf_function_info(Var arglist, Byte next, void *vdata, Objid progr)
 static void
 load_server_protect_function_flags(void)
 {
-    const auto functionCount = bf_table.size();
-    for (size_t i = 0; i < functionCount; i++) {
-        bf_table[i]._protected
-            = server_flag_option(bf_table[i].protect_str, 0);
+    unsigned int i;
+
+    for (i = 0; i < top_bf_table; i++) {
+	bf_table[i]._protected
+	    = server_flag_option(bf_table[i].protect_str, 0);
     }
-    oklog("Loaded protect cache for %d builtin functions\n", functionCount);
+    oklog("Loaded protect cache for %d builtin functions\n", i);
 }
 
 Num _server_int_option_cache[SVO__CACHE_SIZE];
@@ -550,20 +560,6 @@ bf_load_server_options(Var arglist, Byte next, void *vdata, Objid progr)
     load_server_options();
 
     return no_var_pack();
-}
-
-void
-unregister_bi_functions()
-{
-    const auto functionCount = bf_table.size();
-    for (size_t i = 0; i < functionCount; i++) {
-        free_str(bf_table[i].name);
-        free_str(bf_table[i].protect_str);
-        free_str(bf_table[i].verb_str);
-        free(bf_table[i].prototype);
-    }
-
-    bf_table.clear();
 }
 
 void

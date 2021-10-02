@@ -51,7 +51,9 @@
 #include "exec.h"
 #include "execute.h"
 #include "functions.h"
+#ifdef ENABLE_GC
 #include "garbage.h"
+#endif
 #include "list.h"
 #include "log.h"
 #include "map.h"
@@ -81,7 +83,7 @@ extern "C" {
 #include "dependencies/linenoise.h"
 }
 
-#define RANDOM_DEVICE "/dev/random"
+#define RANDOM_DEVICE "/dev/urandom"
 
 static pid_t parent_pid;
 static bool in_child = false;
@@ -1270,15 +1272,9 @@ static void
 init_random(void)
 {
     long seed;
+    unsigned char soskey[32];
 
-    sha256_ctx context;
-    unsigned char input[32];
-    unsigned char output[32];
-
-    memset(input, 0, sizeof(input));
-    memset(output, 0, sizeof(output));
-
-    sha256_init(&context);
+    memset(soskey, 0, sizeof(soskey));
 
 #ifndef TEST
 
@@ -1292,19 +1288,14 @@ init_random(void)
     }
 
     ssize_t count = 0, total = 0;
-    ssize_t required = MIN(MINIMUM_SEED_ENTROPY, sizeof(input));
 
-    while (total < required) {
-        if (total)
-            oklog("RANDOM: seeding ... (more bytes required)\n");
-        if ((count = read(fd, input + total, sizeof(input) - total)) == -1) {
+    while (total < sizeof(soskey)) {
+        if ((count = read(fd, soskey + total, sizeof(soskey) - total)) == -1) {
             errlog("Can't read " RANDOM_DEVICE "!\n");
             exit(1);
         }
         total += count;
     }
-
-    sha256_update(&context, sizeof(input), input);
 
     close(fd);
 
@@ -1314,9 +1305,7 @@ init_random(void)
 
 #endif
 
-    sha256_digest(&context, sizeof(output), output);
-
-    sosemanuk_schedule(&key_context, output, sizeof(output));
+    sosemanuk_schedule(&key_context, soskey, sizeof(soskey));
 
     sosemanuk_init(&run_context, &key_context, nullptr, 0);
 
@@ -1791,6 +1780,25 @@ find_network_handle(Objid obj, network_handle **handle)
     return 0;
 }
 
+static void
+set_system_object_integer_limits()
+{
+    if (!valid(SYSTEM_OBJECT))
+        return;
+
+    Var value;
+    db_prop_handle h;
+
+    h = db_find_property(Var::new_obj(SYSTEM_OBJECT), "maxint", &value);
+    if (h.ptr)
+        db_set_property_value(h, Var::new_int(MAXINT));
+
+    h = db_find_property(Var::new_obj(SYSTEM_OBJECT), "minint", &value);
+    if (h.ptr)
+        db_set_property_value(h, Var::new_int(MININT));
+
+}
+
 int waif_conversion_type = _TYPE_WAIF;    /* For shame. We can remove this someday. */
 
 int
@@ -1987,13 +1995,14 @@ main(int argc, char **argv)
         network_shutdown();
     }
 
+#ifdef ENABLE_GC
     gc_collect();
+#endif
     db_shutdown();
     db_clear_ancestor_cache();
     sqlite_shutdown();
     curl_shutdown();
     pcre_shutdown();
-    unregister_bi_functions();
 
     free_str(this_program);
 
@@ -2819,25 +2828,6 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     return make_var_pack(r);
-}
-
-void
-set_system_object_integer_limits()
-{
-    if (!valid(SYSTEM_OBJECT))
-        return;
-
-    Var value;
-    db_prop_handle h;
-
-    h = db_find_property(Var::new_obj(SYSTEM_OBJECT), "maxint", &value);
-    if (h.ptr)
-        db_set_property_value(h, Var::new_int(MAXINT));
-
-    h = db_find_property(Var::new_obj(SYSTEM_OBJECT), "minint", &value);
-    if (h.ptr)
-        db_set_property_value(h, Var::new_int(MININT));
-
 }
 
 void

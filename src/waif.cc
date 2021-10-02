@@ -43,6 +43,8 @@ std::unordered_map<Waif *, bool> destroyed_waifs;
 #define MAP_PROP(Mmap, Mbit) (Mmap)[(Mbit) / 32] |= 1 << ((Mbit) % 32)
 #define N_MAPPABLE_PROPS (WAIF_MAPSZ * 32)
 
+static int refers_to(Var target, Var key, bool);
+
 static int
 count_set_bits(unsigned long x)
 {
@@ -230,7 +232,7 @@ map_refers_to(Var key, Var value, void *data, int first)
     return refers_to(key, *new_var, true) || refers_to(value, *new_var, true);
 }
 
-int
+static int
 refers_to(Var target, Var key, bool waif_self_check)
 {
     int i;

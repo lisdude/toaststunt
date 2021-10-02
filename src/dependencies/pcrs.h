@@ -3,67 +3,35 @@
 
 /*********************************************************************
  *
- * File        :  $Source: /cvsroot/ijbswa/current/pcrs.h,v $
+ * File        :  pcrs.h,v $
  *
  * Purpose     :  Header file for pcrs.c
  *
- * Copyright   :  see pcrs.c
+ * Copyright   :  Written and Copyright (C) 2000, 2001 by Andreas S. Oesterhelt
+ *                <andreas@oesterhelt.org>
  *
- * Revisions   :
- *    $Log: pcrs.h,v $
- *    Revision 1.11  2002/03/08 14:18:23  oes
- *    Fixing -Wconversion warnings
+ *                Copyright (C) 2006, 2007 Fabian Keil <fk@fabiankeil.de>
  *
- *    Revision 1.10  2002/03/08 13:44:48  oes
- *    Hiding internal functions, preventing double inclusion of pcre.h
+ *                This program is free software; you can redistribute it
+ *                and/or modify it under the terms of the GNU General
+ *                Public License as published by the Free Software
+ *                Foundation; either version 2 of the License, or (at
+ *                your option) any later version.
  *
- *    Revision 1.9  2001/08/18 11:35:29  oes
- *    - Introduced pcrs_strerror()
- *    - added pcrs_execute_list()
+ *                This program is distributed in the hope that it will
+ *                be useful, but WITHOUT ANY WARRANTY; without even the
+ *                implied warranty of MERCHANTABILITY or FITNESS FOR A
+ *                PARTICULAR PURPOSE.  See the GNU General Public
+ *                License for more details.
  *
- *    Revision 1.8  2001/08/15 15:32:50  oes
- *    Replaced the hard limit for the maximum number of matches
- *    by dynamic reallocation
- *
- *    Revision 1.7  2001/08/05 13:13:11  jongfoster
- *    Making parameters "const" where possible.
- *
- *    Revision 1.6  2001/07/29 18:52:06  jongfoster
- *    Renaming _PCRS_H, and adding "extern C {}"
- *
- *    Revision 1.5  2001/07/18 17:27:00  oes
- *    Changed interface; Cosmetics
- *
- *    Revision 1.4  2001/06/29 13:33:19  oes
- *    - Cleaned up, commented and adapted to reflect the
- *      changes in pcrs.c
- *    - Introduced the PCRS_* flags
- *
- *    Revision 1.3  2001/06/09 10:58:57  jongfoster
- *    Removing a single unused #define which referenced BUFSIZ
- *
- *    Revision 1.2  2001/05/25 11:03:55  oes
- *    Added sanity check for NULL jobs to pcrs_exec_substitution
- *
- *    Revision 1.1.1.1  2001/05/15 13:59:02  oes
- *    Initial import of version 2.9.3 source tree
- *
- *    Revision 1.4  2001/05/11 01:57:02  rodney
- *    Added new file header standard w/RCS control tags.
- *
- *    revision 1.3  2001/05/08 02:38:13  rodney
- *    Changed C++ "//" style comment to C style comments.
- *
- *    revision 1.2  2001/04/30 02:39:24  rodney
- *    Made this pcrs.h file conditionally included.
- *
- *    revision 1.1  2001/04/16 21:10:38  rodney
- *    Initial checkin
+ *                The GNU General Public License should be included with
+ *                this file.  If not, you can view it at
+ *                http://www.gnu.org/copyleft/gpl.html
+ *                or write to the Free Software Foundation, Inc., 59
+ *                Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  *********************************************************************/
 
-#define PCRS_H_VERSION "$Id: pcrs.h,v 1.11 2002/03/08 14:18:23 oes Exp $"
-
 
 #ifndef _PCRE_H
 #include <pcre.h>
@@ -85,17 +53,28 @@ extern "C" {
 #define PCRS_MAX_MATCH_INIT  40     /* Initial amount of matches that can be stored in global searches */
 #define PCRS_MAX_MATCH_GROW  1.6    /* Factor by which storage for matches is extended if exhausted */
 
-/* Error codes */
-#define PCRS_ERR_NOMEM     -10      /* Failed to acquire memory. */
-#define PCRS_ERR_CMDSYNTAX -11      /* Syntax of s///-command */
-#define PCRS_ERR_STUDY     -12      /* pcre error while studying the pattern */
-#define PCRS_ERR_BADJOB    -13      /* NULL job pointer, pattern or substitute */
-#define PCRS_WARN_BADREF   -14      /* Backreference out of range */
+/*
+ * PCRS error codes
+ *
+ * They are supposed to be handled together with PCRE error
+ * codes and have to start with an offset to prevent overlaps.
+ *
+ * PCRE 6.7 uses error codes from -1 to -21, PCRS error codes
+ * below -100 should be safe for a while.
+ */
+#define PCRS_ERR_NOMEM           -100      /* Failed to acquire memory. */
+#define PCRS_ERR_CMDSYNTAX       -101      /* Syntax of s///-command */
+#define PCRS_ERR_STUDY           -102      /* pcre error while studying the pattern */
+#define PCRS_ERR_BADJOB          -103      /* NULL job pointer, pattern or substitute */
+#define PCRS_WARN_BADREF         -104      /* Backreference out of range */
+#define PCRS_WARN_TRUNCATION     -105      /* At least one pcrs variable was too big,
+                                            * only the first part was used. */
 
 /* Flags */
 #define PCRS_GLOBAL          1      /* Job should be applied globally, as with perl's g option */
 #define PCRS_TRIVIAL         2      /* Backreferences in the substitute are ignored */
 #define PCRS_SUCCESS         4      /* Job did previously match */
+#define PCRS_DYNAMIC         8      /* Job is dynamic (used to disable JIT compilation) */
 
 
 /*
@@ -106,6 +85,7 @@ extern "C" {
 
 typedef struct {
   char  *text;                                   /* The plaintext part of the substitute, with all backreferences stripped */
+  size_t length;                                 /* The substitute may not be a valid C string so we can't rely on strlen(). */
   int    backrefs;                               /* The number of backreferences */
   int    block_offset[PCRS_MAX_SUBMATCHES];      /* Array with the offsets of all plaintext blocks in text */
   size_t block_length[PCRS_MAX_SUBMATCHES];      /* Array with the lengths of all plaintext blocks in text */
@@ -158,14 +138,17 @@ extern void             pcrs_free_joblist(pcrs_job *joblist);
 extern const char *pcrs_strerror(const int error);
 
 
+/**
+ * This macro is used to free a pointer that may be NULL.
+ * It also sets the variable to NULL after it's been freed.
+ * The parameter should be a simple variable without side effects.
+ */
+#define freez(X)  { if(X) { free((void*)X); X = NULL ; } }
+
+#define is_hex_digit(x) ((x) && strchr("0123456789ABCDEF", toupper(x)))
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 
 #endif /* ndef PCRS_H_INCLUDED */
-
-/*
-  Local Variables:
-  tab-width: 3
-  end:
-*/

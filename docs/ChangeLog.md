@@ -5,11 +5,17 @@
 - Fix a memory leak in `open_network_connection()` that occurred after a successful connection.
 - Fix a bug where the SERVER FULL message wouldn't display the connection name properly.
 - Fix a bug where a waif could refer to itself in a map. It now correctly returns E_RECMOVE. The server will also now validate waifs at startup to ensure there are no self-referential waifs. If one is found, it's invalidated.
+- Fix a race condition that could result in a server crash.
+- Fix an issue that could cause friendly error messages to display 'unknown type'.
+- The stack list passed to `handle_lagging_task()` now actually includes the verb that was causing the lag, rather than just the verb(s) that called it.
+- Detect 32-bit architectures and set the ONLY_32_BITS option appropriately.
+- Fix a bug that would cause `file_read()` to over-read if the number of bytes specified was larger than the buffer.
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key must be configured properly in options.h. See warnings at the end of this changelog for important information about these changes.
 - Add a command line switch (`+t`) to enable TLS on default listening ports.
 - MAX_QUEUED_OUTPUT can be overridden in-database by adding the property `$server_options.max_queued_output` and calling `load_server_options()`.
+- `queued_tasks()` now accepts a second argument. If true, only the number of queued tasks is returned. This is significantly more performant than `length(queued_tasks())`
 
 ### *** COMPATIBILITY WARNINGS ***
 - The arguments for `listen()` have changed! Listen now accepts an optional third argument as a map. This map takes over the previous arguments and has the keys: ipv6, tls, certificate, key, print-messages. So if you wanted everything, you would use: `listen(#0, 1234, ["ipv6" -> 1, "tls" -> 1, "certificate" -> "/etc/certs/something.pem", "key" -> "/etc/certs/privkey.pem", "print-messages" -> 1]`
@@ -33,9 +39,9 @@
 - Add support for the SQLite `REGEXP` operator.
 - Add an `sqlite_interrupt(<handle>)` function to abort long-running SQLite queries.
 - Allow for retrieval of runtime environment variables from a running task, unhandled exceptions or timeouts, and lagging tasks via `handle_uncaught_error`, `handle_task_timeout`, and `handle_lagging_task`, respectively. To control automatic inclusion of runtime environment variables, set the `INCLUDE_RT_VARS` server option. Variables will be added to the end of the stack frame as a map.
-- Providing a true argument to `queued_tasks()` will include all variables for any running tasks that you are authorized to examine. Additionally, a third argument has been added to the task_stack() builtin, which toggles whether variables are included with each frame for the provided task.
-- Add a `BOOL` type, to unambiguously indicate whether a value is TRUE or FALSE. The `true` and `false` variables are set at task runtime and can be overridden within verbs if needed.
-- The `parse_json` function now uses the BOOL type instead of converting to strings. Similarly, passing a boolean to `generate_json` is understood to be a BOOL.
+- Providing a true argument to `queued_tasks()` will include all variables for any running tasks that you are authorized to examine. Additionally, a third argument has been added to the `task_stack()` builtin, which toggles whether variables are included with each frame for the provided task.
+- Add a `BOOL` type to unambiguously indicate whether a value is TRUE or FALSE. The `true` and `false` variables are set at task runtime and can be overridden within verbs if needed.
+- The `parse_json()` function now uses the BOOL type instead of converting to strings. Similarly, passing a boolean to `generate_json()` is understood to be a BOOL.
 - Add debug information about task queues to `queue_info(<object>)` when called by a wizard.
 - Improve reporting of 'x not found' errors. Now when you get a property, verb, or variable not found error, two things happen: First, the traceback message will tell you what exactly was not found. Second, if you catch the error in a try-except, the object number and name of the missing thing will be available as the third argument in the error list (the value).
 - Improve type mismatch error reporting. Traceback messages will now tell you what type was expected vs the type that you supplied. The value returned in a caught E_TYPE is now a list of the format `{{expected types}, supplied type}`. Builtin functions will now tell you which argument was incorrect and the expected / supplied type for that argument.`
@@ -157,7 +163,7 @@
 - `random()` is now seeded with more than 32 bits.
 - Added a `reseed_random()` function to reseed the random number generator.
 - Add a `finished_tasks()` function to track the execution time of tasks as they finish. This can be disabled with the `SAVE_FINISHED_TASKS` option in options.h.
-- Add support for calling `$sysobj:handle_lagging_task()` when a task's execution time exceeds that set in `$server_options.tag_lag_threshold`
+- Add support for calling `$sysobj:handle_lagging_task()` when a task's execution time exceeds that set in `$server_options.task_lag_threshold`
 - Add `$server_options.finished_tasks_limit` to override the number of finished tasks that get saved.
 
 ## 2.5.4 (Apr 19, 2019)

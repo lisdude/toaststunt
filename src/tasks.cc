@@ -2492,8 +2492,9 @@ bf_queued_tasks(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var tasks;
     int nargs = arglist.v.list[0].v.num;
-    int include_variables = (nargs == 1 && is_true(arglist.v.list[1]));
-    int show_all = is_wizard(progr);
+    bool include_variables = (nargs == 1 && is_true(arglist.v.list[1]));
+    bool return_count = (nargs == 2 && is_true(arglist.v.list[2]));
+    bool show_all = is_wizard(progr);
     tqueue *tq;
     task *t;
     int i, count = 0;
@@ -2531,51 +2532,54 @@ bf_queued_tasks(Var arglist, Byte next, void *vdata, Objid progr)
         (*eq->enumerator) (counting_closure, &qdata);
     count = qdata.i;
 
-    tasks = new_list(count);
-    i = 1;
+    if (return_count) {
+        tasks = Var::new_int(count);
+    } else {
+        tasks = new_list(count);
+        i = 1;
 
-    for (tq = idle_tqueues; tq; tq = tq->next) {
-        if (tq->reading && (show_all || tq->player == progr))
-            tasks.v.list[i++] = list_for_reading_task(tq->player,
-                                tq->reading_vm,
-                                progr, include_variables);
-    }
+        for (tq = idle_tqueues; tq; tq = tq->next) {
+            if (tq->reading && (show_all || tq->player == progr))
+                tasks.v.list[i++] = list_for_reading_task(tq->player,
+                                    tq->reading_vm,
+                                    progr, include_variables);
+        }
 
-    for (tq = active_tqueues; tq; tq = tq->next) {
-        if (tq->reading && (show_all || tq->player == progr))
-            tasks.v.list[i++] = list_for_reading_task(tq->player,
-                                tq->reading_vm,
-                                progr, include_variables);
+        for (tq = active_tqueues; tq; tq = tq->next) {
+            if (tq->reading && (show_all || tq->player == progr))
+                tasks.v.list[i++] = list_for_reading_task(tq->player,
+                                    tq->reading_vm,
+                                    progr, include_variables);
 
-        for (t = tq->first_bg; t; t = t->next)
-            if (t->kind == TASK_FORKED && (show_all
-                                           || t->t.forked.a.progr == progr))
+            for (t = tq->first_bg; t; t = t->next)
+                if (t->kind == TASK_FORKED && (show_all
+                                               || t->t.forked.a.progr == progr))
+                    tasks.v.list[i++] = list_for_forked_task(t->t.forked,
+                                        progr, include_variables);
+                else if (t->kind == TASK_SUSPENDED
+                         && (show_all
+                             || progr_of_cur_verb(t->t.suspended.the_vm) == progr))
+                    tasks.v.list[i++] = list_for_suspended_task(t->t.suspended,
+                                        progr, include_variables);
+        }
+
+        for (t = waiting_tasks; t; t = t->next) {
+            if (t->kind == TASK_FORKED && (show_all ||
+                                           t->t.forked.a.progr == progr))
                 tasks.v.list[i++] = list_for_forked_task(t->t.forked,
                                     progr, include_variables);
             else if (t->kind == TASK_SUSPENDED
-                     && (show_all
-                         || progr_of_cur_verb(t->t.suspended.the_vm) == progr))
+                     && (progr_of_cur_verb(t->t.suspended.the_vm) == progr
+                         || show_all))
                 tasks.v.list[i++] = list_for_suspended_task(t->t.suspended,
                                     progr, include_variables);
+        }
+
+        qdata.tasks = tasks;
+        qdata.i = i;
+        for (eq = external_queues; eq; eq = eq->next)
+            (*eq->enumerator) (listing_closure, &qdata);
     }
-
-    for (t = waiting_tasks; t; t = t->next) {
-        if (t->kind == TASK_FORKED && (show_all ||
-                                       t->t.forked.a.progr == progr))
-            tasks.v.list[i++] = list_for_forked_task(t->t.forked,
-                                progr, include_variables);
-        else if (t->kind == TASK_SUSPENDED
-                 && (progr_of_cur_verb(t->t.suspended.the_vm) == progr
-                     || show_all))
-            tasks.v.list[i++] = list_for_suspended_task(t->t.suspended,
-                                progr, include_variables);
-    }
-
-    qdata.tasks = tasks;
-    qdata.i = i;
-    for (eq = external_queues; eq; eq = eq->next)
-        (*eq->enumerator) (listing_closure, &qdata);
-
     free_var(arglist);
     return make_var_pack(tasks);
 }
@@ -3029,7 +3033,7 @@ void
 register_tasks(void)
 {
     register_function("task_id", 0, 0, bf_task_id);
-    register_function("queued_tasks", 0, 1, bf_queued_tasks, TYPE_INT);
+    register_function("queued_tasks", 0, 2, bf_queued_tasks, TYPE_INT, TYPE_INT);
 #ifdef SAVE_FINISHED_TASKS
     register_function("finished_tasks", 0, 0, bf_finished_tasks);
 #endif

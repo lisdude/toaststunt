@@ -26,8 +26,6 @@
 #include "structures.h"
 #include "utils.h"
 
-static unsigned alloc_num[Sizeof_Memory_Type];
-
 static inline int
 refcount_overhead(Memory_Type type)
 {
@@ -35,35 +33,37 @@ refcount_overhead(Memory_Type type)
      * As long as we're living on the wild side, avoid getting the
      * refcount slot for allocations that won't need it.
      */
+    int total = 0;
     switch (type) {
         /* deal with systems with picky alignment issues */
         case M_LIST:
-#ifdef MEMO_VALUE_BYTES
-            return MAX(sizeof(int), sizeof(Var *)) * 2;
-#else
-            return MAX(sizeof(int), sizeof(Var *));
-#endif /* MEMO_VALUE_BYTES */
         case M_TREE:
-#ifdef MEMO_VALUE_BYTES
-            return MAX(sizeof(int), sizeof(rbtree *)) * 2;
-#else
-            return MAX(sizeof(int), sizeof(rbtree *));
-#endif /* MEMO_VALUE_BYTES */
         case M_TRAV:
-            return MAX(sizeof(int), sizeof(rbtrav *));
-        case M_STRING:
-#ifdef MEMO_STRLEN
-            return sizeof(int) * 2;
-#else
-            return sizeof(int);
-#endif /* MEMO_STRLEN */
         case M_ANON:
-            return MAX(sizeof(int), sizeof(struct Object *));
         case M_WAIF:
-            return MAX(sizeof(int), sizeof(void *));
+            total = MAX(sizeof(std::atomic_uint), sizeof(Var *));
+            break;
+        case M_STRING:
+            total = sizeof(std::atomic_uint);
+            break;
         default:
-            return 0;
+            total = 0;
     }
+
+#ifdef MEMO_VALUE_BYTES
+    if (type == M_LIST || type == M_TREE)
+        total += MAX(sizeof(int), sizeof(int *));
+#endif
+#ifdef MEMO_STRLEN
+    if (type == M_STRING)
+        total += MAX(sizeof(int), sizeof(int *));
+#endif
+#ifdef ENABLE_GC
+    if (type == M_LIST || type == M_TREE || type == M_ANON)
+        total += MAX(sizeof(gc_overhead), sizeof(gc_overhead *));
+#endif
+
+    return total;
 }
 
 void *
@@ -82,24 +82,23 @@ mymalloc(unsigned size, Memory_Type type)
         sprintf(msg, "memory allocation (size %u) failed!", size);
         panic_moo(msg);
     }
-    alloc_num[type]++;
 
     if (offs) {
         memptr += offs;
-        ((reference_overhead *)memptr)[-1].count = 1;
+        ((std::atomic_uint *)memptr)[REFCOUNT_OFFSET] = 1;
 #ifdef ENABLE_GC
-        ((reference_overhead *)memptr)[-1].buffered = 0;
-        ((reference_overhead *)memptr)[-1].color = (type == M_ANON) ? GC_BLACK : GC_GREEN;
+        if (type == M_LIST || type == M_TREE || type == M_ANON) {
+            ((gc_overhead *)memptr)[GC_OFFSET].buffered = 0;
+            ((gc_overhead *)memptr)[GC_OFFSET].color = (type == M_ANON) ? GC_BLACK : GC_GREEN;
+        }
 #endif /* ENABLE_GC */
 #ifdef MEMO_STRLEN
         if (type == M_STRING)
-            ((int *) memptr)[-2] = size - 1;
+            ((int *) memptr)[MEMO_OFFSET] = size - 1;
 #endif /* MEMO_STRLEN */
 #ifdef MEMO_VALUE_BYTES
-        if (type == M_LIST)
-            ((int *) memptr)[-2] = 0;
-        if (type == M_TREE)
-            ((int *) memptr)[-2] = 0;
+        if (type == M_LIST || type == M_TREE)
+            ((int *) memptr)[MEMO_OFFSET] = 0;
 #endif /* MEMO_VALUE_BYTES */
     }
     return memptr;
@@ -151,18 +150,5 @@ myrealloc(void *ptr, unsigned size, Memory_Type type)
 void
 myfree(void *ptr, Memory_Type type)
 {
-    alloc_num[type]--;
-
     free((char *) ptr - refcount_overhead(type));
 }
-
-/* XXX stupid fix for non-gcc compilers, already in storage.h */
-#ifdef NEVER
-void
-free_str(const char *s)
-{
-    if (delref(s) == 0)
-        myfree((void *) s, M_STRING);
-}
-
-#endif
