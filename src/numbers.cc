@@ -726,6 +726,9 @@ bf_random(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
 
+    if (maxnum < minnum)
+        return make_error_pack(E_INVARG);
+
     std::uniform_int_distribution<Num> distribution(minnum, maxnum);
     Var r = Var::new_int(distribution(rng));
     return make_var_pack(r);
