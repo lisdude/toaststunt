@@ -392,22 +392,10 @@ extern void network_shutdown(void);
 				 * never make another call on the network.
 				 */
 
-extern void *get_in_addr(const struct sockaddr_storage *sa);
-extern unsigned short int get_in_port(const struct sockaddr_storage *sa);
-extern const char *get_ntop(const struct sockaddr_storage *sa);
-extern const char *get_ipver(const struct sockaddr_storage *sa);
-extern const char *get_nameinfo(const struct sockaddr *sa);
-extern const char *get_nameinfo_port(const struct sockaddr *sa);
-                /* These functions allow us to extract
-                 * information from a sockaddr struct without
-                 * knowing the exact protocol being used. */
-
 int network_parse_proxy_string(char *command, Stream *new_connection_name, struct sockaddr_storage *new_ai_addr);
                 /* Take an HAProxy connection string and parse
                  * it into a new connection_name and sockaddr_storage
                  * for the connection. */
-
-extern char *get_port_str(int port);
 
 #ifdef USE_TLS
 extern int network_handle_is_tls(network_handle);

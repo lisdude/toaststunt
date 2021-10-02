@@ -26,6 +26,9 @@
   those of the authors and should not be interpreted as representing official
   policies, either expressed or implied, of Todd Sundsted.
  *****************************************************************************/
+#include "options.h"
+
+#ifdef ENABLE_GC
 
 #include <assert.h>
 
@@ -454,3 +457,7 @@ register_gc(void)
     register_function("run_gc", 0, 0, bf_run_gc);
     register_function("gc_stats", 0, 0, bf_gc_stats);
 }
+
+#else /* ENABLE_GC */
+void register_gc(void) { }
+#endif

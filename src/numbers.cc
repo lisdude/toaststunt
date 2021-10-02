@@ -49,7 +49,7 @@ sosemanuk_run_context run_context;
 
 static std::mt19937 rng;
 
-void reseed_rng()
+static void reseed_rng()
 {
     std::random_device entropy_source;
     std::seed_seq::result_type data[std::mt19937::state_size];
@@ -725,9 +725,6 @@ bf_random(Var arglist, Byte next, void *vdata, Objid progr)
     Num maxnum = (nargs >= 1 ? arglist.v.list[nargs].v.num : INTNUM_MAX);
 
     free_var(arglist);
-
-    if (maxnum <= 0 || maxnum < minnum || minnum > maxnum)
-        return make_error_pack(E_INVARG);
 
     std::uniform_int_distribution<Num> distribution(minnum, maxnum);
     Var r = Var::new_int(distribution(rng));

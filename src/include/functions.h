@@ -52,7 +52,6 @@ typedef struct {
 } package;
 
 void register_bi_functions(void);
-void unregister_bi_functions(void);
 
 enum abort_reason {
     ABORT_KILL    = -1, 	/* kill_task(task_id()) */
@@ -76,13 +75,18 @@ typedef package(*bf_type) (Var, Byte, void *, Objid);
 typedef void (*bf_write_type) (void *vdata);
 typedef void *(*bf_read_type) (void);
 
-#define FUNC_NOT_FOUND   -1
-   
+#define MAX_FUNC         256
+#define FUNC_NOT_FOUND   MAX_FUNC
+/* valid function numbers are 0 - 255, or a total of 256 of them.
+   function number 256 is reserved for func_not_found signal.
+   hence valid function numbers will fit in one byte but the 
+   func_not_found signal will not */
+
 extern const char *name_func_by_num(unsigned);
 extern unsigned number_func_by_name(const char *);
 
-extern void register_function(const char *, int, int, bf_type,...);
-extern void register_function_with_read_write(const char *, int, int,
+extern unsigned register_function(const char *, int, int, bf_type,...);
+extern unsigned register_function_with_read_write(const char *, int, int,
 						  bf_type, bf_read_type,
 						  bf_write_type,...);
 

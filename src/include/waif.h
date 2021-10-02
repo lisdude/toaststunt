@@ -55,7 +55,5 @@ extern void write_waif(Var);
 extern Var read_waif();
 extern void free_waif_propdefs(WaifPropdefs *);
 extern void waif_rename_propdef(Object *, const char *, const char *);
-static int map_refers_to(Var key, Var value, void *data, int first);
-int refers_to(Var target, Var key, bool);
 
 #endif /* WAIF_h */

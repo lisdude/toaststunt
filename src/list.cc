@@ -119,7 +119,9 @@ list_dup(Var list)
     for (i = 1; i <= n; i++)
         _new.v.list[i] = var_ref(list.v.list[i]);
 
+#ifdef ENABLE_GC
     gc_set_color(_new.v.list, gc_get_color(list.v.list));
+#endif
 
     return _new;
 }
@@ -174,7 +176,7 @@ listset(Var list, Var value, int pos)
 
 #ifdef MEMO_VALUE_BYTES
     /* reset the memoized size */
-    ((int *)(_new.v.list))[-2] = 0;
+    ((int *)(_new.v.list))[MEMO_OFFSET] = 0;
 #endif
 
     free_var(_new.v.list[pos]);
@@ -199,7 +201,7 @@ doinsert(Var list, Var value, int pos)
         list.v.list = (Var *) myrealloc(list.v.list, (size + 1) * sizeof(Var), M_LIST);
 #ifdef MEMO_VALUE_BYTES
         /* reset the memoized size */
-        ((int *)(list.v.list))[-2] = 0;
+        ((int *)(list.v.list))[MEMO_OFFSET] = 0;
 #endif
         list.v.list[0].v.num = size;
         list.v.list[pos] = value;
@@ -519,7 +521,7 @@ list_sizeof(Var *list)
     int i, len, size;
 
 #ifdef MEMO_VALUE_BYTES
-    if ((size = (((int *)(list))[-2])))
+    if ((size = (((int *)(list))[MEMO_OFFSET])))
         return size;
 #endif
 
@@ -530,7 +532,7 @@ list_sizeof(Var *list)
     }
 
 #ifdef MEMO_VALUE_BYTES
-    (((int *)(list))[-2]) = size;
+    (((int *)(list))[MEMO_OFFSET]) = size;
 #endif
 
     return size;
@@ -1003,7 +1005,7 @@ void sort_callback(Var arglist, Var *ret)
 
     int moo_list_pos = 0;
     for (const auto &it : s) {
-        ret->v.list[++moo_list_pos] = (arglist.v.list[1].v.list[it].type == TYPE_WAIF || arglist.v.list[1].v.list[it].type == TYPE_ANON) ? var_ref(arglist.v.list[1].v.list[it]) : var_dup(arglist.v.list[1].v.list[it]);
+        ret->v.list[++moo_list_pos] = var_ref(arglist.v.list[1].v.list[it]);
 
     }
 }
