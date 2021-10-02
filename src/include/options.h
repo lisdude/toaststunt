@@ -511,7 +511,7 @@
  * you can disable this option for a speed boost in larger databases.
  ******************************************************************************
 */
-#define SAFE_RECYCLE
+/*#define SAFE_RECYCLE*/
 
 /******************************************************************************
  * Configurable options for the background subsystem.
