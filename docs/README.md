@@ -137,7 +137,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 ## Build Instructions
 ### **Debian/Ubuntu**
 ```bash
-apt install build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev
+apt install build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev libargon2-dev libssl-dev libexpat1-dev
 mkdir build && cd build
 cmake ../
 make -j2
@@ -146,7 +146,7 @@ make -j2
 ### **REL/CentOS**
 ```bash
 yum group install -y "Development Tools"
-yum install -y sqlite-devel pcre-devel aspell-devel nettle-devel gperf centos-release-scl
+yum install -y sqlite-devel pcre-devel aspell-devel nettle-devel gperf centos-release-scl expat-devel
 yum install -y devtoolset-7
 mkdir build && cd build
 cmake ../
@@ -155,7 +155,7 @@ make -j2
 
 ### **Gentoo**
 ```bash
-emerge dev-db/sqlite app-text/aspell app-crypt/argon2 cmake
+emerge dev-db/sqlite app-text/aspell app-crypt/argon2 dev-libs/expat cmake 
 mkdir build && cd build
 cmake ../
 make -j2
