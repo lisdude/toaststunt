@@ -66,11 +66,11 @@ do_log(const int severity, const char *fmt, va_list args)
 
     if (log_file) {
         time_t current_time;
-        struct tm *info;
+        struct tm info;
 
         time(&current_time);
-        info = localtime(&current_time);
-        strftime(nowstr, 16, "%b %d %X", info);
+        localtime_r(&current_time, &info);
+        strftime(nowstr, 16, "%b %d %X", &info);
         f = log_file;
     } else {
         f = stderr;
@@ -192,11 +192,11 @@ add_command_to_history(Objid player, const char *command)
     char nowstr[16];
 
     time_t current_time;
-    struct tm *info;
+    struct tm &info;
 
     time(&current_time);
-    info = localtime(&current_time);
-    strftime(nowstr, 16, "%b %d %X", info);
+    localtime_r(&current_time, &info);
+    strftime(nowstr, 16, "%b %d %X", &info);
 
     stream_printf(command_history, "%s: #%" PRIdN ": %s\n",
                   nowstr, player, command);
