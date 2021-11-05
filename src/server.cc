@@ -116,7 +116,7 @@ typedef struct shandle {
     Objid player;
     Objid listener;
     task_queue tasks;
-    bool disconnect_me;
+    std::atomic<bool> disconnect_me;
     Objid switched;
     bool outbound, binary;
     bool print_messages;
@@ -847,7 +847,7 @@ main_loop(void)
                                      "recycle_msg", "*** Recycled ***", 0);
                     network_close(h->nhandle);
                     free_shandle(h);
-                } else if (h->disconnect_me) {
+                } else if (h->disconnect_me.load()) {
                     call_notifier(h->player, h->listener,
                                   "user_disconnected");
                     lock_connection_name_mutex(h->nhandle);
@@ -1686,7 +1686,7 @@ int
 is_player_connected(Objid player)
 {
     shandle *h = find_shandle(player);
-    return !h || h->disconnect_me ? 0 : 1;
+    return !h || h->disconnect_me.load() ? 0 : 1;
 }
 
 void
@@ -1694,7 +1694,7 @@ notify(Objid player, const char *message)
 {
     shandle *h = find_shandle(player);
 
-    if (h && !h->disconnect_me)
+    if (h && !h->disconnect_me.load())
         network_send_line(h->nhandle, message, 1, 1);
     else if (in_emergency_mode)
         emergency_notify(player, message);
@@ -1775,7 +1775,7 @@ find_network_handle(Objid obj, network_handle **handle)
 {
     shandle *h = find_shandle(obj);
 
-    if (!h || h->disconnect_me)
+    if (!h || h->disconnect_me.load())
         return -1;
     else
         *handle = &(h->nhandle);
@@ -2363,14 +2363,14 @@ bf_connected_players(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
     for (h = all_shandles; h; h = h->next)
-        if ((show_all || h->connection_time != 0) && !h->disconnect_me)
+        if ((show_all || h->connection_time != 0) && !h->disconnect_me.load())
             count++;
 
     result = new_list(count);
     count = 0;
 
     for (h = all_shandles; h; h = h->next) {
-        if ((show_all || h->connection_time != 0) && !h->disconnect_me) {
+        if ((show_all || h->connection_time != 0) && !h->disconnect_me.load()) {
             count++;
             result.v.list[count].type = TYPE_OBJ;
             result.v.list[count].v.obj = h->player;
@@ -2387,7 +2387,7 @@ bf_connected_seconds(Var arglist, Byte next, void *vdata, Objid progr)
     shandle *h = find_shandle(arglist.v.list[1].v.obj);
 
     r.type = TYPE_INT;
-    if (h && h->connection_time != 0 && !h->disconnect_me)
+    if (h && h->connection_time != 0 && !h->disconnect_me.load())
         r.v.num = time(nullptr) - h->connection_time;
     else
         r.v.num = -1;
@@ -2405,7 +2405,7 @@ bf_idle_seconds(Var arglist, Byte next, void *vdata, Objid progr)
     shandle *h = find_shandle(arglist.v.list[1].v.obj);
 
     r.type = TYPE_INT;
-    if (h && !h->disconnect_me)
+    if (h && !h->disconnect_me.load())
         r.v.num = time(nullptr) - h->last_activity_time;
     else
         r.v.num = -1;
@@ -2426,7 +2426,7 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
     r.type = TYPE_STR;
     r.v.str = nullptr;
 
-    if (h && !h->disconnect_me) {
+    if (h && !h->disconnect_me.load()) {
         if (arglist.v.list[0].v.num == 1) {
             lock_connection_name_mutex(h->nhandle);
             r.v.str = str_dup(network_connection_name(h->nhandle));
@@ -2457,7 +2457,8 @@ name_lookup_callback(Var arglist, Var * ret)
     Objid who = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(who);
     bool rewrite_connect_name = nargs > 1 && is_true(arglist.v.list[2]);
-    if (!h || h->disconnect_me)
+
+    if (!h || h->disconnect_me.load())
         make_error_map(E_INVARG, "Invalid connection", ret);
     else
     {
@@ -2485,8 +2486,13 @@ bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
        ensure that close_nhandle doesn't pull the rug out from
        under the other threads. */
     shandle *h = find_shandle(arglist.v.list[1].v.obj);
-    if (h && !h->disconnect_me)
-        increment_nhandle_refcount(h->nhandle);
+
+    if (!h || h->disconnect_me.load()) {
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
+    }
+
+    increment_nhandle_refcount(h->nhandle);
 
     char *human_string = nullptr;
     asprintf(&human_string, "name_lookup for #%" PRIdN "", arglist.v.list[1].v.obj);
@@ -2512,7 +2518,7 @@ bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
     r.type = TYPE_INT;
-    if (h && !h->disconnect_me) {
+    if (h && !h->disconnect_me.load()) {
         if (h->binary) {
             int length;
 
@@ -2558,7 +2564,7 @@ bf_set_connection_option(Var arglist, Byte next, void *vdata, Objid progr)
 
     if (oid != progr && !is_wizard(progr))
         e = E_PERM;
-    else if (!h || h->disconnect_me
+    else if (!h || h->disconnect_me.load()
              || (!server_set_connection_option(h, option, value)
                  && !tasks_set_connection_option(h->tasks, option, value)
                  && !network_set_connection_option(h->nhandle, option, value)))
@@ -2580,7 +2586,7 @@ bf_connection_options(Var arglist, Byte next, void *vdata, Objid progr)
     shandle *h = find_shandle(oid);
     Var ans;
 
-    if (!h || h->disconnect_me) {
+    if (!h || h->disconnect_me.load()) {
         free_var(arglist);
         return make_error_pack(E_INVARG);
     } else if (oid != progr && !is_wizard(progr)) {
@@ -2611,7 +2617,7 @@ bf_connection_info(Var arglist, Byte next, void *vdata, Objid progr)
     Objid oid = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(oid);
 
-    if (!h || h->disconnect_me) {
+    if (!h || h->disconnect_me.load()) {
         free_var(arglist);
         return make_error_pack(E_INVARG);
     } else if (oid != progr && !is_wizard(progr)) {
