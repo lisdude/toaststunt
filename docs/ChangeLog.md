@@ -12,6 +12,7 @@
 - Fix a (rare) crash in the lag profiler.
 - Fix an issue where threaded SQLite calls could set the number of locks incorrectly, which would allow a connection to be closed while it was still doing work.
 - Fix a couple of race conditions that could result in a server crash.
+- Fix a memory leak around `SAVE_FINISHED_TASKS` / lag reporting.
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key must be configured properly in options.h. See warnings at the end of this changelog for important information about these changes.
