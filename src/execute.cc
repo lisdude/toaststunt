@@ -3084,7 +3084,21 @@ run_interpreter(char raise, enum error e,
         if (handle.ptr)
         {
             Var lag_info = new_list(2);
-            lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, top_activ_stack > 1 ? 1 : 0, root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0), progr);
+            if (ret != OUTCOME_DONE) {
+                lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, 1, root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0), progr);
+            } else {
+                /* This is a tricky situation. The stack has already been unwound, so we can't get the line number, programmer, player, or 'this'.
+                   So we do the best we can with the information we do have. The alternative would be to store the stack list every time
+                   regardless of lag, but that would be a huge waste. Seeing as how, previously, you got no information at all, I think object:verb
+                   will be good enough. */
+                lag_info.v.list[1] = new_list(6);
+                lag_info.v.list[1].v.list[1] = var_ref(nothing);
+                lag_info.v.list[1].v.list[2] = str_ref_to_var(verb);
+                lag_info.v.list[1].v.list[3] = var_ref(nothing);
+                lag_info.v.list[1].v.list[4] = Var::new_obj(object);
+                lag_info.v.list[1].v.list[5] = var_ref(nothing);
+                lag_info.v.list[1].v.list[6] = var_ref(nothing);
+            }
             lag_info.v.list[2] = total_cputime;
             do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task", lag_info, handle, activ_stack[0].player, "", nullptr, 0);
         }
