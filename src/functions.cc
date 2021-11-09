@@ -74,7 +74,8 @@ static registry bi_function_registries[] =
     register_simplexnoise,
     register_argon2,
     register_spellcheck,
-    register_curl
+    register_curl,
+    register_postgres
 };
 
 void
