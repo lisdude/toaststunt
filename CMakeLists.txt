@@ -123,6 +123,7 @@ find_package(CURL)
 find_package(ASPELL)
 find_package(SQLite3)
 find_package(OpenSSL)
+find_package(PQXX)
 
 # Millions of source files
 set(src_CSRCS
@@ -252,6 +253,11 @@ endif()
 if(SQLITE3_FOUND)
     include_directories(${SQLITE3_INCLUDE_DIRS})
     target_link_libraries(moo ${SQLITE3_LIBRARIES})
+endif()
+
+if (PQXX_FOUND)
+    include_directories(${PQXX_INCLUDE_DIRS})
+    target_link_libraries(moo ${PQXX_LIBRARIES})
 endif()
 
 if(OPENSSL_FOUND)
