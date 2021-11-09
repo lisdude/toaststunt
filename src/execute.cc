@@ -450,9 +450,9 @@ make_rt_var_map(Var * rt_env, const char **var_names, unsigned size)
 
 static Var
 make_stack_list(activation * stack, int start, int end, int include_end,
-                int root_vector, int line_numbers_too, int include_variables, Objid progr)
+                int root_vector, int line_numbers_too, bool include_variables, Objid progr)
 {
-    Var r, rt_vars;
+    Var r;
     int count = 0, listlen = 5, i, j, k;
 
     if (line_numbers_too)
@@ -537,7 +537,6 @@ raise_error(package p, enum outcome *outcome)
 {
     /* ASSERT: p.kind == package::BI_RAISE */
     int handler_activ = find_handler_activ(p.u.raise.code);
-    int include_vars = server_int_option("INCLUDE_RT_VARS", 0);
     Finally_Reason why;
     Var value;
 
@@ -556,7 +555,7 @@ raise_error(package p, enum outcome *outcome)
     value.v.list[3] = p.u.raise.value;
     value.v.list[4] = make_stack_list(activ_stack, handler_activ,
                                       top_activ_stack, 1,
-                                      root_activ_vector, 1, include_vars,
+                                      root_activ_vector, 1, server_flag_option_cached(SVO_INCLUDE_RT_VARS),
                                       NOTHING);
 
     if (why == FIN_UNCAUGHT) {
@@ -592,7 +591,7 @@ save_hinfo:
             value.v.list[1].type = TYPE_STR;
             value.v.list[1].v.str = str_dup(htag);
             value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
-                                              root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0),
+                                              root_activ_vector, 1, server_flag_option_cached(SVO_INCLUDE_RT_VARS),
                                               NOTHING);
             value.v.list[3] = error_backtrace_list(msg);
             save_handler_info("handle_task_timeout", value);
@@ -3046,7 +3045,7 @@ run_interpreter(char raise, enum error e,
 
     Objid object = RUN_ACTIV.vloc.v.obj;
     Objid progr = RUN_ACTIV.progr;
-    const char* verb = str_ref(RUN_ACTIV.verbname);
+    const char *verb = str_ref(RUN_ACTIV.verbname);
 
 #ifdef SAVE_FINISHED_TASKS
     Var postmortem = new_map();
@@ -3085,7 +3084,7 @@ run_interpreter(char raise, enum error e,
         {
             Var lag_info = new_list(2);
             if (ret != OUTCOME_DONE) {
-                lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, 1, root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0), progr);
+                lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, 1, root_activ_vector, 1, server_flag_option_cached(SVO_INCLUDE_RT_VARS), progr);
             } else {
                 /* This is a tricky situation. The stack has already been unwound, so we can't get the line number, programmer, player, or 'this'.
                    So we do the best we can with the information we do have. The alternative would be to store the stack list every time
@@ -3706,7 +3705,7 @@ bf_task_stack(Var arglist, Byte next, void *vdata, Objid progr)
     int nargs = arglist.v.list[0].v.num;
     int id = arglist.v.list[1].v.num;
     int line_numbers_too = (nargs >= 2 && is_true(arglist.v.list[2]));
-    int stack_vars = (nargs >= 3 && is_true(arglist.v.list[3]));
+    bool stack_vars = (nargs >= 3 && is_true(arglist.v.list[3]));
     vm the_vm = find_suspended_task(id);
     Objid owner = (the_vm ? progr_of_cur_verb(the_vm) : NOTHING);
 

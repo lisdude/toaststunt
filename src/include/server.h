@@ -228,6 +228,10 @@ int proxy_connected(Objid connection, char *command);
   DEFINE( SVO_MAX_CONCAT_CATCHABLE, max_concat_catchable,			\
 	  flag, 0, /* already canonical */								\
 	  )																\
+																	\
+   DEFINE( SVO_INCLUDE_RT_VARS, include_rt_vars,					\
+	  flag, 0, /* already canonical */								\
+      )																\
                                                                     \
   DEFINE( SVO_MAX_QUEUED_OUTPUT, max_queued_output,			        \
   																	\
