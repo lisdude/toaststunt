@@ -55,31 +55,83 @@ result2var(pqxx::result res)
     return ret;
 }
 
+pqxx::params gen_parameters(Var *paramlist)
+{
+    pqxx::params p;
+    for (int x = 1; x <= paramlist->v.num; x++) {
+        switch (paramlist[x].type) {
+            case TYPE_STR:
+                p.append(pqxx::to_string(paramlist[x].v.str));
+                break;
+            case TYPE_INT:
+            case TYPE_NUMERIC:
+                p.append(paramlist[x].v.num);
+                break;
+            case TYPE_FLOAT:
+                p.append(paramlist[x].v.fnum);
+                break;
+            case TYPE_BOOL:
+                p.append(paramlist[x].v.truth);
+                break;
+        }
+    }
+    return p;
+}
+
 void
 query_callback(const Var arglist, Var *ret)
 {
     pqxx::connection c{"postgresql://moo@localhost/moo"};
     pqxx::work txn{c};
+
+    pqxx::result res;
+
+    int nargs = arglist.v.list[0].v.num;
     try
     {
-        pqxx::result res{txn.exec(arglist.v.list[1].v.str)};
-        *ret = result2var(res);
+        if (nargs < 2 || arglist.v.list[2].v.num < 1) {
+            // There's no SQL parameters.
+            res = txn.exec(arglist.v.list[1].v.str);
+        } else {
+            // Parameterize the SQL
+            c.prepare("sql_query", arglist.v.list[1].v.str);
+            
+            res = txn.exec_prepared("sql_query", gen_parameters(arglist.v.list[2].v.list));
+        }
 
+        *ret = result2var(res);
         txn.commit();
     }
     catch (std::exception const &e)
     {
         *ret = str_dup_to_var(e.what());
-        // const pqxx::sql_error *s=dynamic_cast<const pqxx::sql_error*>(&err.base())
-        // if (s) {
-        //     *ret = str_dup_to_var("SQL error code: " << s->sqlstate());
-        // }
     }
+
+    free_var(arglist);
 }
 
 static package 
 bf_sql_query(Var arglist, Byte next, void *vdata, Objid progr) 
 {
+    // Input validation for arguments.
+    if (arglist.v.list[0].v.num == 2 && arglist.v.list[2].v.list->v.num > 0) {
+        Var *tmp = arglist.v.list[2].v.list;
+        for (int x = 1; x <= tmp->v.num; x++) {
+            switch(tmp[x].type) {
+                case TYPE_FLOAT:
+                case TYPE_INT:
+                case TYPE_STR:
+                case TYPE_BOOL:
+                case TYPE_NUMERIC:
+                    continue;                    
+            }
+
+            free_var(arglist);
+            return make_error_pack(E_INVARG);
+        }
+    }
+
+    // Run the query.
     char *human_string = nullptr;
     asprintf(&human_string, "sql query");
 
