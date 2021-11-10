@@ -60,11 +60,21 @@ query_callback(const Var arglist, Var *ret)
 {
     pqxx::connection c{"postgresql://moo@localhost/moo"};
     pqxx::work txn{c};
+    try
+    {
+        pqxx::result res{txn.exec(arglist.v.list[1].v.str)};
+        *ret = result2var(res);
 
-    pqxx::result res{txn.exec(arglist.v.list[1].v.str)};
-    *ret = result2var(res);
-
-    txn.commit();
+        txn.commit();
+    }
+    catch (std::exception const &e)
+    {
+        *ret = str_dup_to_var(e.what());
+        // const pqxx::sql_error *s=dynamic_cast<const pqxx::sql_error*>(&err.base())
+        // if (s) {
+        //     *ret = str_dup_to_var("SQL error code: " << s->sqlstate());
+        // }
+    }
 }
 
 static package 
