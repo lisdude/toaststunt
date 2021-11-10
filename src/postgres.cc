@@ -37,6 +37,11 @@ col2var(pqxx::field col)
             val.type = TYPE_FLOAT;
             val.v.fnum = col.as<float>();
             break;
+        default:
+            // If we don't know what a column is, we return #-1 or $nothing.
+            val.type = TYPE_OBJ;
+            val.v.obj = NOTHING;
+            break;
     }
     return val;
 }
