@@ -15,6 +15,31 @@
 #include "server.h"
 #include "map.h"
 
+const char* connection_string()
+{
+    char* s = "postgresql://";
+    strcat(s, server_string_option("sql_user", "user"));
+    
+    const char* sql_pass = server_string_option("sql_pass", "");
+    if (sql_pass != "") {
+        strcat(s, ":");
+        strcat(s, sql_pass);
+    }
+    strcat(s, "@");
+    strcat(s, server_string_option("sql_host", "localhost"));
+
+    const char* sql_port = server_string_option("sql_port", "");
+    if (sql_port != "") {
+        strcat(s, ":");
+        strcat(s, sql_port);
+    }
+
+    strcat(s, "/");
+    strcat(s, server_string_option("sql_database", "database"));
+
+    return s;
+}
+
 Var 
 col2var(pqxx::field col) 
 {
@@ -86,7 +111,7 @@ pqxx::params gen_parameters(Var *paramlist)
 void
 query_callback(const Var arglist, Var *ret)
 {
-    pqxx::connection c{"postgresql://moo@localhost/moo"};
+    pqxx::connection c{connection_string()};
     pqxx::work txn{c};
 
     pqxx::result res;
