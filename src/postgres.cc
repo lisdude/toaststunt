@@ -55,19 +55,25 @@ result2var(pqxx::result res)
     return ret;
 }
 
-static package 
-bf_sql_query(Var arglist, Byte next, void *vdata, Objid progr) 
+void
+query_callback(const Var arglist, Var *ret)
 {
     pqxx::connection c{"postgresql://moo@localhost/moo"};
     pqxx::work txn{c};
 
     pqxx::result res{txn.exec(arglist.v.list[1].v.str)};
-    Var ret = result2var(res);
+    *ret = result2var(res);
 
     txn.commit();
+}
 
-    free_var(arglist);
-    return make_var_pack(ret);
+static package 
+bf_sql_query(Var arglist, Byte next, void *vdata, Objid progr) 
+{
+    char *human_string = nullptr;
+    asprintf(&human_string, "sql query");
+
+    return background_thread(query_callback, &arglist, human_string);    
 }
 
 static package 
