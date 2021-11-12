@@ -51,9 +51,7 @@ static pqxx::connection
     try 
     {
         if (!cached_connection) {
-            oklog("creating new connection\n");
-            cached_connection = new pqxx::connection("postgresql://moo@localhost/moo"); //connection_string()
-            oklog("connection created\n");
+            cached_connection = new pqxx::connection("postgresql://moo@localhost/moo");
         }
     }
     catch (std::exception const &e)
@@ -178,6 +176,8 @@ query_callback(const Var arglist, Var *ret)
         }
 
         *ret = result2var(res);
+
+        res.clear();
         txn.commit();
     }
     catch (pqxx::broken_connection const &e) 
@@ -235,22 +235,11 @@ bf_sql_query(Var arglist, Byte next, void *vdata, Objid progr)
     return background_thread(query_callback, &arglist, human_string);    
 }
 
-static package 
-bf_sql_execute(Var arglist, Byte next, void *vdata, Objid progr) 
-{
-    if (!is_wizard(progr))
-    {
-        free_var(arglist);
-        return make_error_pack(E_PERM);
-    }
-}
-
 void register_postgres(void) 
 {
     oklog("REGISTER_POSTGRESS: Using PQXX Library\n");
 
     register_function("sql_query", 1, 2, bf_sql_query, TYPE_STR, TYPE_LIST);
-    register_function("sql_execute", 1, 2, bf_sql_execute, TYPE_STR, TYPE_LIST);
 }
 #else /* PQXX_FOUND */
 void register_postgres(void) { }
