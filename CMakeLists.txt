@@ -38,7 +38,7 @@ if( CMAKE_SIZEOF_VOID_P EQUAL 4 )
 endif()
 
 # Compiler Flags
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 99)
 
 # These flags are shared by the RELEASE and WARN build types.
