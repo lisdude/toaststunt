@@ -14,6 +14,7 @@
 - Fix a couple of race conditions that could result in a server crash.
 - Fix a memory leak around `SAVE_FINISHED_TASKS` / lag reporting.
 - Fix an issue where `handle_lagging_task()` would get called with empty arguments for single tasks.
+- Return runtime error messages from `sqlite_execute()`.
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key must be configured properly in options.h. See warnings at the end of this changelog for important information about these changes.
