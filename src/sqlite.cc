@@ -397,34 +397,44 @@ static void sqlite_execute_thread_callback(Var args, Var *r)
     }
 
     rc = sqlite3_step(stmt);
-    int col = sqlite3_column_count(stmt);
+	/* TODO: Error checking will work if it fails on the first step, but extra handling should be implemented to cope with multiple steps */
+	bool ok = (rc == SQLITE_OK || rc == SQLITE_DONE || rc == SQLITE_ROW);
+	if (!ok) {
+		const char *err = sqlite3_errmsg(handle->id);
+		r->type = TYPE_STR;
+		r->v.str = str_dup(err);
+	}
+	else {
+		int col = sqlite3_column_count(stmt);
 
-    *r = new_list(0);
+		*r = new_list(0);
 
-    while (rc == SQLITE_ROW)
-    {
-        Var row = new_list(0);
-        for (int x = 0; x < col; x++)
-        {
-            // Ideally we would know the type and use sqlite3_column<TYPE> but we don't!
-            char *str = (char*)sqlite3_column_text(stmt, x);
+		while (rc == SQLITE_ROW)
+		{
+			Var row = new_list(0);
+			for (int x = 0; x < col; x++)
+			{
+				// Ideally we would know the type and use sqlite3_column<TYPE> but we don't!
+				char *str = (char*)sqlite3_column_text(stmt, x);
 
-            if (handle->options & SQLITE_SANITIZE_STRINGS)
-                sanitize_string_for_moo(str);
+				if (handle->options & SQLITE_SANITIZE_STRINGS)
+					sanitize_string_for_moo(str);
 
-            Var s;
-            if (!(handle->options & SQLITE_PARSE_TYPES))
-            {
-                s.type = TYPE_STR;
-                s.v.str = str_dup(str);
-            } else {
-                s = string_to_moo_type(str, handle->options & SQLITE_PARSE_OBJECTS, handle->options & SQLITE_SANITIZE_STRINGS);
-            }
-            row = listappend(row, s);
-        }
-        *r = listappend(*r, row);
-        rc = sqlite3_step(stmt);
-    }
+				Var s;
+				if (!(handle->options & SQLITE_PARSE_TYPES))
+				{
+					s.type = TYPE_STR;
+					s.v.str = str_dup(str);
+				}
+				else {
+					s = string_to_moo_type(str, handle->options & SQLITE_PARSE_OBJECTS, handle->options & SQLITE_SANITIZE_STRINGS);
+				}
+				row = listappend(row, s);
+			}
+			*r = listappend(*r, row);
+			rc = sqlite3_step(stmt);
+		}
+	}
 
     /* TODO: Reset the prepared statement bindings and cache it.
      *       (Remove finalize when that happens) */
