@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 7)
 set(VERSION_RELEASE 0)
-set(VERSION_EXT "_30")
+set(VERSION_EXT "_31")
 project(ToastStunt VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_RELEASE} LANGUAGES CXX C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
@@ -89,6 +89,14 @@ check_function_exists(accept4 HAVE_ACCEPT4)
 check_symbol_exists(tzname time.h HAVE_TZNAME)
 
 check_struct_has_member("struct tm"  tm_zone  time.h  HAVE_TM_ZONE)
+
+# Check for a Microsoft operating system (for virtual timers)
+string(FIND ${CMAKE_SYSTEM} "Microsoft" IS_WSL)
+if (IS_WSL GREATER_EQUAL 0)
+    message(STATUS "Found Windows Subsystem for Linux.")
+else()
+    unset(IS_WSL)
+endif()
 
 # Yacc (-d is a default flag on my bison)
 bison_target(MOOParser src/parser.y ${CMAKE_BINARY_DIR}/parser.cc COMPILE_FLAGS "-y")

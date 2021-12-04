@@ -15,6 +15,7 @@
 - Fix a memory leak around `SAVE_FINISHED_TASKS` / lag reporting.
 - Fix an issue where `handle_lagging_task()` would get called with empty arguments for single tasks.
 - Return runtime error messages from `sqlite_execute()`.
+- Disable virtual timers when running under the Windows Subsystem for Linux. (This fixes things like `seconds_left()` returning 0.)
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key must be configured properly in options.h. See warnings at the end of this changelog for important information about these changes.
