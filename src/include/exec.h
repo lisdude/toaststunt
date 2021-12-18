@@ -32,7 +32,7 @@
 
 #include "config.h"
 
-extern const char *exec_subdir;
+extern char *exec_subdir;
 
 extern void deal_with_child_exit(void);
 

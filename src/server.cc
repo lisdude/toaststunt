@@ -123,8 +123,8 @@ const char *default_key_path = DEFAULT_TLS_KEY;
 int clear_last_move = false;
 char *bind_ipv4 = nullptr;
 char *bind_ipv6 = nullptr;
-const char *file_subdir = FILE_SUBDIR;
-const char *exec_subdir = EXEC_SUBDIR;
+char *file_subdir = FILE_SUBDIR;
+char *exec_subdir = EXEC_SUBDIR;
 
 typedef struct shandle {
     struct shandle *next, **prev;
@@ -2096,6 +2096,13 @@ main(int argc, char **argv)
     // If we caught a port at the end of the arglist, add it to the rest.
     if (desc.v.num != 0)
         initial_ports.push_back(desc.v.num);
+
+    /* Now that it's so easy to change file / exec directories, it's easy to forget the last '/'
+       We'll helpfully add it back to avoid confusion. */
+    if (file_subdir[strlen(file_subdir) - 1] != '/')
+        asprintf(&file_subdir, "%s/", file_subdir);
+    if (exec_subdir[strlen(exec_subdir) - 1] != '/')
+        asprintf(&exec_subdir, "%s/", exec_subdir);
 
     applog(LOG_INFO1, " _   __           _____                ______\n");
     applog(LOG_INFO1, "( `^` ))  ___________  /_____  _________ __  /_\n");
