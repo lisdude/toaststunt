@@ -323,12 +323,12 @@ const char *file_resolve_path(const char *pathname) {
     static Stream *s = nullptr;
 
     if (!s)
-        s = new_stream(strlen(pathname) + strlen(FILE_SUBDIR) + 1);
+        s = new_stream(strlen(pathname) + strlen(file_subdir) + 1);
 
     if (!file_verify_path(pathname))
         return nullptr;
 
-    stream_add_string(s, FILE_SUBDIR);
+    stream_add_string(s, file_subdir);
     if (pathname[0] == '/')
         stream_add_string(s, pathname + 1);
     else

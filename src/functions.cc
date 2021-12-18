@@ -518,7 +518,7 @@ load_server_protect_function_flags(void)
 	bf_table[i]._protected
 	    = server_flag_option(bf_table[i].protect_str, 0);
     }
-    oklog("Loaded protect cache for %d builtin functions\n", i);
+    oklog("CACHE: Loaded protect cache for %d builtin functions\n", i);
 }
 
 Num _server_int_option_cache[SVO__CACHE_SIZE];

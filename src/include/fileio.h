@@ -9,6 +9,7 @@
 
 static char *line_read;
 size_t line_size = 0;
+extern const char *file_subdir;
 
 extern const char *file_resolve_path(const char *pathname);
 

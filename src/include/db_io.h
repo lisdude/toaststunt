@@ -25,7 +25,7 @@
 
 extern int waif_conversion_type;
 
-extern bool clear_last_move;
+extern int clear_last_move;
 
 /*********** Input ***********/
 
