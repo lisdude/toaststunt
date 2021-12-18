@@ -16,18 +16,18 @@
 - Fix an issue where `handle_lagging_task()` would get called with empty arguments for single tasks.
 - Return runtime error messages from `sqlite_execute()`.
 - Disable virtual timers when running under the Windows Subsystem for Linux. (This fixes things like `seconds_left()` returning 0.)
-- Revamped command-line arguments:
-    - Each option now supports a single letter and a long form name.
-    - Arguments can now appear in any order (the only exception is output database must appear somewhere after input database)
-    - New arguments have been added to override defines in `options.h`. These include: `--tls-cert`, `--tls-key`, `--file-dir`, `--exec-dir`
-    - You can now specify as many initial listeners as you want. Use `-p` for a standard port or `-t` for a TLS port. (e.g. `./moo db db2 -p 7777 -t 7443 -p 8888 -t 8443`)
-    - A full list of arguments is now available by supplying `--help`.
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key can be configured in options.h, specifed as command-line arguments, or given as arguments to in-MOO functions. See warnings at the end of this changelog for important information about these changes.
 - Add a command line switch (`-t` or `--tls-port`) to enable a TLS listening port.
 - MAX_QUEUED_OUTPUT can be overridden in-database by adding the property `$server_options.max_queued_output` and calling `load_server_options()`.
 - `queued_tasks()` now accepts a second argument. If true, only the number of queued tasks is returned. This is significantly more performant than `length(queued_tasks())`
+- Revamped command-line arguments:
+    - Each option now supports a single letter and a long form name.
+    - Arguments can now appear in any order (the only exception is output database must appear somewhere after input database)
+    - New arguments have been added to override defines in `options.h`. These include: `--tls-cert`, `--tls-key`, `--file-dir`, `--exec-dir`
+    - You can now specify as many initial listeners as you want. Use `-p` for a standard port or `-t` for a TLS port. (e.g. `./moo db db2 -p 7777 -t 7443 -p 8888 -t 8443`)
+    - A full list of arguments is now available by supplying `--help`.
 
 ### *** COMPATIBILITY WARNINGS ***
 - The arguments for `listen()` have changed! Listen now accepts an optional third argument as a map. This map takes over the previous arguments and has the keys: ipv6, tls, certificate, key, print-messages. So if you wanted everything, you would use: `listen(#0, 1234, ["ipv6" -> 1, "tls" -> 1, "certificate" -> "/etc/certs/something.pem", "key" -> "/etc/certs/privkey.pem", "print-messages" -> 1]`
