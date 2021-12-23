@@ -78,7 +78,7 @@
 #cmakedefine CURL_FOUND
 #cmakedefine PCRE_FOUND
 #cmakedefine SQLITE3_FOUND
-#cmakedefine PQXX_FOUND
+#cmakedefine ZDB_FOUND
 #cmakedefine OPENSSL_FOUND
 
 #ifndef OPENSSL_FOUND

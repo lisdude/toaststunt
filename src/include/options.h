@@ -532,20 +532,6 @@
 
 #define JSON_MAX_PARSE_DEPTH 1000
 
-/******************************************************************************
- * Configurable options for the POSTGRESQL or other SQL databases.
- * By default, none of these settings will do anything without SQL
- * support compiled in. Furthermore, these settings should be gotten
- * from an existing and already running SQL instance as the MOO will not
- * set up and run a SQL server for you, unlike SQLite.
-*/
-#define SQL_HOST      "localhost"
-#define SQL_PORT      3363
-#define SQL_DATABASE  "sql_db"
-#define SQL_USER      "sql_user"
-// #define SQL_PASS      ""
-
-
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/

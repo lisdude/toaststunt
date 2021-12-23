@@ -39,7 +39,7 @@ endif()
 
 # Compiler Flags
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 17)
 
 # These flags are shared by the RELEASE and WARN build types.
 set(SHARED_COMPILE_FLAGS "-march=native -O3")
@@ -123,7 +123,7 @@ find_package(CURL)
 find_package(ASPELL)
 find_package(SQLite3)
 find_package(OpenSSL)
-find_package(PQXX)
+find_package(ZDB)
 
 # Millions of source files
 set(src_CSRCS
@@ -208,7 +208,7 @@ set(src_CXXSRCS
     src/argon2.cc
     src/spellcheck.cc
     src/curl.cc
-    src/postgres.cc)
+    src/sqldb.cc)
 
 set(src_GRAMMAR
     ${BISON_MOOParser_OUTPUTS})
@@ -256,9 +256,9 @@ if(SQLITE3_FOUND)
     target_link_libraries(moo ${SQLITE3_LIBRARIES})
 endif()
 
-if (PQXX_FOUND)
-    include_directories(${PQXX_INCLUDE_DIRS})
-    target_link_libraries(moo ${PQXX_LIBRARIES})
+if (ZDB_FOUND)
+    include_directories(${ZDB_INCLUDE_DIRS})
+    target_link_libraries(moo ${ZDB_LIBRARIES})
 endif()
 
 if(OPENSSL_FOUND)
