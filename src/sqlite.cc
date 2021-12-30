@@ -189,16 +189,12 @@ static int callback(void *index, int argc, char **argv, char **azColName)
 
 /* Converts a MOO object (supplied to a prepared statement) into a string similar to
  * tostr(#xxx) */
-static Stream* object_to_string(Var *thing)
+static char* object_to_string(Var *thing)
 {
-    static Stream *s = nullptr;
+    char *objnum = nullptr;
+    asprintf(&objnum, "#%" PRIdN, thing->v.num);
 
-    if (!s)
-        s = new_stream(11);
-
-    stream_printf(s, "#%d", thing->v.num);
-
-    return s;
+    return objnum;
 }
 
 /* Clean up when the server shuts down. */
@@ -391,7 +387,7 @@ static void sqlite_execute_thread_callback(Var args, Var *r)
                 sqlite3_bind_double(stmt, x, args.v.list[3].v.list[x].v.fnum);
                 break;
             case TYPE_OBJ:
-                sqlite3_bind_text(stmt, x, str_dup(reset_stream(object_to_string(&args.v.list[3].v.list[x]))),  -1, nullptr);
+                sqlite3_bind_text(stmt, x, object_to_string(&args.v.list[3].v.list[x]),  -1, nullptr);
                 break;
         }
     }

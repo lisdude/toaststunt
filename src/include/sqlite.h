@@ -5,7 +5,6 @@
 #include <atomic>
 
 #include "structures.h"
-#include "streams.h"
 
 #define SQLITE_MAX_HANDLES      20  /* Maximum number of SQLite databases that can be open
                                      * at a single time. Can be overridden with an INT in
