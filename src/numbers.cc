@@ -631,7 +631,7 @@ bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
     const long int year_seconds = 31536000;
     Var r;
     time_t c;
-    char buffer[256];
+    char buffer[128];
     struct tm *t;
 
     if (arglist.v.list[0].v.num == 1) {
