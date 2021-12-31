@@ -629,13 +629,14 @@ static package
 bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
 {
     const long int year_seconds = 31536000;
+    const long int max_year = std::numeric_limits<int>::max() * year_seconds;
     Var r;
     time_t c;
     char buffer[128];
     struct tm *t;
 
     if (arglist.v.list[0].v.num == 1) {
-        c = std::min(arglist.v.list[1].v.num, std::numeric_limits<short>::max() * year_seconds);
+        c = std::min(arglist.v.list[1].v.num, max_year);
     } else {
         c = time(nullptr);
     }
