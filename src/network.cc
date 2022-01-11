@@ -1151,7 +1151,7 @@ network_initialize(int argc, char **argv, Var * desc)
             errlog("TLS: Failed to load default certificate: %s\n", error_msg);
         }
 
-        if (SSL_CTX_use_PrivateKey_file(tls_ctx, DEFAULT_TLS_KEY, SSL_FILETYPE_PEM) <= 0) {
+        if (SSL_CTX_use_PrivateKey_file(tls_ctx, default_key_path, SSL_FILETYPE_PEM) <= 0) {
             ERR_error_string_n(ERR_get_error(), error_msg, 256);
             errlog("TLS: Failed to load default private key: %s\n", error_msg);
         }
