@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 7)
 set(VERSION_RELEASE 0)
-set(VERSION_EXT "_34")
+set(VERSION_EXT "_35")
 project(ToastStunt VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_RELEASE} LANGUAGES CXX C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
@@ -11,6 +11,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
 find_package(BISON REQUIRED)
 find_package(Perl REQUIRED)
 find_package(gperf REQUIRED)
+
+# (is there a better way to detect Apple Silicon?)
+EXECUTE_PROCESS( COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE )
+if(APPLE AND ${ARCHITECTURE} STREQUAL "arm64")
+    set(APPLE_SILICON_FOUND 1)
+endif()
 
 # Where to find header files
 include_directories(${CMAKE_SOURCE_DIR}/src/include)
@@ -42,7 +48,12 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 99)
 
 # These flags are shared by the RELEASE and WARN build types.
-set(SHARED_COMPILE_FLAGS "-march=native -O3")
+set(SHARED_COMPILE_FLAGS "-O3")
+if(NOT APPLE_SILICON_FOUND)
+    set(SHARED_COMPILE_FLAGS "${SHARED_COMPILE_FLAGS} -march=native")
+else()
+    set(SHARED_COMPILE_FLAGS "${SHARED_COMPILE_FLAGS} -mcpu=apple-m1")
+endif()
 
 # The default for non-developers: Optimization enabled and all warnings silenced.
 set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} ${SHARED_COMPILE_FLAGS} -w")
@@ -123,7 +134,15 @@ add_custom_command(
 # Find packages. We don't do anything with the information yet because we need to know if things exist
 #                to modify the source files, so we have to do it before moo is defined. But we can't
 #                do the package setup UNTIL moo is defined.
-find_package(Threads REQUIRED)
+IF(APPLE_SILICON_FOUND)
+    set(CMAKE_THREAD_LIBS_INIT "-lpthread")
+    set(CMAKE_HAVE_THREADS_LIBRARY 1)
+    set(CMAKE_USE_WIN32_THREADS_INIT 0)
+    set(CMAKE_USE_PTHREADS_INIT 1)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+ELSE()
+    find_package(Threads REQUIRED)
+ENDIF()
 find_package(Nettle REQUIRED)
 find_package(Argon2 REQUIRED)
 find_package(PCRE)

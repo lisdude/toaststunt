@@ -629,7 +629,7 @@ bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
 {
     /* tm time structs have a max year equal to integer, which a 64 bit number of seconds will surpass */
     const long int year_seconds = 31536000;
-    const long int max_year = std::numeric_limits<int>::max() * year_seconds;
+    const Num max_year = std::numeric_limits<int>::max() * year_seconds;
 
     Var r;
     time_t c;
