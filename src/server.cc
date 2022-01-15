@@ -2185,18 +2185,20 @@ main(int argc, char **argv)
     {
         auto port_type = PORT_STANDARD;
         auto *ports = &initial_ports;
+#endif
         for (auto &the_port : *ports)
         {
             desc.v.num = the_port;
             for (int ip_type = 0; ip_type < 2; ip_type++)
             {
+#ifdef USE_TLS
                 if ((new_listener = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, ip_type TLS_PORT_TYPE TLS_CERT_PATH)) == nullptr)
                     errlog("Error creating %s%s listener on port %i.\n", port_type == PORT_TLS ? "TLS " : "", ip_type == PROTO_IPv6 ? "IPv6" : "IPv4", the_port);
                 else
+#endif
                     initial_listeners.push_back(new_listener);
             }
         }
-#endif
     }
 
     if (initial_listeners.size() < 1) {
