@@ -32,6 +32,8 @@
 
 #include "config.h"
 
+extern char *exec_subdir;
+
 extern void deal_with_child_exit(void);
 
 extern pid_t exec_complete(pid_t p, int code);

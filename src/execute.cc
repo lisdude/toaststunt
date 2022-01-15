@@ -92,6 +92,7 @@ static Var map_fullverb;
 static Var map_foreground;
 static Var map_suspended;
 static Var map_time;
+static Var not_available;
 #endif              /* SAVE_FINISHED_TASKS */
 
 static char* type_mismatch_string(int n_args, ...);
@@ -449,9 +450,9 @@ make_rt_var_map(Var * rt_env, const char **var_names, unsigned size)
 
 static Var
 make_stack_list(activation * stack, int start, int end, int include_end,
-                int root_vector, int line_numbers_too, int include_variables, Objid progr)
+                int root_vector, int line_numbers_too, bool include_variables, Objid progr)
 {
-    Var r, rt_vars;
+    Var r;
     int count = 0, listlen = 5, i, j, k;
 
     if (line_numbers_too)
@@ -536,7 +537,6 @@ raise_error(package p, enum outcome *outcome)
 {
     /* ASSERT: p.kind == package::BI_RAISE */
     int handler_activ = find_handler_activ(p.u.raise.code);
-    int include_vars = server_int_option("INCLUDE_RT_VARS", 0);
     Finally_Reason why;
     Var value;
 
@@ -555,7 +555,7 @@ raise_error(package p, enum outcome *outcome)
     value.v.list[3] = p.u.raise.value;
     value.v.list[4] = make_stack_list(activ_stack, handler_activ,
                                       top_activ_stack, 1,
-                                      root_activ_vector, 1, include_vars,
+                                      root_activ_vector, 1, server_flag_option_cached(SVO_INCLUDE_RT_VARS),
                                       NOTHING);
 
     if (why == FIN_UNCAUGHT) {
@@ -591,7 +591,7 @@ save_hinfo:
             value.v.list[1].type = TYPE_STR;
             value.v.list[1].v.str = str_dup(htag);
             value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
-                                              root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0),
+                                              root_activ_vector, 1, server_flag_option_cached(SVO_INCLUDE_RT_VARS),
                                               NOTHING);
             value.v.list[3] = error_backtrace_list(msg);
             save_handler_info("handle_task_timeout", value);
@@ -929,6 +929,8 @@ run(char raise, enum error resumption_error, Var * result)
                 separator = '.';                                                                 \
             else if (the_err == E_VERBNF)                                                        \
                 separator = ':';                                                                 \
+            else                                                                                 \
+                separator = ' ';                                                                 \
             stream_printf(error_stream, "%s: ", unparse_error(the_err));                         \
             unparse_value(error_stream, the_object);                                             \
             stream_printf(error_stream, "%c%s%s", separator, the_missing.v.str,                  \
@@ -1439,15 +1441,15 @@ finish_comparison:
                     ans.type = TYPE_ERR;
                     ans.v.err = E_TYPE;
                 }
-                
+
                 if (ans.type == TYPE_ERR) {
                     lhs_type = lhs.type;
                     rhs_type = rhs.type;
                 }
-                
+
                 free_var(rhs);
                 free_var(lhs);
-                
+
                 if (ans.type == TYPE_ERR) {
                     if (ans.v.err == E_TYPE)
                         PUSH_TYPE_MISMATCH(2,
@@ -3041,20 +3043,20 @@ run_interpreter(char raise, enum error e,
     handler_verb_args = zero;
     handler_verb_name = nullptr;
 
-    Var object = var_dup(RUN_ACTIV.vloc);
-    Var verb = str_ref_to_var(RUN_ACTIV.verbname);
-    Var progr = var_dup(Var::new_obj(RUN_ACTIV.progr));
+    Objid object = RUN_ACTIV.vloc.v.obj;
+    Objid progr = RUN_ACTIV.progr;
+    const char *verb = str_ref(RUN_ACTIV.verbname);
 
 #ifdef SAVE_FINISHED_TASKS
     Var postmortem = new_map();
 
-    postmortem = mapinsert(postmortem, var_ref(map_this), Var::new_obj(RUN_ACTIV._this.v.obj));
+    postmortem = mapinsert(postmortem, var_ref(map_this), var_ref(RUN_ACTIV._this));
     postmortem = mapinsert(postmortem, var_ref(map_player), Var::new_obj(RUN_ACTIV.player));
-    postmortem = mapinsert(postmortem, var_ref(map_programmer), Var::new_obj(progr.v.obj));
+    postmortem = mapinsert(postmortem, var_ref(map_programmer), Var::new_obj(RUN_ACTIV.progr));
     postmortem = mapinsert(postmortem, var_ref(map_receiver), Var::new_obj(RUN_ACTIV.recv));
-    postmortem = mapinsert(postmortem, var_ref(map_object), Var::new_obj(object.v.obj));
-    postmortem = mapinsert(postmortem, var_ref(map_verb), strcmp(RUN_ACTIV.verb, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verb));
-    postmortem = mapinsert(postmortem, var_ref(map_fullverb), strcmp(RUN_ACTIV.verbname, "") == 0 ? str_dup_to_var("n/a") : str_dup_to_var(RUN_ACTIV.verbname));
+    postmortem = mapinsert(postmortem, var_ref(map_object), var_ref(RUN_ACTIV.vloc));
+    postmortem = mapinsert(postmortem, var_ref(map_verb), strcmp(RUN_ACTIV.verb, "") == 0 ? var_ref(not_available) : str_ref_to_var(RUN_ACTIV.verb));
+    postmortem = mapinsert(postmortem, var_ref(map_fullverb), strcmp(RUN_ACTIV.verbname, "") == 0 ? var_ref(not_available) : str_ref_to_var(RUN_ACTIV.verbname));
     postmortem = mapinsert(postmortem, var_ref(map_foreground), Var::new_int(is_fg));
 #endif  /* SAVE_FINISHED_TASKS */
 
@@ -3076,12 +3078,26 @@ run_interpreter(char raise, enum error e,
     double lag_threshold = server_float_option("task_lag_threshold", DEFAULT_LAG_THRESHOLD);
     if (total_cputime.v.fnum >= lag_threshold && lag_threshold >= 0.1)
     {
-        errlog("LAG: %f seconds caused by #%" PRIdN ":%s\n", total_cputime.v.fnum, object.v.obj, verb.v.str);
+        errlog("LAG: %f seconds caused by #%" PRIdN ":%s\n", total_cputime.v.fnum, object, verb);
         db_verb_handle handle = db_find_callable_verb(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task");
         if (handle.ptr)
         {
             Var lag_info = new_list(2);
-            lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, top_activ_stack > 1 ? 1 : 0, root_activ_vector, 1, server_int_option("INCLUDE_RT_VARS", 0), progr.v.obj);
+            if (ret != OUTCOME_DONE) {
+                lag_info.v.list[1] = make_stack_list(activ_stack, 0, top_activ_stack, 1, root_activ_vector, 1, server_flag_option_cached(SVO_INCLUDE_RT_VARS), progr);
+            } else {
+                /* This is a tricky situation. The stack has already been unwound, so we can't get the line number, programmer, player, or 'this'.
+                   So we do the best we can with the information we do have. The alternative would be to store the stack list every time
+                   regardless of lag, but that would be a huge waste. Seeing as how, previously, you got no information at all, I think object:verb
+                   will be good enough. */
+                lag_info.v.list[1] = new_list(6);
+                lag_info.v.list[1].v.list[1] = var_ref(nothing);
+                lag_info.v.list[1].v.list[2] = str_ref_to_var(verb);
+                lag_info.v.list[1].v.list[3] = var_ref(nothing);
+                lag_info.v.list[1].v.list[4] = Var::new_obj(object);
+                lag_info.v.list[1].v.list[5] = var_ref(nothing);
+                lag_info.v.list[1].v.list[6] = var_ref(nothing);
+            }
             lag_info.v.list[2] = total_cputime;
             do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), "handle_lagging_task", lag_info, handle, activ_stack[0].player, "", nullptr, 0);
         }
@@ -3095,6 +3111,8 @@ run_interpreter(char raise, enum error e,
     while (finished_tasks.v.list[0].v.num > server_int_option("finished_tasks_limit", SAVE_FINISHED_TASKS) && finished_tasks.v.list[0].v.num > 1)
         finished_tasks = listdelete(finished_tasks, 1);
 #endif /* SAVE_FINISHED_TASKS */
+
+    free_str(verb);
 
     if (ret == OUTCOME_ABORTED && handler_verb_name)
     {
@@ -3687,7 +3705,7 @@ bf_task_stack(Var arglist, Byte next, void *vdata, Objid progr)
     int nargs = arglist.v.list[0].v.num;
     int id = arglist.v.list[1].v.num;
     int line_numbers_too = (nargs >= 2 && is_true(arglist.v.list[2]));
-    int stack_vars = (nargs >= 3 && is_true(arglist.v.list[3]));
+    bool stack_vars = (nargs >= 3 && is_true(arglist.v.list[3]));
     vm the_vm = find_suspended_task(id);
     Objid owner = (the_vm ? progr_of_cur_verb(the_vm) : NOTHING);
 
@@ -3743,6 +3761,7 @@ register_execute(void)
     map_foreground = str_dup_to_var("foreground");
     map_suspended = str_dup_to_var("suspended");
     map_time = str_dup_to_var("time");
+    not_available = str_dup_to_var("n/a");
 #endif          /* SAVE_FINISHED_TASKS */
 }
 

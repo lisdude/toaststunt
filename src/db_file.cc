@@ -903,7 +903,7 @@ read_db_file(void)
         }
     }
 
-    oklog("LOADING: Reading %" PRIdN " objects ...\n", nobjs);
+    oklog("LOADING: Reading %" PRIdN " object%s ...\n", nobjs, nobjs > 1 ? "s" : "");
     for (i = 1; i <= nobjs; i++) {
         if (DBV_NextGen > dbio_input_version) {
             if (!v4_read_object()) {
@@ -918,7 +918,7 @@ read_db_file(void)
             }
         }
         if (i % 10000 == 0 || i == nobjs)
-            oklog("LOADING: Done reading %" PRIdN " objects ...\n", i);
+            oklog("LOADING: Done reading %" PRIdN " object%s ...\n", i, i > 1 ? "s" : "");
     }
 
     if (DBV_Anon <= dbio_input_version) {
@@ -929,14 +929,14 @@ read_db_file(void)
             }
             if (!nobjs)
                 break;
-            oklog("LOADING: Reading %" PRIdN " objects ...\n", nobjs);
+            oklog("LOADING: Reading %" PRIdN " object%s ...\n", nobjs, nobjs > 1 ? "s" : "");
             for (i = 1; i <= nobjs; i++) {
                 if (!ng_read_object(1)) {
                     errlog("READ_DB_FILE: Bad object #%" PRIdN ".\n", i - 1);
                     return 0;
                 }
                 if (i % 10000 == 0 || i == nobjs)
-                    oklog("LOADING: Done reading %" PRIdN " objects ...\n", i);
+                    oklog("LOADING: Done reading %" PRIdN " object%s ...\n", i, i > 1 ? "s" : "");
             }
         }
     }
@@ -968,7 +968,7 @@ read_db_file(void)
         }
     }
 
-    oklog("LOADING: Reading %" PRIdN " MOO verb programs ...\n", nprogs);
+    oklog("LOADING: Reading %" PRIdN " MOO verb program%s ...\n", nprogs, nprogs > 1 ? "s" : "");
     for (i = 1; i <= nprogs; i++) {
         if (dbio_scanf("#%" SCNdN ":%" SCNdN "\n", &oid, &vnum) != 2) {
             errlog("READ_DB_FILE: Bad program header, i = %" PRIdN ".\n", i);
@@ -990,7 +990,7 @@ read_db_file(void)
         }
         db_set_verb_program(h, program);
         if (i % 5000 == 0 || i == nprogs)
-            oklog("LOADING: Done reading %" PRIdN " verb programs ...\n", i);
+            oklog("LOADING: Done reading %" PRIdN " verb program%s ...\n", i, i > 1 ? "s" : "");
     }
 
     if (DBV_Anon > dbio_input_version) {

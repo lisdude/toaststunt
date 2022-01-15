@@ -155,7 +155,7 @@ make -j2
 
 ### **Gentoo**
 ```bash
-emerge dev-db/sqlite app-text/aspell app-crypt/argon2 cmake
+emerge dev-db/sqlite app-text/aspell app-dicts/aspell-en app-crypt/argon2 cmake
 mkdir build && cd build
 cmake ../
 make -j2
@@ -172,10 +172,14 @@ make -j2
 ### **macOS**
 Installing dependencies requires [Homebrew](https://brew.sh/).
 
+If using OpenSSL, you may have to export an environment variable before running CMake:
+- Apple Silicon: `export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl@3/lib/pkgconfig"`
+- Intel: `export PKG_CONFIG_PATH="/usr/local/opt/openssl@3/lib/pkgconfig"`
+
 Follow the instructions in the notes section below to compile and install Argon2. **NOTE**: In the last step, the install prefix should be changed to `/usr/local`
 
 ```bash
-brew install pcre aspell nettle cmake
+brew install pcre aspell nettle cmake openssl
 mkdir build && cd build
 cmake ../
 make -j2

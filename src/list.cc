@@ -935,7 +935,7 @@ bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
 
 /* Sorts various MOO types using std::sort.
  * Args: LIST <values to sort>, [LIST <values to sort by>], [INT <natural sort ordering?>], [INT <reverse?>] */
-void sort_callback(Var arglist, Var *ret)
+void sort_callback(const Var arglist, Var *ret)
 {
     const int nargs = arglist.v.list[0].v.num;
     const int list_to_sort = (nargs >= 2 && arglist.v.list[2].v.list[0].v.num > 0 ? 2 : 1);
@@ -973,8 +973,8 @@ void sort_callback(Var arglist, Var *ret)
 
         bool operator()(const size_t a, const size_t b) const
         {
-            Var lhs = m_Arglist[a];
-            Var rhs = m_Arglist[b];
+            const Var lhs = m_Arglist[a];
+            const Var rhs = m_Arglist[b];
 
             switch (rhs.type) {
                 case TYPE_INT:

@@ -5,21 +5,36 @@
 - Fix a memory leak in `open_network_connection()` that occurred after a successful connection.
 - Fix a bug where the SERVER FULL message wouldn't display the connection name properly.
 - Fix a bug where a waif could refer to itself in a map. It now correctly returns E_RECMOVE. The server will also now validate waifs at startup to ensure there are no self-referential waifs. If one is found, it's invalidated.
-- Fix a race condition that could result in a server crash.
 - Fix an issue that could cause friendly error messages to display 'unknown type'.
 - The stack list passed to `handle_lagging_task()` now actually includes the verb that was causing the lag, rather than just the verb(s) that called it.
 - Detect 32-bit architectures and set the ONLY_32_BITS option appropriately.
 - Fix a bug that would cause `file_read()` to over-read if the number of bytes specified was larger than the buffer.
+- Fix a (rare) crash in the lag profiler.
+- Fix an issue where threaded SQLite calls could set the number of locks incorrectly, which would allow a connection to be closed while it was still doing work.
+- Fix a couple of race conditions that could result in a server crash.
+- Fix a memory leak around `SAVE_FINISHED_TASKS` / lag reporting.
+- Fix an issue where `handle_lagging_task()` would get called with empty arguments for single tasks.
+- Return runtime error messages from `sqlite_execute()`.
+- Disable virtual timers when running under the Windows Subsystem for Linux. (This fixes things like `seconds_left()` returning 0.)
+- Fix a potential crash when threaded SQLite functions attempt to write object numbers.
+- Add a ceiling to `ctime()` to prevent overflows with large integer arguments.
 
 ### New Features
-- Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key must be configured properly in options.h. See warnings at the end of this changelog for important information about these changes.
-- Add a command line switch (`+t`) to enable TLS on default listening ports.
+- Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key can be configured in options.h, specifed as command-line arguments, or given as arguments to in-MOO functions. See warnings at the end of this changelog for important information about these changes.
+- Add a command line switch (`-t` or `--tls-port`) to enable a TLS listening port.
 - MAX_QUEUED_OUTPUT can be overridden in-database by adding the property `$server_options.max_queued_output` and calling `load_server_options()`.
 - `queued_tasks()` now accepts a second argument. If true, only the number of queued tasks is returned. This is significantly more performant than `length(queued_tasks())`
+- Revamped command-line arguments:
+    - Each option now supports a single letter and a long form name.
+    - Arguments can now appear in any order (the only exception is output database must appear somewhere after input database)
+    - New arguments have been added to override defines in `options.h`. These include: `--tls-cert`, `--tls-key`, `--file-dir`, `--exec-dir`
+    - You can now specify as many initial listeners as you want. Use `-p` for a standard port or `-t` for a TLS port. (e.g. `./moo db db2 -p 7777 -t 7443 -p 8888 -t 8443`)
+    - A full list of arguments is now available by supplying `--help`.
 
 ### *** COMPATIBILITY WARNINGS ***
 - The arguments for `listen()` have changed! Listen now accepts an optional third argument as a map. This map takes over the previous arguments and has the keys: ipv6, tls, certificate, key, print-messages. So if you wanted everything, you would use: `listen(#0, 1234, ["ipv6" -> 1, "tls" -> 1, "certificate" -> "/etc/certs/something.pem", "key" -> "/etc/certs/privkey.pem", "print-messages" -> 1]`
 - The arguments for `open_network_connection()` have changed! All previous optional arguments have been folded into a single optional third MAP argument. It accepts the keys: ipv6, listener, tls. So if you wanted to open a TLS connection to an IPv6 address using #6 as the listener, you would do: `open_network_connection("2607:5300:60:4be0::", 1234, ["ipv6" -> 1, "listener" -> #6, "tls" -> 1])`
+- The command-line argument for enabling/disabling outbound network connections has changed slightly. If you want to *enable* outbound network connections, use `-o` or `--outbound`. To *disable* outbound connections, use `-O` or `--outbound`. (Note the capitalization difference.)
 
 ## 2.6.2 (Sep 5, 2020)
 ### Bug Fixes

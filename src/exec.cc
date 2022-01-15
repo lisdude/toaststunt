@@ -414,8 +414,8 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     /* prepend the exec subdirectory path */
     static Stream *s;
     if (!s)
-        s = new_stream(strlen(EXEC_SUBDIR) * 2);
-    stream_add_string(s, EXEC_SUBDIR);
+        s = new_stream(strlen(exec_subdir) * 2);
+    stream_add_string(s, exec_subdir);
     stream_add_string(s, cmd);
     cmd = str_dup(reset_stream(s));
 

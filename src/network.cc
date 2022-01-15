@@ -134,17 +134,6 @@ typedef struct {
 static fd_reg *reg_fds = nullptr;
 static int max_reg_fds = 0;
 
-#ifdef OUTBOUND_NETWORK
-static char outbound_network_enabled = OUTBOUND_NETWORK;
-#endif
-
-#ifdef USE_TLS
-bool initial_connection_point_tls = false;
-#endif
-
-static const char *bind_ipv4 = nullptr;
-static const char *bind_ipv6 = nullptr;
-
 struct addrinfo tcp_hint;
 
 static const char *get_ntop(const struct sockaddr_storage *sa);
@@ -265,7 +254,7 @@ push_network_buffer_overflow(nhandle *h)
     int length;
 
     sprintf(buf,
-            "%s>> Network buffer overflow: %u line%s of output to you %s been lost <<%s",
+            "%s>> Network buffer overflow: %i line%s of output to you %s been lost <<%s",
             proto.eol_out_string,
             h->output_lines_flushed,
             h->output_lines_flushed == 1 ? "" : "s",
@@ -1107,94 +1096,38 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
 }
 #endif              /* OUTBOUND_NETWORK */
 
-static int
-tcp_arguments(int argc, char **argv, int *pport)
+/* At this stage in the game, this function only looks for a port floating
+   at the end of the command-line arguments. */
+static void
+tcp_arguments(int argc, char **argv, uint16_t *pport)
 {
     char *p = nullptr;
 
     for ( ; argc > 0; argc--, argv++) {
-        if (argc > 0
-                && (argv[0][0] == '-' || argv[0][0] == '+')
-                && argv[0][1] == 'O'
-                && argv[0][2] == 0
-           ) {
-#ifdef OUTBOUND_NETWORK
-            outbound_network_enabled = (argv[0][0] == '+');
-#else
-            if (argv[0][0] == '+') {
-                fprintf(stderr, "Outbound network not supported.\n");
-                oklog("CMDLINE: *** Ignoring %s (outbound network not supported)\n", argv[0]);
-            }
-#endif
-        }
-        else if (argc > 0 && (argv[0][0] == '-' || argv[0][0] == '+') && (argv[0][1] == 'T' || argv[0][1] == 't') && argv[0][2] == 0) {
-#ifdef USE_TLS
-            initial_connection_point_tls = (argv[0][0] == '+');
-            oklog("CMDLINE: TLS %s for initial listening ports.\n", initial_connection_point_tls ? "enabled" : "disabled");
-#else
-            if (argv[0][0] == '+') {
-                fprintf(stderr, "TLS not supported.\n");
-                oklog("CMDLINE: *** Ignoring %s (TLS not supported)\n", argv[0]);
-            }
-#endif
-        }
-        else if (0 == strcmp(argv[0], "-4")) {
-            if (argc <= 1)
-                return 0;
-            argc--;
-            argv++;
-            bind_ipv4 = str_dup(argv[0]);
-            oklog("CMDLINE: IPv4 source address restricted to %s\n", argv[0]);
-        } else if (0 == strcmp(argv[0], "-6")) {
-            if (argc <= 1)
-                return 0;
-            argc--;
-            argv++;
-            bind_ipv6 = str_dup(argv[0]);
-            oklog("CMDLINE: IPv6 source address restricted to %s\n", argv[0]);
-        } else {
             if (p != nullptr) /* strtoul always sets p */
-                return 0;
-            if (0 == strcmp(argv[0], "-p")) {
-                if (argc <= 1)
-                    return 0;
-                argc--;
-                argv++;
-            }
+                return;
             *pport = strtoul(argv[0], &p, 10);
             if (*p != '\0')
-                return 0;
-            oklog("CMDLINE: Initial port = %d\n", *pport);
+                return;
         }
-    }
-#ifdef OUTBOUND_NETWORK
-    oklog("CMDLINE: Outbound network connections %s.\n",
-          outbound_network_enabled ? "enabled" : "disabled");
-#endif
-    return 1;
+    return;
 }
 
 /*************************
  * External entry points *
  *************************/
 
-const char *
-network_usage_string(void)
-{
-    return "[+O|-O] [+T|-T] [-4 ipv4_address] [-6 ipv6_address] [[-p] port]";
-}
-
 int
 network_initialize(int argc, char **argv, Var * desc)
 {
-    int port = DEFAULT_PORT;
+    uint16_t port = 0;
 
     proto.pocket_size = 1;
     proto.believe_eof = 1;
     proto.eol_out_string = "\r\n";
 
-    if (!tcp_arguments(argc, argv, &port))
-        return 0;
+    /* Look for a stray port that wasn't specified with -p or -t */
+    tcp_arguments(argc, argv, &port);
 
     memset(&tcp_hint, 0, sizeof tcp_hint);
     tcp_hint.ai_family = AF_UNSPEC;
@@ -1213,12 +1146,12 @@ network_initialize(int argc, char **argv, Var * desc)
         ERR_print_errors_fp(stderr);
     } else {
         char error_msg[256];
-        if (SSL_CTX_use_certificate_chain_file(tls_ctx, DEFAULT_TLS_CERT) <= 0) {
+        if (SSL_CTX_use_certificate_chain_file(tls_ctx, default_certificate_path) <= 0) {
             ERR_error_string_n(ERR_get_error(), error_msg, 256);
             errlog("TLS: Failed to load default certificate: %s\n", error_msg);
         }
 
-        if (SSL_CTX_use_PrivateKey_file(tls_ctx, DEFAULT_TLS_KEY, SSL_FILETYPE_PEM) <= 0) {
+        if (SSL_CTX_use_PrivateKey_file(tls_ctx, default_key_path, SSL_FILETYPE_PEM) <= 0) {
             ERR_error_string_n(ERR_get_error(), error_msg, 256);
             errlog("TLS: Failed to load default private key: %s\n", error_msg);
         }
@@ -1237,9 +1170,8 @@ network_initialize(int argc, char **argv, Var * desc)
 
         SSL_CTX_set_verify(tls_ctx, SSL_VERIFY_PEER, nullptr);
 #endif
-        oklog("NETWORK: Using %s\n", SSLeay_version(SSLEAY_VERSION));
     }
-#endif /* USE_SSL */
+#endif /* USE_TLS */
 
     eol_length = strlen(proto.eol_out_string);
     get_pocket_descriptors();

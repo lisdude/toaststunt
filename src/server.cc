@@ -78,6 +78,7 @@
 #include "background.h"
 #include "map.h"
 #include "pcre_moo.h" /* pcre shutdown */
+#include <getopt.h>
 
 extern "C" {
 #include "dependencies/linenoise.h"
@@ -88,9 +89,11 @@ extern "C" {
 static pid_t parent_pid;
 static bool in_child = false;
 
-static std::stringstream shutdown_message;
-static bool shutdown_triggered = false;
+static const char *this_program;
 
+static std::stringstream shutdown_message;
+
+static bool shutdown_triggered = false;
 static bool in_emergency_mode = false;
 
 static Var checkpointed_connections;
@@ -106,7 +109,22 @@ static bool reopen_logfile_requested = false;
 
 static void handle_user_defined_signal(int sig);
 
-bool clear_last_move = false;
+#ifdef OUTBOUND_NETWORK
+int outbound_network_enabled = OUTBOUND_NETWORK;
+#else
+int outbound_network_enabled = false;
+#endif
+
+#ifdef USE_TLS
+const char *default_certificate_path = DEFAULT_TLS_CERT;
+const char *default_key_path = DEFAULT_TLS_KEY;
+#endif
+
+int clear_last_move = false;
+char *bind_ipv4 = nullptr;
+char *bind_ipv6 = nullptr;
+char *file_subdir = FILE_SUBDIR;
+char *exec_subdir = EXEC_SUBDIR;
 
 typedef struct shandle {
     struct shandle *next, **prev;
@@ -116,7 +134,7 @@ typedef struct shandle {
     Objid player;
     Objid listener;
     task_queue tasks;
-    bool disconnect_me;
+    std::atomic<bool> disconnect_me;
     Objid switched;
     bool outbound, binary;
     bool print_messages;
@@ -389,6 +407,7 @@ call_checkpoint_notifier(int successful)
 static void
 child_completed_signal(int sig)
 {
+    int tmp_errno = errno;
     pid_t p;
     pid_t checkpoint_child = 0;
     int status;
@@ -426,6 +445,8 @@ child_completed_signal(int sig)
 
     if (checkpoint_child)
         checkpoint_finished = (status == 0) + 1;    /* 1 = failure, 2 = success */
+
+    errno = tmp_errno;
 }
 
 static void
@@ -844,7 +865,7 @@ main_loop(void)
                                      "recycle_msg", "*** Recycled ***", 0);
                     network_close(h->nhandle);
                     free_shandle(h);
-                } else if (h->disconnect_me) {
+                } else if (h->disconnect_me.load()) {
                     call_notifier(h->player, h->listener,
                                   "user_disconnected");
                     lock_connection_name_mutex(h->nhandle);
@@ -1683,7 +1704,7 @@ int
 is_player_connected(Objid player)
 {
     shandle *h = find_shandle(player);
-    return !h || h->disconnect_me ? 0 : 1;
+    return !h || h->disconnect_me.load() ? 0 : 1;
 }
 
 void
@@ -1691,7 +1712,7 @@ notify(Objid player, const char *message)
 {
     shandle *h = find_shandle(player);
 
-    if (h && !h->disconnect_me)
+    if (h && !h->disconnect_me.load())
         network_send_line(h->nhandle, message, 1, 1);
     else if (in_emergency_mode)
         emergency_notify(player, message);
@@ -1772,7 +1793,7 @@ find_network_handle(Objid obj, network_handle **handle)
 {
     shandle *h = find_shandle(obj);
 
-    if (!h || h->disconnect_me)
+    if (!h || h->disconnect_me.load())
         return -1;
     else
         *handle = &(h->nhandle);
@@ -1799,79 +1820,251 @@ set_system_object_integer_limits()
 
 }
 
+void
+print_usage()
+{
+    fprintf(stderr, "Usage:\n  %s [-e] [-f script-file] [-c script-line] [-l log-file] [-m] [-w waif-type] [-O|-o] [-4 ipv4-address] [-6 ipv6-address] [-r certificate-path] [-k key-path] [-i files-path] [-x executables-path] %s [-t|-p port-number]\n",
+            this_program, db_usage_string());
+    fprintf(stderr, "\nMETA OPTIONS\n");
+    fprintf(stderr, "  %-20s %s\n", "-v, --version", "current version");
+    fprintf(stderr, "  %-20s %s\n", "-h, --help", "show usage information and command-line options");
+    fprintf(stderr, "\nSERVER OPTIONS\n");
+    fprintf(stderr, "  %-20s %s\n", "-e, --emergency", "emergency wizard mode");
+    fprintf(stderr, "  %-20s %s\n", "-l, --log", "redirect standard output to log file");
+    fprintf(stderr, "\nDATABASE OPTIONS\n");
+    fprintf(stderr, "  %-20s %s\n", "-m, --clear-move", "clear the `last_move' builtin property on all objects");
+    fprintf(stderr, "  %-20s %s\n", "-w, --waif-type", "convert waifs from the specified type (check with typeof(waif) in your old MOO)");
+    fprintf(stderr, "  %-20s %s\n", "-f, --start-script", "file to load and pass to `#0:do_start_script()'");
+    fprintf(stderr, "  %-20s %s\n", "-c, --start-line", "line to pass to `#0:do_start_script()'");
+    fprintf(stderr, "\nDIRECTORY OPTIONS\n");
+    fprintf(stderr, "  %-20s %s\n", "-i, --file-dir", "directory to look for files for use with FileIO functions");
+    fprintf(stderr, "  %-20s %s\n", "-x, --exec-dir", "directory to look for executables for use with the exec() function");
+    fprintf(stderr, "\nNETWORKING OPTIONS\n");
+    fprintf(stderr, "  %-20s %s\n", "-o, --outbound", "enable outbound network connections");
+    fprintf(stderr, "  %-20s %s\n", "-O, --no-outbound", "disable outbound network connections");
+    fprintf(stderr, "  %-20s %s\n", "-4, --ipv4", "restrict IPv4 listeners to a specific address");
+    fprintf(stderr, "  %-20s %s\n", "-6, --ipv6", "restrict IPv6 listeners to a specific address");
+    fprintf(stderr, "  %-20s %s\n", "-r, --tls-cert", "TLS certificate to use");
+    fprintf(stderr, "  %-20s %s\n", "-k, --tls-key", "TLS key to use");
+    fprintf(stderr, "  %-20s %s\n", "-t, --tls-port", "port to listen for TLS connections on (can be used multiple times)");
+    fprintf(stderr, "  %-20s %s\n", "-p, --port", "port to listen for connections on (can be used multiple times)");
+    fprintf(stderr, "\nThe emergency mode switch (-e) may not be used with either the file (-f) or line (-c) options.\n\n");
+    fprintf(stderr, "Both the file and line options may be specified. Their order on the command line determines the order of their invocation.\n\n");
+    fprintf(stderr, "Examples:\n");
+    fprintf(stderr, "%s -c '$enable_debugging();' -f development.moo Minimal.db Minimal.db.new 7777\n", this_program);
+    fprintf(stderr, "%s Minimal.db Minimal.db.new\n", this_program);
+}
+
 int waif_conversion_type = _TYPE_WAIF;    /* For shame. We can remove this someday. */
 
 int
 main(int argc, char **argv)
 {
-    char *this_program = str_dup(argv[0]);
+    this_program = str_dup(argv[0]);
     const char *log_file = nullptr;
     const char *script_file = nullptr;
     const char *script_line = nullptr;
     int script_file_first = 0;
     int emergency = 0;
-    Var desc;
-    slistener *lv4, *lv6;
+    Var desc = Var::new_int(0);
+
+#ifdef USE_TLS
+    const char *certificate_path = nullptr;
+    const char *key_path = nullptr;
+#endif
 
     init_cmdline(argc, argv);
 
-    argc--;
-    argv++;
-    while (argc > 0 && argv[0][0] == '-') {
-        /* Deal with any command-line options */
-        switch (argv[0][1]) {
-            case 'v': /* Version */
+    // Keep track of which options were changed for logging purposes later.
+    bool cmdline_outbound = false;
+    bool cmdline_ipv4 = false;
+    bool cmdline_ipv6 = false;
+    bool cmdline_cert = false;
+    bool cmdline_key = false;
+    bool cmdline_filedir = false;
+    bool cmdline_execdir = false;
+    //
+
+    std::vector<uint16_t> initial_ports;
+#ifdef USE_TLS
+    std::vector<uint16_t> initial_tls_ports;
+#endif
+
+    int option_index = 0;
+    int c = 0;
+    static struct option long_options[] =
+    {
+        {"version",         no_argument,        nullptr,            'v'},
+        {"emergency",       no_argument,        nullptr,            'e'},
+        {"log",             required_argument,  nullptr,            'l'},
+        {"start-script",    required_argument,  nullptr,            'f'},
+        {"start-line",      required_argument,  nullptr,            'c'},
+        {"waif-type",       required_argument,  nullptr,            'w'},
+        {"clear-move",      no_argument,        nullptr,            'm'},
+        {"outbound",        no_argument,        nullptr,            'o'},
+        {"no-outbound",     no_argument,        nullptr,            'O'},
+        {"tls-port",        no_argument,        nullptr,            't'},
+        {"ipv4",            required_argument,  nullptr,            '4'},
+        {"ipv6",            required_argument,  nullptr,            '6'},
+        {"port",            required_argument,  nullptr,            'p'},
+        {"tls-cert",        required_argument,  nullptr,            'r'},
+        {"tls-key",         required_argument,  nullptr,            'k'},
+        {"file-dir",        required_argument,  nullptr,            'i'},
+        {"exec-dir",        required_argument,  nullptr,            'x'},
+        {"help",            no_argument,        nullptr,            'h'},
+        {nullptr,           0,                  nullptr,              0}
+    };
+
+    while ((c = getopt_long(argc, argv, "vel:f:c:w:moOt:4:6:p:r:k:i:x:h", long_options, &option_index)) != -1)
+    {
+        switch (c)
+        {
+            case 'v':                   /* --version; print version and exit */
+            {
                 fprintf(stderr, "ToastStunt version %s\n", server_version);
                 exit(1);
-            case 'e':       /* Emergency wizard mode */
+            }
+            break;
+
+            case 'e':                   /* --emergency; emergency wizard mode */
                 emergency = 1;
                 break;
-            case 'l':       /* Specified log file */
-                if (argc > 1) {
-                    log_file = argv[1];
-                    set_log_file_name(log_file);
-                    argc--;
-                    argv++;
-                } else
-                    argc = 0;
+
+            case 'l':                   /* --log; specify log file */
+            {
+                log_file = optarg;
+                set_log_file_name(log_file);
+            }
+            break;
+
+            case 'f':                   /* --start-script; file of code to pass to :do_start_script */
+            {
+                if (!script_line)
+                    script_file_first = 1;
+                script_file = optarg;
+            }
+            break;
+
+            case 'c':                   /* --start-line; line of code to pass to :do_start_script */
+            {
+                if (!script_file)
+                    script_file_first = 0;
+                script_line = optarg;
+            }
+            break;
+
+            case 'w':                   /* --waif-type; old waif type to use for conversion */
+                waif_conversion_type = atoi(optarg);
                 break;
-            case 'f':       /* Specified file of code */
-                if (argc > 1) {
-                    if (!script_line)
-                        script_file_first = 1;
-                    script_file = argv[1];
-                    argc--;
-                    argv++;
-                } else
-                    argc = 0;
-                break;
-            case 'c':       /* Specified line of code */
-                if (argc > 1) {
-                    if (!script_file)
-                        script_file_first = 0;
-                    script_line = argv[1];
-                    argc--;
-                    argv++;
-                } else
-                    argc = 0;
-                break;
-            case 'w':       /* Specified an old waif type for conversion */
-                if (argc > 1) {
-                    waif_conversion_type = atoi(argv[1]);
-                    argc--;
-                    argv++;
-                } else
-                    argc = 0;
-                break;
-            case 'm':       /* clear last move */
+
+            case 'm':                   /* --clear-move; clear all last_move properties and don't set new ones */
                 clear_last_move = true;
                 break;
+
+            case 'o':                   /* --outbound; enable outbound network connections */
+            {
+#ifndef OUTBOUND_NETWORK
+                fprintf(stderr, "Outbound networking is disabled. The '--outbound' option is invalid.\n");
+                exit(1);
+#else
+                cmdline_outbound = true;
+                outbound_network_enabled = true;
+#endif
+            }
+            break;
+
+            case 'O':                   /* --no-outbound; disable outbound network connections */
+            {
+#ifdef OUTBOUND_NETWORK
+                cmdline_outbound = true;
+                outbound_network_enabled = false;
+#endif
+            }
+            break;
+
+            case '4':                   /* --ipv4; restrict ipv4 listener */
+            {
+                cmdline_ipv4 = true;
+                bind_ipv4 = str_dup(optarg);
+            }
+            break;
+
+            case '6':                   /* --ipv6; restrict ipv6 listener */
+            {
+                cmdline_ipv6 = true;
+                bind_ipv6 = str_dup(optarg);
+            }
+            break;
+
+            case 'p':                   /* --port; standard listening port */
+            {
+                char *p = nullptr;
+                initial_ports.push_back(strtoul(optarg, &p, 10));
+            }
+            break;
+
+            case 't':                   /* --tls-port; TLS listening port */
+            {
+#ifndef USE_TLS
+                fprintf(stderr, "TLS is disabled or not supported. The '--tls-port' option is invalid.\n");
+                exit(1);
+#else
+                char *p = nullptr;
+                initial_tls_ports.push_back(strtoul(optarg, &p, 10));
+#endif
+            }
+            break;
+
+            case 'r':                   /* --tls-cert; TLS certificate path */
+            {
+#ifndef USE_TLS
+                fprintf(stderr, "TLS is disabled or not supported. The '--tls' option is invalid.\n");
+                exit(1);
+#else
+                cmdline_cert = true;
+                default_certificate_path = optarg;
+#endif
+            }
+            break;
+
+            case 'k':                   /* --tls-key; TLS key path */
+            {
+#ifndef USE_TLS
+                fprintf(stderr, "TLS is disabled or not supported. The '--tls' option is invalid.\n");
+                exit(1);
+#else
+                cmdline_key = true;
+                default_key_path = optarg;
+#endif
+            }
+            break;
+
+            case 'i':                   /* --file-dir; the directory to store files in */
+            {
+                cmdline_filedir = true;
+                file_subdir = optarg;
+            }
+            break;
+
+            case 'x':                   /* --exec-dir; the directory to store executables in */
+            {
+                cmdline_execdir = true;
+                exec_subdir = optarg;
+            }
+            break;
+
+            case 'h':                   /* --help; show usage instructions */
+                print_usage();
+                break;
+
             default:
-                argc = 0;       /* Provoke usage message below */
+                // Should we print usage here? It's pretty spammy...
+                exit(1);
         }
-        argc--;
-        argv++;
     }
+
+    argv += optind;
+    argc -= optind;
 
     if (log_file) {
         FILE *f = fopen(log_file, "a");
@@ -1886,6 +2079,31 @@ main(int argc, char **argv)
         set_log_file(stderr);
     }
 
+    if ((emergency && (script_file || script_line))
+            || !db_initialize(&argc, &argv)
+            || !network_initialize(argc, argv, &desc)) {
+        print_usage();
+        exit(1);
+    }
+
+    if (initial_ports.empty()
+#ifdef USE_TLS
+            && initial_tls_ports.empty()
+#endif
+            && desc.v.num == 0)
+        desc.v.num = DEFAULT_PORT;
+
+    // If we caught a port at the end of the arglist, add it to the rest.
+    if (desc.v.num != 0)
+        initial_ports.push_back(desc.v.num);
+
+    /* Now that it's so easy to change file / exec directories, it's easy to forget the last '/'
+       We'll helpfully add it back to avoid confusion. */
+    if (file_subdir[strlen(file_subdir) - 1] != '/')
+        asprintf(&file_subdir, "%s/", file_subdir);
+    if (exec_subdir[strlen(exec_subdir) - 1] != '/')
+        asprintf(&exec_subdir, "%s/", exec_subdir);
+
     applog(LOG_INFO1, " _   __           _____                ______\n");
     applog(LOG_INFO1, "( `^` ))  ___________  /_____  _________ __  /_\n");
     applog(LOG_INFO1, "|     ||   __  ___/_  __/_  / / /__  __ \\_  __/\n");
@@ -1893,26 +2111,6 @@ main(int argc, char **argv)
     applog(LOG_INFO1, "'-----'`   /____/  \\__/  \\__,_/  /_/ /_/ \\__/   v%s\n", server_version);
     applog(LOG_INFO1, "\n");
 
-    if ((emergency && (script_file || script_line))
-            || !db_initialize(&argc, &argv)
-            || !network_initialize(argc, argv, &desc)) {
-        fprintf(stderr, "Usage: %s [-e] [-f script-file] [-c script-line] [-l log-file] [-m] [-w waif-type] %s %s\n",
-                this_program, db_usage_string(), network_usage_string());
-        fprintf(stderr, "Options:\n");
-        fprintf(stderr, "\t-v\t\tcurrent version\n");
-        fprintf(stderr, "\t-e\t\temergency wizard mode\n");
-        fprintf(stderr, "\t-f\t\tfile to load and pass to `#0:do_start_script()'\n");
-        fprintf(stderr, "\t-c\t\tline to pass to `#0:do_start_script()'\n");
-        fprintf(stderr, "\t-l\t\toptional log file\n");
-        fprintf(stderr, "\t-m\t\tclear the last_move builtin property on all objects\n");
-        fprintf(stderr, "\t-w\t\tconvert waifs from the specified type to the proper type (check with typeof(waif) in your MOO)\n\n");
-        fprintf(stderr, "The emergency mode switch (-e) may not be used with either the file (-f) or line (-c) options.\n\n");
-        fprintf(stderr, "Both the file and line options may be specified. Their order on the command line determines the order of their invocation.\n\n");
-        fprintf(stderr, "Examples: \n");
-        fprintf(stderr, "\t%s -c '$enable_debugging();' -f development.moo Minimal.db Minimal.db.new 7777\n", this_program);
-        fprintf(stderr, "\t%s Minimal.db Minimal.db.new\n", this_program);
-        exit(1);
-    }
     if (!emergency)
         fclose(stdout);
 
@@ -1921,33 +2119,98 @@ main(int argc, char **argv)
 
     parent_pid = getpid();
 
+    enum PortType {PORT_STANDARD = 0, PORT_TLS};
+    enum IPProtocol {PROTO_IPv4 = 0, PROTO_IPv6};
+
     applog(LOG_INFO1, "STARTING: Version %s (%" PRIdN "-bit) of the ToastStunt/LambdaMOO server\n", server_version, SERVER_BITS);
-    oklog("          (Task timeouts measured in %s seconds.)\n",
-          virtual_timer_available() ? "server CPU" : "wall-clock");
-    oklog("          (Process id %" PRIdN ")\n", parent_pid);
+    applog(LOG_INFO1, "          (Task timeouts measured in %s seconds.)\n",
+           virtual_timer_available() ? "server CPU" : "wall-clock");
+    applog(LOG_INFO1, "          (Process id %" PRIdN ")\n", parent_pid);
     if (waif_conversion_type != _TYPE_WAIF)
         applog(LOG_WARNING, "(Using type '%i' for waifs; will convert to '%i' at next checkpoint)\n", waif_conversion_type, _TYPE_WAIF);
+    if (clear_last_move)
+        applog(LOG_WARNING, "(last_move properties will all be cleared and no movement activity will be saved)\n");
+
+    std::string port_string;
+#ifdef USE_TLS
+    for (int port_type = 0; port_type < 2; port_type++)
+    {
+        auto *ports = (port_type == PORT_STANDARD ? &initial_ports : &initial_tls_ports);
+#else
+    {
+        auto port_type = PORT_STANDARD;
+        auto *ports = &initial_ports;
+#endif
+        if (!ports->empty())
+        {
+            for (auto the_port : *ports)
+                port_string += std::to_string(the_port) += ", ";
+            port_string.resize(port_string.size() - 2);
+            applog(LOG_NOTICE, "CMDLINE: Initial %sport%s = %s\n", port_type == PORT_TLS ? "TLS " : "", ports->size() > 1 ? "s" : "", port_string.c_str());
+            port_string.clear();
+        }
+    }
+
+    applog(LOG_NOTICE, "NETWORK: Outbound network connections %s.\n", outbound_network_enabled ? "enabled" : "disabled");
+    if (cmdline_ipv4)
+        applog(LOG_INFO2, "CMDLINE: IPv4 source address restricted to: %s.\n", bind_ipv4);
+    if (cmdline_ipv6)
+        applog(LOG_INFO2, "CMDLINE: IPv6 source address restricted to: %s.\n", bind_ipv6);
+#ifdef USE_TLS
+    if (cmdline_cert)
+        applog(LOG_INFO2, "CMDLINE: Using TLS certificate path: %s\n", default_certificate_path);
+    if (cmdline_key)
+        applog(LOG_INFO2, "CMDLINE: Using TLS key path: %s\n", default_key_path);
+#endif
+    if (cmdline_filedir)
+        applog(LOG_INFO2, "CMDLINE: Using file directory path: %s\n", file_subdir);
+    if (cmdline_execdir)
+        applog(LOG_INFO2, "CMDLINE: Using executables directory path: %s\n", exec_subdir);
+#ifdef USE_TLS
+    oklog("REGISTER_NETWORK: Using %s\n", SSLeay_version(SSLEAY_VERSION));
+#endif
 
     register_bi_functions();
 
+    std::vector<slistener*> initial_listeners;
+
+
+    slistener *new_listener;
+
 #ifdef USE_TLS
-    bool use_tls = initial_connection_point_tls;
-    const char *certificate_path = nullptr;
-    const char *key_path = nullptr;
+    for (int port_type = 0; port_type < 2; port_type++)
+    {
+        auto *ports = (port_type == PORT_STANDARD ? &initial_ports : &initial_tls_ports);
+#else
+    {
+        auto port_type = PORT_STANDARD;
+        auto *ports = &initial_ports;
 #endif
+        for (auto &the_port : *ports)
+        {
+            desc.v.num = the_port;
+            for (int ip_type = 0; ip_type < 2; ip_type++)
+            {
+                if ((new_listener = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, ip_type TLS_PORT_TYPE TLS_CERT_PATH)) == nullptr)
+                    errlog("Error creating %s%s listener on port %i.\n", port_type == PORT_TLS ? "TLS " : "", ip_type == PROTO_IPv6 ? "IPv6" : "IPv4", the_port);
+                else
+                    initial_listeners.push_back(new_listener);
+            }
+        }
+    }
 
-    // Listen on both IPv4 and IPv6
-    if ((lv4 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, false USE_TLS_BOOL TLS_CERT_PATH)) == nullptr)
-        errlog("Error creating IPv4 listener.\n");
-
-    if ((lv6 = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, true USE_TLS_BOOL TLS_CERT_PATH)) == nullptr)
-        errlog("Error creating IPv6 listener.\n");
-
-    if (!lv4 && !lv6) {
+    if (initial_listeners.size() < 1) {
         errlog("Can't create initial connection point!\n");
         exit(1);
     }
     free_var(desc);
+    // I doubt anybody will have enough listeners for this to be worthwhile, but why not.
+    initial_ports.clear();
+    initial_ports.shrink_to_fit();
+#ifdef USE_TLS
+    initial_tls_ports.clear();
+    initial_tls_ports.shrink_to_fit();
+#endif
 
     if (!db_load())
         exit(1);
@@ -1976,19 +2239,25 @@ main(int argc, char **argv)
     }
 
     if (!emergency || emergency_mode()) {
-        int lv4_status = 0, lv6_status = 0;
-        if (lv4)
-            lv4_status = start_listener(lv4);
-        if (lv6)
-            lv6_status = start_listener(lv6);
+        int status = 0;
+        int listen_failures = 0;
 
-        if (!lv4_status && !lv6_status)
+        for (auto &l : initial_listeners)
+        {
+            status = start_listener(l);
+            if (!status)
+            {
+                errlog("Failed to listen on port %i\n", l->port);
+                free_slistener(l);
+                listen_failures++;
+            }
+        }
+
+        if (listen_failures >= initial_listeners.size())
             exit(1);
 
-        if (!lv4_status)
-            free_slistener(lv4);
-        if (!lv6_status)
-            free_slistener(lv6);
+        initial_listeners.clear();
+        initial_listeners.shrink_to_fit();
 
         main_loop();
 
@@ -2360,14 +2629,14 @@ bf_connected_players(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
     for (h = all_shandles; h; h = h->next)
-        if ((show_all || h->connection_time != 0) && !h->disconnect_me)
+        if ((show_all || h->connection_time != 0) && !h->disconnect_me.load())
             count++;
 
     result = new_list(count);
     count = 0;
 
     for (h = all_shandles; h; h = h->next) {
-        if ((show_all || h->connection_time != 0) && !h->disconnect_me) {
+        if ((show_all || h->connection_time != 0) && !h->disconnect_me.load()) {
             count++;
             result.v.list[count].type = TYPE_OBJ;
             result.v.list[count].v.obj = h->player;
@@ -2384,7 +2653,7 @@ bf_connected_seconds(Var arglist, Byte next, void *vdata, Objid progr)
     shandle *h = find_shandle(arglist.v.list[1].v.obj);
 
     r.type = TYPE_INT;
-    if (h && h->connection_time != 0 && !h->disconnect_me)
+    if (h && h->connection_time != 0 && !h->disconnect_me.load())
         r.v.num = time(nullptr) - h->connection_time;
     else
         r.v.num = -1;
@@ -2402,7 +2671,7 @@ bf_idle_seconds(Var arglist, Byte next, void *vdata, Objid progr)
     shandle *h = find_shandle(arglist.v.list[1].v.obj);
 
     r.type = TYPE_INT;
-    if (h && !h->disconnect_me)
+    if (h && !h->disconnect_me.load())
         r.v.num = time(nullptr) - h->last_activity_time;
     else
         r.v.num = -1;
@@ -2423,7 +2692,7 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
     r.type = TYPE_STR;
     r.v.str = nullptr;
 
-    if (h && !h->disconnect_me) {
+    if (h && !h->disconnect_me.load()) {
         if (arglist.v.list[0].v.num == 1) {
             lock_connection_name_mutex(h->nhandle);
             r.v.str = str_dup(network_connection_name(h->nhandle));
@@ -2454,7 +2723,8 @@ name_lookup_callback(Var arglist, Var * ret)
     Objid who = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(who);
     bool rewrite_connect_name = nargs > 1 && is_true(arglist.v.list[2]);
-    if (!h || h->disconnect_me)
+
+    if (!h || h->disconnect_me.load())
         make_error_map(E_INVARG, "Invalid connection", ret);
     else
     {
@@ -2482,8 +2752,13 @@ bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
        ensure that close_nhandle doesn't pull the rug out from
        under the other threads. */
     shandle *h = find_shandle(arglist.v.list[1].v.obj);
-    if (h && !h->disconnect_me)
-        increment_nhandle_refcount(h->nhandle);
+
+    if (!h || h->disconnect_me.load()) {
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
+    }
+
+    increment_nhandle_refcount(h->nhandle);
 
     char *human_string = nullptr;
     asprintf(&human_string, "name_lookup for #%" PRIdN "", arglist.v.list[1].v.obj);
@@ -2509,7 +2784,7 @@ bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
     r.type = TYPE_INT;
-    if (h && !h->disconnect_me) {
+    if (h && !h->disconnect_me.load()) {
         if (h->binary) {
             int length;
 
@@ -2555,7 +2830,7 @@ bf_set_connection_option(Var arglist, Byte next, void *vdata, Objid progr)
 
     if (oid != progr && !is_wizard(progr))
         e = E_PERM;
-    else if (!h || h->disconnect_me
+    else if (!h || h->disconnect_me.load()
              || (!server_set_connection_option(h, option, value)
                  && !tasks_set_connection_option(h->tasks, option, value)
                  && !network_set_connection_option(h->nhandle, option, value)))
@@ -2577,7 +2852,7 @@ bf_connection_options(Var arglist, Byte next, void *vdata, Objid progr)
     shandle *h = find_shandle(oid);
     Var ans;
 
-    if (!h || h->disconnect_me) {
+    if (!h || h->disconnect_me.load()) {
         free_var(arglist);
         return make_error_pack(E_INVARG);
     } else if (oid != progr && !is_wizard(progr)) {
@@ -2608,7 +2883,7 @@ bf_connection_info(Var arglist, Byte next, void *vdata, Objid progr)
     Objid oid = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(oid);
 
-    if (!h || h->disconnect_me) {
+    if (!h || h->disconnect_me.load()) {
         free_var(arglist);
         return make_error_pack(E_INVARG);
     } else if (oid != progr && !is_wizard(progr)) {

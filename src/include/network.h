@@ -27,14 +27,20 @@
 #include "streams.h"
 #include <netdb.h>      // sa_family_t
 
+/* These get set by command-line options in server.cc */
+extern int outbound_network_enabled;
+extern char* bind_ipv4;
+extern char* bind_ipv6;
+extern const char* default_certificate_path;
+extern const char* default_key_path;
+/*                                                    */
+
 #ifdef USE_TLS
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
 #define TLS_FAIL            -9999
 #define TLS_CONNECT_FAIL    -9998
-
-extern bool initial_connection_point_tls;
 
 extern SSL_CTX *tls_ctx;
 #endif
@@ -150,12 +156,6 @@ extern void close_listener(int fd);
 				 * network_make_listener(), performing whatever
 				 * extra clean-ups are required by the
 				 * protocol.
-				 */
-
-extern const char *network_usage_string(void);
-				/* Returns a string describing any extra
-				 * network-specific command-line arguments,
-				 * such as a port number, etc.
 				 */
 
 extern int network_initialize(int argc, char **argv,

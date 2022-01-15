@@ -133,7 +133,7 @@ static void run_callback(void *bw)
     w->callback(w->data, &w->return_value);
 
     // Write to our network pipe to resume the MOO loop
-    write(w->fd[1], "1", 1);
+    write(w->fd[1], "1", 2);
 }
 
 /* The function called by the network when data has been read. This is the final stage and
@@ -141,6 +141,9 @@ static void run_callback(void *bw)
 static void network_callback(int fd, void *data)
 {
     background_waiter *w = (background_waiter*)data;
+
+    char buffer[2];
+    read(w->fd[0], buffer, 2);
 
     /* Resume the MOO task if it hasn't already been killed. */
     if (w->active)

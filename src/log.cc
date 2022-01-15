@@ -58,28 +58,19 @@ get_log_file_name()
     return log_file_name;
 }
 
-int log_pcount = 5000;
-static time_t log_prev = 0;
-int log_report_progress_cktime()
-{
-    time_t now = time(nullptr);
-    log_pcount = 5000;
-    return ((now >= log_prev + 2) && (log_prev = now, 1));
-}
-
 static void
 do_log(const int severity, const char *fmt, va_list args)
 {
     FILE *f;
-    char *nowstr = nullptr;
-
-    log_prev = time(nullptr);
-    log_pcount = 5000;
+    char nowstr[16];
 
     if (log_file) {
-        nowstr = ctime(&log_prev);
-        nowstr[19] = '\0';      /* kill the year and newline at the end */
-        nowstr = nowstr + 4;    /* skip the day of week */
+        time_t current_time;
+        struct tm info;
+
+        time(&current_time);
+        localtime_r(&current_time, &info);
+        strftime(nowstr, 16, "%b %d %X", &info);
         f = log_file;
     } else {
         f = stderr;
@@ -198,13 +189,17 @@ void
 add_command_to_history(Objid player, const char *command)
 {
 #ifdef LOG_COMMANDS
-    time_t now = time(0);
-    char *nowstr = ctime(&now);
+    char nowstr[16];
 
-    nowstr[19] = '\0';      /* kill the year and newline at the end */
+    time_t current_time;
+    struct tm &info;
+
+    time(&current_time);
+    localtime_r(&current_time, &info);
+    strftime(nowstr, 16, "%b %d %X", &info);
+
     stream_printf(command_history, "%s: #%" PRIdN ": %s\n",
-                  nowstr + 4,   /* skip day of week */
-                  player, command);
+                  nowstr, player, command);
 #endif              /* LOG_COMMANDS */
 }
 
