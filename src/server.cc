@@ -2185,7 +2185,6 @@ main(int argc, char **argv)
     {
         auto port_type = PORT_STANDARD;
         auto *ports = &initial_ports;
-#endif
         for (auto &the_port : *ports)
         {
             desc.v.num = the_port;
@@ -2197,6 +2196,7 @@ main(int argc, char **argv)
                     initial_listeners.push_back(new_listener);
             }
         }
+#endif
     }
 
     if (initial_listeners.size() < 1) {
