@@ -660,9 +660,11 @@ bf_waifs(Var arglist, Byte next, void *vdata, Objid progr)
         Var e;
         e.type = TYPE_WAIF;
         e.v.waif = w;
+        addref(w);
         r = listappend(r, e);
     }
 
+    free_var(arglist);
     return make_var_pack(r);
 }
 
