@@ -584,7 +584,9 @@ free_waif(Waif *waif)
     waif_class_count[waif->_class]--;
     if (waif_class_count[waif->_class] <= 0)
         waif_class_count.erase(waif->_class);
-    waif_instances.erase(std::remove(waif_instances.begin(), waif_instances.end(), waif), waif_instances.end());
+    auto it = std::find(waif_instances.begin(), waif_instances.end(), waif);
+    if (it != waif_instances.end())
+        waif_instances.erase(it);
     /* assert(refcount(waif) == 0) */
     cnt = count_waif_propvals(waif);
     free_waif_propdefs(waif->propdefs);
