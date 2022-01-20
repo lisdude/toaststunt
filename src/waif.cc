@@ -34,9 +34,12 @@
 #include "log.h"        // errlog
 #include "map.h"
 #include <unordered_map>
+#include <vector>
+#include <algorithm>
 
 static unsigned long waif_count = 0;
 static std::unordered_map<Objid, unsigned int> waif_class_count;
+static std::vector<Waif *> waif_instances;
 std::unordered_map<Waif *, bool> destroyed_waifs;
 
 #define PROP_MAPPED(Mmap, Mbit) ((Mmap)[(Mbit) / 32] & (1 << ((Mbit) % 32)))
@@ -290,6 +293,7 @@ new_waif(Objid _class, Objid owner)
     res.v.waif->propvals = alloc_waif_propvals(res.v.waif, 1);
     ++waif_count;
     waif_class_count[_class]++;
+    waif_instances.push_back(res.v.waif);
 
     return res;
 }
@@ -402,6 +406,7 @@ invalidate_waif(Waif *waif)
         waif_class_count.erase(waif->_class);
     waif->_class = NOTHING;
     waif_class_count[waif->_class]++;
+    waif_instances.erase(std::remove(waif_instances.begin(), waif_instances.end(), waif), waif_instances.end());
 }
 
 /* When class object properties change, waifs are not immediately updated.
@@ -582,7 +587,7 @@ free_waif(Waif *waif)
     waif_class_count[waif->_class]--;
     if (waif_class_count[waif->_class] <= 0)
         waif_class_count.erase(waif->_class);
-
+    waif_instances.erase(std::remove(waif_instances.begin(), waif_instances.end(), waif), waif_instances.end());
     /* assert(refcount(waif) == 0) */
     cnt = count_waif_propvals(waif);
     free_waif_propdefs(waif->propdefs);
@@ -635,11 +640,26 @@ bf_waif_stats(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+static package
+bf_waifs(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r = new_list(0);
+    for (auto& w : waif_instances) {
+        Var e;
+        e.type = TYPE_WAIF;
+        e.v.waif = w;
+        r = listappend(r, e);
+    }
+
+    return make_var_pack(r);
+}
+
 void
 register_waif()
 {
     register_function("new_waif", 0, 0, bf_new_waif);
     register_function("waif_stats", 0, 0, bf_waif_stats);
+    register_function("waifs", 0, 1, bf_waifs);
 }
 
 /* Waif property permissions are derived from the class object's property
