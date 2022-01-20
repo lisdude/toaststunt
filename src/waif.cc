@@ -1037,6 +1037,7 @@ read_waif()
         res.v.waif->map[i] = 0;
     propdefs_length = dbio_read_num();
     waif_class_count[res.v.waif->_class]++;
+    waif_instances.push_back(res.v.waif);
 
     /* Read propvals into the `packable' array until we run out of
      * mappable props, then allocate the finished value array and
