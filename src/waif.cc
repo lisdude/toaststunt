@@ -643,8 +643,22 @@ bf_waif_stats(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_waifs(Var arglist, Byte next, void *vdata, Objid progr)
 {
+    if (arglist.v.list[0].v.num > 0) {
+        // Optional arg checking.
+        if (!arglist.v.list[1].is_object()) {
+            free_var(arglist);
+            return make_error_pack(E_TYPE);
+        } else if (!is_valid(arglist.v.list[1])) {
+            free_var(arglist);
+            return make_error_pack(E_INVARG);
+        }
+    }
+
     Var r = new_list(0);
     for (auto& w : waif_instances) {
+        if (arglist.v.list[0].v.num > 0 && arglist.v.list[1].v.obj != w->_class) {
+            continue;
+        }
         Var e;
         e.type = TYPE_WAIF;
         e.v.waif = w;
@@ -659,7 +673,7 @@ register_waif()
 {
     register_function("new_waif", 0, 0, bf_new_waif);
     register_function("waif_stats", 0, 0, bf_waif_stats);
-    register_function("waifs", 0, 1, bf_waifs);
+    register_function("waifs", 0, 1, bf_waifs, TYPE_OBJ);
 }
 
 /* Waif property permissions are derived from the class object's property
