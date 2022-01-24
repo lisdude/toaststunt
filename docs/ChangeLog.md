@@ -18,6 +18,8 @@
 - Disable virtual timers when running under the Windows Subsystem for Linux. (This fixes things like `seconds_left()` returning 0.)
 - Fix a potential crash when threaded SQLite functions attempt to write object numbers.
 - Add a ceiling to `ctime()` to prevent overflows with large integer arguments.
+- Fix an issue where friendly tracebacks involving non-existent properties on waifs could crash the server.
+- Fix an issue where waifs could get stuck "recycling" forever.
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key can be configured in options.h, specifed as command-line arguments, or given as arguments to in-MOO functions. See warnings at the end of this changelog for important information about these changes.

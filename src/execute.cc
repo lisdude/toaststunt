@@ -1830,7 +1830,7 @@ finish_comparison:
                     err = waif_get_prop(obj.v.waif, propname.v.str, &prop, RUN_ACTIV.progr);
                     free_var(obj);
                     if (err == E_PROPNF)
-                        PUSH_X_NOT_FOUND(E_PROPNF, propname, var_ref(obj));
+                        PUSH_X_NOT_FOUND(E_PROPNF, var_ref(propname), obj);
                     else {
                         free_var(propname);
                         if (err == E_NONE)
@@ -1886,7 +1886,7 @@ finish_comparison:
                     if (err == E_NONE)
                         PUSH(prop);
                     else if (err == E_PROPNF)
-                        PUSH_X_NOT_FOUND(E_PROPNF, propname, var_ref(obj));
+                        PUSH_X_NOT_FOUND(E_PROPNF, var_ref(propname), obj);
                     else
                         PUSH_ERROR(err);
                 } else if (!obj.is_object() || propname.type != TYPE_STR) {
@@ -1933,7 +1933,7 @@ finish_comparison:
                     } else {
                         free_var(rhs);
                         if (err == E_PROPNF) {
-                            PUSH_X_NOT_FOUND(E_PROPNF, propname, var_ref(obj));
+                            PUSH_X_NOT_FOUND(E_PROPNF, var_ref(propname), obj);
                         } else {
                             free_var(propname);
                             PUSH_ERROR(err);
