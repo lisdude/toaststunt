@@ -5,8 +5,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 * [Features](#features)
 * [ChangeLog](ChangeLog.md)
 * [Build Instructions](#build-instructions)
-  * [Debian/Ubuntu](#debian-ubuntu)
-  * [REL/CentOS](#rel-centos)
+  * [Debian/Ubuntu/WSL](#debianubuntuwsl)
   * [Gentoo](#gentoo)
   * [FreeBSD](#freebsd)
   * [macOS](#macos)
@@ -40,7 +39,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 
 - Basic threading support:
     - background.cc (a library, of sorts, to make it easier to thread builtins)
-    - Threaded builtins: sqlite_query, sqlite_execute, locate_by_name, sort, slice, argon2, argon2_verify, connection_name_lookup
+    - Threaded builtins: sqlite_query, sqlite_execute, locate_by_name, sort, argon2, argon2_verify, connection_name_lookup
     - set_thread_mode (an argument of 0 will disable threading for all builtins in the current verb, 1 will re-enable, and no arguments will print the current mode)
     - `thread_pool()` (database control over the the thread pools)
 
@@ -135,19 +134,9 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
     - Allow handling of SIGUSR signals in the database with `#0:handle_signal()`
 
 ## Build Instructions
-### **Debian/Ubuntu**
+### **Debian/Ubuntu/WSL**
 ```bash
-apt install build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev
-mkdir build && cd build
-cmake ../
-make -j2
-```
-
-### **REL/CentOS**
-```bash
-yum group install -y "Development Tools"
-yum install -y sqlite-devel pcre-devel aspell-devel nettle-devel gperf centos-release-scl
-yum install -y devtoolset-7
+apt install build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev libargon2-dev libssl-dev
 mkdir build && cd build
 cmake ../
 make -j2
@@ -163,7 +152,7 @@ make -j2
 
 ### **FreeBSD**
 ```bash
-pkg install bison gperf gcc cmake sqlite3 aspell pcre nettle
+pkg install bison gperf gcc cmake sqlite3 aspell pcre nettle libargon2
 mkdir build && cd build
 cmake ../
 make -j2
@@ -176,28 +165,14 @@ If using OpenSSL, you may have to export an environment variable before running 
 - Apple Silicon: `export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl@3/lib/pkgconfig"`
 - Intel: `export PKG_CONFIG_PATH="/usr/local/opt/openssl@3/lib/pkgconfig"`
 
-Follow the instructions in the notes section below to compile and install Argon2. **NOTE**: In the last step, the install prefix should be changed to `/usr/local`
-
 ```bash
-brew install pcre aspell nettle cmake openssl
+brew install pcre aspell nettle cmake openssl argon2
 mkdir build && cd build
 cmake ../
 make -j2
 ```
 
 ## **Notes**
-### Argon2
-Many distributions do not include [Libargon2](https://github.com/P-H-C/phc-winner-argon2) which is required for Argon2id password hashing. As such, it has been included as a Git submodule in this repository. To build it yourself, follow these steps:
-
-1. Inside of the ToastStunt repository, checkout all available submodules: `git submodule update --init`
-2. `cd src/dependencies/phc-winner-argon2`
-3. Build the library: `make`
-4. Install it on your system: `make install PREFIX=/usr`
-
-**NOTE**: macOS users should instead use `make install PREFIX=/usr/local` in step 4.
-
-**NOTE**: FreeBSD users should use `gmake`.
-
 ### CMake Build Options
 There are a few build options available to developers:
 
