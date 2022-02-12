@@ -417,6 +417,7 @@ pull_input(nhandle * h)
                         return 1;
                         break;
                     case SSL_ERROR_SYSCALL:
+                    case SSL_ERROR_ZERO_RETURN:
                         return 0;
                         break;
                     default:
