@@ -674,8 +674,8 @@ recycle_waifs(void)
         }
     }
     for (auto x : removals) {
-        free_waif(x);
         destroyed_waifs.erase(x);
+        free_waif(x);
     }
 }
 

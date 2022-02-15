@@ -1811,7 +1811,8 @@ finish_comparison:
                 value = RUN_ACTIV.rt_env[var_pos];
                 if (value.type == TYPE_NONE) {
                     Var not_found = str_ref_to_var(*(&RUN_ACTIV.prog->var_names[var_pos]));
-                    PUSH_X_NOT_FOUND(E_VARNF, not_found, var_ref(nothing));
+                    var_ref(nothing);
+                    PUSH_X_NOT_FOUND(E_VARNF, not_found, nothing);
                 }
                 else
                     PUSH_REF(value);
@@ -1829,8 +1830,11 @@ finish_comparison:
 
                     err = waif_get_prop(obj.v.waif, propname.v.str, &prop, RUN_ACTIV.progr);
                     free_var(obj);
-                    if (err == E_PROPNF)
-                        PUSH_X_NOT_FOUND(E_PROPNF, var_ref(propname), obj);
+                    if (err == E_PROPNF) {
+                        var_ref(propname);
+                        var_ref(obj);
+                        PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
+                    }
                     else {
                         free_var(propname);
                         if (err == E_NONE)
@@ -1885,8 +1889,11 @@ finish_comparison:
                     err = waif_get_prop(obj.v.waif, propname.v.str, &prop, RUN_ACTIV.progr);
                     if (err == E_NONE)
                         PUSH(prop);
-                    else if (err == E_PROPNF)
-                        PUSH_X_NOT_FOUND(E_PROPNF, var_ref(propname), obj);
+                    else if (err == E_PROPNF) {
+                        var_ref(propname);
+                        var_ref(obj);
+                        PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
+                    }
                     else
                         PUSH_ERROR(err);
                 } else if (!obj.is_object() || propname.type != TYPE_STR) {
@@ -1901,8 +1908,9 @@ finish_comparison:
                     h = db_find_property(obj, propname.v.str, &prop);
                     built_in = db_is_property_built_in(h);
                     if (!h.ptr) {
-                        Var not_found = var_ref(propname);
-                        PUSH_X_NOT_FOUND(E_PROPNF, not_found, var_ref(obj));
+                        var_ref(propname);
+                        var_ref(obj);
+                        PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
                     } else if (built_in
                                ? bi_prop_protected(built_in, RUN_ACTIV.progr)
                                : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
@@ -1933,7 +1941,8 @@ finish_comparison:
                     } else {
                         free_var(rhs);
                         if (err == E_PROPNF) {
-                            PUSH_X_NOT_FOUND(E_PROPNF, var_ref(propname), obj);
+                            var_ref(obj);
+                            PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
                         } else {
                             free_var(propname);
                             PUSH_ERROR(err);
@@ -2886,7 +2895,8 @@ else if (obj.type == TYPE_##t1) {           \
                 if (value.type == TYPE_NONE) {
                     free_var(value);
                     Var not_found = str_ref_to_var(*(&RUN_ACTIV.prog->var_names[PUSH_n_INDEX(op)]));
-                    PUSH_X_NOT_FOUND(E_VARNF, not_found, var_ref(nothing));
+                    var_ref(nothing);
+                    PUSH_X_NOT_FOUND(E_VARNF, not_found, nothing);
                 } else
                     PUSH_REF(value);
             }
@@ -2930,7 +2940,8 @@ else if (obj.type == TYPE_##t1) {           \
                 vp = &RUN_ACTIV.rt_env[PUSH_CLEAR_n_INDEX(op)];
                 if (vp->type == TYPE_NONE) {
                     Var not_found = str_ref_to_var(*(&RUN_ACTIV.prog->var_names[PUSH_CLEAR_n_INDEX(op)]));
-                    PUSH_X_NOT_FOUND(E_VARNF, not_found, var_ref(nothing));
+                    var_ref(nothing);
+                    PUSH_X_NOT_FOUND(E_VARNF, not_found, nothing);
                 } else {
                     PUSH(*vp);
                     vp->type = TYPE_NONE;
