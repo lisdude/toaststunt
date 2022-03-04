@@ -6,6 +6,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 * [ChangeLog](ChangeLog.md)
 * [Build Instructions](#build-instructions)
   * [Debian/Ubuntu/WSL](#debianubuntuwsl)
+  * [Fedora](#fedora)
   * [Gentoo](#gentoo)
   * [FreeBSD](#freebsd)
   * [macOS](#macos)
@@ -137,6 +138,14 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 ### **Debian/Ubuntu/WSL**
 ```bash
 apt install build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev libargon2-dev libssl-dev
+mkdir build && cd build
+cmake ../
+make -j2
+```
+
+### **Fedoa**
+```bash
+dnf install g++ bison gperf cmake sqlite-devel aspell-devel pcre-devel nettle-devel libcurl-devel libargon2-devel openssl-devel
 mkdir build && cd build
 cmake ../
 make -j2
