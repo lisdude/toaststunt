@@ -32,6 +32,7 @@
 #include "utils.h"
 #include "log.h"
 #include "background.h"   // Threads
+#include "map.h"
 
 static int
 controls(Objid who, Objid what)
@@ -268,6 +269,23 @@ bf_toobj(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(e);
 
     return make_var_pack(r);
+}
+
+
+struct prop_data {
+    Var r;
+    int i;
+};
+static int
+add_to_list(void *data, const char *prop_name)
+{
+    struct prop_data *d = (prop_data *)data;
+
+    d->i++;
+    d->r.v.list[d->i].type = TYPE_STR;
+    d->r.v.list[d->i].v.str = str_ref(prop_name);
+
+    return 0;
 }
 
 static package
@@ -1250,11 +1268,156 @@ bf_owned_objects(Var arglist, Byte next, void *vdata, Objid progr)
 
     return make_var_pack(ret);
 }
+Var
+all_properties(Var obj) {
+Var anc = db_ancestors(obj, true);
+int x;
+Var props = new_list(0);
+for(x=0; x<anc.v.list[0].v.num; ++x) {
+            int nprops = db_count_propdefs(anc.v.list[anc.v.list[0].v.num-x]);
+            struct prop_data d;
+            d.r = new_list(nprops);
+            d.i = 0;
+            db_for_all_propdefs(anc.v.list[anc.v.list[0].v.num-x], add_to_list, &d);
+            int y;
+            for(y=1; y<=nprops; ++y) {
+            props=listappend(props, d.r.v.list[y]);
+            }
+}
+free_var(anc);
+return props;
+}
+static package
+bf_all_properties(Var arglist, Byte next, void *vdata, Objid progr) {
+Var obj = arglist.v.list[1];
+free_var(arglist);
+return make_var_pack(all_properties(obj));
+}
+static enum error
+become_map(Var in, Var *ret)
+{
+    *ret=new_map();
+    switch (in.type) {
+        case TYPE_INT:
+            *ret=mapinsert(*ret, str_dup_to_var("type"), str_dup_to_var("int"));
+            *ret=mapinsert(*ret, str_dup_to_var("value"), in);
+            break;
+        case TYPE_STR:
+            *ret=mapinsert(*ret, str_dup_to_var("type"), str_dup_to_var("str"));
+            *ret=mapinsert(*ret, str_dup_to_var("value"), in);
+            break;
+        case TYPE_OBJ:
+        {
+            Var m = new_map();
+            Var owner;
+            owner.type=TYPE_OBJ;
+            owner.v.obj=db_object_owner(in.v.obj);
+            m=mapinsert(m, str_dup_to_var("owner"), owner);
+            m=mapinsert(m, str_dup_to_var("name"), str_dup_to_var(db_object_name(in.v.obj)));
+            Var props= all_properties(in);
+            int x;
+            for(x=1; x<=props.v.list[0].v.num; ++x) {
+                db_prop_handle h = db_find_property(in, props.v.list[x].v.str, nullptr);
+                Var v = var_ref(db_property_value(h));
+                if(v.type!=TYPE_CLEAR) {
+                m=mapinsert(m, props.v.list[x], v);
+}
+free_var(v);
+            }
+
+            *ret=mapinsert(*ret, str_dup_to_var("parent"), db_object_parents2(in));
+            Var loc;
+            loc.type=TYPE_OBJ;
+            loc.v.obj=db_object_location(in.v.obj);
+            *ret=mapinsert(*ret, str_dup_to_var("location"), loc);
+
+            *ret=mapinsert(*ret, str_dup_to_var("type"), str_dup_to_var("object"));
+            *ret=mapinsert(*ret, str_dup_to_var("value"), m);
+            break;
+        }
+        case TYPE_ERR:
+            *ret=mapinsert(*ret, str_dup_to_var("type"), str_dup_to_var("err"));
+            *ret=mapinsert(*ret, str_dup_to_var("value"), in);
+            break;
+        case TYPE_FLOAT:
+            *ret=mapinsert(*ret, str_dup_to_var("type"), str_dup_to_var("float"));
+            *ret=mapinsert(*ret, str_dup_to_var("value"), in);
+            break;
+        case TYPE_MAP:
+            *ret=mapinsert(*ret, str_dup_to_var("type"), str_dup_to_var("map"));
+            *ret=mapinsert(*ret, str_dup_to_var("value"), in);
+            break;
+        case TYPE_LIST:
+        {
+            Var m = new_map();
+            int x;
+            for (x = 1; x <= in.v.list[0].v.num; x++) {
+                Var n;
+                n.type=TYPE_INT;
+                n.v.num=x;
+                m=mapinsert(m, n, in.v.list[x]);
+            }
+            *ret=mapinsert(*ret, str_dup_to_var("type"), str_dup_to_var("list"));
+            *ret=mapinsert(*ret, str_dup_to_var("value"), m);
+            break;
+        }
+        case TYPE_ANON:
+            return E_INVARG;
+            break;
+        case TYPE_WAIF:
+        {
+            Var m = new_map();
+            Var owner;
+            owner.type=TYPE_OBJ;
+            owner.v.obj=db_object_owner(in.v.obj);
+            m=mapinsert(m, str_dup_to_var("owner"), owner);
+            m=mapinsert(m, str_dup_to_var("name"), str_dup_to_var(db_object_name(in.v.obj)));
+            Var props= all_properties(in);
+            int x;
+            for(x=1; x<=props.v.list[0].v.num; ++x) {
+                db_prop_handle h = db_find_property(in, props.v.list[x].v.str, nullptr);
+                Var v = var_ref(db_property_value(h));
+                if(v.type!=TYPE_CLEAR) {
+                m=mapinsert(m, props.v.list[x], v);
+}
+free_var(v);
+            }
+
+            *ret=mapinsert(*ret, str_dup_to_var("parent"), db_object_parents2(in));
+            Var loc;
+            loc.type=TYPE_OBJ;
+            loc.v.obj=db_object_location(in.v.obj);
+            *ret=mapinsert(*ret, str_dup_to_var("location"), loc);
+            *ret=mapinsert(*ret, str_dup_to_var("type"), str_dup_to_var("object"));
+            *ret=mapinsert(*ret, str_dup_to_var("value"), m);
+            break;
+        }
+        case TYPE_BOOL:
+
+            *ret=mapinsert(*ret, str_dup_to_var("type"), str_dup_to_var("bool"));
+            *ret=mapinsert(*ret, str_dup_to_var("value"), var_ref(in));
+        default:
+            errlog("BECOME_MAP: Impossible var type: %d\n", (int) in.type);
+    }
+    return E_NONE;
+}
 
 Var nothing;        /* useful constant */
 Var clear;          /* useful constant */
 Var none;           /* useful constant */
+static package
+bf_tomap(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r;
+    enum error e;
+    e = become_map(arglist.v.list[1], &r);
 
+    free_var(arglist);
+    if (e != E_NONE)
+        return make_error_pack(e);
+
+    return make_var_pack(r);
+}
 void
 register_objects(void)
 {
@@ -1304,5 +1467,7 @@ register_objects(void)
 #endif
     register_function("recycled_objects", 0, 0, bf_recycled_objects);
     register_function("next_recycled_object", 0, 1, bf_next_recycled_object, TYPE_OBJ);
+    register_function("tomap", 1, 1, bf_tomap, TYPE_ANY);
     register_function("owned_objects", 1, 1, bf_owned_objects, TYPE_OBJ);
+    register_function("all_properties", 1, 1, bf_all_properties, TYPE_OBJ);
 }
