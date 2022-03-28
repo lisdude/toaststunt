@@ -16,13 +16,22 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 
 ## Features
 
-- SQLite
 - Perl Compatible Regular Expressions (PCRE)
 - Simplex Noise
 - [Argon2id Hashing](https://github.com/P-H-C/phc-winner-argon2)
 - 64-bit Integers (with the choice to fall back to 32-bit integers; $maxint and $minint set automatically)
 - HAProxy Source IP Rewriting (see notes below if you need to disable this)
 - User friendly traceback error messages
+
+- SQL Support
+    - Completely optional, can be compiled without any SQL servers
+    - One built-in interface for all SQL implementations
+    - Non-blocking query and execute calls when background threads are enabled
+    - Manage, open, and close connections through built-ins
+    - Parameterized SQL support for sanitizing user input
+    - Support for MySQL/MariaDB
+    - Support for SQLite V3
+    - Support for PostgreSQL
 
 - Networking improvements:
     - IPv6 connection support
@@ -136,7 +145,7 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 ## Build Instructions
 ### **Debian/Ubuntu/WSL**
 ```bash
-apt install build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev libargon2-dev libssl-dev
+apt install build-essential bison gperf cmake libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev libargon2-dev libssl-dev
 mkdir build && cd build
 cmake ../
 make -j2
@@ -144,7 +153,7 @@ make -j2
 
 ### **Gentoo**
 ```bash
-emerge dev-db/sqlite app-text/aspell app-dicts/aspell-en app-crypt/argon2 cmake
+emerge app-text/aspell app-dicts/aspell-en app-crypt/argon2 cmake
 mkdir build && cd build
 cmake ../
 make -j2
@@ -152,7 +161,7 @@ make -j2
 
 ### **FreeBSD**
 ```bash
-pkg install bison gperf gcc cmake sqlite3 aspell pcre nettle libargon2
+pkg install bison gperf gcc cmake aspell pcre nettle libargon2
 mkdir build && cd build
 cmake ../
 make -j2
