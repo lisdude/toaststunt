@@ -10,7 +10,6 @@ supported:
 
 * MySQL/MariaDB
 * PostgreSQL
-* MSSQL
 * SQLiteV3
 
 This document explains how to build and deploy with SQL.
@@ -53,15 +52,74 @@ MySQL/MariaDB
 -------------
 
 ### **Debian/Ubuntu/WSL**
+As of 3/28/22 this was: 1.1.12
 ```bash
 apt-get install libmysqlcppconn-dev
+```
+
+### **Gentoo**
+As of 3/28/22 this was: 1.1.12-r1
+```bash
+emerge dev-db/mysql-connector-c++
+```
+
+### **FreeBSD**
+As of 3/28/22 this was: 1.1.13.
+```bash
+pkg install mysql-connector-c++
 ```
 
 PostgreSQL
 ----------
 
-MSSQL
------
+### **Debian/Ubuntu/WSL**
+As of 3/28/22 this was: 6.4.5, so it needs to be manually compiled.
+```bash
+git clone https://github.com/jtv/libpqxx.git
+cd libqpxx
+git checkout 7.7.2
+./configure
+make
+sudo make install
+```
+
+### **Gentoo**
+As of 3/28/22 this was: 7.4.1, so it needs to be manually compiled.
+```bash
+git clone https://github.com/jtv/libpqxx.git
+cd libqpxx
+git checkout 7.7.2
+./configure
+make
+sudo make install
+```
+
+### **FreeBSD**
+As of 3/28/22 this was: 7.2.0, so it needs to be manually compiled.
+```bash
+git clone https://github.com/jtv/libpqxx.git
+cd libqpxx
+git checkout 7.7.2
+./configure
+make
+sudo make install
+```
 
 SQLiteV3
 --------
+
+### **Debian/Ubuntu/WSL**
+As of 3/28/22 this was: 3.27.2
+```bash
+apt-get install libsqlite3-dev
+```
+
+### **Gentoo**
+```bash
+emerge dev-db/sqlite
+```
+
+### **FreeBSD**
+```bash
+pkg install sqlite3 
+```
