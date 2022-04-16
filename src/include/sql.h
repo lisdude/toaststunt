@@ -1,3 +1,5 @@
+#ifdef SQL_FOUND
+
 #define SQL_SOFT_MAX_CONNECTIONS    5   // The max number of connections to allow in a pool.
                                         // This is a soft cap, so instead of preventing
                                         // additional connections from being made, this will
@@ -10,3 +12,5 @@
 
 // Forward declarations
 extern int parse_float(const char *, double *);                 // from numbers.cc
+
+#endif // SQL_FOUND

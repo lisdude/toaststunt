@@ -25,10 +25,6 @@
 #include <map>
 #include <memory>
 #include <mutex>
-// #ifdef POSTGRESQL_FOUND
-#include <pqxx/pqxx>
-// #endif
-#include <sqlite3.h>
 #include <unordered_map>
 #include <vector>
 
@@ -42,9 +38,17 @@
 #include "storage.h"
 #include "pcre_moo.h"
 #include "utils.h"
-#include "sql.h"
 
 #ifdef SQL_FOUND
+
+#include "sql.h"
+
+#ifdef POSTGRESQL_FOUND
+#   include <pqxx/pqxx>
+#endif
+#ifdef SQLITE3_FOUND
+#   include <sqlite3.h>
+#endif
 
 /* The MOO database really dislikes newlines, so we'll want to strip them.
  * I like what MOOSQL did here by replacing them with tabs, so we'll do that.
@@ -168,10 +172,11 @@ class Uri {
                 pcre_get_named_substring(entry->re, raw_url.c_str(), ovector, rc, "path", &result);
                 this->path = result;
 
-                // pcre_get_named_substring(entry->re, raw_url.c_str(), ovector, rc, "port", &result);
-                // if (port) {
-                //     this->port = stoi((std::string)result);
-                // }
+                pcre_get_named_substring(entry->re, raw_url.c_str(), ovector, rc, "port", &result);
+                auto port_str = (std::string)result;
+                if (!port_str.empty()) {
+                    this->port = stoi(port_str);
+                }
 
                 /* Begin at the end of the previous match on the next iteration of the loop. */
                 offset = ovector[1];
@@ -200,7 +205,7 @@ class SQLSessionPool {
         }
 
         SQLSession* get_connection() {
-            std::unique_lock lock{connections_mutex};
+            std::unique_lock<std::mutex> lock(connections_mutex);
             auto connection = this->get_or_create_connection();
             
             if (connection == nullptr) {
@@ -212,24 +217,29 @@ class SQLSessionPool {
         }
 
         void release_connection(SQLSession* session) {
-            std::unique_lock lock{connections_mutex};
+            std::unique_lock<std::mutex> lock(connections_mutex);
 
             // We're over connection cap, release to get back to cap.
             if (size() > SQL_SOFT_MAX_CONNECTIONS) {
-                if (auto it = connections_busy.find(session); it != connections_busy.end()) {
-                    it->second->shutdown();
-                    delete(it->first);
-                    connections_busy.erase(it);
-                    return;
-                }
+                expire_connection(session);
+                return;
             }
 
             // Normal release, bring back to idle pool.
             set_connection_idle(session);
         }
 
+        void expire_connection(SQLSession* session) {
+            std::unique_lock<std::mutex> lock(connections_mutex);
+            if (auto it = connections_busy.find(session); it != connections_busy.end()) {
+                it->second->shutdown();
+                delete(it->first);
+                connections_busy.erase(it);
+            }
+        }
+
         void stop() {
-            std::unique_lock lock{connections_mutex};
+            std::unique_lock<std::mutex> lock(connections_mutex);
             
             for (auto&& connection : this->connections_idle) {
                 connection.second->shutdown();
@@ -245,17 +255,14 @@ class SQLSessionPool {
         }
 
         std::size_t size() const {
-            std::unique_lock lock {connections_mutex};
             return size_idle() + size_busy();
         }
 
         std::size_t size_idle() const {
-            std::unique_lock lock {connections_mutex};
             return connections_idle.size();
         }
         
         std::size_t size_busy() const {
-            std::unique_lock lock {connections_mutex};
             return connections_busy.size();
         }
     
@@ -297,14 +304,39 @@ class SQLSessionPool {
 class PostgreSQLSession: public SQLSession {
     public:
         PostgreSQLSession(Uri* uri) {
-            oklog("at postgresql session constructor\n");
             connection_string = uri->full_string;    
             connection = std::make_unique<pqxx::connection>(connection_string);
         }
 
         void query(std::string statement, Var* bind, Var* ret, unsigned char options = 0) {
             pqxx::work txn {*connection.get()};
-            pqxx::result res = txn.exec(statement);
+            pqxx::result res;
+
+            // Code for binding prepared statements.
+            if (bind != nullptr) {
+                pqxx::params p;
+                for (int bind_col=1; bind_col <= bind->v.num; bind_col++) {
+                    switch (bind[bind_col].type) {
+                        case TYPE_STR:
+                            p.append(pqxx::to_string(bind[bind_col].v.str));
+                            break;
+                        case TYPE_INT:
+                        case TYPE_NUMERIC:
+                            p.append(bind[bind_col].v.num);
+                            break;
+                        case TYPE_FLOAT:
+                            p.append(bind[bind_col].v.fnum);
+                            break;
+                        case TYPE_BOOL:
+                            p.append(bind[bind_col].v.truth);
+                            break;
+                    }
+                }
+                connection->prepare("sql_query", statement);
+                res = txn.exec_prepared("sql_query", p);
+            } else {
+                res = txn.exec(statement);
+            }
 
             // Get results
             *ret = new_list(0);
@@ -327,6 +359,9 @@ class PostgreSQLSession: public SQLSession {
                 }
                 *ret = listappend(*ret, rv);
             }
+
+            res.clear();
+            txn.commit();
         }
 
         void shutdown() {
@@ -343,7 +378,6 @@ class PostgreSQLSessionPool: public SQLSessionPool {
         PostgreSQLSessionPool(std::unique_ptr<Uri> uri) : SQLSessionPool(std::move(uri)) { }
     protected:
         std::unique_ptr<SQLSession> create_connection() {
-            oklog("at pool create connection\n");
             return std::make_unique<PostgreSQLSession>(connection_uri.get());
         }
 };
@@ -481,14 +515,11 @@ void sql_shutdown()
 
 static SQLSessionPool* create_session_pool(std::string connection_string, unsigned char options)
 {
-    oklog("parsing connection string\n");
     auto uri = std::make_unique<Uri>(connection_string);
-    oklog("getting next handle\n");
     int handle_id = next_identifier();
     std::unique_ptr<SQLSessionPool> pool;
 #ifdef POSTGRESQL_FOUND
     if (!pool && (uri->scheme == "postgresql" || uri->scheme == "postgres")) {
-        oklog("creating session pool for postgresql\n");
         pool = std::make_unique<PostgreSQLSessionPool>(std::move(uri));
     }
 #endif
@@ -514,18 +545,15 @@ static SQLSessionPool* get_or_create_session_pool(
     unsigned char options = SQL_PARSE_TYPES | SQL_PARSE_OBJECTS
 )
 {
-    oklog("searching pools\n");
     for (auto& item: connection_pools) {
         /* We're searching for a connection pool with a matching connection string for caching. */
         if (item.second->connection_uri->full_string != connection_string) {
             continue;
         }
-        oklog("returning existing pool\n");
         return item.second.get();
     }
 
     /* We didn't find a matching pool, so we just create a new one. */
-    oklog("cannot find pool\n");
     return create_session_pool(connection_string, options);
 }
 
@@ -536,18 +564,15 @@ query_callback(const Var arglist, Var *ret)
     int handle_id = arglist.v.list[1].v.num;
     std::string query = arglist.v.list[2].v.str;
 
-    oklog("fetching pool\n");
     auto pool = connection_pools[handle_id].get();
     if (!pool) {
-        oklog("couldn't find pool\n");
         *ret = str_dup_to_var("No connection handle value found by that ID.");
         return;
     }
 
+    auto session = pool->get_connection();
+
     try {
-        oklog("got pool, fetching connection\n");
-        auto session = pool->get_connection();
-        oklog("executing query\n");
         if (nargs < 3 || arglist.v.list[3].v.num < 1) {
             // There's no SQL parameters.
             session->query(query, nullptr, ret);
@@ -555,10 +580,20 @@ query_callback(const Var arglist, Var *ret)
             // Parameterize the SQL
             session->query(query, arglist.v.list[3].v.list, ret);
         }
+
+        // We're done with the connection, let it go back to the pool.
+        pool->release_connection(session);
     } catch (const std::runtime_error& re) {
         *ret = str_dup_to_var(re.what());
+#ifdef POSTGRESQL_FOUND
+    } catch (pqxx::broken_connection const &e) {
+        // This can happen at literally any time, and be left with a broken connection.
+        // Release the connection object for good.
+        pool->expire_connection(session);
+        *ret = str_dup_to_var("Connection lost to server.");
+#endif
     } catch(...) {
-        *ret = str_dup_to_var("SQL Query Error: Unknown failure encountered.");
+        *ret = str_dup_to_var("Unknown failure encountered.");
     }
 }
 
