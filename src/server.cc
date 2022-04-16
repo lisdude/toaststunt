@@ -2269,7 +2269,7 @@ main(int argc, char **argv)
 #endif
     db_shutdown();
     db_clear_ancestor_cache();
-    sqlite_shutdown();
+    sql_shutdown();
     curl_shutdown();
     pcre_shutdown();
 

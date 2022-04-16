@@ -8,7 +8,6 @@ is executed.
 As of this version of the SQL implementation, the following types are
 supported:
 
-* MySQL/MariaDB
 * PostgreSQL
 * SQLiteV3
 
@@ -47,27 +46,6 @@ to enable all server types, or disable all of them.
 
 After the client libraries are installed, it's only necessary to
 run cmake as you would normally on ToastStunt and compile!
-
-MySQL/MariaDB
--------------
-
-### **Debian/Ubuntu/WSL**
-As of 3/28/22 this was: 1.1.12
-```bash
-apt-get install libmysqlcppconn-dev
-```
-
-### **Gentoo**
-As of 3/28/22 this was: 1.1.12-r1
-```bash
-emerge dev-db/mysql-connector-c++
-```
-
-### **FreeBSD**
-As of 3/28/22 this was: 1.1.13.
-```bash
-pkg install mysql-connector-c++
-```
 
 PostgreSQL
 ----------
