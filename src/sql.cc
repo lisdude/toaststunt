@@ -510,7 +510,10 @@ next_identifier()
 
 void sql_shutdown()
 {
-
+    for (auto const& item: connection_pools) {
+        item.second->stop();
+    }
+    connection_pools.clear();
 }
 
 static SQLSessionPool* create_session_pool(std::string connection_string, unsigned char options)
@@ -722,6 +725,34 @@ bf_sql_close_connection (Var arglist, Byte next, void *vdata, Objid progr)
     }
 }
 
+static package
+bf_sql_info(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (!is_wizard(progr))
+    {
+        free_var(arglist);
+        return make_error_pack(E_PERM);
+    }
+
+    int handle_id = arglist.v.list[1].v.num;
+    auto handle = connection_pools.find(handle_id);
+    if (handle == connection_pools.end()) {
+        free_var(arglist);
+        return make_var_pack(str_dup_to_var("No connection handle value by that ID."));
+    }
+
+    auto pool = handle->second.get();
+
+    Var ret = new_map();
+    ret = mapinsert(ret, str_dup_to_var("uri"), str_dup_to_var(pool->connection_uri->full_string.c_str()));
+    ret = mapinsert(ret, str_dup_to_var("parse_types"), Var::new_int(pool->options & SQL_PARSE_TYPES ? 1 : 0));
+    ret = mapinsert(ret, str_dup_to_var("parse_objects"), Var::new_int(pool->options & SQL_PARSE_OBJECTS ? 1 : 0));
+    ret = mapinsert(ret, str_dup_to_var("sanitize_strings"), Var::new_int(pool->options & SQL_SANITIZE_STRINGS ? 1 : 0));
+    ret = mapinsert(ret, str_dup_to_var("pool_size"), Var::new_int(pool->size()));
+
+    return make_var_pack(ret);
+}
+
 void register_sql(void)
 {
     oklog("REGISTER_SQL: SQL features are online and enabled!\n");
@@ -736,6 +767,7 @@ void register_sql(void)
     register_function("sql_connections", 0, 0, bf_sql_connections, TYPE_ANY, TYPE_LIST);
     register_function("sql_open", 1, 1, bf_sql_open_connection, TYPE_STR, TYPE_INT, TYPE_INT);
     register_function("sql_close", 1, 1, bf_sql_close_connection, TYPE_INT, TYPE_ANY);
+    register_function("sql_info", 1, 1, bf_sql_info, TYPE_INT, TYPE_ANY);
 }
 
 #else /* SQL_FOUND */
