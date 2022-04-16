@@ -570,9 +570,10 @@ query_callback(const Var arglist, Var *ret)
         return;
     }
 
-    auto session = pool->get_connection();
+    SQLSession* session;
 
     try {
+        session = pool->get_connection();
         if (nargs < 3 || arglist.v.list[3].v.num < 1) {
             // There's no SQL parameters.
             session->query(query, nullptr, ret);
