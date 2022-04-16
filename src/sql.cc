@@ -510,9 +510,6 @@ next_identifier()
 
 void sql_shutdown()
 {
-    for (auto const& item: connection_pools) {
-        item.second->stop();
-    }
     connection_pools.clear();
 }
 
