@@ -586,6 +586,7 @@ query_callback(const Var arglist, Var *ret)
         pool->release_connection(session);
     } catch (const std::runtime_error& re) {
         *ret = str_dup_to_var(re.what());
+        pool->release_connection(session);
 #ifdef POSTGRESQL_FOUND
     } catch (pqxx::broken_connection const &e) {
         // This can happen at literally any time, and be left with a broken connection.
@@ -595,6 +596,7 @@ query_callback(const Var arglist, Var *ret)
 #endif
     } catch(...) {
         *ret = str_dup_to_var("Unknown failure encountered.");
+        pool->release_connection(session);
     }
 }
 
@@ -670,8 +672,6 @@ bf_sql_open_connection (Var arglist, Byte next, void *vdata, Objid progr)
         if (arglist.v.list[0].v.num >= 2)
             options = arglist.v.list[2].v.num;        
         auto pool = get_or_create_session_pool(connection_string, options);
-
-        
 
         // Return the handle identifier integer.
         free_var(arglist); 
