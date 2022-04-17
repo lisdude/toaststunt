@@ -332,8 +332,8 @@ class PostgreSQLSession: public SQLSession {
                             break;
                     }
                 }
-                connection->prepare("sql_query", statement);
-                res = txn.exec_prepared("sql_query", p);
+                
+                res = txn.exec_params(statement, p);
             } else {
                 res = txn.exec(statement);
             }
