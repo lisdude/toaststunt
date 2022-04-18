@@ -195,6 +195,11 @@ class SQLSession {
             Var* ret, 
             unsigned char options = 0)      = 0;
         virtual void shutdown()             = 0;
+        void wait() {
+            std::unique_lock<std::mutex> lock(busy_mutex);
+        }
+    protected:
+        mutable std::mutex busy_mutex;
 };
 
 class SQLSessionPool {
@@ -234,21 +239,30 @@ class SQLSessionPool {
 
         void expire_connection(SQLSession* session) {
             if (auto it = connections_busy.find(session); it != connections_busy.end()) {
+                it->second->wait();
                 it->second->shutdown();
-                delete(it->first);
                 connections_busy.erase(it);
+            }
+
+            if (auto it = connections_idle.find(session); it != connections_idle.end()) {
+                it->second->shutdown();
+                connections_idle.erase(it);
             }
         }
 
         void stop() {
-            std::unique_lock<std::mutex> lock(connections_mutex);
-            
-            int i = 0;
-            while (++i < 65000 && this->connections_busy.size() > 0) {}
-            for (auto&& connection : this->connections_idle) {
+            std::unique_lock<std::mutex> lock(connections_mutex);            
+            for (auto&& connection : connections_idle) {
                 connection.second->shutdown();
             }
-            this->connections_idle.clear();
+
+            for (auto&& connection : connections_busy) {
+                connection.second->wait();
+                connection.second->shutdown();
+            }
+
+            connections_idle.clear();
+            connections_busy.clear();
         }
 
         std::size_t size() const {
@@ -306,6 +320,8 @@ class PostgreSQLSession: public SQLSession {
         }
 
         void query(std::string statement, Var* bind, Var* ret, unsigned char options = 0) {
+            std::unique_lock<std::mutex> lock(busy_mutex);
+
             pqxx::work txn {*connection.get()};
             pqxx::result res;
 
@@ -391,6 +407,8 @@ class SQLiteSession: public SQLSession {
         }
     
         void query(std::string statement, Var* bind, Var* ret, unsigned char options = 0) {
+            std::unique_lock<std::mutex> lock(busy_mutex);
+
             // Create the statement.
             sqlite3_stmt *res;
             auto return_code = sqlite3_prepare_v2(db, statement.c_str(), -1, &res, nullptr);
