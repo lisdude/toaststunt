@@ -624,6 +624,13 @@ bf_sql_query (Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
+    int handle_id = arglist.v.list[1].v.num;
+    auto handle = connection_pools.find(handle_id);
+    if (handle == connection_pools.end()) {
+        free_var(arglist);
+        return make_var_pack(str_dup_to_var("No connection handle value by that ID."));
+    }
+
     // Input validation for arguments.
     if (arglist.v.list[0].v.num == 3 && arglist.v.list[3].v.list->v.num > 0) {
         Var *tmp = arglist.v.list[3].v.list;
