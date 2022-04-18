@@ -242,10 +242,11 @@ class SQLSessionPool {
 
         void stop() {
             std::unique_lock<std::mutex> lock(connections_mutex);
+            
             int i = 0;
             while (++i < 65000 && this->connections_busy.size() > 0) {}
             for (auto&& connection : this->connections_idle) {
-                expire_connection(connection.first);
+                connection.second->shutdown();
             }
             this->connections_idle.clear();
         }
