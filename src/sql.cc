@@ -49,6 +49,9 @@
 #ifdef SQLITE3_FOUND
 #   include <sqlite3.h>
 #endif
+#ifdef MYSQL_FOUND
+#   include <mysql/mysql.h>
+#endif
 
 /* The MOO database really dislikes newlines, so we'll want to strip them.
  * I like what MOOSQL did here by replacing them with tabs, so we'll do that.
@@ -242,14 +245,12 @@ class SQLSessionPool {
             std::unique_lock<std::mutex> lock(connections_mutex);
             
             for (auto&& connection : this->connections_idle) {
-                connection.second->shutdown();
-                delete(connection.first);
+                expire_connection(connection.first);
             }
             this->connections_idle.clear();
 
             for (auto&& connection : this->connections_busy) {
-                connection.second->shutdown();
-                delete(connection.first);
+                expire_connection(connection.first);
             }
             this->connections_busy.clear();
         }
@@ -381,7 +382,7 @@ class PostgreSQLSessionPool: public SQLSessionPool {
             return std::make_unique<PostgreSQLSession>(connection_uri.get());
         }
 };
-#endif
+#endif // POSTGRESQL_FOUND
 
 #ifdef SQLITE3_FOUND
 class SQLiteSession: public SQLSession {
@@ -486,7 +487,7 @@ class SQLiteSessionPool: public SQLSessionPool {
             return std::make_unique<SQLiteSession>(connection_uri.get());
         }
 };
-#endif
+#endif // SQLITE3_FOUND
 
 static std::unordered_map<unsigned short, std::unique_ptr<SQLSessionPool>> connection_pools;
 
@@ -681,8 +682,6 @@ bf_sql_open_connection (Var arglist, Byte next, void *vdata, Objid progr)
         // Catch all non-sql errors as E_INVARG.
         free_var(ret);
         free_var(arglist);
-        std::exception_ptr p = std::current_exception();
-        std::clog <<(p ? p.__cxa_exception_type()->name() : "null") << std::endl;
         return make_error_pack(E_INVARG);
     }
 }
@@ -703,6 +702,7 @@ bf_sql_close_connection (Var arglist, Byte next, void *vdata, Objid progr)
         return make_var_pack(str_dup_to_var("No connection handle value by that ID."));
     }
 
+    Var ret;
     try
     {
         auto pool = handle->second.get();
@@ -711,15 +711,13 @@ bf_sql_close_connection (Var arglist, Byte next, void *vdata, Objid progr)
         connection_pools.erase(handle);
 
         free_var(arglist);
-        Var ret;
         ret.type = TYPE_INT;
         ret.v.num = 1;
         return make_var_pack(ret);
-    } catch (const std::exception &exc) {
-        Var ret;
-        ret.type = TYPE_STR;
-        ret.v.str = exc.what();
-        return make_var_pack(ret);
+    } catch (...) {
+        free_var(arglist);
+        free_var(ret);
+        return make_error_pack(E_INVARG);
     }
 }
 
