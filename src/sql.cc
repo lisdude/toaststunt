@@ -600,7 +600,9 @@ query_callback(const Var arglist, Var *ret)
         // We're done with the connection, let it go back to the pool.
         pool->release_connection(session);
     } catch (const std::runtime_error& re) {
-        *ret = str_dup_to_var(re.what());
+        auto err = (char*)re.what();
+        sanitize_string_for_moo(err);
+        *ret = str_dup_to_var(err);
         pool->release_connection(session);
 #ifdef POSTGRESQL_FOUND
     } catch (pqxx::broken_connection const &e) {
