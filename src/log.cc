@@ -192,7 +192,7 @@ add_command_to_history(Objid player, const char *command)
     char nowstr[16];
 
     time_t current_time;
-    struct tm &info;
+    struct tm info;
 
     time(&current_time);
     localtime_r(&current_time, &info);
