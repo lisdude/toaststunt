@@ -694,12 +694,6 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 void
 register_crypto(void)
 {
-    if (!strncmp("$1$", crypt("password", "$1$"), 3))
-        algorithms = HAS_MD5;
-    if (!strncmp("$5$", crypt("password", "$5$"), 3))
-        algorithms = HAS_SHA256;
-    if (!strncmp("$6$", crypt("password", "$6$"), 3))
-        algorithms = HAS_SHA512;
     algorithms = HAS_BCRYPT;
 
     register_function("salt", 2, 2, bf_salt, TYPE_STR, TYPE_STR);

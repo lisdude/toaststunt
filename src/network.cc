@@ -1343,7 +1343,7 @@ network_process_io(int timeout)
         {
             mplex_add_reader(h->rfd);
 #ifdef USE_TLS
-            if (h->tls && SSL_has_pending(h->tls))
+            if (h->tls && SSL_pending(h->tls))
                 pending_tls = true;
 #endif
         }

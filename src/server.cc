@@ -21,7 +21,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>       // getrusage
 #include <sys/resource.h>   // getrusage
-#if !defined(__FreeBSD__) && !defined(__MACH__)
+#if !defined(__FreeBSD__) && !defined(__MACH__) && !defined(__OpenBSD__)
 #include <sys/sysinfo.h>    // CPU usage
 #endif
 #ifdef __MACH__
@@ -2398,7 +2398,7 @@ bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
     for (x = 1; x <= 3; x++)
         cpu.v.list[x] = Var::new_int(0); //initialize to all 0
 
-#if !defined(__FreeBSD__) && !defined(__MACH__)
+#if !defined(__FreeBSD__) && !defined(__MACH__) && !defined(__OpenBSD__)
     struct sysinfo sys_info;
     int info_ret = sysinfo(&sys_info);
 
