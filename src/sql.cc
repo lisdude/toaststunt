@@ -701,11 +701,14 @@ bf_sql_open_connection (Var arglist, Byte next, void *vdata, Objid progr)
         free_var(arglist); 
         ret.v.num = pool->handle_id;
         return make_var_pack(ret);
-    } catch(...) {
-        // Catch all non-sql errors as E_INVARG.
-        free_var(ret);
+    } catch (const std::exception &e) {
         free_var(arglist);
-        return make_error_pack(E_INVARG);
+        free_var(ret);
+        return make_raise_pack(E_INVARG, e.what(), zero);
+    } catch (...) {
+        free_var(arglist);
+        free_var(ret);
+        return make_raise_pack(E_INVARG, "An unknown error has occurred.", zero);
     }
 }
 
@@ -737,10 +740,14 @@ bf_sql_close_connection (Var arglist, Byte next, void *vdata, Objid progr)
         ret.type = TYPE_INT;
         ret.v.num = 1;
         return make_var_pack(ret);
+    } catch (const std::exception &e) {
+        free_var(arglist);
+        free_var(ret);
+        return make_raise_pack(E_INVARG, e.what(), zero);
     } catch (...) {
         free_var(arglist);
         free_var(ret);
-        return make_error_pack(E_INVARG);
+        return make_raise_pack(E_INVARG, "An unknown error has occurred.", zero);
     }
 }
 
