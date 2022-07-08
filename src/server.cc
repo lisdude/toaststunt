@@ -1272,19 +1272,23 @@ do_script_file(const char *path)
 {
     Var str;
     Var code = new_list(0);
-    std::ifstream file(path);
-    std::string line;
 
+    std::ifstream file(path);
     if (!file.is_open()) {
         panic_moo(strerror(errno));
     }
+
+    std::string line;
     while (std::getline(file, line)) {
         str = str_dup_to_var(raw_bytes_to_clean(line.c_str(), line.size()));
         code = listappend(code, str);
     }
-    if (errno) {
+
+    if (!file.eof()) {
         panic_moo(strerror(errno));
     }
+
+    file.close();
 
     run_do_start_script(code);
 }

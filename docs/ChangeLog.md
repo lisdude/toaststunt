@@ -20,6 +20,7 @@
 - Add a ceiling to `ctime()` to prevent overflows with large integer arguments.
 - Fix an issue where friendly tracebacks involving non-existent properties on waifs could crash the server.
 - Fix an issue where waifs could get stuck "recycling" forever.
+- Fix an issue with start scripts causing a panic, typically with 'no such file or directory' when, in fact, a file does exist.
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key can be configured in options.h, specifed as command-line arguments, or given as arguments to in-MOO functions. See warnings at the end of this changelog for important information about these changes.
