@@ -870,6 +870,68 @@ maprange(Var map, rbtrav *from, rbtrav *to)
     return _new;
 }
 
+/* Returns a new map with all the keys from the right
+ * removed to the map on the left.
+ */
+Var
+mapsubtract(Var first, Var second)
+{   /* consumes `maps' */
+    Var _new = map_dup(first);
+    rbtrav trav;
+    rbnode node;
+    const rbnode *pnode;
+
+    for (pnode = rbtfirst(&trav, second.v.tree); pnode; pnode = rbtnext(&trav)) {
+        node.key = var_ref(pnode->key);
+        rberase(_new.v.tree, &node);         
+    }
+
+    free_var(first);
+    free_var(second);
+
+#ifdef ENABLE_GC
+    gc_set_color(_new.v.tree, GC_YELLOW);
+#endif
+
+    return _new;
+}
+
+/* Returns a new map with all the keys and values from the right
+ * added to the map on the left.
+ */
+Var
+mapconcat(Var first, Var second)
+{   /* consumes `maps' */
+    Var _new = empty_map();
+    rbtrav trav;
+    rbnode node;
+    const rbnode *pnode1;
+    const rbnode *pnode2;
+
+    for (pnode1 = rbtfirst(&trav, first.v.tree); pnode1; pnode1 = rbtnext(&trav)) {
+        node.key = var_ref(pnode1->key);
+        node.value = var_ref(pnode1->value);
+        if (!rbinsert(_new.v.tree, &node))
+            panic_moo("MAP_DUP: rbinsert failed");
+    }
+
+    for (pnode2 = rbtfirst(&trav, second.v.tree); pnode2; pnode2 = rbtnext(&trav)) {
+        node.key = var_ref(pnode2->key);
+        node.value = var_ref(pnode2->value);
+        if (!rbinsert(_new.v.tree, &node))
+            panic_moo("MAP_DUP: rbinsert failed");
+    }
+
+    free_var(first);
+    free_var(second);
+
+#ifdef ENABLE_GC
+    gc_set_color(_new.v.tree, GC_YELLOW);
+#endif
+
+    return _new;
+}
+
 /* Replaces the specified range in the map.  `from' and `to' must be
  * valid iterators for the map or the behavior is unspecified.  The
  * new map is placed in `new' (`new' is first freed).  Returns

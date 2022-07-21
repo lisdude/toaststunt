@@ -1409,7 +1409,6 @@ finish_comparison:
             break;
 
             case OP_MULT:
-            case OP_MINUS:
             case OP_DIV:
             case OP_MOD:
             {
@@ -1423,9 +1422,6 @@ finish_comparison:
                     switch (op) {
                         case OP_MULT:
                             ans = do_multiply(lhs, rhs);
-                            break;
-                        case OP_MINUS:
-                            ans = do_subtract(lhs, rhs);
                             break;
                         case OP_DIV:
                             ans = do_divide(lhs, rhs);
@@ -1463,8 +1459,52 @@ finish_comparison:
             }
             break;
 
-            case OP_ADD:
-            {
+            case OP_MINUS:
+                {
+                    Var lhs, rhs, ans;
+                    var_type lhs_type, rhs_type;
+
+                    rhs = POP();    /* should be number */
+                    lhs = POP();    /* should be number */
+                    if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
+                        && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT)) {
+                        ans = do_subtract(lhs, rhs);
+                    } else if (lhs.type == TYPE_MAP && rhs.type == TYPE_MAP) {
+                        ans = mapsubtract(var_ref(lhs), var_ref(rhs));
+                    } else {
+                        ans.type = TYPE_ERR;
+                        ans.v.err = E_TYPE;
+                    }
+
+                    if (ans.type == TYPE_ERR) {
+                        lhs_type = lhs.type;
+                        rhs_type = rhs.type;
+                    }
+
+                    free_var(rhs);
+                    free_var(lhs);
+
+                    if (ans.type == TYPE_ERR) {
+                        if (ans.v.err == E_TYPE)
+                            if (lhs_type == TYPE_INT)
+                                PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_INT);
+                            else if (lhs_type == TYPE_FLOAT)
+                                PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_FLOAT);
+                            else if (lhs_type == TYPE_MAP)
+                                PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_MAP);
+                            else if (lhs_type != TYPE_INT && lhs_type != TYPE_FLOAT && lhs_type != TYPE_MAP && (rhs_type == TYPE_INT || rhs_type == TYPE_FLOAT || rhs_type == TYPE_MAP))
+                                PUSH_TYPE_MISMATCH(1, lhs_type, rhs.type);
+                            else
+                                PUSH_TYPE_MISMATCH(3, lhs.type, TYPE_INT, TYPE_FLOAT, TYPE_MAP);
+                        else
+                            PUSH_ERROR(ans.v.err);
+                    } else {
+                        PUSH(ans);
+                    }
+                }
+                break;
+
+            case OP_ADD: {
                 Var rhs, lhs, ans;
                 var_type lhs_type, rhs_type;
 
@@ -1472,7 +1512,7 @@ finish_comparison:
                 lhs = POP();
 
                 if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
-                        && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT))
+                    && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT))
                     ans = do_add(lhs, rhs);
                 else if (lhs.type == TYPE_STR && rhs.type == TYPE_STR) {
                     char *str;
@@ -1483,7 +1523,7 @@ finish_comparison:
                         ans.type = TYPE_ERR;
                         ans.v.err = E_QUOTA;
                     } else {
-                        str = (char *)mymalloc(flen + 1, M_STRING);
+                        str = (char *) mymalloc(flen + 1, M_STRING);
                         strcpy(str, lhs.v.str);
                         strcpy(str + llen, rhs.v.str);
                         ans.type = TYPE_STR;
@@ -1494,6 +1534,14 @@ finish_comparison:
                         ans = listconcat(var_ref(lhs), var_ref(rhs));
                     } else {
                         ans = listappend(var_ref(lhs), var_ref(rhs));
+                    }
+                // Added support for Map concatenation
+                } else if (lhs.type == TYPE_MAP) {
+                    if (rhs.type == TYPE_MAP) {
+                        ans = mapconcat(var_ref(lhs), var_ref(rhs));
+                    } else {
+                        ans.type = TYPE_ERR;
+                        ans.v.err = E_TYPE;
                     }
                 } else {
                     ans.type = TYPE_ERR;
@@ -1512,9 +1560,11 @@ finish_comparison:
                     /* This is maybe slightly unwieldy, but it works. It assumes lhs is the type you really wanted. */
                     if (ans.v.err == E_TYPE) {
                         if (lhs_type == TYPE_STR)
-                            PUSH_TYPE_MISMATCH(1, lhs_type != TYPE_STR ? lhs_type : rhs_type, TYPE_STR);
+                            PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_STR);
                         else if (rhs_type == TYPE_STR && lhs_type != TYPE_INT && lhs_type != TYPE_FLOAT)
                             PUSH_TYPE_MISMATCH(1, lhs_type, TYPE_STR);
+                        else if (lhs_type == TYPE_MAP)
+                            PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_MAP);
                         else if (lhs_type == TYPE_INT)
                             PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_INT);
                         else if (lhs_type == TYPE_FLOAT)
@@ -1522,7 +1572,7 @@ finish_comparison:
                         else if (lhs_type != TYPE_INT && lhs_type != TYPE_FLOAT && (rhs_type == TYPE_INT || rhs_type == TYPE_FLOAT))
                             PUSH_TYPE_MISMATCH(1, lhs_type, rhs.type);
                         else
-                            PUSH_TYPE_MISMATCH(3, lhs.type, TYPE_INT, TYPE_FLOAT, TYPE_STR);
+                            PUSH_TYPE_MISMATCH(4, lhs.type, TYPE_INT, TYPE_FLOAT, TYPE_STR, TYPE_MAP);
                     } else {
                         PUSH_ERROR_UNLESS_QUOTA(ans.v.err);
                     }
