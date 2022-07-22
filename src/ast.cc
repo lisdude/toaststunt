@@ -294,6 +294,14 @@ free_expr(Expr * expr)
         case EXPR_GE:
         case EXPR_IN:
         case EXPR_ASGN:
+        case EXPR_SUB_ASGN:
+        case EXPR_ADD_ASGN:
+        case EXPR_MULT_ASGN:
+        case EXPR_DIV_ASGN:
+        case EXPR_MOD_ASGN:
+        case EXPR_POW_ASGN:
+        case EXPR_AND_ASGN:
+        case EXPR_OR_ASGN:
         case EXPR_EXP:
         case EXPR_BITOR:
         case EXPR_BITAND:
@@ -328,6 +336,8 @@ free_expr(Expr * expr)
 
         case EXPR_NEGATE:
         case EXPR_NOT:
+        case EXPR_INCR:
+        case EXPR_DECR:
         case EXPR_COMPLEMENT:
             free_expr(expr->e.expr);
             break;

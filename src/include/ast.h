@@ -103,7 +103,10 @@ enum Expr_Kind {
     EXPR_FIRST, EXPR_LAST,
     EXPR_BITOR, EXPR_BITAND, EXPR_BITXOR,
     EXPR_BITSHL, EXPR_BITSHR, EXPR_COMPLEMENT,
-    SizeOf_Expr_Kind		/* The last element is also the number of elements... */
+    SizeOf_Expr_Kind,		/* The last element is also the number of elements... */
+    EXPR_INCR, EXPR_DECR,
+    EXPR_SUB_ASGN, EXPR_ADD_ASGN, EXPR_MOD_ASGN, EXPR_MULT_ASGN, EXPR_POW_ASGN, EXPR_DIV_ASGN,
+    EXPR_OR_ASGN, EXPR_AND_ASGN
 };
 
 union Expr_Data {
