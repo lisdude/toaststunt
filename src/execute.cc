@@ -1634,6 +1634,54 @@ finish_comparison:
             }
             break;
 
+            case OP_PRE_INCR:
+            {
+                Var arg, ans;
+                var_type arg_type;
+
+                arg = POP();
+                if (arg.type == TYPE_INT) {
+                    ans.type = TYPE_INT;
+                    ans.v.num = arg.v.num + 1;
+                } else if (arg.type == TYPE_FLOAT) {
+                    ans.type = TYPE_FLOAT;
+                    ans.v.fnum = arg.v.fnum + 1.0;
+                } else {
+                    arg_type = arg.type;
+                    free_var(arg);
+                    PUSH_TYPE_MISMATCH(2, arg_type, TYPE_INT, TYPE_FLOAT);
+                    break;
+                }
+
+                PUSH(ans);
+                free_var(arg);
+            }
+            break;
+
+            case OP_PRE_DECR:
+            {
+                Var arg, ans;
+                var_type arg_type;
+
+                arg = POP();
+                if (arg.type == TYPE_INT) {
+                    ans.type = TYPE_INT;
+                    ans.v.num = arg.v.num - 1;
+                } else if (arg.type == TYPE_FLOAT) {
+                    ans.type = TYPE_FLOAT;
+                    ans.v.fnum = arg.v.fnum - 1.0;
+                } else {
+                    arg_type = arg.type;
+                    free_var(arg);
+                    PUSH_TYPE_MISMATCH(2, arg_type, TYPE_INT, TYPE_FLOAT);
+                    break;
+                }
+
+                PUSH(ans);
+                free_var(arg);
+            }
+            break;
+
             case OP_REF:
             {
                 Var index, list;

@@ -73,6 +73,8 @@ struct mapping mappings[] =
     {OP_OR, "OR"},
     {OP_UNARY_MINUS, "NEGATE"},
     {OP_NOT, "NOT"},
+    {OP_PRE_INCR, "PREFIX_INCREMENT"},
+    {OP_PRE_DECR, "PREFIX_DECREMENT"},
     {OP_G_PUT, "PUT"},
     {OP_G_PUSH, "PUSH"},
 #ifdef BYTECODE_REDUCE_REF

@@ -319,6 +319,12 @@ finish_while:
                 e->e.expr = pop_expr();
                 push_expr((Expr *)HOT_OP1(e->e.expr, e));
                 break;
+            case OP_PRE_INCR:
+            case OP_PRE_DECR:
+                e = alloc_expr(op == OP_PRE_INCR ? EXPR_INCR : EXPR_DECR);
+                e->e.expr = pop_expr();
+                push_expr((Expr *)HOT_OP1(e->e.expr, e));
+                break;
             case OP_GET_PROP:
             case OP_PUSH_GET_PROP:
                 kind = EXPR_PROP;
@@ -427,7 +433,7 @@ finish_binary:
                 /* Ignore; following RANGESET or INDEXSET does the work */
                 if (op_hot)
                     asgn_hot = 1;
-                break;
+            break;
             case OP_INDEXSET:
                 /* Most of the lvalue has already been constructed on the stack.
                  * Add the final indexing.

@@ -227,14 +227,6 @@ struct prec {
 static struct prec prec_table[] =
 {
     {EXPR_ASGN, 1},
-    {EXPR_SUB_ASGN, 1},
-    {EXPR_ADD_ASGN, 1},
-    {EXPR_MULT_ASGN, 1},
-    {EXPR_DIV_ASGN, 1},
-    {EXPR_MOD_ASGN, 1},
-    {EXPR_POW_ASGN, 1},
-    {EXPR_AND_ASGN, 1},
-    {EXPR_OR_ASGN, 1},
 
     {EXPR_COND, 2},     /* the unparser for this depends on only ASGN having
                    lower precedence.  Fix that if this changes. */
@@ -747,54 +739,6 @@ unparse_expr(Stream * str, Expr * expr)
         case EXPR_ASGN:
             unparse_expr(str, expr->e.bin.lhs);
             stream_add_string(str, " = ");
-            unparse_expr(str, expr->e.bin.rhs);
-            break;
-
-        case EXPR_ADD_ASGN:
-            unparse_expr(str, expr->e.bin.lhs);
-            stream_add_string(str, " += ");
-            unparse_expr(str, expr->e.bin.rhs);
-            break;
-
-        case EXPR_SUB_ASGN:
-            unparse_expr(str, expr->e.bin.lhs);
-            stream_add_string(str, " -= ");
-            unparse_expr(str, expr->e.bin.rhs);
-            break;
-
-        case EXPR_MULT_ASGN:
-            unparse_expr(str, expr->e.bin.lhs);
-            stream_add_string(str, " *= ");
-            unparse_expr(str, expr->e.bin.rhs);
-            break;
-
-        case EXPR_DIV_ASGN:
-            unparse_expr(str, expr->e.bin.lhs);
-            stream_add_string(str, " /= ");
-            unparse_expr(str, expr->e.bin.rhs);
-            break;
-
-        case EXPR_MOD_ASGN:
-            unparse_expr(str, expr->e.bin.lhs);
-            stream_add_string(str, " %= ");
-            unparse_expr(str, expr->e.bin.rhs);
-            break;
-
-        case EXPR_POW_ASGN:
-            unparse_expr(str, expr->e.bin.lhs);
-            stream_add_string(str, " ^= ");
-            unparse_expr(str, expr->e.bin.rhs);
-            break;
-
-        case EXPR_AND_ASGN:
-            unparse_expr(str, expr->e.bin.lhs);
-            stream_add_string(str, " &= ");
-            unparse_expr(str, expr->e.bin.rhs);
-            break;
-
-        case EXPR_OR_ASGN:
-            unparse_expr(str, expr->e.bin.lhs);
-            stream_add_string(str, " |= ");
             unparse_expr(str, expr->e.bin.rhs);
             break;
 

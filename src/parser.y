@@ -100,7 +100,7 @@ static void     check_loop_name(const char *, enum loop_exit_kind);
 
 %token  tTO tARROW tMAP
 
-%right  '=' tADD_ASGN tSUB_ASGN tMULT_ASGN tDIV_ASGN tMOD_ASGN tPOW_ASGN tOR_ASGN tAND_ASGN
+%right  '='
 %nonassoc '?' '|'
 %left   tOR tAND
 %left   tEQ tNE '<' tLE '>' tGE tIN
@@ -485,110 +485,6 @@ expr:
 		    }
 		    $$ = alloc_binary(EXPR_ASGN, $1, $3);
 	        }
-	| expr tADD_ASGN expr
-                {
-		    Expr *e = $1;
-
-		    if (e->kind == EXPR_RANGE)
-			e = e->e.range.base;
-		    while (e->kind == EXPR_INDEX)
-			e = e->e.bin.lhs;
-		    if (e->kind != EXPR_ID  &&  e->kind != EXPR_PROP)
-			yyerror("Illegal expression on left side of"
-				" assignment.");
-		    $$ = alloc_binary(EXPR_ADD_ASGN, $1, $3);
-	        }
-	| expr tSUB_ASGN expr
-                {
-        	    Expr *e = $1;
-
-		    if (e->kind == EXPR_RANGE)
-			e = e->e.range.base;
-		    while (e->kind == EXPR_INDEX)
-			e = e->e.bin.lhs;
-		    if (e->kind != EXPR_ID  &&  e->kind != EXPR_PROP)
-			yyerror("Illegal expression on left side of"
-			        " assignment.");
-		    $$ = alloc_binary(EXPR_SUB_ASGN, $1, $3);
-        	        }
-	| expr tMULT_ASGN expr
-                {
-		    Expr *e = $1;
-
-		    if (e->kind == EXPR_RANGE)
-			e = e->e.range.base;
-		    while (e->kind == EXPR_INDEX)
-			e = e->e.bin.lhs;
-		    if (e->kind != EXPR_ID  &&  e->kind != EXPR_PROP)
-			yyerror("Illegal expression on left side of"
-			        " assignment.");
-		    $$ = alloc_binary(EXPR_MULT_ASGN, $1, $3);
-        	}
-	| expr tDIV_ASGN expr
-                {
-		    Expr *e = $1;
-
-		    if (e->kind == EXPR_RANGE)
-			e = e->e.range.base;
-		    while (e->kind == EXPR_INDEX)
-			e = e->e.bin.lhs;
-		    if (e->kind != EXPR_ID  &&  e->kind != EXPR_PROP)
-			yyerror("Illegal expression on left side of"
-			        " assignment.");
-		    $$ = alloc_binary(EXPR_DIV_ASGN, $1, $3);
-        	}
-	| expr tMOD_ASGN expr
-                {
-		    Expr *e = $1;
-
-		    if (e->kind == EXPR_RANGE)
-			e = e->e.range.base;
-		    while (e->kind == EXPR_INDEX)
-			e = e->e.bin.lhs;
-		    if (e->kind != EXPR_ID  &&  e->kind != EXPR_PROP)
-			yyerror("Illegal expression on left side of"
-			        " assignment.");
-		    $$ = alloc_binary(EXPR_MOD_ASGN, $1, $3);
-        	}
-	| expr tPOW_ASGN expr
-		{
-		    Expr *e = $1;
-
-		    if (e->kind == EXPR_RANGE)
-			e = e->e.range.base;
-		    while (e->kind == EXPR_INDEX)
-			e = e->e.bin.lhs;
-		    if (e->kind != EXPR_ID  &&  e->kind != EXPR_PROP)
-			yyerror("Illegal expression on left side of"
-			        " assignment.");
-		    $$ = alloc_binary(EXPR_POW_ASGN, $1, $3);
-		}
-	| expr tOR_ASGN expr
-		{
-		    Expr *e = $1;
-
-		    if (e->kind == EXPR_RANGE)
-			e = e->e.range.base;
-		    while (e->kind == EXPR_INDEX)
-			e = e->e.bin.lhs;
-		    if (e->kind != EXPR_ID  &&  e->kind != EXPR_PROP)
-			yyerror("Illegal expression on left side of"
-			        " assignment.");
-		    $$ = alloc_binary(EXPR_OR_ASGN, $1, $3);
-		}
-	| expr tAND_ASGN expr
-		{
-		    Expr *e = $1;
-
-		    if (e->kind == EXPR_RANGE)
-			e = e->e.range.base;
-		    while (e->kind == EXPR_INDEX)
-			e = e->e.bin.lhs;
-		    if (e->kind != EXPR_ID  &&  e->kind != EXPR_PROP)
-			yyerror("Illegal expression on left side of"
-			        " assignment.");
-		    $$ = alloc_binary(EXPR_AND_ASGN, $1, $3);
-		}
 	| '{' scatter '}' '=' expr
 		{
 		    Expr       *e = alloc_expr(EXPR_SCATTER);
@@ -1194,7 +1090,6 @@ start_over:
 
     switch(c) {
       case '^':         return check_two_dots() ? '^'
-			     : follow('=', 1, 0) ? tPOW_ASGN
 			     : follow('.', tBITXOR, '^');
       case '>':         return follow('>', 1, 0) ? tBITSHR
 			     : follow('=', tGE, '>');
@@ -1203,19 +1098,12 @@ start_over:
       case '=':         return follow('=', 1, 0) ? tEQ
 			     : follow('>', tARROW, '=');
       case '|':         return follow('.', 1, 0) ? tBITOR
-			     : follow('=', 1, 0) ? tOR_ASGN
 			     : follow('|', tOR, '|');
       case '&':         return follow('.', 1, 0) ? tBITAND
-			     : follow('=', 1, 0) ? tAND_ASGN
 			     : follow('&', tAND, '&');
       case '-':         return follow('>', 1, 0) ? tMAP
-                             : follow('=', 1, 0) ? tSUB_ASGN
                              : follow('-', tPREFIXDECR, '-');
-      case '+':         return follow('=', 1, 0) ? tADD_ASGN
-                             : follow('+', tPREFIXINCR, '+');
-      case '*':         return follow('=', tMULT_ASGN, '*');
-      case '/':         return follow('=', tDIV_ASGN, '/');
-      case '%':         return follow('=', tMOD_ASGN, '%');
+      case '+':         return follow('+', tPREFIXINCR, '+');
       case '!':         return follow('=', tNE, '!');
       normal_dot:
       case '.':         return follow('.', tTO, '.');

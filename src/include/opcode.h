@@ -72,8 +72,6 @@ enum Opcode {
     /* assignments, 1 tick: */
     OP_PUT,
     OP_G_PUT = OP_PUT + NUM_READY_VARS,
-    OP_PUT_MULT, OP_PUT_DIV, OP_PUT_ADD, OP_PUT_SUB,
-    OP_PUT_POW, OP_PUT_MOD, OP_PUT_AND, OP_PUT_OR,
 
     /* variable references, no tick: */
     OP_PUSH,
