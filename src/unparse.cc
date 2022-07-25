@@ -744,12 +744,12 @@ unparse_expr(Stream * str, Expr * expr)
 
         case EXPR_INCR:
             stream_add_string(str, "++");
-            bracket_lt(str, EXPR_INCR, expr->e.expr);
+            unparse_expr(str, expr->e.expr);
             break;
 
         case EXPR_DECR:
             stream_add_string(str, "--");
-            bracket_lt(str, EXPR_INCR, expr->e.expr);
+            unparse_expr(str, expr->e.expr);
             break;
 
         case EXPR_CALL:

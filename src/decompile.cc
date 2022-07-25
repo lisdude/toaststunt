@@ -324,6 +324,11 @@ finish_while:
                 e = alloc_expr(op == OP_PRE_INCR ? EXPR_INCR : EXPR_DECR);
                 e->e.expr = pop_expr();
                 push_expr((Expr *)HOT_OP1(e->e.expr, e));
+                while (*ptr != OP_POP) {
+                    if (ptr == hot_byte)    /* it's our assignment expression */
+                        hot_node = expr_stack[top_expr_stack];
+                    ptr++;
+                }
                 break;
             case OP_GET_PROP:
             case OP_PUSH_GET_PROP:

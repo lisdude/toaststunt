@@ -649,9 +649,49 @@ generate_expr(Expr * expr, State * state)
 
         case EXPR_INCR:
         case EXPR_DECR:
+        {
+            Expr *e = expr->e.expr;
+
+            push_lvalue(e, 0, state);
             generate_expr(expr->e.expr, state);
             emit_byte(expr->kind == EXPR_INCR ? OP_PRE_INCR : OP_PRE_DECR, state);
-            break;
+
+            int is_indexed = 0;
+
+            if (e->kind == EXPR_RANGE || e->kind == EXPR_INDEX)
+                emit_byte(OP_PUT_TEMP, state);
+            while (1) {
+                switch (e->kind) {
+                    case EXPR_RANGE:
+                        emit_extended_byte(EOP_RANGESET, state);
+                        pop_stack(3, state);
+                        e = e->e.range.base;
+                        is_indexed = 1;
+                        continue;
+                    case EXPR_INDEX:
+                        emit_byte(OP_INDEXSET, state);
+                        pop_stack(2, state);
+                        e = e->e.bin.lhs;
+                        is_indexed = 1;
+                        continue;
+                    case EXPR_ID:
+                        emit_var_op(OP_PUT, e->e.id, state);
+                        break;
+                    case EXPR_PROP:
+                        emit_byte(OP_PUT_PROP, state);
+                        pop_stack(2, state);
+                        break;
+                    default:
+                        panic_moo("Bad lvalue in GENERATE_EXPR()");
+                }
+                break;
+            }
+            if (is_indexed) {
+                emit_byte(OP_POP, state);
+                emit_byte(OP_PUSH_TEMP, state);
+            }
+        }
+        break;
         case EXPR_COMPLEMENT:
             generate_expr(expr->e.expr, state);
             emit_extended_byte(EOP_COMPLEMENT, state);
