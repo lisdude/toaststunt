@@ -103,8 +103,8 @@ enum Expr_Kind {
     EXPR_FIRST, EXPR_LAST,
     EXPR_BITOR, EXPR_BITAND, EXPR_BITXOR,
     EXPR_BITSHL, EXPR_BITSHR, EXPR_COMPLEMENT,
+    EXPR_INCR, EXPR_DECR,
     SizeOf_Expr_Kind,		/* The last element is also the number of elements... */
-    EXPR_INCR, EXPR_DECR
 };
 
 union Expr_Data {
