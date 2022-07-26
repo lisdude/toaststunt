@@ -1682,6 +1682,10 @@ finish_comparison:
             }
             break;
 
+            case OP_TERM:
+                /* do nothing, this op code is a placeholder to find the end of a generated sequence */
+                break;
+
             case OP_REF:
             {
                 Var index, list;

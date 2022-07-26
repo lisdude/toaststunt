@@ -68,6 +68,7 @@ enum Opcode {
 
     /* unary ops -- 1 tick: */
     OP_UNARY_MINUS, OP_NOT, OP_PRE_INCR, OP_PRE_DECR,
+    OP_TERM,
 
     /* assignments, 1 tick: */
     OP_PUT,
