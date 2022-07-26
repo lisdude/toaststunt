@@ -690,6 +690,7 @@ generate_expr(Expr * expr, State * state)
                 emit_byte(OP_POP, state);
                 emit_byte(OP_PUSH_TEMP, state);
             }
+            emit_byte(OP_TERM, state);
         }
         break;
         case EXPR_COMPLEMENT:

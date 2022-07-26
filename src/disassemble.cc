@@ -75,6 +75,7 @@ struct mapping mappings[] =
     {OP_NOT, "NOT"},
     {OP_PRE_INCR, "PREFIX_INCREMENT"},
     {OP_PRE_DECR, "PREFIX_DECREMENT"},
+    {OP_TERM, "TERMINATION_OF_GENERATED_OPS"},
     {OP_G_PUT, "PUT"},
     {OP_G_PUSH, "PUSH"},
 #ifdef BYTECODE_REDUCE_REF
