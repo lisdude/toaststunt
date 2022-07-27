@@ -104,6 +104,7 @@ enum Expr_Kind {
     EXPR_BITOR, EXPR_BITAND, EXPR_BITXOR,
     EXPR_BITSHL, EXPR_BITSHR, EXPR_COMPLEMENT,
     EXPR_PRE_INCR, EXPR_PRE_DECR,
+    EXPR_POST_INCR, EXPR_POST_DECR,
     SizeOf_Expr_Kind,		/* The last element is also the number of elements... */
 };
 

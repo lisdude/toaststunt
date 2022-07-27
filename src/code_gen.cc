@@ -647,12 +647,18 @@ generate_expr(Expr * expr, State * state)
             break;
         case EXPR_PRE_INCR:
         case EXPR_PRE_DECR:
+        case EXPR_POST_INCR:
+        case EXPR_POST_DECR:
         {
             Expr *e = expr->e.expr;
 
             push_lvalue(e, 0, state);
             generate_expr(expr->e.expr, state);
-            emit_byte(expr->kind == EXPR_PRE_INCR ? OP_PRE_INCREMENT : OP_PRE_DECREMENT, state);
+            Opcode op = (expr->kind == EXPR_PRE_INCR) ? OP_PRE_INCREMENT :
+                        (expr->kind == EXPR_POST_INCR) ? OP_POST_INCREMENT :
+                        (expr->kind == EXPR_PRE_DECR) ? OP_PRE_DECREMENT :
+                        OP_POST_DECREMENT;
+            emit_byte(op, state);
 
             int is_indexed = 0;
 
@@ -690,6 +696,14 @@ generate_expr(Expr * expr, State * state)
                 emit_byte(OP_POP, state);
                 emit_byte(OP_PUSH_TEMP, state);
             }
+
+            // If we are using postfix we need to add an extra POP
+//            if ((expr->kind == EXPR_POST_DECR) || (expr->kind == EXPR_POST_INCR))
+//            {
+//                emit_byte(OP_POP, state);
+//                emit_byte(OP_PUSH_TEMP, state);
+//            }
+
             // Lastly we generate a termination framing op code to aid in decompilation later
             emit_byte(OP_TERM, state);
         }

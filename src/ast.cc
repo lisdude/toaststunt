@@ -330,6 +330,8 @@ free_expr(Expr * expr)
         case EXPR_NOT:
         case EXPR_PRE_INCR:
         case EXPR_PRE_DECR:
+        case EXPR_POST_INCR:
+        case EXPR_POST_DECR:
         case EXPR_COMPLEMENT:
             free_expr(expr->e.expr);
             break;

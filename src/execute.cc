@@ -1682,6 +1682,54 @@ finish_comparison:
             }
             break;
 
+            case OP_POST_INCREMENT:
+            {
+                Var arg, ans;
+                var_type arg_type;
+
+                arg = POP();
+                if (arg.type == TYPE_INT) {
+                    ans.type = TYPE_INT;
+                    ans.v.num = arg.v.num + 1;
+                } else if (arg.type == TYPE_FLOAT) {
+                    ans.type = TYPE_FLOAT;
+                    ans.v.fnum = arg.v.fnum + 1.0;
+                } else {
+                    arg_type = arg.type;
+                    free_var(arg);
+                    PUSH_TYPE_MISMATCH(2, arg_type, TYPE_INT, TYPE_FLOAT);
+                    break;
+                }
+
+                PUSH(arg);
+                PUSH(ans);
+            }
+            break;
+
+            case OP_POST_DECREMENT:
+            {
+                Var arg, ans;
+                var_type arg_type;
+
+                arg = POP();
+                if (arg.type == TYPE_INT) {
+                    ans.type = TYPE_INT;
+                    ans.v.num = arg.v.num - 1;
+                } else if (arg.type == TYPE_FLOAT) {
+                    ans.type = TYPE_FLOAT;
+                    ans.v.fnum = arg.v.fnum - 1.0;
+                } else {
+                    arg_type = arg.type;
+                    free_var(arg);
+                    PUSH_TYPE_MISMATCH(2, arg_type, TYPE_INT, TYPE_FLOAT);
+                    break;
+                }
+
+                PUSH(arg);
+                PUSH(ans);
+            }
+            break;
+
             case OP_TERM:
                 /* do nothing, this op code is a placeholder to find the end of a generated sequence */
                 break;

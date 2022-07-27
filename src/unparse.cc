@@ -263,18 +263,21 @@ static struct prec prec_table[] =
     {EXPR_PRE_INCR, 10},
     {EXPR_PRE_DECR, 10},
 
-    {EXPR_PROP, 11},
-    {EXPR_VERB, 11},
-    {EXPR_INDEX, 11},
-    {EXPR_RANGE, 11},
+    {EXPR_POST_INCR, 11},
+    {EXPR_POST_DECR, 11},
 
-    {EXPR_VAR, 12},
-    {EXPR_ID, 12},
-    {EXPR_LIST, 12},
-    {EXPR_CALL, 12},
-    {EXPR_FIRST, 12},
-    {EXPR_LAST, 12},
-    {EXPR_CATCH, 12}
+    {EXPR_PROP, 12},
+    {EXPR_VERB, 12},
+    {EXPR_INDEX, 12},
+    {EXPR_RANGE, 12},
+
+    {EXPR_VAR, 13},
+    {EXPR_ID, 13},
+    {EXPR_LIST, 13},
+    {EXPR_CALL, 13},
+    {EXPR_FIRST, 13},
+    {EXPR_LAST, 13},
+    {EXPR_CATCH, 13}
 };
 
 static int expr_prec[SizeOf_Expr_Kind];
@@ -750,6 +753,16 @@ unparse_expr(Stream * str, Expr * expr)
         case EXPR_PRE_DECR:
             stream_add_string(str, "--");
             unparse_expr(str, expr->e.expr);
+            break;
+
+        case EXPR_POST_INCR:
+            unparse_expr(str, expr->e.expr);
+            stream_add_string(str, "++");
+            break;
+
+        case EXPR_POST_DECR:
+            unparse_expr(str, expr->e.expr);
+            stream_add_string(str, "--");
             break;
 
         case EXPR_CALL:

@@ -109,7 +109,8 @@ static void     check_loop_name(const char *, enum loop_exit_kind);
 %left   '+' '-'
 %left   '*' '/' '%'
 %right  '^'
-%left   '!' '~' tUNARYMINUS tINCREMENT tDECREMENT
+%left   '!' '~' tUNARYMINUS
+%right tINCREMENT tDECREMENT
 %nonassoc '.' ':' '[' '$'
 
 %%
@@ -615,7 +616,37 @@ expr:
 			$$->e.expr = $2;
 		    }
 		}
-	| tINCREMENT expr
+	| expr tINCREMENT
+		{
+            switch ($1->kind)
+            {
+                case EXPR_PROP:
+                case EXPR_ID:
+                case EXPR_INDEX:
+                    $$ = alloc_expr(EXPR_POST_INCR);
+                    $$->e.expr = $1;
+                    break;
+                default:
+                    yyerror("Invalid use of increment operator.");
+                    break;
+            }
+		}
+	| expr tDECREMENT
+		{
+            switch ($1->kind)
+            {
+                case EXPR_PROP:
+                case EXPR_ID:
+                case EXPR_INDEX:
+                    $$ = alloc_expr(EXPR_POST_DECR);
+                    $$->e.expr = $1;
+                    break;
+                default:
+                    yyerror("Invalid use of increment operator.");
+                    break;
+            }
+		}
+	| tINCREMENT expr %prec tUNARYMINUS
 		{
 		    if ($2->kind == EXPR_VAR
 			    && ($2->e.var.type == TYPE_INT
@@ -648,7 +679,7 @@ expr:
                 }
             }
 		}
-	| tDECREMENT expr
+	| tDECREMENT expr %prec tUNARYMINUS
 		{
             if ($2->kind == EXPR_VAR
 			    && ($2->e.var.type == TYPE_INT
@@ -924,6 +955,33 @@ follow(int expect, int ifyes, int ifno)     /* look ahead for >=, etc. */
     return ifno;
 }
 
+static bool
+char_follows_x_times(int expect, int repeated)     /* look ahead temporarily. */
+{
+    int i = 0;
+    bool result = true;
+
+    while (i < repeated)
+    {
+        int c = lex_getc();
+        if (c != expect)
+        {
+            lex_ungetc(c);
+            result = false;
+            break;
+        }
+        i++;
+    }
+
+    while (i > 0)
+    {
+        lex_ungetc(expect);
+        i--;
+    }
+
+    return result;
+}
+
 static int
 check_two_dots(void)     /* look ahead for .. but don't consume */
 {
@@ -1114,20 +1172,22 @@ start_over:
 
     switch(c) {
       case '^':         return check_two_dots() ? '^'
-			     : follow('.', tBITXOR, '^');
+			                 : follow('.', tBITXOR, '^');
       case '>':         return follow('>', 1, 0) ? tBITSHR
-			     : follow('=', tGE, '>');
+			                 : follow('=', tGE, '>');
       case '<':         return follow('<', 1, 0) ? tBITSHL
-			     : follow('=', tLE, '<');
+			                 : follow('=', tLE, '<');
       case '=':         return follow('=', 1, 0) ? tEQ
-			     : follow('>', tARROW, '=');
+			                 : follow('>', tARROW, '=');
       case '|':         return follow('.', 1, 0) ? tBITOR
-			     : follow('|', tOR, '|');
+			                 : follow('|', tOR, '|');
       case '&':         return follow('.', 1, 0) ? tBITAND
-			     : follow('&', tAND, '&');
+			                 : follow('&', tAND, '&');
       case '-':         return follow('>', 1, 0) ? tMAP
+                             : char_follows_x_times('-', 2) ? '-'
                              : follow('-', tDECREMENT, '-');
-      case '+':         return follow('+', tINCREMENT, '+');
+      case '+':         return char_follows_x_times('+', 2) ? '+'
+                             : follow('+', tINCREMENT, '+');
       case '!':         return follow('=', tNE, '!');
       normal_dot:
       case '.':         return follow('.', tTO, '.');
