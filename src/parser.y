@@ -109,7 +109,7 @@ static void     check_loop_name(const char *, enum loop_exit_kind);
 %left   '+' '-'
 %left   '*' '/' '%'
 %right  '^'
-%left   '!' '~' tUNARYMINUS tPREFIXINCR tPREFIXDECR
+%left   '!' '~' tUNARYMINUS tINCREMENT tDECREMENT
 %nonassoc '.' ':' '[' '$'
 
 %%
@@ -615,7 +615,7 @@ expr:
 			$$->e.expr = $2;
 		    }
 		}
-	| tPREFIXINCR expr
+	| tINCREMENT expr
 		{
 		    if ($2->kind == EXPR_VAR
 			    && ($2->e.var.type == TYPE_INT
@@ -639,7 +639,7 @@ expr:
                     case EXPR_PROP:
                     case EXPR_ID:
                     case EXPR_INDEX:
-                        $$ = alloc_expr(EXPR_INCR);
+                        $$ = alloc_expr(EXPR_PRE_INCR);
                         $$->e.expr = $2;
                         break;
                     default:
@@ -648,7 +648,7 @@ expr:
                 }
             }
 		}
-	| tPREFIXDECR expr
+	| tDECREMENT expr
 		{
             if ($2->kind == EXPR_VAR
 			    && ($2->e.var.type == TYPE_INT
@@ -672,7 +672,7 @@ expr:
                     case EXPR_PROP:
                     case EXPR_ID:
                     case EXPR_INDEX:
-                        $$ = alloc_expr(EXPR_DECR);
+                        $$ = alloc_expr(EXPR_PRE_DECR);
                         $$->e.expr = $2;
                         break;
                     default:
@@ -1126,8 +1126,8 @@ start_over:
       case '&':         return follow('.', 1, 0) ? tBITAND
 			     : follow('&', tAND, '&');
       case '-':         return follow('>', 1, 0) ? tMAP
-                             : follow('-', tPREFIXDECR, '-');
-      case '+':         return follow('+', tPREFIXINCR, '+');
+                             : follow('-', tDECREMENT, '-');
+      case '+':         return follow('+', tINCREMENT, '+');
       case '!':         return follow('=', tNE, '!');
       normal_dot:
       case '.':         return follow('.', tTO, '.');

@@ -319,11 +319,16 @@ finish_while:
                 e->e.expr = pop_expr();
                 push_expr((Expr *)HOT_OP1(e->e.expr, e));
                 break;
-            case OP_PRE_INCR:
-            case OP_PRE_DECR:
-                e = alloc_expr(op == OP_PRE_INCR ? EXPR_INCR : EXPR_DECR);
+            case OP_PRE_INCREMENT:
+            case OP_PRE_DECREMENT:
+                e = alloc_expr(op == OP_PRE_INCREMENT ? EXPR_PRE_INCR : EXPR_PRE_DECR);
                 e->e.expr = pop_expr();
                 push_expr((Expr *)HOT_OP1(e->e.expr, e));
+                /*
+                 * Now we advance until we find our termination op code and consume all
+                 * intervening op codes since all the intervening codes are represented
+                 * by the syntactical sugar
+                */
                 while (*ptr != OP_TERM) {
                     if (ptr == hot_byte)    /* it's our assignment expression */
                         hot_node = expr_stack[top_expr_stack];

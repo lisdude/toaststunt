@@ -1634,7 +1634,7 @@ finish_comparison:
             }
             break;
 
-            case OP_PRE_INCR:
+            case OP_PRE_INCREMENT:
             {
                 Var arg, ans;
                 var_type arg_type;
@@ -1658,7 +1658,7 @@ finish_comparison:
             }
             break;
 
-            case OP_PRE_DECR:
+            case OP_PRE_DECREMENT:
             {
                 Var arg, ans;
                 var_type arg_type;

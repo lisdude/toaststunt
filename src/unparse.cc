@@ -260,8 +260,8 @@ static struct prec prec_table[] =
     {EXPR_NEGATE, 10},
     {EXPR_COMPLEMENT, 10},
     {EXPR_NOT, 10},
-    {EXPR_INCR, 10},
-    {EXPR_DECR, 10},
+    {EXPR_PRE_INCR, 10},
+    {EXPR_PRE_DECR, 10},
 
     {EXPR_PROP, 11},
     {EXPR_VERB, 11},
@@ -742,12 +742,12 @@ unparse_expr(Stream * str, Expr * expr)
             unparse_expr(str, expr->e.bin.rhs);
             break;
 
-        case EXPR_INCR:
+        case EXPR_PRE_INCR:
             stream_add_string(str, "++");
             unparse_expr(str, expr->e.expr);
             break;
 
-        case EXPR_DECR:
+        case EXPR_PRE_DECR:
             stream_add_string(str, "--");
             unparse_expr(str, expr->e.expr);
             break;

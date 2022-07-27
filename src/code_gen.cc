@@ -645,19 +645,19 @@ generate_expr(Expr * expr, State * state)
             generate_expr(expr->e.expr, state);
             emit_byte(expr->kind == EXPR_NOT ? OP_NOT : OP_UNARY_MINUS, state);
             break;
-
-
-        case EXPR_INCR:
-        case EXPR_DECR:
+        case EXPR_PRE_INCR:
+        case EXPR_PRE_DECR:
         {
             Expr *e = expr->e.expr;
 
             push_lvalue(e, 0, state);
             generate_expr(expr->e.expr, state);
-            emit_byte(expr->kind == EXPR_INCR ? OP_PRE_INCR : OP_PRE_DECR, state);
+            emit_byte(expr->kind == EXPR_PRE_INCR ? OP_PRE_INCREMENT : OP_PRE_DECREMENT, state);
 
             int is_indexed = 0;
 
+            // Now we generate the extra op codes to do the work of the
+            // syntactical sugar increment/decrement operators
             if (e->kind == EXPR_RANGE || e->kind == EXPR_INDEX)
                 emit_byte(OP_PUT_TEMP, state);
             while (1) {
@@ -690,6 +690,7 @@ generate_expr(Expr * expr, State * state)
                 emit_byte(OP_POP, state);
                 emit_byte(OP_PUSH_TEMP, state);
             }
+            // Lastly we generate a termination framing op code to aid in decompilation later
             emit_byte(OP_TERM, state);
         }
         break;

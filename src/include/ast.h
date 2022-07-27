@@ -103,7 +103,7 @@ enum Expr_Kind {
     EXPR_FIRST, EXPR_LAST,
     EXPR_BITOR, EXPR_BITAND, EXPR_BITXOR,
     EXPR_BITSHL, EXPR_BITSHR, EXPR_COMPLEMENT,
-    EXPR_INCR, EXPR_DECR,
+    EXPR_PRE_INCR, EXPR_PRE_DECR,
     SizeOf_Expr_Kind,		/* The last element is also the number of elements... */
 };
 
