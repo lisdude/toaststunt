@@ -618,99 +618,107 @@ expr:
 		}
 	| expr tINCREMENT
 		{
-            switch ($1->kind)
-            {
-                case EXPR_PROP:
-                case EXPR_ID:
-                case EXPR_INDEX:
-                    $$ = alloc_expr(EXPR_POST_INCR);
-                    $$->e.expr = $1;
-                    break;
-                default:
-                    yyerror("Invalid use of increment operator.");
-                    break;
-            }
+		    switch ($1->kind)
+		    {
+			case EXPR_PROP:
+			case EXPR_ID:
+			case EXPR_INDEX:
+			    $$ = alloc_expr(EXPR_POST_INCR);
+			    $$->e.expr = $1;
+			    break;
+			default:
+			    yyerror("Invalid use of increment operator.");
+			    break;
+		    }
 		}
 	| expr tDECREMENT
 		{
-            switch ($1->kind)
-            {
-                case EXPR_PROP:
-                case EXPR_ID:
-                case EXPR_INDEX:
-                    $$ = alloc_expr(EXPR_POST_DECR);
-                    $$->e.expr = $1;
-                    break;
-                default:
-                    yyerror("Invalid use of increment operator.");
-                    break;
-            }
+		    switch ($1->kind)
+		    {
+			case EXPR_PROP:
+			case EXPR_ID:
+			case EXPR_INDEX:
+			    $$ = alloc_expr(EXPR_POST_DECR);
+			    $$->e.expr = $1;
+			    break;
+			default:
+			    yyerror("Invalid use of increment operator.");
+			    break;
+		    }
 		}
 	| tINCREMENT expr %prec tUNARYMINUS
 		{
 		    if ($2->kind == EXPR_VAR
 			    && ($2->e.var.type == TYPE_INT
-			    || $2->e.var.type == TYPE_FLOAT))
+			    || $2->e.var.type == TYPE_FLOAT
+			    || $2->e.var.type == TYPE_OBJ))
+		    {
+			switch ($2->e.var.type) {
+			  case TYPE_INT:
+			    $2->e.var.v.num = $2->e.var.v.num + 1;
+			    break;
+			  case TYPE_FLOAT:
+			    $2->e.var.v.fnum = $2->e.var.v.fnum + 1.0;
+			    break;
+			  case TYPE_OBJ:
+			    $2->e.var.v.obj = $2->e.var.v.obj + 1;
+			    break;
+			  default:
+			    yyerror("Invalid use of increment operator.");
+			    break;
+			}
+			$$ = $2;
+		    } else {
+			switch ($2->kind)
 			{
-                switch ($2->e.var.type) {
-                  case TYPE_INT:
-                    $2->e.var.v.num = $2->e.var.v.num + 1;
-                    break;
-                  case TYPE_FLOAT:
-                    $2->e.var.v.fnum = $2->e.var.v.fnum + 1.0;
-                    break;
-                  default:
-                    yyerror("Invalid use of increment operator.");
-                    break;
-                }
-                $$ = $2;
-            } else {
-                switch ($2->kind)
-                {
-                    case EXPR_PROP:
-                    case EXPR_ID:
-                    case EXPR_INDEX:
-                        $$ = alloc_expr(EXPR_PRE_INCR);
-                        $$->e.expr = $2;
-                        break;
-                    default:
-                        yyerror("Invalid use of increment operator.");
-                        break;
-                }
-            }
+			    case EXPR_PROP:
+			    case EXPR_ID:
+			    case EXPR_INDEX:
+				$$ = alloc_expr(EXPR_PRE_INCR);
+				$$->e.expr = $2;
+				break;
+			    default:
+				yyerror("Invalid use of increment operator.");
+				break;
+			}
+		    }
 		}
 	| tDECREMENT expr %prec tUNARYMINUS
 		{
-            if ($2->kind == EXPR_VAR
-			    && ($2->e.var.type == TYPE_INT
-			    || $2->e.var.type == TYPE_FLOAT))
+		    if ($2->kind == EXPR_VAR
+		       && ($2->e.var.type == TYPE_INT
+		       || $2->e.var.type == TYPE_FLOAT
+		       || $2->e.var.type == TYPE_OBJ))
+		    {
+			switch ($2->e.var.type) {
+			  case TYPE_INT:
+			    $2->e.var.v.num = $2->e.var.v.num - 1;
+			    break;
+			  case TYPE_FLOAT:
+			    $2->e.var.v.fnum = $2->e.var.v.fnum - 1.0;
+			    break;
+			  case TYPE_OBJ:
+			    $2->e.var.v.obj = $2->e.var.v.obj - 1;
+			    break;
+			  default:
+			    yyerror("Invalid use of increment operator.");
+			    break;
+			}
+			$$ = $2;
+		    } else {
+			switch ($2->kind)
 			{
-                switch ($2->e.var.type) {
-                  case TYPE_INT:
-                    $2->e.var.v.num = $2->e.var.v.num - 1;
-                    break;
-                  case TYPE_FLOAT:
-                    $2->e.var.v.fnum = $2->e.var.v.fnum - 1.0;
-                    break;
-                  default:
-                    yyerror("Invalid use of increment operator.");
-                    break;
-                }
-                $$ = $2;
-            } else {
-                switch ($2->kind)
-                {
-                    case EXPR_PROP:
-                    case EXPR_ID:
-                    case EXPR_INDEX:
-                        $$ = alloc_expr(EXPR_PRE_DECR);
-                        $$->e.expr = $2;
-                        break;
-                    default:
-                        yyerror("Invalid use of decrement operator.");
-                        break;
-                }
-            }
+			    case EXPR_PROP:
+			    case EXPR_ID:
+			    case EXPR_INDEX:
+				$$ = alloc_expr(EXPR_PRE_DECR);
+				$$->e.expr = $2;
+				break;
+			    default:
+				yyerror("Invalid use of decrement operator.");
+				break;
+			}
+            	    }
 		}
 	| '!' expr
 		{
