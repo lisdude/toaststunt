@@ -871,7 +871,7 @@ maprange(Var map, rbtrav *from, rbtrav *to)
 }
 
 /* Returns a new map with all the keys from the right
- * removed to the map on the left.
+ * removed from the map on the left.
  */
 Var
 mapsubtract(Var first, Var second)
