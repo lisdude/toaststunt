@@ -17,6 +17,8 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 ## Features
 
 - SQLite
+- Supports compound assignment operators +=, -=, *=, /=, %=, ^=, &= and |=
+- Supports prefix and postfix increment/decrement operators
 - Perl Compatible Regular Expressions (PCRE)
 - Simplex Noise
 - [Argon2id Hashing](https://github.com/P-H-C/phc-winner-argon2)
