@@ -1411,6 +1411,9 @@ finish_comparison:
             case OP_MULT:
             case OP_DIV:
             case OP_MOD:
+            case OP_ASGN_MULT:
+            case OP_ASGN_DIV:
+            case OP_ASGN_MOD:
             {
                 Var lhs, rhs, ans;
                 var_type lhs_type, rhs_type;
@@ -1419,14 +1422,17 @@ finish_comparison:
                 lhs = POP();    /* should be number */
                 if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
                         && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT)) {
-                    switch (op) {
+                    switch (op) {                        
                         case OP_MULT:
+                        case OP_ASGN_MULT:
                             ans = do_multiply(lhs, rhs);
                             break;
                         case OP_DIV:
+                        case OP_ASGN_DIV:
                             ans = do_divide(lhs, rhs);
                             break;
                         case OP_MOD:
+                        case OP_ASGN_MOD:
                             ans = do_modulus(lhs, rhs);
                             break;
                         default:
@@ -1460,6 +1466,7 @@ finish_comparison:
             break;
 
             case OP_MINUS:
+            case OP_ASGN_MINUS:
                 {
                     Var lhs, rhs, ans;
                     var_type lhs_type, rhs_type;
@@ -1504,7 +1511,9 @@ finish_comparison:
                 }
                 break;
 
-            case OP_ADD: {
+            case OP_ADD:
+            case OP_ASGN_PLUS:
+            {
                 Var rhs, lhs, ans;
                 var_type lhs_type, rhs_type;
 
@@ -1584,17 +1593,35 @@ finish_comparison:
 
             case OP_AND:
             case OP_OR:
+            case OP_ASGN_AND:
+            case OP_ASGN_OR:
             {
                 Var lhs;
                 unsigned lab = READ_BYTES(bv, bc.numbytes_label);
 
                 lhs = TOP_RT_VALUE;
-                if ((op == OP_AND && !is_true(lhs))
-                        || (op == OP_OR && is_true(lhs)))   /* short-circuit */
+                if (((op == OP_AND || op == OP_ASGN_AND) && !is_true(lhs))
+                        || ((op == OP_OR || op == OP_ASGN_OR) && is_true(lhs)))   /* short-circuit */
                     JUMP(lab);
                 else {
                     free_var(POP());
                 }
+            }
+            break;
+
+            case OP_ASGN_POW:
+            {
+                Var lhs, rhs, ans;
+
+                rhs = POP();
+                lhs = POP();
+                ans = do_power(lhs, rhs);
+                free_var(lhs);
+                free_var(rhs);
+                if (ans.type == TYPE_ERR)
+                    PUSH_ERROR(ans.v.err);
+                else
+                    PUSH(ans);
             }
             break;
 

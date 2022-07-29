@@ -100,7 +100,7 @@ static void     check_loop_name(const char *, enum loop_exit_kind);
 
 %token  tTO tARROW tMAP
 
-%right  '='
+%right  '=' tASGNPLUS tASGNMINUS tASGNMULT tASGNDIV tASGNMOD tASGNPOW tASGNAND tASGNOR
 %nonassoc '?' '|'
 %left   tOR tAND
 %left   tEQ tNE '<' tLE '>' tGE tIN
@@ -486,6 +486,134 @@ expr:
 		    }
 		    $$ = alloc_binary(EXPR_ASGN, $1, $3);
 	        }
+	| expr tASGNPLUS expr
+		{
+		    Expr *e = $1;
+
+		    switch ($1->kind)
+		    {
+			case EXPR_PROP:
+			case EXPR_ID:
+			case EXPR_INDEX:
+			    break;
+			default:
+			    yyerror("Invalid use of ADD assignment operator.");
+			    break;
+		    }
+		    $$ = alloc_binary(EXPR_ASGN_PLUS, $1, $3);
+		}
+	| expr tASGNMINUS expr
+		{
+		    Expr *e = $1;
+
+		    switch ($1->kind)
+		    {
+			case EXPR_PROP:
+			case EXPR_ID:
+			case EXPR_INDEX:
+			    break;
+			default:
+			    yyerror("Invalid use of SUBTRACT assignment operator.");
+			    break;
+		    }
+		    $$ = alloc_binary(EXPR_ASGN_MINUS, $1, $3);
+		}
+	| expr tASGNMULT expr
+		{
+		    Expr *e = $1;
+
+		    switch ($1->kind)
+		    {
+			case EXPR_PROP:
+			case EXPR_ID:
+			case EXPR_INDEX:
+			    break;
+			default:
+			    yyerror("Invalid use of MULTIPLY assignment operator.");
+			    break;
+		    }
+		    $$ = alloc_binary(EXPR_ASGN_MULT, $1, $3);
+		}
+	| expr tASGNDIV expr
+		{
+		    Expr *e = $1;
+
+		    switch ($1->kind)
+		    {
+			case EXPR_PROP:
+			case EXPR_ID:
+			case EXPR_INDEX:
+			    break;
+			default:
+			    yyerror("Invalid use of DIVIDE assignment operator.");
+			    break;
+		    }
+		    $$ = alloc_binary(EXPR_ASGN_DIV, $1, $3);
+		}
+	| expr tASGNMOD expr
+		{
+		    Expr *e = $1;
+
+		    switch ($1->kind)
+		    {
+			case EXPR_PROP:
+			case EXPR_ID:
+			case EXPR_INDEX:
+			    break;
+			default:
+			    yyerror("Invalid use of MODULUS assignment operator.");
+			    break;
+		    }
+		    $$ = alloc_binary(EXPR_ASGN_MOD, $1, $3);
+		}
+	| expr tASGNPOW expr
+		{
+		    Expr *e = $1;
+
+		    switch ($1->kind)
+		    {
+			case EXPR_PROP:
+			case EXPR_ID:
+			case EXPR_INDEX:
+			    break;
+			default:
+			    yyerror("Invalid use of POWER assignment operator.");
+			    break;
+		    }
+		    $$ = alloc_binary(EXPR_ASGN_POW, $1, $3);
+		}
+	| expr tASGNAND expr
+		{
+		    Expr *e = $1;
+
+		    switch ($1->kind)
+		    {
+			case EXPR_PROP:
+			case EXPR_ID:
+			case EXPR_INDEX:
+			    break;
+			default:
+			    yyerror("Invalid use of AND assignment operator.");
+			    break;
+		    }
+		    $$ = alloc_binary(EXPR_ASGN_AND, $1, $3);
+		}
+	| expr tASGNOR expr
+		{
+		    Expr *e = $1;
+
+		    switch ($1->kind)
+		    {
+			case EXPR_PROP:
+			case EXPR_ID:
+			case EXPR_INDEX:
+			    break;
+			default:
+			    yyerror("Invalid use of OR assignment operator.");
+			    break;
+		    }
+		    $$ = alloc_binary(EXPR_ASGN_OR, $1, $3);
+		}
 	| '{' scatter '}' '=' expr
 		{
 		    Expr       *e = alloc_expr(EXPR_SCATTER);
@@ -1033,6 +1161,8 @@ start_over:
 		    return c;
 		}
 	    }
+	} else if (c == '=') {
+		return tASGNDIV;
 	} else {
 	    lex_ungetc(c);
 	    return '/';
@@ -1180,7 +1310,8 @@ start_over:
 
     switch(c) {
       case '^':         return check_two_dots() ? '^'
-			                 : follow('.', tBITXOR, '^');
+			                 : follow('.', 1, 0) ? tBITXOR
+			                 : follow('=', tASGNPOW, '^');
       case '>':         return follow('>', 1, 0) ? tBITSHR
 			                 : follow('=', tGE, '>');
       case '<':         return follow('<', 1, 0) ? tBITSHL
@@ -1188,14 +1319,20 @@ start_over:
       case '=':         return follow('=', 1, 0) ? tEQ
 			                 : follow('>', tARROW, '=');
       case '|':         return follow('.', 1, 0) ? tBITOR
-			                 : follow('|', tOR, '|');
+			                 : follow('|', 1, 0) ? tOR
+			                 : follow('=', tASGNOR, '|');
       case '&':         return follow('.', 1, 0) ? tBITAND
-			                 : follow('&', tAND, '&');
+			                 : follow('&', 1, 0) ? tAND
+			                 : follow('=', tASGNAND, '&');
       case '-':         return follow('>', 1, 0) ? tMAP
-                             : char_follows_x_times('-', 2) ? '-'
-                             : follow('-', tDECREMENT, '-');
+				         : char_follows_x_times('-', 2) ? '-'
+				         : follow('-', 1, 0) ? tDECREMENT
+				         : follow('=', tASGNMINUS, '-');
       case '+':         return char_follows_x_times('+', 2) ? '+'
-                             : follow('+', tINCREMENT, '+');
+				         : follow('+', 1, 0) ? tINCREMENT
+				         : follow('=', tASGNPLUS, '+');
+      case '*':         return follow('=', tASGNMULT, '*');
+      case '%':         return follow('=', tASGNMOD, '%');
       case '!':         return follow('=', tNE, '!');
       normal_dot:
       case '.':         return follow('.', tTO, '.');

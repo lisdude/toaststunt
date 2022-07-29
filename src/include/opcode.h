@@ -68,8 +68,14 @@ enum Opcode {
 
     /* unary ops -- 1 tick: */
     OP_UNARY_MINUS, OP_NOT,
+
+    /* decrement/increment ops -- 1 tick: */
     OP_PRE_INCREMENT, OP_PRE_DECREMENT,
     OP_POST_INCREMENT, OP_POST_DECREMENT,
+
+    /* compound assignment ops -- 1 tick: */
+    OP_ASGN_PLUS, OP_ASGN_MINUS, OP_ASGN_MULT, OP_ASGN_DIV,
+    OP_ASGN_POW, OP_ASGN_MOD, OP_ASGN_AND, OP_ASGN_OR,
 
     /* assignments, 1 tick: */
     OP_PUT,

@@ -300,6 +300,14 @@ free_expr(Expr * expr)
         case EXPR_BITXOR:
         case EXPR_BITSHL:
         case EXPR_BITSHR:
+        case EXPR_ASGN_PLUS:
+        case EXPR_ASGN_MINUS:
+        case EXPR_ASGN_MULT:
+        case EXPR_ASGN_DIV:
+        case EXPR_ASGN_POW:
+        case EXPR_ASGN_MOD:
+        case EXPR_ASGN_AND:
+        case EXPR_ASGN_OR:
             free_expr(expr->e.bin.lhs);
             free_expr(expr->e.bin.rhs);
             break;
