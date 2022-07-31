@@ -109,6 +109,60 @@ static package bf_maphasvalue(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(Var::new_int(result));
 }
 
+/**
+* Intersection, difference, union are all taken from Goblin's extension pack and modified by Sorressean.
+*/
+static package
+bf_intersection(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    const auto nargs = arglist.v.list[0].v.num;
+    for (int x = 2; x <= nargs; ++x)
+        {
+            if (arglist.v.list[x].type != TYPE_LIST)
+                {
+                    free_var(arglist);
+                    return make_error_pack(E_TYPE);
+                }
+        }
+
+    Var r = nargs ? var_dup(arglist.v.list[1]) : new_list(0);
+
+    if (nargs > 1)
+        {
+            int x, y;
+            for (int x = 2; x <= arglist.v.list[0].v.num; x++)
+                {
+                    if (r.v.list[0].v.num < arglist.v.list[x].v.list[0].v.num)
+                        {
+                            for (int y = 1; y <= r.v.list[0].v.num; y++)
+                                {
+                                    if (!ismember(r.v.list[y], arglist.v.list[x], 0))
+                                        {
+                                            r = listdelete(r, y);
+                                            y--;
+                                        }
+                                }
+                        }
+                    else
+                        {
+                            for (y = 1; y <= arglist.v.list[x].v.list[0].v.num; y++)
+                                {
+                                    if (!ismember(arglist.v.list[x].v.list[y], r, 0))
+                                        {
+                                            arglist.v.list[x] = listdelete(arglist.v.list[x], y);
+                                            y--;
+                                        }
+                                }
+                            free_var(r);
+                            r = var_dup(arglist.v.list[x]);
+                        }
+                }
+        }
+
+    free_var(arglist);
+    return make_var_pack(r);
+}
+
 static package
 bf_diff(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -132,6 +186,56 @@ bf_diff(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
     return make_var_pack(result);
+}
+
+static package
+bf_union(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var result = arglist.v.list[0].v.num ? var_dup(arglist.v.list[1]) : new_list(0);
+    int x, y;
+
+    for (x = 2; x <= arglist.v.list[0].v.num; x++)
+        {
+            if (arglist.v.list[x].type != TYPE_LIST)
+                {
+                    free_var(arglist);
+                    free_var(result);
+                    return make_error_pack(E_TYPE);
+                }
+            for (y = 1; y <= arglist.v.list[x].v.list[0].v.num; y++)
+                {
+                    result = setadd(result, arglist.v.list[x].v.list[y]);
+                }
+        }
+
+    free_var(arglist);
+    return make_var_pack(result);
+}
+
+/**
+* The following builtin is made to help combining of sets.
+* It replaces the following moo code (assuming s and t are both sets):
+* for i in (s)
+* t = setadd(t, i);
+* endfor
+* This is also much faster because we create the set before adding it to the moo list.
+*/
+static package
+bf_set_merge(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var newList = list_dup(arglist.v.list[1]);
+//now add the second one.
+    const auto length = arglist.v.list[2].v.list[0].v.num;
+    for (int index = 1; index <= length; ++index)
+        {
+            if (!ismember(arglist.v.list[2].v.list[index], newList, 0))
+                {
+                    Var element = var_ref(arglist.v.list[2].v.list[index]);
+                    newList = listappend(newList, element);
+                }
+        }
+    free_var(arglist);
+    return make_var_pack(newList);
 }
 
 /*
@@ -582,10 +686,10 @@ void register_edge_extensions(void)
     register_function("assoc", 2, 3, bf_assoc, TYPE_ANY, TYPE_LIST, TYPE_INT);
     register_function("iassoc", 2, 3, bf_iassoc, TYPE_ANY, TYPE_LIST, TYPE_INT);
     register_function("maphasvalue", 2, 2, bf_maphasvalue, TYPE_MAP, TYPE_ANY);
-    // register_function("intersection", 1, -1, bf_intersection, TYPE_LIST);
+    register_function("intersection", 1, -1, bf_intersection, TYPE_LIST);
     register_function("difference", 1, -1, bf_diff, TYPE_LIST);
-    // register_function("union", 1, -1, bf_union, TYPE_LIST);
-    // register_function("set_merge", 2, 2, bf_set_merge, TYPE_LIST, TYPE_LIST);
+    register_function("union", 1, -1, bf_union, TYPE_LIST);
+    register_function("set_merge", 2, 2, bf_set_merge, TYPE_LIST, TYPE_LIST);
     // register_function("listflatten", 1, 1, bf_list_flatten, TYPE_LIST);
     // register_function("join", 1, 2, bf_join, TYPE_LIST, TYPE_STR);
     // register_function("listremove_duplicates", 1, 1, bf_list_remove_duplicates, TYPE_LIST);
