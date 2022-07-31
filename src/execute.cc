@@ -2559,6 +2559,65 @@ else if (obj.type == TYPE_##t1) {           \
                     }
                     break;
 
+                    case EOP_BI_FUNC_CALL:
+                    {
+                        unsigned func_id;
+                        Var args;
+
+                        func_id = READ_BYTES(bv, 2);    /* 1 == numbytes of func_id */
+                        args = POP();   /* should be list */
+                        if (args.type != TYPE_LIST) {
+                            free_var(args);
+                            PUSH_ERROR(E_TYPE);
+                        } else {
+                            package p;
+
+                            STORE_STATE_VARIABLES();
+                            p = call_bi_func(func_id, args, 1, RUN_ACTIV.progr, nullptr);
+                            LOAD_STATE_VARIABLES();
+
+                            switch (p.kind) {
+                                case package::BI_RETURN:
+                                    PUSH(p.u.ret);
+                                    break;
+                                case package::BI_RAISE:
+                                    if (RUN_ACTIV.debug) {
+                                        if (raise_error(p, nullptr))
+                                            return OUTCOME_ABORTED;
+                                        else
+                                            LOAD_STATE_VARIABLES();
+                                    } else {
+                                        PUSH(p.u.raise.code);
+                                        free_str(p.u.raise.msg);
+                                        free_var(p.u.raise.value);
+                                    }
+                                    break;
+                                case package::BI_CALL:
+                                    /* another activ has been pushed onto activ_stack */
+                                    RUN_ACTIV.bi_func_id = func_id;
+                                    RUN_ACTIV.bi_func_data = p.u.call.data;
+                                    RUN_ACTIV.bi_func_pc = p.u.call.pc;
+                                    break;
+                                case package::BI_SUSPEND:
+                                {
+                                    enum error e = suspend_task(p);
+
+                                    if (e == E_NONE)
+                                        return OUTCOME_BLOCKED;
+                                    else
+                                        PUSH_ERROR(e);
+                                }
+                                break;
+                                case package::BI_KILL:
+                                    STORE_STATE_VARIABLES();
+                                    abort_task((abort_reason)p.u.ret.v.num);
+                                    return OUTCOME_ABORTED;
+                                    /* NOTREACHED */
+                            }
+                        }
+                    }
+                    break;
+
                     case EOP_SCATTER:
                     {
                         int nargs = READ_BYTES(bv, 1);
