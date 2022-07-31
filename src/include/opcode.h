@@ -29,6 +29,9 @@ enum Extended_Opcode {
     EOP_PUSH_LABEL, EOP_END_CATCH, EOP_END_EXCEPT, EOP_END_FINALLY,
     EOP_CONTINUE,
 
+    /* Adding extended function call to support more than 256 builtins */
+    EOP_BI_FUNC_CALL,
+
     /* ops after this point cost one tick */
     EOP_CATCH, EOP_TRY_EXCEPT, EOP_TRY_FINALLY,
     EOP_WHILE_ID, EOP_EXIT, EOP_EXIT_ID,
