@@ -507,6 +507,7 @@ bf_make_map(Var arglist, Byte next, void *vdata, Objid progr)
 Usage:
 get_location(me, #3);
 => #62  (The First Room)
+equivalent to `occupants(locations(this), $room)[1] ! E_RANGE => 0'
 */
 static package
 bf_get_location(Var arglist, Byte next, void *vdata, Objid progr)
