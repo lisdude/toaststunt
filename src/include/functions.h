@@ -81,7 +81,7 @@ typedef void *(*bf_read_type) (void);
 #define FUNC_NOT_FOUND   MAX_FUNC
 /* valid base function numbers are 0 - 255, or a total of 256 of them.
    An extended function id limit has been created for
-   id numbers 256 - 65533, effectively removing the maximum
+   id numbers 256 - 65534, effectively removing the maximum
    registered function limit.
    This means that calls to the first 256 registered builtins will
    fit within a single byte and thus op code calls to them will
@@ -89,7 +89,7 @@ typedef void *(*bf_read_type) (void);
    and one for the id of the function).
    Function id's over 255 will will result in an extended function
    call that ends up consuming a total of 4 bytes rather than 2.
-   function number 65534 is reserved for func_not_found signal. */
+   function number 65535 is reserved for func_not_found signal. */
 
 extern const char *name_func_by_num(unsigned);
 extern unsigned number_func_by_name(const char *);
