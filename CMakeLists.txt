@@ -234,8 +234,7 @@ set(src_CXXSRCS
     src/argon2.cc
     src/spellcheck.cc
     src/curl.cc
-    src/extensions-jims.cc
-    src/extensions-sorressean.cc)
+    src/extensions-edge.cc)
 
 set(src_GRAMMAR
     ${BISON_MOOParser_OUTPUTS})
