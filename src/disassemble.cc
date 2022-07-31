@@ -133,7 +133,7 @@ struct mapping ext_mappings[] =
     {EOP_BITSHL, "BITSHL"},
     {EOP_BITSHR, "BITSHR"},
     {EOP_COMPLEMENT, "COMPLEMENT"},
-    {EOP_BI_FUNC_CALL, "CALL_FUNC"},
+    {EOP_BI_FUNC_CALL, "CALL_FUNC"}
 };
 
 static void

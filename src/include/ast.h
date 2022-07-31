@@ -107,7 +107,7 @@ enum Expr_Kind {
     EXPR_POST_INCR, EXPR_POST_DECR,
     EXPR_ASGN_PLUS, EXPR_ASGN_MINUS, EXPR_ASGN_MULT, EXPR_ASGN_DIV,
     EXPR_ASGN_MOD, EXPR_ASGN_POW, EXPR_ASGN_AND, EXPR_ASGN_OR,
-    SizeOf_Expr_Kind,		/* The last element is also the number of elements... */
+    SizeOf_Expr_Kind		/* The last element is also the number of elements... */
 };
 
 union Expr_Data {
