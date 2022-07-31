@@ -338,6 +338,9 @@ disassemble(Program * prog, Printer p, void *data)
                         a3 = ADD_BYTES(bc.numbytes_label);
                         stream_printf(insn, " %s %s %d", NAMES(a1), NAMES(a2), a3);
                         break;
+                    case EOP_BI_FUNC_CALL:
+                        stream_printf(insn, " %s", name_func_by_num(ADD_BYTES(2)));
+                        break;
                     default:
                         break;
                 }
