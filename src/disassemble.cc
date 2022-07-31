@@ -119,7 +119,8 @@ struct mapping ext_mappings[] =
     {EOP_BITXOR, "BITXOR"},
     {EOP_BITSHL, "BITSHL"},
     {EOP_BITSHR, "BITSHR"},
-    {EOP_COMPLEMENT, "COMPLEMENT"}
+    {EOP_COMPLEMENT, "COMPLEMENT"},
+    {EOP_BI_FUNC_CALL, "CALL_FUNC"}
 };
 
 static void
@@ -323,6 +324,9 @@ disassemble(Program * prog, Printer p, void *data)
                         a2 = ADD_BYTES(bc.numbytes_var_name);
                         a3 = ADD_BYTES(bc.numbytes_label);
                         stream_printf(insn, " %s %s %d", NAMES(a1), NAMES(a2), a3);
+                        break;
+                    case EOP_BI_FUNC_CALL:
+                        stream_printf(insn, " %s", name_func_by_num(ADD_BYTES(2)));
                         break;
                     default:
                         break;

@@ -18,6 +18,7 @@
 #include <limits.h>
 
 #include "ast.h"
+#include "functions.h"
 #include "opcode.h"
 #include "program.h"
 #include "server.h"
@@ -192,6 +193,13 @@ emit_extended_byte(Byte b, State * state)
 {
     emit_byte(OP_EXTENDED, state);
     emit_byte(b, state);
+}
+
+static void
+emit_extended_function_id(unsigned id, state* state)
+{
+    emit_byte((Byte)((id >> 8) & 0x000000ff), state);
+    emit_byte((Byte)(id&0x000000ff), state);
 }
 
 static int
@@ -808,8 +816,13 @@ generate_expr(Expr * expr, State * state)
             break;
         case EXPR_CALL:
             generate_arg_list(expr->e.call.args, state);
-            emit_byte(OP_BI_FUNC_CALL, state);
-            emit_byte(expr->e.call.func, state);
+            if (expr->e.call.func > MAX_BASE_FUNC) {
+                emit_extended_byte(EOP_BI_FUNC_CALL, state);
+                emit_extended_function_id(expr->e.call.func, state);
+            } else {
+                emit_byte(OP_BI_FUNC_CALL, state);
+                emit_byte(expr->e.call.func, state);
+            }
             break;
         case EXPR_VERB:
             generate_expr(expr->e.verb.obj, state);
