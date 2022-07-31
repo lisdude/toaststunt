@@ -2561,11 +2561,8 @@ else if (obj.type == TYPE_##t1) {           \
 
                     case EOP_BI_FUNC_CALL:
                     {
-                        unsigned func_id;
-                        Var args;
-
-                        func_id = READ_BYTES(bv, 2);    /* 1 == numbytes of func_id */
-                        args = POP();   /* should be list */
+                        const unsigned func_id = READ_BYTES(bv, 2);    /* 1 == numbytes of func_id */
+                        const var args = POP();   /* should be list */
                         if (args.type != TYPE_LIST) {
                             free_var(args);
                             PUSH_ERROR(E_TYPE);
