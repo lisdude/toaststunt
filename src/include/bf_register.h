@@ -45,3 +45,4 @@ extern void register_argon2(void);
 extern void register_spellcheck(void);
 extern void register_curl(void);
 extern void register_jims_extensions(void);
+extern void register_sorressean_extensions(void);
