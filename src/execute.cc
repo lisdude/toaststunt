@@ -1478,6 +1478,8 @@ finish_comparison:
                         ans = do_subtract(lhs, rhs);
                     } else if (lhs.type == TYPE_MAP && rhs.type == TYPE_MAP) {
                         ans = mapsubtract(var_ref(lhs), var_ref(rhs));
+                    } else if (lhs.type == TYPE_LIST && rhs.type == TYPE_LIST) {                        
+                        ans = listdifference(var_ref(lhs), var_ref(rhs));
                     } else {
                         ans.type = TYPE_ERR;
                         ans.v.err = E_TYPE;
@@ -1499,6 +1501,8 @@ finish_comparison:
                                 PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_FLOAT);
                             else if (lhs_type == TYPE_MAP)
                                 PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_MAP);
+                            else if (lhs_type == TYPE_LIST)
+                                PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_LIST);                                
                             else if (lhs_type != TYPE_INT && lhs_type != TYPE_FLOAT && lhs_type != TYPE_MAP && (rhs_type == TYPE_INT || rhs_type == TYPE_FLOAT || rhs_type == TYPE_MAP))
                                 PUSH_TYPE_MISMATCH(1, lhs_type, rhs.type);
                             else
@@ -2562,7 +2566,7 @@ else if (obj.type == TYPE_##t1) {           \
                     case EOP_BI_FUNC_CALL:
                     {
                         const unsigned func_id = READ_BYTES(bv, 2);    /* 1 == numbytes of func_id */
-                        const var args = POP();   /* should be list */
+                        const Var args = POP();   /* should be list */
                         if (args.type != TYPE_LIST) {
                             free_var(args);
                             PUSH_ERROR(E_TYPE);

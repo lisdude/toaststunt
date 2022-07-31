@@ -32,6 +32,7 @@ extern Var listset(Var list, Var value, int pos);
 extern Var listrangeset(Var list, int from, int to, Var value);
 extern Var listconcat(Var first, Var second);
 extern Var setadd(Var list, Var value);
+extern Var listdifference(Var first, Var second);
 extern Var setremove(Var list, Var value);
 extern Var sublist(Var list, int lower, int upper);
 extern int listequal(Var lhs, Var rhs, int case_matters);
