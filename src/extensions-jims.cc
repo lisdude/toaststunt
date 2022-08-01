@@ -456,8 +456,129 @@ bf_compress(Var arglist, Byte next, void *vdata, Objid progr)
     return background_thread(compress_thread_callback, &arglist, human_string);
 }
 
+/* make_map(); It turns sublists into a map with key being first value, with second argue being the value:
+Key can only be the standard map types, integer, string, object, float.
+Value can be whatever you want.
+Usage:
+make_map({{"bob", []}, {#7, {"Loves cheese."}}});
+=> ["bob" -> [], #7 -> {"Loves cheese."}];
+*/
+static package
+bf_make_map(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    const int listlength = arglist.v.list[1].v.list[0].v.num;
+    Var alist = arglist.v.list[1];
+    free_var(arglist);
+    if (listlength == 0)
+    {
+        free_var(alist);
+        return make_error_pack(E_ARGS);
+    }
+
+    Var nmap = new_map();
+    for (unsigned int index = 1; index <= listlength; index++)
+    {
+        if (alist.v.list[index].type != TYPE_LIST)
+        {
+            free_var(nmap);
+            return make_error_pack(E_TYPE);
+        }
+
+        if (alist.v.list[index].v.list[0].v.num != 2)
+        {
+            free_var(nmap);
+            return make_error_pack(E_RANGE);
+        }
+
+        const auto left = alist.v.list[index].v.list[1].type;
+        if (left != TYPE_INT && left != TYPE_FLOAT && left != TYPE_STR && left != TYPE_OBJ)
+        {
+            free_var(nmap);
+            return make_error_pack(E_TYPE);
+        }
+
+        nmap = mapinsert(nmap, var_ref(alist.v.list[index].v.list[1]), var_dup(alist.v.list[index].v.list[2]));
+    }
+
+    return make_var_pack(var_dup(nmap));
+}
+
+/* Get_location: Find a kid of second argument, starting at first argument.
+Usage:
+get_location(me, #3);
+=> #62  (The First Room)
+equivalent to `occupants(locations(this), $room)[1] ! E_RANGE => 0'
+*/
+static package
+bf_get_location(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var loc = arglist.v.list[1];
+    Var destination = arglist.v.list[2];
+    free_var(arglist);
+
+    if (!is_valid(loc))
+    {
+        free_var(loc);
+        free_var(destination);
+        return make_error_pack(E_INVARG);
+    }
+    else if (!is_valid(destination))
+    {
+        free_var(loc);
+        free_var(destination);
+        return make_error_pack(E_INVARG);
+    }
+    while (is_valid(loc))
+    {
+        if (db_object_isa(loc, destination))
+        {
+            free_var(destination);
+            return make_var_pack(loc);
+        }
+
+        loc = db_property_value(db_find_property(loc, "location", 0));
+    }
+    free_var(loc);
+    free_var(destination);
+    return make_var_pack(Var::new_int(0));
+}
+
+/* $code_utils:task_valid turned builtin. Currently isn't completely how we want it, but arg[1] equals output from queued_tasks, arg[2] equals task id you're checking. It returns 1 if true, 0 if false. It's still faster than $code_utils:task_valid, use if you wish.
+Usage:
+task_valid(queued_tasks(), me.test_task);
+=> 1;
+(if valid) otherwise:);
+=> 0;
+*/
+static package
+bf_task_valid(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    const Var id = arglist.v.list[2];
+    const int tasklength = arglist.v.list[1].v.list[0].v.num;
+    if (tasklength == 0)
+    {
+        free_var(arglist);
+        return make_error_pack(E_RANGE);
+    }
+    
+    for (auto index = 1; index <= tasklength; index++)
+    {
+        if (equality(arglist.v.list[1].v.list[index].v.list[1], id, 0))
+        {
+            free_var (arglist);
+            free_var(id);
+            return make_var_pack(Var::new_int(1));
+        }
+    }
+
+    free_var(arglist);
+    free_var(id);
+    return make_var_pack(Var::new_int(0));
+}
+
 void register_jims_extensions(void)
 {
+    /* list functions */
     register_function("iassoc", 2, 3, bf_iassoc, TYPE_ANY, TYPE_LIST, TYPE_INT);
     register_function("assoc", 2, 3, bf_assoc, TYPE_ANY, TYPE_LIST, TYPE_INT);
     register_function("set_remove_list", 2, 2, bf_set_remove_list, TYPE_LIST, TYPE_LIST);
@@ -469,4 +590,13 @@ void register_jims_extensions(void)
     register_function("setreplace", 3, 3, bf_setreplace, TYPE_LIST, TYPE_ANY, TYPE_ANY);
     register_function("char_list", 1, 1, bf_char_list, TYPE_STR);
     register_function("compress", 1, 1, bf_compress, TYPE_LIST);
+
+    /* map functions */
+    register_function("make_map", 1, 1, bf_make_map, TYPE_LIST);
+
+    /* object functions */
+    register_function("get_location", 2, 2, bf_get_location, TYPE_OBJ, TYPE_OBJ);
+
+    /* task functions */
+    register_function("task_valid", 2, 2, bf_task_valid, TYPE_LIST, TYPE_INT);
 }
