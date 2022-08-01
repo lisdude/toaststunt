@@ -1147,26 +1147,37 @@ start_over:
     } while (isspace(c));
 
     if (c == '/') {
-	c = lex_getc();
-	if (c == '*') {
-	    for (;;) {
 		c = lex_getc();
 		if (c == '*') {
-		    c = lex_getc();
-		    if (c == '/')
-			goto start_over;
+			for (;;) {
+				c = lex_getc();
+				if (c == '*') {
+					c = lex_getc();
+					if (c == '/')
+						goto start_over;
+				}
+				if (c == EOF) {
+					yyerror("End of program while in a comment");
+					return c;
+				}
+			}
+		} else if (c == '/') {
+			for (;;) {
+				c = lex_getc();
+				if (c == '\n') {
+					goto start_over;
+				}
+				if (c == EOF) {
+					yyerror("End of program while in a comment");
+					return c;
+				}
+			}
+		} else if (c == '=') {
+			return tASGNDIV;
+		} else {
+			lex_ungetc(c);
+			return '/';
 		}
-		if (c == EOF) {
-		    yyerror("End of program while in a comment");
-		    return c;
-		}
-	    }
-	} else if (c == '=') {
-		return tASGNDIV;
-	} else {
-	    lex_ungetc(c);
-	    return '/';
-	}
     }
 
     if (c == '#') {
