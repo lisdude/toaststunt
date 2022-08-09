@@ -50,7 +50,7 @@ static void curl_thread_callback(Var arglist, Var *ret)
     chunk.size = 0;
     
     if (nargs > 2)
-        timeout = arglist.v.list[0].v.num;
+        timeout = arglist.v.list[3].v.num;
 
     curl_handle = curl_easy_init();
     curl_easy_setopt(curl_handle, CURLOPT_URL, arglist.v.list[1].v.str);
