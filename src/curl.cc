@@ -70,7 +70,7 @@ static void curl_thread_callback(Var arglist, Var *ret)
 
     chunk.result = (char*)malloc(1);
     chunk.size = 0;
-    
+
     if (nargs > 2)
         timeout = arglist.v.list[3].v.num;
 
@@ -84,6 +84,7 @@ static void curl_thread_callback(Var arglist, Var *ret)
 
     if (nargs > 1 && is_true(arglist.v.list[2]))
         curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1L);
+
 
     res = curl_easy_perform(curl_handle);
 
