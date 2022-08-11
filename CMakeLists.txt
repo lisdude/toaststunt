@@ -26,12 +26,6 @@ else()
     set(IN_A_CONTAINER 0)
 endif()
 
-if(IN_A_CONTAINER)
-    message(STATUS "VIRTUALIZED: True")
-else()
-    message(STATUS "VIRTUALIZED: False")
-endif()
-
 # Where to find header files
 include_directories(${CMAKE_SOURCE_DIR}/src/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/dependencies)
