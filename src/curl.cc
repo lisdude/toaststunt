@@ -66,9 +66,13 @@ static void curl_thread_callback(Var arglist, Var *ret)
     CURL *curl_handle;
     CURLcode res;
     CurlMemoryStruct chunk;
+    long timeout = CURL_TIMEOUT;
 
     chunk.result = (char*)malloc(1);
     chunk.size = 0;
+    
+    if (nargs > 2)
+        timeout = arglist.v.list[3].v.num;
 
     curl_handle = curl_easy_init();
     curl_easy_setopt(curl_handle, CURLOPT_URL, arglist.v.list[1].v.str);
@@ -76,6 +80,7 @@ static void curl_thread_callback(Var arglist, Var *ret)
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, CurlWriteMemoryCallback);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+    curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, timeout);
 
     if (nargs > 1 && is_true(arglist.v.list[2]))
         curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1L);
@@ -229,7 +234,7 @@ register_curl(void)
     curl_global_init(CURL_GLOBAL_ALL);
     curl_handle = curl_easy_init();
  
-    register_function("curl", 1, 2, bf_curl, TYPE_STR, TYPE_ANY);
+    register_function("curl", 1, 3, bf_curl, TYPE_STR, TYPE_ANY, TYPE_INT);
     register_function("curl_post", 2, 3, bf_curl_post, TYPE_STR, TYPE_STR, TYPE_MAP, TYPE_ANY);
     register_function("url_encode", 1, 1, bf_url_encode, TYPE_STR);
     register_function("url_decode", 1, 1, bf_url_decode, TYPE_STR);

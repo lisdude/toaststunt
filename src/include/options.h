@@ -539,6 +539,12 @@
 
 #define JSON_MAX_PARSE_DEPTH 1000
 
+/******************************************************************************
+ * The default maximum number of seconds a curl() transfer can last.
+*/
+
+#define CURL_TIMEOUT 60
+
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/
