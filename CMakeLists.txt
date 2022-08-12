@@ -18,6 +18,14 @@ if(APPLE AND ${ARCHITECTURE} STREQUAL "arm64")
     set(APPLE_SILICON_FOUND 1)
 endif()
 
+# Check for a virtualized container
+if(EXISTS "/proc/1/cgroup")
+    file(READ "/proc/1/cgroup" CGROUPS)
+    string(REGEX MATCH ".*(docker|lxc).*" IN_A_CONTAINER ${CGROUPS})
+else()
+    set(IN_A_CONTAINER 0)
+endif()
+
 # Where to find header files
 include_directories(${CMAKE_SOURCE_DIR}/src/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/dependencies)
@@ -49,9 +57,9 @@ set(CMAKE_C_STANDARD 99)
 
 # These flags are shared by the RELEASE and WARN build types.
 set(SHARED_COMPILE_FLAGS "-O3")
-if(NOT APPLE_SILICON_FOUND)
+if(NOT APPLE_SILICON_FOUND AND NOT IN_A_CONTAINER)
     set(SHARED_COMPILE_FLAGS "${SHARED_COMPILE_FLAGS} -march=native")
-else()
+elseif(APPLE_SILICON_FOUND)
     set(SHARED_COMPILE_FLAGS "${SHARED_COMPILE_FLAGS} -mcpu=apple-m1")
 endif()
 
