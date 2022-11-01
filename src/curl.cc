@@ -95,17 +95,17 @@ bf_url_encode(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     const char *url = arglist.v.list[1].v.str;
 
-    free_var(arglist);
-
     char *encoded = curl_easy_escape(curl_handle, url, memo_strlen(url));
 
     if (encoded == nullptr) {
+        free_var(arglist);
         return make_error_pack(E_INVARG);
     }
 
     r.type = TYPE_STR;
     r.v.str = str_dup(encoded);
 
+    free_var(arglist);
     curl_free(encoded);
 
     return make_var_pack(r);
@@ -117,17 +117,17 @@ bf_url_decode(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     const char *url = arglist.v.list[1].v.str;
 
-    free_var(arglist);
-
     char *decoded = curl_easy_unescape(curl_handle, url, memo_strlen(url), nullptr);
 
     if (decoded == nullptr) {
+        free_var(arglist);
         return make_error_pack(E_INVARG);
     }
 
     r.type = TYPE_STR;
     r.v.str = str_dup(decoded);
 
+    free_var(arglist);
     curl_free(decoded);
 
     return make_var_pack(r);
