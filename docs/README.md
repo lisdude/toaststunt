@@ -1,6 +1,6 @@
 # ToastStunt
 
-ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of features and improvements that were found useful while developing [Miriani](https://www.toastsoft.net) and [ChatMud](https://www.chatmud.com/), a mostly complete list of which can be found below.
+ToastStunt is a network accessible, multi-user, programmable, interactive system used in the creation of both text-based and web-based experiences. The most common usage is the creation of MUDs (examples include [Miriani](https://www.toastsoft.net) and [ChatMud](https://www.chatmud.com/)). ToastStunt is a fork of [Stunt](https://github.com/toddsundsted/stunt), which is a fork of [LambdaMOO](https://github.com/wrog/lambdamoo). It builds upon those projects to add improved performance, modern conveniences, and an improved user experience.
 
 * [Features](#features)
 * [ChangeLog](ChangeLog.md)
@@ -10,18 +10,19 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
   * [FreeBSD](#freebsd)
   * [macOS](#macos)
 * [Function Documentation](https://github.com/lisdude/toaststunt-documentation)
+* [Getting Started Guide](https://lisdude.com/moo/toaststunt_newbie.txt)
 * [ToastCore](https://github.com/lisdude/toastcore)
-* [Support and Development](#support-and-development)
 * [Stunt Information](README.stunt)
+
+<a href = "https://discord.gg/UNyWnZWz"><img alt="Join Discord" src="https://img.shields.io/discord/738251170140651560?label=Discord&style=plastic"></a>
 
 ## Features
 
 - SQLite
 - Perl Compatible Regular Expressions (PCRE)
-- Simplex Noise
 - [Argon2id Hashing](https://github.com/P-H-C/phc-winner-argon2)
 - 64-bit Integers (with the choice to fall back to 32-bit integers; $maxint and $minint set automatically)
-- HAProxy Source IP Rewriting (see notes below if you need to disable this)
+- HAProxy Source IP Rewriting (see [notes](#login-screen-not-showing) below if you need to disable this)
 - User friendly traceback error messages
 
 - Networking improvements:
@@ -59,79 +60,17 @@ ToastStunt is a fork of the LambdaMOO / Stunt server. It has a number of feature
 - Telnet:
     - Capture IAC commands and pass them to listener:do_out_of_band_command() for the database to handle.
 
-- Stunt Improvements
+- Stunt Improvements:
     - Primitive types:
-        - Support calling verbs on an object prototype ($obj_proto). Counterintuitively, this will only work for types of OBJ that are invalid. This can come in useful for un-logged-in connections (i.e. creating a set of convenient utilities for dealing with negative connections in-MOO).
+        - Support calling verbs on an object prototype ($obj_proto) for un-logged-in connection objects.
     - Maps:
-        - `maphaskey()` (check if a key exists in a map. Looks nicer than `!(x in mapkeys(map))` and is faster when not dealing with hundreds of keys)
+        - `maphaskey()` (check if a key exists in a map)
 
-- Options.h configuration:
-    - LOG_CODE_CHANGES (causes .program and set_verb_code to add a line to the server log indicating the object, verb, and programmer)
-    - OWNERSHIP_QUOTA (disable the server's builtin quota management)
-    - USE_ANCESTOR_CACHE (enable a cache of an object's ancestors to speed up property lookups)
-    - UNSAFE_FIO (skip character by character line verification, trading off potential safety for speed)
-    - LOG_EVALS (add an entry to the server log any time eval is called)
-    - ONLY_32_BITS (switch from 64-bit integers back to 32-bit)
-    - MAX_LINE_BYTES (unceremoniously close connections that send lines exceeding this value to prevent memory allocation panics)
-    - DEFAULT_LAG_THRESHOLD (the number of seconds allowed before a task is considered laggy and triggers #0:handle_lagging_task)
-    - SAVE_FINISHED_TASKS (enable the finished_tasks function and define how many tasks get saved by default) [default can be overridden with $server_options.finished_tasks_limit]
-    - THREAD_ARGON2 (enable threading of Argon2 functions)
-    - TOTAL_BACKGROUND_THREADS (number of threads created at runtime)
-    - DEFAULT_THREAD_MODE (default mode of threaded functions)
-    - SAFE_RECYCLE (change ownership of everything an object owns before recycling it)
-    - NO_NAME_LOOKUP (disable automatic DNS name resolution on new connections. Can be overridden with $server_options.no_name_lookup)
-    - PCRE_PATTERN_CACHE_SIZE (specifies how many PCRE patterns are cached)
-    - INCLUDE_RT_VARS (Include runtime environment variables in the stack argument for `handle_uncaught_error`, `handle_task_timeout`, and `handle_lagging_task`)
+- [Numerous new configuration options](new_options.md)
 
-- Additional builtins:
-    - frandom (random floats)
-    - distance (calculate the distance between an arbitrary number of points)
-    - relative_heading (a relative bearing between two coordinate sets)
-    - memory_usage (total memory used, resident set size, shared pages, text, data + stack)
-    - ftime (precise time, including an argument for monotonic timing)
-    - locate_by_name (quickly locate objects by their .name property)
-    - usage (returns {load averages}, user time, system time, page reclaims, page faults, block input ops, block output ops, voluntary context switches, involuntary context switches, signals received)
-    - explode (serverified version of the LambdaCore verb on $string_utils)
-    - slice (serverified version of the LambdaCore verb on $list_utils)
-    - occupants (return a list of objects of parent parent, optionally with a player flag check)
-    - spellcheck (uses Aspell to check spelling)
-    - locations (recursive location function)
-    - clear_ancestor_cache (clears the ancestor cache manually)
-    - chr (return extended ASCII characters; characters that can corrupt your database are considered invalid)
-    - reseed_random (reseed the random number generator)
-    - yin (yield if needed. Replicates :suspend_if_needed and ticks_left() checks)
-    - sort (a significantly faster replacement for the :sort verb. Also allows for natural sort order and reverse sorting)
-    - recreate (fill holes created by recycle() by recreating valid objects with those object numbers)
-    - recycled_objects (return a list of all objects destroyed by calling recycle())
-    - next_recycled_object (return the next object available for recreation)
-    - reverse (reverse lists)
-    - all_members (return the indices of all instances of a type in a list)
-    - curl (return webpage as string)
-    - owned_objects (returns all valid objects owned by an object)
-    - connection_name_lookup (perform a DNS name lookup)
-    - connection_info (show detailed information about a particular connection)
-    - parse_ansi (parses color tags into their ANSI equivalents)
-    - remove_ansi (strips ANSI tags from strings)
+- [Several new built-in functions](new_builtins.md)
 
-- Miscellaneous changes:
-    - .last_move (a map of an object's last location and the time() it moved)
-    - Sub-second fork and suspend
-    - Call 'do_blank_command' on listening objects when a blank command is issued
-    - Allow `"string" in "some other string"` as a shortcut for index()
-    - Allow exec to set environment variables with a new argument
-    - Change the server log message when calling switch_player()
-    - Deprecation of `tonum()` in favor of `toint()`
-    - Move #0.dump_interval to $server_options.dump_interval
-    - New argument to `notify()` to suppress the newline
-    - Support object lists in `isa()` as well as an optional third argument to return the matching parent rather than simply true or false
-    - New argument to `move()` to effectively `listinsert()` the object into the destination's .contents
-    - New argument to `is_member()` for controlling case sensitivity of equality comparisons. No third argument or a true value results in standard functionality; a false value as the third argument results in case not mattering at all
-    - Update `random()` to accept a second optional argument for setting the maximum value returned. Including the second argument will treat the first argument as the minimum.
-    - SIGUSR1 will close and reopen the logfile, allowing it to be rotated without restarting the server.
-    - '-m' command line option to clear all last_move properties in your database (and not set them again for the lifetime of the process).
-    - Build system is now CMake
-    - Boolean (BOOL) type
-    - Allow handling of SIGUSR signals in the database with `#0:handle_signal()`
+- [Many miscellaneous changes](new_miscellaneous.md)
 
 ## Build Instructions
 ### **Debian/Ubuntu/WSL**
@@ -190,9 +129,3 @@ Due to the way proxy detection works, if you're connecting to your MOO from loca
 
 1. `@prop $server_options.proxy_rewrite 0`
 2. `;load_server_options()`
-
-## Support and Development
-
-For support or collaborative discussions, you can join:
-1. [Discord](https://discord.gg/XyXP43e)
-2. The 'toaststunt' channel in ChatMUD.
