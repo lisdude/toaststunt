@@ -1,0 +1,17 @@
+- Options.h configuration:
+    - LOG_CODE_CHANGES (causes .program and set_verb_code to add a line to the server log indicating the object, verb, and programmer)
+    - OWNERSHIP_QUOTA (disable the server's builtin quota management)
+    - USE_ANCESTOR_CACHE (enable a cache of an object's ancestors to speed up property lookups)
+    - UNSAFE_FIO (skip character by character line verification, trading off potential safety for speed)
+    - LOG_EVALS (add an entry to the server log any time eval is called)
+    - ONLY_32_BITS (switch from 64-bit integers back to 32-bit)
+    - MAX_LINE_BYTES (unceremoniously close connections that send lines exceeding this value to prevent memory allocation panics)
+    - DEFAULT_LAG_THRESHOLD (the number of seconds allowed before a task is considered laggy and triggers #0:handle_lagging_task)
+    - SAVE_FINISHED_TASKS (enable the finished_tasks function and define how many tasks get saved by default) [default can be overridden with $server_options.finished_tasks_limit]
+    - THREAD_ARGON2 (enable threading of Argon2 functions)
+    - TOTAL_BACKGROUND_THREADS (number of threads created at runtime)
+    - DEFAULT_THREAD_MODE (default mode of threaded functions)
+    - SAFE_RECYCLE (change ownership of everything an object owns before recycling it)
+    - NO_NAME_LOOKUP (disable automatic DNS name resolution on new connections. Can be overridden with $server_options.no_name_lookup)
+    - PCRE_PATTERN_CACHE_SIZE (specifies how many PCRE patterns are cached)
+    - INCLUDE_RT_VARS (Include runtime environment variables in the stack argument for `handle_uncaught_error`, `handle_task_timeout`, and `handle_lagging_task`)

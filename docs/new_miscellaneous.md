@@ -1,0 +1,19 @@
+- Miscellaneous changes:
+    - .last_move (a map of an object's last location and the time() it moved)
+    - Sub-second fork and suspend
+    - Call 'do_blank_command' on listening objects when a blank command is issued
+    - Allow `"string" in "some other string"` as a shortcut for index()
+    - Allow exec to set environment variables with a new argument
+    - Change the server log message when calling switch_player()
+    - Deprecation of `tonum()` in favor of `toint()`
+    - Move #0.dump_interval to $server_options.dump_interval
+    - New argument to `notify()` to suppress the newline
+    - Support object lists in `isa()` as well as an optional third argument to return the matching parent rather than simply true or false
+    - New argument to `move()` to effectively `listinsert()` the object into the destination's .contents
+    - New argument to `is_member()` for controlling case sensitivity of equality comparisons. No third argument or a true value results in standard functionality; a false value as the third argument results in case not mattering at all
+    - Update `random()` to accept a second optional argument for setting the maximum value returned. Including the second argument will treat the first argument as the minimum.
+    - SIGUSR1 will close and reopen the logfile, allowing it to be rotated without restarting the server.
+    - '-m' command line option to clear all last_move properties in your database (and not set them again for the lifetime of the process).
+    - Build system is now CMake
+    - Boolean (BOOL) type
+    - Allow handling of SIGUSR signals in the database with `#0:handle_signal()`
