@@ -48,8 +48,6 @@ extern Var strget(Var str, int i);
 extern const char *value2str(Var);
 extern void unparse_value(Stream *, Var);
 
-extern Var emptylist; /* Bandaid: See list.cc */
-
 /*
  * Returns the length of the given list `l'.  Does *not* check to
  * ensure `l' is, in fact, a list.

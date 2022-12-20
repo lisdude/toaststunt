@@ -43,11 +43,6 @@
 #include "background.h"   // Threads
 #include "random.h"
 
-/* Bandaid: Something is killing all of our references to the
- * empty list, which is causing the server to crash. So this is
- * now a global and utils.cc won't free the list if it's emptylist. */
-Var emptylist;
-
 Var
 new_list(int size)
 {
@@ -55,6 +50,7 @@ new_list(int size)
     Var *ptr;
 
     if (size == 0) {
+        static Var emptylist;
 
         if (emptylist.v.list == nullptr) {
             if ((ptr = (Var *)mymalloc(1 * sizeof(Var), M_LIST)) == nullptr)
@@ -196,8 +192,7 @@ doinsert(Var list, Var value, int pos)
     int i;
     int size = list.v.list[0].v.num + 1;
 
-    /* Bandaid: See the top of list.cc for an explanation */
-    if (list.v.list != emptylist.v.list && var_refcount(list) == 1 && pos == size) {
+    if (var_refcount(list) == 1 && pos == size) {
         list.v.list = (Var *) myrealloc(list.v.list, (size + 1) * sizeof(Var), M_LIST);
 #ifdef MEMO_VALUE_BYTES
         /* reset the memoized size */
