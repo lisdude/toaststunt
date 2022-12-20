@@ -11,7 +11,7 @@ if ("${GIT_REV}" STREQUAL "")
     set(GIT_BRANCH "N/A")
 else()
     execute_process(
-        COMMAND bash -c "git diff --quiet --exit-code || echo +"
+        COMMAND "$SHELL" -c "git diff --quiet --exit-code || echo +"
         OUTPUT_VARIABLE GIT_DIFF)
     execute_process(
         COMMAND git rev-parse --abbrev-ref HEAD
