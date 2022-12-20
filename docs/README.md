@@ -12,7 +12,7 @@ ToastStunt is a network accessible, multi-user, programmable, interactive system
 * [Function Documentation](https://github.com/lisdude/toaststunt-documentation)
 * [Getting Started Guide](https://lisdude.com/moo/toaststunt_newbie.txt)
 * [ToastCore](https://github.com/lisdude/toastcore)
-* [Stunt Information](README.stunt)
+* [Stunt Information](Legacy/README/README.stunt)
 
 <a href = "https://discord.gg/UNyWnZWz"><img alt="Join Discord" src="https://img.shields.io/discord/738251170140651560?label=Discord&style=plastic"></a>
 
@@ -66,11 +66,11 @@ ToastStunt is a network accessible, multi-user, programmable, interactive system
     - Maps:
         - `maphaskey()` (check if a key exists in a map)
 
-- [Numerous new configuration options](new_options.md)
+- [Numerous new configuration options](Features/new_options.md)
 
-- [Several new built-in functions](new_builtins.md)
+- [Several new built-in functions](Features/new_builtins.md)
 
-- [Many miscellaneous changes](new_miscellaneous.md)
+- [Many miscellaneous changes](Features/new_miscellaneous.md)
 
 ## Build Instructions
 ### **Debian/Ubuntu/WSL**

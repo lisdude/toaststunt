@@ -407,3 +407,8 @@
 - Added SQLite support.
 - Add PCRE support.
 - Add additional entropy by default.
+
+## Pre-ToastStunt
+- [LambdaMOO](Legacy/ChangeLogs/ChangeLog-LambdaMOO.txt)
+- [FileIO](Legacy/ChangeLogs/ChangeLog-FileIO.txt)
+- [LambdaMOO 1.8.0r8 'rogue' Patches](Legacy/ChangeLogs/ChangeLog-rX.txt)
