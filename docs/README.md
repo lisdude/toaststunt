@@ -12,7 +12,7 @@ ToastStunt is a network accessible, multi-user, programmable, interactive system
 * [Function Documentation](https://github.com/lisdude/toaststunt-documentation)
 * [Getting Started Guide](https://lisdude.com/moo/toaststunt_newbie.txt)
 * [ToastCore](https://github.com/lisdude/toastcore)
-* [Stunt Information](Legacy/README/README.stunt)
+* [Stunt Information](Legacy/README/README.Stunt)
 
 <a href = "https://discord.gg/UNyWnZWz"><img alt="Join Discord" src="https://img.shields.io/discord/738251170140651560?label=Discord&style=plastic"></a>
 
