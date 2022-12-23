@@ -2562,6 +2562,7 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
 #ifdef USE_TLS
         if (maplookup(options, tls_key, &value, 0) != nullptr && is_true(value)) {
             if (!tls_ctx) {
+                var_ref(value);
                 free_var(arglist);
                 return make_raise_pack(E_PERM, "TLS is not enabled", value);
             }
