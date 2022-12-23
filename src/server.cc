@@ -2577,6 +2577,7 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
 
         if (maplookup(options, listener_key, &value, 0) != nullptr) {
             if (value.type != TYPE_OBJ) {
+                var_ref(value);
                 free_var(arglist);
                 return make_raise_pack(E_TYPE, "listener should be an object", value);
             }
