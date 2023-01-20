@@ -1,0 +1,71 @@
+on:
+  push:
+    branches: ["master", "ci"]
+  pull_request:
+    branches: ["master", "ci"]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Debug
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev libargon2-dev libssl-dev perl
+
+      - name: Configure CMake
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+      - name: Copy version_options.h to build dir
+        run: cp ${{github.workspace}}/version_options.h ${{github.workspace}}/build/version_options.h
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - name: Copy MOO into test directory
+        run: cp ${{github.workspace}}/build/moo ${{github.workspace}}/test/moo
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+
+      - name: link echo into executables
+        run: ln -s $(which echo) ${{github.workspace}}/test/executables/echo
+
+      - name: Link sleep Into Executables
+        run: ln -s $(which sleep) ${{github.workspace}}/test/executables/sleep
+
+      - name: Link true Into Executables
+        run: ln -s $(which true) ${{github.workspace}}/test/executables/true
+
+      - name: Fix Bundler
+        working-directory: ${{github.workspace}}/test
+        run: gem install bundler:1.16.1
+
+      - name: Run Bundler
+        working-directory: ${{github.workspace}}/test
+        run: bundle install
+
+      - name: Run the server and tests with cleanup
+        working-directory: ${{github.workspace}}/test
+        run: |
+          # Start the server in the background
+          nohup ./moo Test.db /dev/null 9898 &
+          # Capture the PID of the server
+          MOO_PID=$!
+
+          # Run the tests in the foreground and capture the exit code
+          make tests
+          TESTS_EXIT_CODE=$?
+
+          # After tests complete, kill the MOO process
+          kill -9 $MOO_PID
+
+          # Exit the workflow with the exit code of make tests
+          exit $TESTS_EXIT_CODE
