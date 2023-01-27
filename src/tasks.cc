@@ -610,6 +610,8 @@ free_task(task * t, int strong)
             if (strong) {
                 free_rt_env(t->t.forked.rt_env,
                             t->t.forked.program->num_var_names);
+                if(t->t.forked.a._this.type == TYPE_WAIF)
+                    free_var(t->t.forked.a._this);
                 free_str(t->t.forked.a.verb);
                 free_str(t->t.forked.a.verbname);
             }
