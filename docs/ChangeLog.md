@@ -22,6 +22,7 @@
 - Fix an issue where waifs could get stuck "recycling" forever.
 - Fix an issue with start scripts causing a panic, typically with 'no such file or directory' when, in fact, a file does exist.
 - Uninstantiated waifs that haven't had their recycle verb called before a shutdown now save their state so they can recycle properly the next time the server starts.
+- Legacy `connection_name()` now correctly says 'to' instead of 'from' when a connection is outbound.
 
 ### New Features
 - Support TLS / SSL connections in both `listen()` and `open_network_connection()`. Certificate and key can be configured in options.h, specifed as command-line arguments, or given as arguments to in-MOO functions. See warnings at the end of this changelog for important information about these changes.
@@ -35,6 +36,7 @@
     - You can now specify as many initial listeners as you want. Use `-p` for a standard port or `-t` for a TLS port. (e.g. `./moo db db2 -p 7777 -t 7443 -p 8888 -t 8443`)
     - A full list of arguments is now available by supplying `--help`.
 - Added CURL_TIMEOUT to options.h to specify the maximum amount of time a CURL request can take before failing. For special circumstances, you can specify a longer or shorter timeout with a new third argument to the `curl()` builtin.
+- Added an 'outbound' field to `connection_info()` that indicates whether a connection is outbound or not.
 
 ### *** COMPATIBILITY WARNINGS ***
 - The arguments for `listen()` have changed! Listen now accepts an optional third argument as a map. This map takes over the previous arguments and has the keys: ipv6, tls, certificate, key, print-messages. So if you wanted everything, you would use: `listen(#0, 1234, ["ipv6" -> 1, "tls" -> 1, "certificate" -> "/etc/certs/something.pem", "key" -> "/etc/certs/privkey.pem", "print-messages" -> 1]`

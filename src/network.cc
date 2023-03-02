@@ -1512,9 +1512,9 @@ full_network_connection_name(const network_handle nh, bool legacy)
     pthread_mutex_lock(h->name_mutex);
 
     if (legacy) {
-        asprintf(&ret, "port %i from %s [%s], port %i", h->source_port, h->name, h->destination_ipaddr, h->destination_port);
+        asprintf(&ret, "port %i %s %s [%s], port %i", h->source_port, h->outbound ? "to" : "from", h->name, h->destination_ipaddr, h->destination_port);
     } else {
-        asprintf(&ret, "%s [%s], port %i from %s [%s], port %i", h->source_address, h->source_ipaddr, h->source_port, h->name, h->destination_ipaddr, h->destination_port);
+        asprintf(&ret, "%s [%s], port %i %s %s [%s], port %i", h->source_address, h->source_ipaddr, h->source_port, h->outbound ? "to" : "from", h->name, h->destination_ipaddr, h->destination_port);
     }
 
     pthread_mutex_unlock(h->name_mutex);

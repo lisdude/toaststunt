@@ -2934,6 +2934,7 @@ bf_connection_info(Var arglist, Byte next, void *vdata, Objid progr)
     static Var dest_ip =  str_dup_to_var("destination_ip");
     static Var dest_port =  str_dup_to_var("destination_port");
     static Var protocol =   str_dup_to_var("protocol");
+    static Var is_outbound = str_dup_to_var("outbound");
 
     network_handle nh = h->nhandle;
 
@@ -2947,6 +2948,7 @@ bf_connection_info(Var arglist, Byte next, void *vdata, Objid progr)
     ret = mapinsert(ret, var_ref(dest_port), Var::new_int(network_port(nh)));
     ret = mapinsert(ret, var_ref(dest_ip), str_ref_to_var(network_ip_address(nh)));
     ret = mapinsert(ret, var_ref(protocol), str_dup_to_var(network_protocol(nh)));
+    ret = mapinsert(ret, var_ref(is_outbound), Var::new_int(h->outbound));
 #ifdef USE_TLS
     ret = mapinsert(ret, var_ref(tls_key), tls_connection_info(nh));
 #endif
