@@ -1605,7 +1605,10 @@ proxy_connected(Objid connection, char *command)
             }
             split = strtok(nullptr, " ");
         }
+        lock_connection_name_mutex(existing_h->nhandle);
         const char *old_name = str_dup(network_connection_name(existing_h->nhandle));   // rewrite is going to free this
+        unlock_connection_name_mutex(existing_h->nhandle);
+        
         int rw = rewrite_connection_name(existing_h->nhandle, destination, destination_port, source, source_port);
         if (rw != 0) {
             errlog("PROXY: Proxy rewrite failed.\n");
