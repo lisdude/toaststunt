@@ -1,6 +1,6 @@
 # ToastStunt ChangeLog
 
-## 2.7.0 (In Progress)
+## 2.7.0 (Mar 5, 2023)
 ### Bug Fixes
 - Fix a memory leak in `open_network_connection()` that occurred after a successful connection.
 - Fix a bug where the SERVER FULL message wouldn't display the connection name properly.
