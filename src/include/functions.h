@@ -76,7 +76,7 @@ typedef package(*bf_type) (Var, Byte, void *, Objid);
 typedef void (*bf_write_type) (void *vdata);
 typedef void *(*bf_read_type) (void);
 
-#define MAX_BASE_FUNC    256
+#define MAX_BASE_FUNC    255
 #define MAX_FUNC         65535
 #define FUNC_NOT_FOUND   MAX_FUNC
 /* valid base function numbers are 0 - 255, or a total of 256 of them.
