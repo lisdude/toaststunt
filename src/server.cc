@@ -1973,7 +1973,7 @@ main(int argc, char **argv)
             case 'v':                   /* --version; print version and exit */
             {
                 fprintf(stderr, "ToastStunt version %s\n", server_version);
-                exit(1);
+                return 1;
             }
             break;
 
@@ -2016,7 +2016,7 @@ main(int argc, char **argv)
             {
 #ifndef OUTBOUND_NETWORK
                 fprintf(stderr, "Outbound networking is disabled. The '--outbound' option is invalid.\n");
-                exit(1);
+                return 1;
 #else
                 cmdline_outbound = true;
                 outbound_network_enabled = true;
@@ -2058,7 +2058,7 @@ main(int argc, char **argv)
             {
 #ifndef USE_TLS
                 fprintf(stderr, "TLS is disabled or not supported. The '--tls-port' option is invalid.\n");
-                exit(1);
+                return 1;
 #else
                 char *p = nullptr;
                 initial_tls_ports.push_back(strtoul(optarg, &p, 10));
@@ -2070,7 +2070,7 @@ main(int argc, char **argv)
             {
 #ifndef USE_TLS
                 fprintf(stderr, "TLS is disabled or not supported. The '--tls' option is invalid.\n");
-                exit(1);
+                return 1;
 #else
                 cmdline_cert = true;
                 default_certificate_path = optarg;
@@ -2082,7 +2082,7 @@ main(int argc, char **argv)
             {
 #ifndef USE_TLS
                 fprintf(stderr, "TLS is disabled or not supported. The '--tls' option is invalid.\n");
-                exit(1);
+                return 1;
 #else
                 cmdline_key = true;
                 default_key_path = optarg;
@@ -2106,11 +2106,10 @@ main(int argc, char **argv)
 
             case 'h':                   /* --help; show usage instructions */
                 print_usage();
-                break;
 
             default:
                 // Should we print usage here? It's pretty spammy...
-                exit(1);
+                return 1;
         }
     }
 
@@ -2124,7 +2123,7 @@ main(int argc, char **argv)
             set_log_file(f);
         else {
             perror("Error opening specified log file");
-            exit(1);
+            return 1;
         }
     } else {
         set_log_file(stderr);
@@ -2134,7 +2133,7 @@ main(int argc, char **argv)
             || !db_initialize(&argc, &argv)
             || !network_initialize(argc, argv, &desc)) {
         print_usage();
-        exit(1);
+        return 1;
     }
 
     if (initial_ports.empty()
@@ -2252,7 +2251,7 @@ main(int argc, char **argv)
 
     if (initial_listeners.size() < 1) {
         errlog("Can't create initial connection point!\n");
-        exit(1);
+        return 1;
     }
     free_var(desc);
     // I doubt anybody will have enough listeners for this to be worthwhile, but why not.
@@ -2264,7 +2263,7 @@ main(int argc, char **argv)
 #endif
 
     if (!db_load())
-        exit(1);
+        return 1;
 
     free_reordered_rt_env_values();
 
@@ -2305,7 +2304,7 @@ main(int argc, char **argv)
         }
 
         if (listen_failures >= initial_listeners.size())
-            exit(1);
+            return 1;
 
         initial_listeners.clear();
         initial_listeners.shrink_to_fit();
