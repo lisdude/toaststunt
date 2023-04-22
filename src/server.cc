@@ -96,7 +96,13 @@ static std::stringstream shutdown_message;
 static bool shutdown_triggered = false;
 static bool in_emergency_mode = false;
 
-static Var checkpointed_connections;
+/* Linked list of checkpointed connections so they don't need to be read in. */
+typedef struct checkpointed_connection {
+    Objid who, listener;
+    checkpointed_connection *next;
+} checkpointed_connection;
+
+static checkpointed_connection *checkpointed_connections = NULL;
 
 typedef enum {
     CHKPT_OFF, CHKPT_TIMER, CHKPT_SIGNAL, CHKPT_FUNC
@@ -774,14 +780,13 @@ main_loop(void)
     free_var(pending_list);
 
     /* Second, notify DB of disconnections for all checkpointed connections */
-    for (i = 1; i <= checkpointed_connections.v.list[0].v.num; i++) {
-        Var v;
-
-        v = checkpointed_connections.v.list[i];
-        call_notifier(v.v.list[1].v.obj, v.v.list[2].v.obj,
+    while (checkpointed_connections) {
+        checkpointed_connection * conn = checkpointed_connections;
+        checkpointed_connections = conn->next;
+        call_notifier(conn->who, conn->listener,
                       "user_disconnected");
+        myfree(conn, M_STRUCT);
     }
-    free_var(checkpointed_connections);
 
     /* Third, run #0:server_started() */
     run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "server_started", new_list(0), "", nullptr);
@@ -1779,11 +1784,17 @@ int
 read_active_connections(void)
 {
     int count, i, have_listeners = 0;
+    checkpointed_connection **conn_next = &checkpointed_connections;
     char c;
+
+    /*
+     * Notably, this code MAY run once.
+     * If it ran twice we'd need to clean up old checkpointed_connections.
+     * Running not-at-all is fine.
+     */
 
     i = dbio_scanf("%d active connections%c", &count, &c);
     if (i == EOF) {     /* older database format */
-        checkpointed_connections = new_list(0);
         return 1;
     } else if (i != 2) {
         errlog("READ_ACTIVE_CONNECTIONS: Bad active connections count.\n");
@@ -1798,8 +1809,8 @@ read_active_connections(void)
         errlog("READ_ACTIVE_CONNECTIONS: Bad EOL.\n");
         return 0;
     }
-    checkpointed_connections = new_list(count);
     for (i = 1; i <= count; i++) {
+        checkpointed_connection *conn;
         Objid who, listener;
         Var v;
 
@@ -1812,10 +1823,15 @@ read_active_connections(void)
             who = dbio_read_num();
             listener = SYSTEM_OBJECT;
         }
-        checkpointed_connections.v.list[i] = v = new_list(2);
-        v.v.list[1].type = v.v.list[2].type = TYPE_OBJ;
-        v.v.list[1].v.obj = who;
-        v.v.list[2].v.obj = listener;
+
+        /* extend list and advance conn_next */
+        conn = (checkpointed_connection *)mymalloc(sizeof(checkpointed_connection), M_STRUCT);
+        *conn_next = conn;
+        conn_next = &conn->next;
+
+        conn->who = who;
+        conn->listener = listener;
+        conn->next = NULL;
     }
 
     return 1;
