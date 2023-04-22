@@ -372,6 +372,6 @@ extern int read_active_connections(void);
 /* Called when a fatal error occurs. */
 extern void panic_moo(const char *message);
 
-extern void sqlite_shutdown();
+extern void sql_shutdown();
 
 #endif				/* Server_H */

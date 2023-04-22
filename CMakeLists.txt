@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.11)
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 7)
 set(VERSION_RELEASE 0)
@@ -52,8 +52,8 @@ if( CMAKE_SIZEOF_VOID_P EQUAL 4 )
 endif()
 
 # Compiler Flags
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 17)
 
 # These flags are shared by the RELEASE and WARN build types.
 set(SHARED_COMPILE_FLAGS "-O3")
@@ -142,6 +142,7 @@ add_custom_command(
 # Find packages. We don't do anything with the information yet because we need to know if things exist
 #                to modify the source files, so we have to do it before moo is defined. But we can't
 #                do the package setup UNTIL moo is defined.
+set(SQL_FOUND FALSE)
 IF(APPLE_SILICON_FOUND)
     set(CMAKE_THREAD_LIBS_INIT "-lpthread")
     set(CMAKE_HAVE_THREADS_LIBRARY 1)
@@ -157,6 +158,8 @@ find_package(PCRE)
 find_package(CURL)
 find_package(ASPELL)
 find_package(SQLite3)
+find_package(PQXX)
+find_package(MySQL)
 find_package(OpenSSL)
 
 # Millions of source files
@@ -226,6 +229,7 @@ set(src_CXXSRCS
     src/storage.cc
     src/streams.cc
     src/str_intern.cc
+    src/sql.cc
     src/sym_table.cc
     src/system.cc
     src/tasks.cc
@@ -234,7 +238,6 @@ set(src_CXXSRCS
     src/utils.cc
     src/verbs.cc
     src/version.cc
-    src/sqlite.cc
     src/pcre_moo.cc
     src/background.cc
     src/waif.cc
@@ -287,6 +290,17 @@ endif()
 if(SQLITE3_FOUND)
     include_directories(${SQLITE3_INCLUDE_DIRS})
     target_link_libraries(moo ${SQLITE3_LIBRARIES})
+endif()
+
+if (PQXX_FOUND)
+    set (POSTGRESQL_FOUND TRUE)
+    include_directories(${PQXX_INCLUDE_DIRECTORIES})
+    target_link_libraries(moo ${PQXX_LIBRARIES})
+endif()
+
+if (MYSQL_FOUND)
+    include_directories(${MYSQL_INCLUDE_DIRS})
+    target_link_libraries(moo ${MYSQL_LIBRARIES})
 endif()
 
 if(OPENSSL_FOUND)

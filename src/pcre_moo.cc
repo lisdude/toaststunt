@@ -27,11 +27,10 @@ public:
 
 static std::map<const char*, pcre_cache_entry*, StrCompare> pcre_pattern_cache;
 
-static void free_entry(pcre_cache_entry *);
 static void delete_cache_entry(const char *pattern);
 static Var result_indices(int ovector[], int n);
 
-static struct pcre_cache_entry *
+struct pcre_cache_entry *
 get_pcre(const char *string, unsigned char options)
 {
     pcre_cache_entry *entry = nullptr;
@@ -260,7 +259,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(ret);
 }
 
-static void free_entry(pcre_cache_entry *entry)
+void free_entry(pcre_cache_entry *entry)
 {
     if (entry->re != nullptr)
         pcre_free(entry->re);
@@ -379,36 +378,6 @@ pcre_shutdown(void)
 
     pcre_pattern_cache.clear();
 }
-
-#ifdef SQLITE3_FOUND
-void sqlite_regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv)
-{
-    const char *pattern = (const char *)sqlite3_value_text(argv[0]);
-    if (!pattern)
-    {
-        sqlite3_result_error(ctx, "SQLite REGEXP called with invalid pattern.", -1);
-        return;
-    }
-
-    const char *string = (const char *)sqlite3_value_text(argv[1]);
-    if (!string)
-    {
-        sqlite3_result_error(ctx, "SQLite REGEXP called with invalid string.", -1);
-        return;
-    }
-
-    struct pcre_cache_entry *entry = get_pcre(pattern, 0);
-    if (entry->error != nullptr)
-    {
-        sqlite3_result_error(ctx, entry->error, -1);
-        return;
-    }
-
-    int result = pcre_exec(entry->re, entry->extra, string, strlen(string), 0, 0, nullptr, 0);
-
-    sqlite3_result_int(ctx, result >= 0);
-}
-#endif /* SQLITE3_FOUND */
 
 void
 register_pcre() {

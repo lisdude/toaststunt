@@ -22,9 +22,7 @@ struct pcre_cache_entry {
 
 extern void pcre_shutdown(void);
 
-#ifdef SQLITE3_FOUND
-#include <sqlite3.h>
-extern void sqlite_regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv);
-#endif
+extern void free_entry(pcre_cache_entry *);
+extern struct pcre_cache_entry * get_pcre(const char *string, unsigned char options);
 
 #endif /* EXTENSION_PCRE_H */
