@@ -1881,6 +1881,7 @@ print_usage()
     fprintf(stderr, "  %-20s %s\n", "-e, --emergency", "emergency wizard mode");
     fprintf(stderr, "  %-20s %s\n", "-l, --log", "redirect standard output to log file");
     fprintf(stderr, "\nDATABASE OPTIONS\n");
+    fprintf(stderr, "  %-20s %s\n", "_", "As a input-db-file, causes a new (completely blank) DB to be created.");
     fprintf(stderr, "  %-20s %s\n", "-m, --clear-move", "clear the `last_move' builtin property on all objects");
     fprintf(stderr, "  %-20s %s\n", "-w, --waif-type", "convert waifs from the specified type (check with typeof(waif) in your old MOO)");
     fprintf(stderr, "  %-20s %s\n", "-f, --start-script", "file to load and pass to `#0:do_start_script()'");
@@ -1902,6 +1903,7 @@ print_usage()
     fprintf(stderr, "Examples:\n");
     fprintf(stderr, "%s -c '$enable_debugging();' -f development.moo Minimal.db Minimal.db.new 7777\n", this_program);
     fprintf(stderr, "%s Minimal.db Minimal.db.new\n", this_program);
+    fprintf(stderr, "%s -e _ init.db\n", this_program);
 }
 
 int waif_conversion_type = _TYPE_WAIF;    /* For shame. We can remove this someday. */

@@ -825,6 +825,22 @@ fmt_verb_name(void *data)
 }
 
 static int
+new_db_file(void)
+{
+    waif_before_loading();
+    dbio_input_version = current_db_version;
+
+    /* initialize anything we need to */
+    dbpriv_set_all_users(new_list(0));
+
+    /* see db_objects.c */
+    dbpriv_after_load();
+    waif_after_loading();
+
+    return 1;
+}
+
+static int
 read_db_file(void)
 {
     Objid oid;
@@ -1216,7 +1232,10 @@ db_initialize(int *pargc, char ***pargv)
     *pargc -= 2;
     *pargv += 2;
 
-    if (!(f = fopen(input_db_name, "r"))) {
+    if (!strcmp(input_db_name, "_")) {
+        /* creating new DB, so leave input_db as NULL */
+        f = NULL;
+    } else if (!(f = fopen(input_db_name, "r"))) {
         fprintf(stderr, "Cannot open input database file: %s\n",
                 input_db_name);
         return 0;
@@ -1230,6 +1249,15 @@ db_initialize(int *pargc, char ***pargv)
 int
 db_load(void)
 {
+    if (!input_db) {
+        oklog("DB_LOAD: Creating new DB...\n");
+        if (!new_db_file()) {
+            errlog("DB_LOAD: Cannot create database!\n");
+            return 0;
+        }
+        return 1;
+    }
+
     dbpriv_set_dbio_input(input_db);
 
     str_intern_open(0);
