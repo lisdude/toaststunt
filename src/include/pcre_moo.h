@@ -18,6 +18,7 @@ struct pcre_cache_entry {
     pcre_extra *extra;
     int captures;
     unsigned int cache_hits;
+    unsigned int refcount;
 };
 
 extern void pcre_shutdown(void);
