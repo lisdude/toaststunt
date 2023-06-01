@@ -15,7 +15,6 @@
 #include "map.h"
 #include "dependencies/pcrs.h"
 #include "dependencies/xtrapbits.h"
-#undef PCRE_CONFIG_JIT
 
 struct StrCompare : public std::binary_function<const char*, const char*, bool>
 {
@@ -271,9 +270,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
 
 static void free_entry(pcre_cache_entry *entry)
 {
-    pthread_mutex_lock(&cache_mutex);
     if (--entry->refcount > 0) {
-        pthread_mutex_unlock(&cache_mutex);
         return;
     }
     if (entry->re != nullptr)
@@ -291,7 +288,6 @@ static void free_entry(pcre_cache_entry *entry)
     }
 
     free(entry);
-    pthread_mutex_unlock(&cache_mutex);
 }
 
 static void delete_cache_entry(const char *pattern)
