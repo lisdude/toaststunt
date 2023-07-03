@@ -1804,7 +1804,7 @@ read_active_connections(void)
         Var v;
 
         if (have_listeners) {
-            if (dbio_scanf("%d %d\n", &who, &listener) != 2) {
+            if (dbio_scanf("%" SCNdN "%" SCNdN "\n", &who, &listener) != 2) {
                 errlog("READ_ACTIVE_CONNECTIONS: Bad conn/listener pair.\n");
                 return 0;
             }
