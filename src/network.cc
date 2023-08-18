@@ -396,9 +396,12 @@ pull_input(nhandle * h)
                 case SSL_ERROR_NONE:
                     h->connected = true;
                     break;
-                default:
+                default: {
+                    pthread_mutex_lock(h->name_mutex);
                     errlog("TLS: Accept failed (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
+                    pthread_mutex_unlock(h->name_mutex);
                     return 0;
+                }
             }
 #ifdef LOG_TLS_CONNECTIONS
             oklog("TLS: %s for %s. Cipher: %s\n", SSL_state_string_long(h->tls), h->name, SSL_get_cipher(h->tls));
@@ -420,9 +423,12 @@ pull_input(nhandle * h)
                     case SSL_ERROR_ZERO_RETURN:
                         return 0;
                         break;
-                    default:
+                    default: {
+                        pthread_mutex_lock(h->name_mutex);
                         errlog("TLS: Error pulling input (%i) from %s: %s\n", error, h->name, ERR_error_string(ERR_get_error(), nullptr));
+                        pthread_mutex_unlock(h->name_mutex);
                         return 0;
+                    }
                 }
             }
         }
