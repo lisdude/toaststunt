@@ -96,7 +96,13 @@ static std::stringstream shutdown_message;
 static bool shutdown_triggered = false;
 static bool in_emergency_mode = false;
 
-static Var checkpointed_connections;
+/* Linked list of checkpointed connections so they don't need to be read in. */
+typedef struct checkpointed_connection {
+    Objid who, listener;
+    checkpointed_connection *next;
+} checkpointed_connection;
+
+static checkpointed_connection *checkpointed_connections = NULL;
 
 typedef enum {
     CHKPT_OFF, CHKPT_TIMER, CHKPT_SIGNAL, CHKPT_FUNC
@@ -774,14 +780,13 @@ main_loop(void)
     free_var(pending_list);
 
     /* Second, notify DB of disconnections for all checkpointed connections */
-    for (i = 1; i <= checkpointed_connections.v.list[0].v.num; i++) {
-        Var v;
-
-        v = checkpointed_connections.v.list[i];
-        call_notifier(v.v.list[1].v.obj, v.v.list[2].v.obj,
+    while (checkpointed_connections) {
+        checkpointed_connection * conn = checkpointed_connections;
+        checkpointed_connections = conn->next;
+        call_notifier(conn->who, conn->listener,
                       "user_disconnected");
+        myfree(conn, M_STRUCT);
     }
-    free_var(checkpointed_connections);
 
     /* Third, run #0:server_started() */
     run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "server_started", new_list(0), "", nullptr);
@@ -1779,11 +1784,17 @@ int
 read_active_connections(void)
 {
     int count, i, have_listeners = 0;
+    checkpointed_connection **conn_next = &checkpointed_connections;
     char c;
+
+    /*
+     * Notably, this code MAY run once.
+     * If it ran twice we'd need to clean up old checkpointed_connections.
+     * Running not-at-all is fine.
+     */
 
     i = dbio_scanf("%d active connections%c", &count, &c);
     if (i == EOF) {     /* older database format */
-        checkpointed_connections = new_list(0);
         return 1;
     } else if (i != 2) {
         errlog("READ_ACTIVE_CONNECTIONS: Bad active connections count.\n");
@@ -1798,8 +1809,8 @@ read_active_connections(void)
         errlog("READ_ACTIVE_CONNECTIONS: Bad EOL.\n");
         return 0;
     }
-    checkpointed_connections = new_list(count);
     for (i = 1; i <= count; i++) {
+        checkpointed_connection *conn;
         Objid who, listener;
         Var v;
 
@@ -1812,10 +1823,15 @@ read_active_connections(void)
             who = dbio_read_num();
             listener = SYSTEM_OBJECT;
         }
-        checkpointed_connections.v.list[i] = v = new_list(2);
-        v.v.list[1].type = v.v.list[2].type = TYPE_OBJ;
-        v.v.list[1].v.obj = who;
-        v.v.list[2].v.obj = listener;
+
+        /* extend list and advance conn_next */
+        conn = (checkpointed_connection *)mymalloc(sizeof(checkpointed_connection), M_STRUCT);
+        *conn_next = conn;
+        conn_next = &conn->next;
+
+        conn->who = who;
+        conn->listener = listener;
+        conn->next = NULL;
     }
 
     return 1;
@@ -1865,6 +1881,7 @@ print_usage()
     fprintf(stderr, "  %-20s %s\n", "-e, --emergency", "emergency wizard mode");
     fprintf(stderr, "  %-20s %s\n", "-l, --log", "redirect standard output to log file");
     fprintf(stderr, "\nDATABASE OPTIONS\n");
+    fprintf(stderr, "  %-20s %s\n", "_", "As a input-db-file, causes a new (completely blank) DB to be created.");
     fprintf(stderr, "  %-20s %s\n", "-m, --clear-move", "clear the `last_move' builtin property on all objects");
     fprintf(stderr, "  %-20s %s\n", "-w, --waif-type", "convert waifs from the specified type (check with typeof(waif) in your old MOO)");
     fprintf(stderr, "  %-20s %s\n", "-f, --start-script", "file to load and pass to `#0:do_start_script()'");
@@ -1886,6 +1903,7 @@ print_usage()
     fprintf(stderr, "Examples:\n");
     fprintf(stderr, "%s -c '$enable_debugging();' -f development.moo Minimal.db Minimal.db.new 7777\n", this_program);
     fprintf(stderr, "%s Minimal.db Minimal.db.new\n", this_program);
+    fprintf(stderr, "%s -e _ init.db\n", this_program);
 }
 
 int waif_conversion_type = _TYPE_WAIF;    /* For shame. We can remove this someday. */
@@ -1955,7 +1973,7 @@ main(int argc, char **argv)
             case 'v':                   /* --version; print version and exit */
             {
                 fprintf(stderr, "ToastStunt version %s\n", server_version);
-                exit(1);
+                return 1;
             }
             break;
 
@@ -1998,7 +2016,7 @@ main(int argc, char **argv)
             {
 #ifndef OUTBOUND_NETWORK
                 fprintf(stderr, "Outbound networking is disabled. The '--outbound' option is invalid.\n");
-                exit(1);
+                return 1;
 #else
                 cmdline_outbound = true;
                 outbound_network_enabled = true;
@@ -2040,7 +2058,7 @@ main(int argc, char **argv)
             {
 #ifndef USE_TLS
                 fprintf(stderr, "TLS is disabled or not supported. The '--tls-port' option is invalid.\n");
-                exit(1);
+                return 1;
 #else
                 char *p = nullptr;
                 initial_tls_ports.push_back(strtoul(optarg, &p, 10));
@@ -2052,7 +2070,7 @@ main(int argc, char **argv)
             {
 #ifndef USE_TLS
                 fprintf(stderr, "TLS is disabled or not supported. The '--tls' option is invalid.\n");
-                exit(1);
+                return 1;
 #else
                 cmdline_cert = true;
                 default_certificate_path = optarg;
@@ -2064,7 +2082,7 @@ main(int argc, char **argv)
             {
 #ifndef USE_TLS
                 fprintf(stderr, "TLS is disabled or not supported. The '--tls' option is invalid.\n");
-                exit(1);
+                return 1;
 #else
                 cmdline_key = true;
                 default_key_path = optarg;
@@ -2088,11 +2106,10 @@ main(int argc, char **argv)
 
             case 'h':                   /* --help; show usage instructions */
                 print_usage();
-                break;
 
             default:
                 // Should we print usage here? It's pretty spammy...
-                exit(1);
+                return 1;
         }
     }
 
@@ -2106,7 +2123,7 @@ main(int argc, char **argv)
             set_log_file(f);
         else {
             perror("Error opening specified log file");
-            exit(1);
+            return 1;
         }
     } else {
         set_log_file(stderr);
@@ -2116,7 +2133,7 @@ main(int argc, char **argv)
             || !db_initialize(&argc, &argv)
             || !network_initialize(argc, argv, &desc)) {
         print_usage();
-        exit(1);
+        return 1;
     }
 
     if (initial_ports.empty()
@@ -2234,7 +2251,7 @@ main(int argc, char **argv)
 
     if (initial_listeners.size() < 1) {
         errlog("Can't create initial connection point!\n");
-        exit(1);
+        return 1;
     }
     free_var(desc);
     // I doubt anybody will have enough listeners for this to be worthwhile, but why not.
@@ -2246,7 +2263,7 @@ main(int argc, char **argv)
 #endif
 
     if (!db_load())
-        exit(1);
+        return 1;
 
     free_reordered_rt_env_values();
 
@@ -2287,7 +2304,7 @@ main(int argc, char **argv)
         }
 
         if (listen_failures >= initial_listeners.size())
-            exit(1);
+            return 1;
 
         initial_listeners.clear();
         initial_listeners.shrink_to_fit();
