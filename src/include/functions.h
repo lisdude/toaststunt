@@ -52,6 +52,7 @@ typedef struct {
 } package;
 
 void register_bi_functions(void);
+unsigned registered_function_count(void);
 
 enum abort_reason {
     ABORT_KILL    = -1, 	/* kill_task(task_id()) */
@@ -75,12 +76,20 @@ typedef package(*bf_type) (Var, Byte, void *, Objid);
 typedef void (*bf_write_type) (void *vdata);
 typedef void *(*bf_read_type) (void);
 
-#define MAX_FUNC         256
+#define MAX_BASE_FUNC    255
+#define MAX_FUNC         65535
 #define FUNC_NOT_FOUND   MAX_FUNC
-/* valid function numbers are 0 - 255, or a total of 256 of them.
-   function number 256 is reserved for func_not_found signal.
-   hence valid function numbers will fit in one byte but the 
-   func_not_found signal will not */
+/* valid base function numbers are 0 - 255, or a total of 256 of them.
+   An extended function id limit has been created for
+   id numbers 256 - 65534, effectively removing the maximum
+   registered function limit.
+   This means that calls to the first 256 registered builtins will
+   fit within a single byte and thus op code calls to them will
+   consume 2 bytes of op codes (1 for the function call instruction
+   and one for the id of the function).
+   Function id's over 256 will will result in an extended function
+   call that ends up consuming a total of 5 bytes rather than 2.
+   function number 65535 is reserved for func_not_found signal. */
 
 extern const char *name_func_by_num(unsigned);
 extern unsigned number_func_by_name(const char *);

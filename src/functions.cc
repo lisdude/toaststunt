@@ -74,7 +74,8 @@ static registry bi_function_registries[] =
     register_simplexnoise,
     register_argon2,
     register_spellcheck,
-    register_curl
+    register_curl,
+    register_edge_extensions
 };
 
 void
@@ -104,6 +105,12 @@ struct bft_entry {
 
 static struct bft_entry bf_table[MAX_FUNC];
 static unsigned top_bf_table = 0;
+
+unsigned
+registered_function_count()
+{
+    return top_bf_table - 1;
+}
 
 static unsigned
 register_common(const char *name, int minargs, int maxargs, bf_type func,

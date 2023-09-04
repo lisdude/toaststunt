@@ -73,7 +73,20 @@ struct mapping mappings[] =
     {OP_OR, "OR"},
     {OP_UNARY_MINUS, "NEGATE"},
     {OP_NOT, "NOT"},
+    {OP_PRE_INCREMENT, "PREFIX_INCREMENT 1"},
+    {OP_PRE_DECREMENT, "PREFIX_DECREMENT 1"},
+    {OP_POST_INCREMENT, "POSTFIX_INCREMENT 1"},
+    {OP_POST_DECREMENT, "POSTFIX_DECREMENT 1"},
+    {OP_ASGN_PLUS, "ADD_ASSIGNMENT"},
+    {OP_ASGN_MINUS, "SUBTRACT_ASSIGNMENT"},
+    {OP_ASGN_MULT, "MULTIPLY_ASSIGNMENT"},
+    {OP_ASGN_DIV, "DIVISION_ASSIGNMENT"},
+    {OP_ASGN_POW, "POWER_ASSIGNMENT"},
+    {OP_ASGN_MOD, "MODULUS_ASSIGNMENT"},
+    {OP_ASGN_AND, "AND_ASSIGNMENT"},
+    {OP_ASGN_OR, "OR_ASSIGNMENT"},
     {OP_G_PUT, "PUT"},
+    {OP_TERM, "TERMINATION_OF_EXPANDED_OPS"},
     {OP_G_PUSH, "PUSH"},
 #ifdef BYTECODE_REDUCE_REF
     {OP_G_PUSH_CLEAR, "PUSH_CLEAR"},
@@ -119,7 +132,8 @@ struct mapping ext_mappings[] =
     {EOP_BITXOR, "BITXOR"},
     {EOP_BITSHL, "BITSHL"},
     {EOP_BITSHR, "BITSHR"},
-    {EOP_COMPLEMENT, "COMPLEMENT"}
+    {EOP_COMPLEMENT, "COMPLEMENT"},
+    {EOP_BI_FUNC_CALL, "CALL_FUNC"}
 };
 
 static void
@@ -323,6 +337,9 @@ disassemble(Program * prog, Printer p, void *data)
                         a2 = ADD_BYTES(bc.numbytes_var_name);
                         a3 = ADD_BYTES(bc.numbytes_label);
                         stream_printf(insn, " %s %s %d", NAMES(a1), NAMES(a2), a3);
+                        break;
+                    case EOP_BI_FUNC_CALL:
+                        stream_printf(insn, " %s", name_func_by_num(ADD_BYTES(2)));
                         break;
                     default:
                         break;

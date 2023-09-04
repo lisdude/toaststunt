@@ -1409,9 +1409,11 @@ finish_comparison:
             break;
 
             case OP_MULT:
-            case OP_MINUS:
             case OP_DIV:
             case OP_MOD:
+            case OP_ASGN_MULT:
+            case OP_ASGN_DIV:
+            case OP_ASGN_MOD:
             {
                 Var lhs, rhs, ans;
                 var_type lhs_type, rhs_type;
@@ -1420,17 +1422,17 @@ finish_comparison:
                 lhs = POP();    /* should be number */
                 if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
                         && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT)) {
-                    switch (op) {
+                    switch (op) {                        
                         case OP_MULT:
+                        case OP_ASGN_MULT:
                             ans = do_multiply(lhs, rhs);
                             break;
-                        case OP_MINUS:
-                            ans = do_subtract(lhs, rhs);
-                            break;
                         case OP_DIV:
+                        case OP_ASGN_DIV:
                             ans = do_divide(lhs, rhs);
                             break;
                         case OP_MOD:
+                        case OP_ASGN_MOD:
                             ans = do_modulus(lhs, rhs);
                             break;
                         default:
@@ -1463,7 +1465,58 @@ finish_comparison:
             }
             break;
 
+            case OP_MINUS:
+            case OP_ASGN_MINUS:
+                {
+                    Var lhs, rhs, ans;
+                    var_type lhs_type, rhs_type;
+
+                    rhs = POP();    /* should be number */
+                    lhs = POP();    /* should be number */
+                    if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
+                        && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT)) {
+                        ans = do_subtract(lhs, rhs);
+                    } else if (lhs.type == TYPE_MAP && rhs.type == TYPE_MAP) {
+                        ans = mapsubtract(var_ref(lhs), var_ref(rhs));
+                    } else if (lhs.type == TYPE_LIST && rhs.type == TYPE_LIST) {                        
+                        ans = listdifference(var_ref(lhs), var_ref(rhs));
+                    } else {
+                        ans.type = TYPE_ERR;
+                        ans.v.err = E_TYPE;
+                    }
+
+                    if (ans.type == TYPE_ERR) {
+                        lhs_type = lhs.type;
+                        rhs_type = rhs.type;
+                    }
+
+                    free_var(rhs);
+                    free_var(lhs);
+
+                    if (ans.type == TYPE_ERR) {
+                        if (ans.v.err == E_TYPE)
+                            if (lhs_type == TYPE_INT)
+                                PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_INT);
+                            else if (lhs_type == TYPE_FLOAT)
+                                PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_FLOAT);
+                            else if (lhs_type == TYPE_MAP)
+                                PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_MAP);
+                            else if (lhs_type == TYPE_LIST)
+                                PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_LIST);                                
+                            else if (lhs_type != TYPE_INT && lhs_type != TYPE_FLOAT && lhs_type != TYPE_MAP && (rhs_type == TYPE_INT || rhs_type == TYPE_FLOAT || rhs_type == TYPE_MAP))
+                                PUSH_TYPE_MISMATCH(1, lhs_type, rhs.type);
+                            else
+                                PUSH_TYPE_MISMATCH(3, lhs.type, TYPE_INT, TYPE_FLOAT, TYPE_MAP);
+                        else
+                            PUSH_ERROR(ans.v.err);
+                    } else {
+                        PUSH(ans);
+                    }
+                }
+                break;
+
             case OP_ADD:
+            case OP_ASGN_PLUS:
             {
                 Var rhs, lhs, ans;
                 var_type lhs_type, rhs_type;
@@ -1472,7 +1525,7 @@ finish_comparison:
                 lhs = POP();
 
                 if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
-                        && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT))
+                    && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT))
                     ans = do_add(lhs, rhs);
                 else if (lhs.type == TYPE_STR && rhs.type == TYPE_STR) {
                     char *str;
@@ -1483,7 +1536,7 @@ finish_comparison:
                         ans.type = TYPE_ERR;
                         ans.v.err = E_QUOTA;
                     } else {
-                        str = (char *)mymalloc(flen + 1, M_STRING);
+                        str = (char *) mymalloc(flen + 1, M_STRING);
                         strcpy(str, lhs.v.str);
                         strcpy(str + llen, rhs.v.str);
                         ans.type = TYPE_STR;
@@ -1494,6 +1547,14 @@ finish_comparison:
                         ans = listconcat(var_ref(lhs), var_ref(rhs));
                     } else {
                         ans = listappend(var_ref(lhs), var_ref(rhs));
+                    }
+                // Added support for Map concatenation
+                } else if (lhs.type == TYPE_MAP) {
+                    if (rhs.type == TYPE_MAP) {
+                        ans = mapconcat(var_ref(lhs), var_ref(rhs));
+                    } else {
+                        ans.type = TYPE_ERR;
+                        ans.v.err = E_TYPE;
                     }
                 } else {
                     ans.type = TYPE_ERR;
@@ -1512,9 +1573,11 @@ finish_comparison:
                     /* This is maybe slightly unwieldy, but it works. It assumes lhs is the type you really wanted. */
                     if (ans.v.err == E_TYPE) {
                         if (lhs_type == TYPE_STR)
-                            PUSH_TYPE_MISMATCH(1, lhs_type != TYPE_STR ? lhs_type : rhs_type, TYPE_STR);
+                            PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_STR);
                         else if (rhs_type == TYPE_STR && lhs_type != TYPE_INT && lhs_type != TYPE_FLOAT)
                             PUSH_TYPE_MISMATCH(1, lhs_type, TYPE_STR);
+                        else if (lhs_type == TYPE_MAP)
+                            PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_MAP);
                         else if (lhs_type == TYPE_INT)
                             PUSH_TYPE_MISMATCH(1, rhs_type, TYPE_INT);
                         else if (lhs_type == TYPE_FLOAT)
@@ -1522,7 +1585,7 @@ finish_comparison:
                         else if (lhs_type != TYPE_INT && lhs_type != TYPE_FLOAT && (rhs_type == TYPE_INT || rhs_type == TYPE_FLOAT))
                             PUSH_TYPE_MISMATCH(1, lhs_type, rhs.type);
                         else
-                            PUSH_TYPE_MISMATCH(3, lhs.type, TYPE_INT, TYPE_FLOAT, TYPE_STR);
+                            PUSH_TYPE_MISMATCH(4, lhs.type, TYPE_INT, TYPE_FLOAT, TYPE_STR, TYPE_MAP);
                     } else {
                         PUSH_ERROR_UNLESS_QUOTA(ans.v.err);
                     }
@@ -1534,17 +1597,35 @@ finish_comparison:
 
             case OP_AND:
             case OP_OR:
+            case OP_ASGN_AND:
+            case OP_ASGN_OR:
             {
                 Var lhs;
                 unsigned lab = READ_BYTES(bv, bc.numbytes_label);
 
                 lhs = TOP_RT_VALUE;
-                if ((op == OP_AND && !is_true(lhs))
-                        || (op == OP_OR && is_true(lhs)))   /* short-circuit */
+                if (((op == OP_AND || op == OP_ASGN_AND) && !is_true(lhs))
+                        || ((op == OP_OR || op == OP_ASGN_OR) && is_true(lhs)))   /* short-circuit */
                     JUMP(lab);
                 else {
                     free_var(POP());
                 }
+            }
+            break;
+
+            case OP_ASGN_POW:
+            {
+                Var lhs, rhs, ans;
+
+                rhs = POP();
+                lhs = POP();
+                ans = do_power(lhs, rhs);
+                free_var(lhs);
+                free_var(rhs);
+                if (ans.type == TYPE_ERR)
+                    PUSH_ERROR(ans.v.err);
+                else
+                    PUSH(ans);
             }
             break;
 
@@ -1583,6 +1664,66 @@ finish_comparison:
                 free_var(arg);
             }
             break;
+
+            case OP_PRE_INCREMENT:
+            case OP_POST_INCREMENT:
+            {
+                Var arg, ans;
+                var_type arg_type;
+
+                arg = POP();
+                if (arg.type == TYPE_INT) {
+                    ans.type = TYPE_INT;
+                    ans.v.num = arg.v.num + 1;
+                } else if (arg.type == TYPE_FLOAT) {
+                    ans.type = TYPE_FLOAT;
+                    ans.v.fnum = arg.v.fnum + 1.0;
+                } else if (arg.type == TYPE_OBJ) {
+                    ans.type = TYPE_OBJ;
+                    ans.v.obj = arg.v.obj + 1;
+                } else {
+                    arg_type = arg.type;
+                    free_var(arg);
+                    PUSH_TYPE_MISMATCH(2, arg_type, TYPE_INT, TYPE_FLOAT);
+                    break;
+                }
+
+                PUSH(ans);
+                free_var(arg);
+            }
+            break;
+
+            case OP_PRE_DECREMENT:
+            case OP_POST_DECREMENT:
+            {
+                Var arg, ans;
+                var_type arg_type;
+
+                arg = POP();
+                if (arg.type == TYPE_INT) {
+                    ans.type = TYPE_INT;
+                    ans.v.num = arg.v.num - 1;
+                } else if (arg.type == TYPE_FLOAT) {
+                    ans.type = TYPE_FLOAT;
+                    ans.v.fnum = arg.v.fnum - 1.0;
+                } else if (arg.type == TYPE_OBJ) {
+                    ans.type = TYPE_OBJ;
+                    ans.v.obj = arg.v.obj - 1;
+                } else {
+                    arg_type = arg.type;
+                    free_var(arg);
+                    PUSH_TYPE_MISMATCH(2, arg_type, TYPE_INT, TYPE_FLOAT);
+                    break;
+                }
+
+                PUSH(ans);
+                free_var(arg);
+            }
+            break;
+
+            case OP_TERM:
+                /* do nothing, this op code is a placeholder to find the end of a generated sequence */
+                break;
 
             case OP_REF:
             {
@@ -2419,6 +2560,62 @@ else if (obj.type == TYPE_##t1) {           \
                             PUSH_ERROR(ans.v.err);
                         else
                             PUSH(ans);
+                    }
+                    break;
+
+                    case EOP_BI_FUNC_CALL:
+                    {
+                        const unsigned func_id = READ_BYTES(bv, 2);    /* 1 == numbytes of func_id */
+                        const Var args = POP();   /* should be list */
+                        if (args.type != TYPE_LIST) {
+                            free_var(args);
+                            PUSH_ERROR(E_TYPE);
+                        } else {
+                            package p;
+
+                            STORE_STATE_VARIABLES();
+                            p = call_bi_func(func_id, args, 1, RUN_ACTIV.progr, nullptr);
+                            LOAD_STATE_VARIABLES();
+
+                            switch (p.kind) {
+                                case package::BI_RETURN:
+                                    PUSH(p.u.ret);
+                                    break;
+                                case package::BI_RAISE:
+                                    if (RUN_ACTIV.debug) {
+                                        if (raise_error(p, nullptr))
+                                            return OUTCOME_ABORTED;
+                                        else
+                                            LOAD_STATE_VARIABLES();
+                                    } else {
+                                        PUSH(p.u.raise.code);
+                                        free_str(p.u.raise.msg);
+                                        free_var(p.u.raise.value);
+                                    }
+                                    break;
+                                case package::BI_CALL:
+                                    /* another activ has been pushed onto activ_stack */
+                                    RUN_ACTIV.bi_func_id = func_id;
+                                    RUN_ACTIV.bi_func_data = p.u.call.data;
+                                    RUN_ACTIV.bi_func_pc = p.u.call.pc;
+                                    break;
+                                case package::BI_SUSPEND:
+                                {
+                                    enum error e = suspend_task(p);
+
+                                    if (e == E_NONE)
+                                        return OUTCOME_BLOCKED;
+                                    else
+                                        PUSH_ERROR(e);
+                                }
+                                break;
+                                case package::BI_KILL:
+                                    STORE_STATE_VARIABLES();
+                                    abort_task((abort_reason)p.u.ret.v.num);
+                                    return OUTCOME_ABORTED;
+                                    /* NOTREACHED */
+                            }
+                        }
                     }
                     break;
 

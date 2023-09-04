@@ -2204,6 +2204,7 @@ main(int argc, char **argv)
 #endif
 
     register_bi_functions();
+    oklog("REGISTERED: %u built-in functions\n", registered_function_count());
 
     std::vector<slistener*> initial_listeners;
 

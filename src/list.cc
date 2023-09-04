@@ -289,6 +289,27 @@ listconcat(Var first, Var second)
 }
 
 Var
+listdifference(Var first, Var second)
+{
+    int lsecond = second.v.list[0].v.num;
+    int lfirst = first.v.list[0].v.num;
+
+    Var _new = var_dup(first);
+    for (int i = 1; i <= lsecond; i++)
+        _new = setremove(_new, var_ref(second.v.list[i]));
+
+    free_var(first);
+    free_var(second);
+
+#ifdef ENABLE_GC
+    if (_new.v.list[0].v.num > 0)   /* only non-empty lists */
+        gc_set_color(_new.v.list, GC_YELLOW);
+#endif
+
+    return _new;
+}
+
+Var
 listrangeset(Var base, int from, int to, Var value)
 {
     /* base and value are free'd */

@@ -19,6 +19,8 @@ ToastStunt is a network accessible, multi-user, programmable, interactive system
 ## Features
 
 - SQLite
+- Supports compound assignment operators +=, -=, *=, /=, %=, ^=, &= and |=
+- Supports prefix and postfix increment/decrement operators
 - Perl Compatible Regular Expressions (PCRE)
 - [Argon2id Hashing](https://github.com/P-H-C/phc-winner-argon2)
 - 64-bit Integers (with the choice to fall back to 32-bit integers; $maxint and $minint set automatically)

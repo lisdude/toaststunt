@@ -18,6 +18,7 @@
 #include <limits.h>
 
 #include "ast.h"
+#include "functions.h"
 #include "opcode.h"
 #include "program.h"
 #include "server.h"
@@ -192,6 +193,13 @@ emit_extended_byte(Byte b, State * state)
 {
     emit_byte(OP_EXTENDED, state);
     emit_byte(b, state);
+}
+
+static void
+emit_extended_function_id(unsigned id, state* state)
+{
+    emit_byte((Byte)((id >> 8) & 0x000000ff), state);
+    emit_byte((Byte)(id&0x000000ff), state);
 }
 
 static int
@@ -645,6 +653,246 @@ generate_expr(Expr * expr, State * state)
             generate_expr(expr->e.expr, state);
             emit_byte(expr->kind == EXPR_NOT ? OP_NOT : OP_UNARY_MINUS, state);
             break;
+        case EXPR_ASGN_AND:
+        case EXPR_ASGN_OR:
+        {
+            Expr *e = expr->e.bin.lhs;
+            int end_label;
+
+            generate_expr(expr->e.bin.lhs, state);
+            emit_byte(expr->kind == EXPR_ASGN_AND ? OP_ASGN_AND : OP_ASGN_OR, state);
+            end_label = add_label(state);
+            pop_stack(1, state);
+            generate_expr(expr->e.bin.rhs, state);
+            define_label(end_label, state);
+
+            int is_indexed = 0;
+
+            // Now we generate the extra op codes to do the work of the
+            // syntactical sugar increment/decrement operators
+            if (e->kind == EXPR_RANGE || e->kind == EXPR_INDEX)
+                emit_byte(OP_PUT_TEMP, state);
+            while (1) {
+                switch (e->kind) {
+                    case EXPR_RANGE:
+                        emit_extended_byte(EOP_RANGESET, state);
+                        pop_stack(3, state);
+                        e = e->e.range.base;
+                        is_indexed = 1;
+                        continue;
+                    case EXPR_INDEX:
+                        emit_byte(OP_INDEXSET, state);
+                        pop_stack(2, state);
+                        e = e->e.bin.lhs;
+                        is_indexed = 1;
+                        continue;
+                    case EXPR_ID:
+                        emit_var_op(OP_PUT, e->e.id, state);
+                        break;
+                    case EXPR_PROP:
+                        emit_byte(OP_PUT_PROP, state);
+                        pop_stack(2, state);
+                        break;
+                    default:
+                        panic_moo("Bad lvalue in GENERATE_EXPR()");
+                }
+                break;
+            }
+            if (is_indexed) {
+                emit_byte(OP_POP, state);
+                emit_byte(OP_PUSH_TEMP, state);
+            }
+
+            // Lastly we generate a termination framing op code to aid in decompilation later
+            emit_byte(OP_TERM, state);
+        }
+        break;
+        case EXPR_ASGN_PLUS:
+        case EXPR_ASGN_MINUS:
+        case EXPR_ASGN_MULT:
+        case EXPR_ASGN_DIV:
+        case EXPR_ASGN_POW:
+        case EXPR_ASGN_MOD:
+        {
+            Opcode op = OP_ASGN_PLUS; /* initialize to silence warning */
+            Expr *e = expr->e.bin.lhs;
+
+            generate_expr(expr->e.bin.lhs, state);
+            generate_expr(expr->e.bin.rhs, state);
+
+            switch (expr->kind) {
+                case EXPR_ASGN_PLUS:
+                    op = OP_ASGN_PLUS;
+                    break;
+                case EXPR_ASGN_MINUS:
+                    op = OP_ASGN_MINUS;
+                    break;
+                case EXPR_ASGN_MULT:
+                    op = OP_ASGN_MULT;
+                    break;
+                case EXPR_ASGN_DIV:
+                    op = OP_ASGN_DIV;
+                    break;
+                case EXPR_ASGN_POW:
+                    op = OP_ASGN_POW;
+                    break;
+                case EXPR_ASGN_MOD:
+                    op = OP_ASGN_MOD;
+                    break;
+                case EXPR_ASGN_AND:
+                    op = OP_ASGN_AND;
+                    break;
+                case EXPR_ASGN_OR:
+                    op = OP_ASGN_OR;
+                    break;
+                default:
+                    panic_moo("Not a binary operator in GENERATE_EXPR()");
+            }
+
+            emit_byte(op, state);
+            pop_stack(1, state);
+
+            int is_indexed = 0;
+
+            // Now we generate the extra op codes to do the work of the
+            // syntactical sugar increment/decrement operators
+            if (e->kind == EXPR_RANGE || e->kind == EXPR_INDEX)
+                emit_byte(OP_PUT_TEMP, state);
+            while (1) {
+                switch (e->kind) {
+                    case EXPR_RANGE:
+                        emit_extended_byte(EOP_RANGESET, state);
+                        pop_stack(3, state);
+                        e = e->e.range.base;
+                        is_indexed = 1;
+                        continue;
+                    case EXPR_INDEX:
+                        emit_byte(OP_INDEXSET, state);
+                        pop_stack(2, state);
+                        e = e->e.bin.lhs;
+                        is_indexed = 1;
+                        continue;
+                    case EXPR_ID:
+                        emit_var_op(OP_PUT, e->e.id, state);
+                        break;
+                    case EXPR_PROP:
+                        emit_byte(OP_PUT_PROP, state);
+                        pop_stack(2, state);
+                        break;
+                    default:
+                        panic_moo("Bad lvalue in GENERATE_EXPR()");
+                }
+                break;
+            }
+            if (is_indexed) {
+                emit_byte(OP_POP, state);
+                emit_byte(OP_PUSH_TEMP, state);
+            }
+
+            // Lastly we generate a termination framing op code to aid in decompilation later
+            emit_byte(OP_TERM, state);
+        }
+        break;
+        case EXPR_PRE_INCR:
+        case EXPR_PRE_DECR:
+        {
+            Expr *e = expr->e.expr;
+
+            push_lvalue(e, 0, state);
+            generate_expr(expr->e.expr, state);
+            emit_byte(expr->kind == EXPR_PRE_INCR ? OP_PRE_INCREMENT : OP_PRE_DECREMENT, state);
+
+            int is_indexed = 0;
+
+            // Now we generate the extra op codes to do the work of the
+            // syntactical sugar increment/decrement operators
+            if (e->kind == EXPR_RANGE || e->kind == EXPR_INDEX)
+                emit_byte(OP_PUT_TEMP, state);
+            while (1) {
+                switch (e->kind) {
+                    case EXPR_RANGE:
+                        emit_extended_byte(EOP_RANGESET, state);
+                        pop_stack(3, state);
+                        e = e->e.range.base;
+                        is_indexed = 1;
+                        continue;
+                    case EXPR_INDEX:
+                        emit_byte(OP_INDEXSET, state);
+                        pop_stack(2, state);
+                        e = e->e.bin.lhs;
+                        is_indexed = 1;
+                        continue;
+                    case EXPR_ID:
+                        emit_var_op(OP_PUT, e->e.id, state);
+                        break;
+                    case EXPR_PROP:
+                        emit_byte(OP_PUT_PROP, state);
+                        pop_stack(2, state);
+                        break;
+                    default:
+                        panic_moo("Bad lvalue in GENERATE_EXPR()");
+                }
+                break;
+            }
+            if (is_indexed) {
+                emit_byte(OP_POP, state);
+                emit_byte(OP_PUSH_TEMP, state);
+            }
+
+            // Lastly we generate a termination framing op code to aid in decompilation later
+            emit_byte(OP_TERM, state);
+        }
+        break;
+        case EXPR_POST_INCR:
+        case EXPR_POST_DECR:
+        {
+            Expr *e = expr->e.expr;
+
+            push_lvalue(e, 0, state);
+            generate_expr(expr->e.expr, state);
+            // stash our value prior to increment
+            emit_byte(OP_PUT_TEMP, state);
+            emit_byte(expr->kind == EXPR_POST_INCR ? OP_POST_INCREMENT : OP_POST_DECREMENT, state);
+
+            int is_indexed = 0;
+
+            // Now we generate the extra op codes to do the work of the
+            // syntactical sugar increment/decrement operators
+            while (1) {
+                switch (e->kind) {
+                    case EXPR_RANGE:
+                        emit_extended_byte(EOP_RANGESET, state);
+                        pop_stack(3, state);
+                        e = e->e.range.base;
+                        is_indexed = 1;
+                        continue;
+                    case EXPR_INDEX:
+                        emit_byte(OP_INDEXSET, state);
+                        pop_stack(2, state);
+                        e = e->e.bin.lhs;
+                        is_indexed = 1;
+                        continue;
+                    case EXPR_ID:
+                        emit_var_op(OP_PUT, e->e.id, state);
+                        break;
+                    case EXPR_PROP:
+                        emit_byte(OP_PUT_PROP, state);
+                        pop_stack(2, state);
+                        break;
+                    default:
+                        panic_moo("Bad lvalue in GENERATE_EXPR()");
+                }
+                break;
+            }
+
+            // Restore our value from prior to increment and assignment
+            emit_byte(OP_POP, state);
+            emit_byte(OP_PUSH_TEMP, state);
+
+            // Lastly we generate a termination framing op code to aid in decompilation later
+            emit_byte(OP_TERM, state);
+        }
+        break;
         case EXPR_COMPLEMENT:
             generate_expr(expr->e.expr, state);
             emit_extended_byte(EOP_COMPLEMENT, state);
@@ -808,8 +1056,13 @@ generate_expr(Expr * expr, State * state)
             break;
         case EXPR_CALL:
             generate_arg_list(expr->e.call.args, state);
-            emit_byte(OP_BI_FUNC_CALL, state);
-            emit_byte(expr->e.call.func, state);
+            if (expr->e.call.func > MAX_BASE_FUNC) {
+                emit_extended_byte(EOP_BI_FUNC_CALL, state);
+                emit_extended_function_id(expr->e.call.func, state);
+            } else {
+                emit_byte(OP_BI_FUNC_CALL, state);
+                emit_byte(expr->e.call.func, state);
+            }
             break;
         case EXPR_VERB:
             generate_expr(expr->e.verb.obj, state);

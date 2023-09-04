@@ -25,3 +25,5 @@ build
 test/executables/true
 test/executables/sleep
 test/executables/echo
+.idea/
+cmake-build-debug/

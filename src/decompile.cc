@@ -319,6 +319,91 @@ finish_while:
                 e->e.expr = pop_expr();
                 push_expr((Expr *)HOT_OP1(e->e.expr, e));
                 break;
+            case OP_PRE_INCREMENT:
+            case OP_PRE_DECREMENT:
+                e = alloc_expr(op == OP_PRE_INCREMENT ? EXPR_PRE_INCR : EXPR_PRE_DECR);
+                e->e.expr = pop_expr();
+                push_expr((Expr *)HOT_OP1(e->e.expr, e));
+                /*
+                 * Now we advance until we find our termination op code and consume all
+                 * intervening op codes since all the intervening codes are represented
+                 * by the syntactical sugar
+                */
+                while (*ptr != OP_TERM) {
+                    if (ptr == hot_byte)    /* it's our assignment expression */
+                        hot_node = expr_stack[top_expr_stack];
+                    ptr++;
+                }
+                ptr++;
+                break;
+            case OP_POST_INCREMENT:
+            case OP_POST_DECREMENT:
+                e = alloc_expr(op == OP_POST_INCREMENT ? EXPR_POST_INCR : EXPR_POST_DECR);
+                e->e.expr = pop_expr();
+                push_expr((Expr *)HOT_OP1(e->e.expr, e));
+                /*
+                 * Now we advance until we find our termination op code and consume all
+                 * intervening op codes since all the intervening codes are represented
+                 * by the syntactical sugar
+                */
+                while (*ptr != OP_TERM) {
+                    if (ptr == hot_byte)    /* it's our assignment expression */
+                        hot_node = expr_stack[top_expr_stack];
+                    ptr++;
+                }
+                ptr++;
+                break;
+
+            case OP_ASGN_PLUS:
+            case OP_ASGN_MINUS:
+            case OP_ASGN_MULT:
+            case OP_ASGN_DIV:
+            case OP_ASGN_POW:
+            case OP_ASGN_MOD:
+                {
+                    Expr *rvalue = pop_expr();
+                    Expr_Kind knd = (op == OP_ASGN_PLUS) ? EXPR_ASGN_PLUS
+                            : (op == OP_ASGN_MINUS) ? EXPR_ASGN_MINUS
+                            : (op == OP_ASGN_MULT) ? EXPR_ASGN_MULT
+                            : (op == OP_ASGN_DIV) ? EXPR_ASGN_DIV
+                            : (op == OP_ASGN_POW) ? EXPR_ASGN_POW
+                            : (op == OP_ASGN_MOD) ? EXPR_ASGN_MOD
+                            : (op == OP_ASGN_AND) ? EXPR_ASGN_AND
+                            : EXPR_ASGN_OR;
+
+                    e = alloc_binary(knd, pop_expr(), rvalue);
+                    push_expr((Expr * )HOT_OP1(e->e.bin.rhs, e));
+                }
+
+                asgn_hot = 0;
+                while (*ptr != OP_TERM) {
+                    if (ptr == hot_byte)    /* it's our assignment expression */
+                        hot_node = expr_stack[top_expr_stack];
+                    ptr++;
+                }
+                ptr++;
+                break;
+            case OP_ASGN_AND:
+            case OP_ASGN_OR:
+                {
+                    unsigned done = READ_LABEL();
+
+                    e = pop_expr();
+                    DECOMPILE(bc, ptr, bc.vector + done, nullptr, nullptr);
+                    if (ptr != bc.vector + done)
+                        panic_moo("AND/OR jumps to wrong place in DECOMPILE!");
+                    e = alloc_binary(op == OP_ASGN_AND ? EXPR_ASGN_AND : EXPR_ASGN_OR,
+                                    e, pop_expr());
+                    push_expr((Expr *)HOT_OP2(e->e.bin.lhs, e->e.bin.rhs, e));
+                }    
+                asgn_hot = 0;
+                while (*ptr != OP_TERM) {
+                    if (ptr == hot_byte)    /* it's our assignment expression */
+                        hot_node = expr_stack[top_expr_stack];
+                    ptr++;
+                }
+                ptr++;
+                break;
             case OP_GET_PROP:
             case OP_PUSH_GET_PROP:
                 kind = EXPR_PROP;
@@ -427,7 +512,7 @@ finish_binary:
                 /* Ignore; following RANGESET or INDEXSET does the work */
                 if (op_hot)
                     asgn_hot = 1;
-                break;
+            break;
             case OP_INDEXSET:
                 /* Most of the lvalue has already been constructed on the stack.
                  * Add the final indexing.
@@ -625,6 +710,19 @@ finish_indexed_assignment:
                         e->e.var.v.num = READ_LABEL();
                         push_expr((Expr *)HOT_OP(e));
                         break;
+                    case EOP_BI_FUNC_CALL:
+                    {
+                        Expr *a = pop_expr();
+
+                        if (a->kind != EXPR_LIST)
+                            panic_moo("Missing arglist for BI_FUNC_CALL in DECOMPILE!");
+                        e = alloc_expr(EXPR_CALL);
+                        e->e.call.args = a->e.list;
+                        dealloc_node(a);
+                        e->e.call.func = READ_BYTES(2);
+                        push_expr((Expr *)HOT_OP1(a, e));
+                    }
+                    break;
                     case EOP_CATCH:
                     {
                         Expr *label_expr = pop_expr();

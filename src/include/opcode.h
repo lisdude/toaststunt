@@ -29,6 +29,9 @@ enum Extended_Opcode {
     EOP_PUSH_LABEL, EOP_END_CATCH, EOP_END_EXCEPT, EOP_END_FINALLY,
     EOP_CONTINUE,
 
+    /* Adding extended function call to support more than 256 builtins */
+    EOP_BI_FUNC_CALL,
+
     /* ops after this point cost one tick */
     EOP_CATCH, EOP_TRY_EXCEPT, EOP_TRY_FINALLY,
     EOP_WHILE_ID, EOP_EXIT, EOP_EXIT_ID,
@@ -69,9 +72,20 @@ enum Opcode {
     /* unary ops -- 1 tick: */
     OP_UNARY_MINUS, OP_NOT,
 
+    /* decrement/increment ops -- 1 tick: */
+    OP_PRE_INCREMENT, OP_PRE_DECREMENT,
+    OP_POST_INCREMENT, OP_POST_DECREMENT,
+
+    /* compound assignment ops -- 1 tick: */
+    OP_ASGN_PLUS, OP_ASGN_MINUS, OP_ASGN_MULT, OP_ASGN_DIV,
+    OP_ASGN_POW, OP_ASGN_MOD, OP_ASGN_AND, OP_ASGN_OR,
+
     /* assignments, 1 tick: */
     OP_PUT,
     OP_G_PUT = OP_PUT + NUM_READY_VARS,
+
+    /* expanded/generated op sequence terminator, no tick: */
+    OP_TERM,
 
     /* variable references, no tick: */
     OP_PUSH,

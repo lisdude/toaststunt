@@ -241,7 +241,8 @@ set(src_CXXSRCS
     src/simplexnoise.cc
     src/argon2.cc
     src/spellcheck.cc
-    src/curl.cc)
+    src/curl.cc
+    src/extensions-edge.cc)
 
 set(src_GRAMMAR
     ${BISON_MOOParser_OUTPUTS})

@@ -36,7 +36,7 @@
 #include <unordered_map>
 
 static unsigned long waif_count = 0;
-static std::unordered_map<Objid, unsigned int> waif_class_count;
+static std::unordered_map<Objid, std::atomic_uint> waif_class_count;
 std::unordered_map<Waif *, bool> destroyed_waifs;
 
 #define PROP_MAPPED(Mmap, Mbit) ((Mmap)[(Mbit) / 32] & (1 << ((Mbit) % 32)))
