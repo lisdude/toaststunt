@@ -51,6 +51,8 @@ static void initialize_background_waiter(background_waiter *waiter)
     waiter->handle = next_background_handle;
     background_process_table[next_background_handle] = waiter;
     next_background_handle++;
+    waiter->return_value = var_ref(none);
+    waiter->data = var_ref(none);
     waiter->extra_data = nullptr;
 }
 
