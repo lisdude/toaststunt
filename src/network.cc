@@ -34,6 +34,8 @@
 #include <string.h>         /* memcpy() */
 #include <unistd.h>         /* close() */
 #include <netinet/tcp.h>
+#include <atomic>
+#include <vector>
 
 #include "options.h"
 #include "config.h"
@@ -46,7 +48,6 @@
 #include "timers.h"
 #include "utils.h"
 #include "map.h"
-#include <atomic>
 
 static struct proto proto;
 static int eol_length;      /* == strlen(proto.eol_out_string) */
@@ -72,33 +73,33 @@ SSL_CTX *tls_ctx;
 
 typedef struct text_block {
     struct text_block *next;
-    int length;
     char *buffer;
     char *start;
+    int length;
 } text_block;
 
 typedef struct nhandle {
     struct nhandle *next, **prev;
     server_handle shandle;
-    int rfd, wfd;
     const char *name;                       // resolved hostname (or IP if DNS is disabled)
     Stream *input;
-    bool last_input_was_CR;
-    bool input_suspended;
     text_block *output_head;
     text_block **output_tail;
-    int output_length;
-    int output_lines_flushed;
-    bool outbound, binary;
-    bool client_echo;
-    uint16_t source_port;                   // port on server
     const char *source_address;             // interface on server (resolved hostname)
     const char *source_ipaddr;              // interface on server (IP address)
-    uint16_t destination_port;              // local port on connectee
     const char *destination_ipaddr;         // IP address of connection
-    sa_family_t protocol_family;            // AF_INET, AF_INET6
     pthread_mutex_t *name_mutex;
-    std::atomic_uint refcount;
+    std::atomic<uint32_t> refcount;
+    int rfd, wfd;
+    int output_length;
+    int output_lines_flushed;
+    uint16_t source_port;                   // port on server
+    uint16_t destination_port;              // local port on connectee
+    sa_family_t protocol_family;            // AF_INET, AF_INET6
+    bool last_input_was_CR;
+    bool input_suspended;
+    bool outbound, binary;
+    bool client_echo;
 #ifdef USE_TLS
     SSL *tls;                               // TLS context; not TLS if null
     bool connected;
@@ -111,24 +112,26 @@ static nhandle *all_nhandles = nullptr;
 typedef struct nlistener {
     struct nlistener *next, **prev;
     server_listener slistener;
-    int fd;
     const char *name;                       // resolved hostname
     const char *ip_addr;                    // 'raw' IP address
+#ifdef USE_TLS
+    const char *tls_certificate_path;
+    const char *tls_key_path;
+#endif
+    int fd;
     uint16_t port;                          // listening port
 #ifdef USE_TLS
     bool use_tls;
-    const char *tls_certificate_path;
-    const char *tls_key_path;
 #endif
 } nlistener;
 
 static nlistener *all_nlisteners = nullptr;
 
 typedef struct {
-    int fd;
+    void *data;
     network_fd_callback readable;
     network_fd_callback writable;
-    void *data;
+    int fd;
 } fd_reg;
 
 static fd_reg *reg_fds = nullptr;
@@ -279,8 +282,12 @@ push_network_buffer_overflow(nhandle *h)
         int error = SSL_get_error(h->tls, count);
         if (error == SSL_ERROR_WANT_WRITE || error == SSL_ERROR_WANT_READ || errno == eagain || errno == ewouldblock)
             h->want_write = true;
-        else
+        else {
+            pthread_mutex_lock(h->name_mutex);
             errlog("TLS: Error pushing output (error %i) (errno %i) from %s: %s\n", error, errno, h->name, ERR_error_string(ERR_get_error(), nullptr));
+            pthread_mutex_unlock(h->name_mutex);
+        }
+
         ERR_clear_error();
         return count > 0 || error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE || errno == eagain || errno == ewouldblock;
     }
@@ -323,8 +330,11 @@ push_output(nhandle * h)
                 int error = SSL_get_error(h->tls, count);
                 if (error == SSL_ERROR_WANT_WRITE || error == SSL_ERROR_WANT_READ || errno == eagain || errno == ewouldblock)
                     h->want_write = true;
-                else
+                else {
+                    pthread_mutex_lock(h->name_mutex);
                     errlog("TLS: Error pushing output (error %i) (errno %i) from %s: %s\n", error, errno, h->name, ERR_error_string(ERR_get_error(), nullptr));
+                    pthread_mutex_unlock(h->name_mutex);
+                }
                 ERR_clear_error();
                 return (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE || errno == eagain || errno == ewouldblock);
             }
@@ -404,7 +414,9 @@ pull_input(nhandle * h)
                 }
             }
 #ifdef LOG_TLS_CONNECTIONS
+            pthread_mutex_lock(h->name_mutex);
             oklog("TLS: %s for %s. Cipher: %s\n", SSL_state_string_long(h->tls), h->name, SSL_get_cipher(h->tls));
+            pthread_mutex_unlock(h->name_mutex);
 #endif
             return 1;
         } else {
@@ -1272,9 +1284,8 @@ enqueue_output(network_handle nh, const char *line, int line_length, int add_eol
             next = b->next;
             if (move_output_head)
                 h->output_head = next;
-            else {
+            else
                 h->output_head->next = next;
-            }
             free_text_block(b);
         }
         if (h->output_head == nullptr)
@@ -1367,7 +1378,7 @@ network_process_io(int timeout)
         for (h = all_nhandles; h; h = hnext) {
             hnext = h->next;
             if (((mplex_is_readable(h->rfd) && !pull_input(h))
-                    || (mplex_is_writable(h->wfd) && !push_output(h))) && h->refcount.load() == 1) {
+                    || (mplex_is_writable(h->wfd) && !push_output(h))) && get_nhandle_refcount(h) == 1) {
                 server_close(h->shandle);
                 network_handle nh;
                 nh.ptr = h;
@@ -1456,10 +1467,24 @@ unlock_connection_name_mutex(const network_handle nh)
     pthread_mutex_unlock(h->name_mutex);
 }
 
+uint32_t
+get_nhandle_refcount(const network_handle nh)
+{
+    nhandle *h = (nhandle *)nh.ptr;
+    return h->refcount;
+}
+
+uint32_t
+get_nhandle_refcount(nhandle *h)
+{
+    return h->refcount;
+}
+
 void
 increment_nhandle_refcount(const network_handle nh)
 {
     nhandle *h = (nhandle *)nh.ptr;
+
     h->refcount++;
 }
 
@@ -1467,16 +1492,9 @@ void
 decrement_nhandle_refcount(const network_handle nh)
 {
     nhandle *h = (nhandle *)nh.ptr;
-    h->refcount--;
 
-    if (h->refcount.load() <= 0)
+    if (--h->refcount <= 0)
         close_nhandle(h);
-}
-
-int
-nhandle_refcount(const network_handle nh)
-{
-    return ((nhandle*)nh.ptr)->refcount.load();
 }
 
 const char *
@@ -1505,7 +1523,9 @@ lookup_network_connection_name(const network_handle nh, const char **name)
     }
     if (address)
         freeaddrinfo(address);
+
     pthread_mutex_unlock(h->name_mutex);
+
     return retval;
 }
 
@@ -1515,15 +1535,11 @@ full_network_connection_name(const network_handle nh, bool legacy)
     const nhandle *h = (nhandle *)nh.ptr;
     char *ret = nullptr;
 
-    pthread_mutex_lock(h->name_mutex);
-
     if (legacy) {
         asprintf(&ret, "port %i %s %s [%s], port %i", h->source_port, h->outbound ? "to" : "from", h->name, h->destination_ipaddr, h->destination_port);
     } else {
         asprintf(&ret, "%s [%s], port %i %s %s [%s], port %i", h->source_address, h->source_ipaddr, h->source_port, h->outbound ? "to" : "from", h->name, h->destination_ipaddr, h->destination_port);
     }
-
-    pthread_mutex_unlock(h->name_mutex);
 
     return ret;
 }
@@ -1533,9 +1549,7 @@ network_ip_address(const network_handle nh)
 {
     const nhandle *h = (nhandle *) nh.ptr;
 
-    pthread_mutex_lock(h->name_mutex);
     const char *ret = h->destination_ipaddr;
-    pthread_mutex_unlock(h->name_mutex);
     return ret;
 }
 
@@ -1567,9 +1581,7 @@ uint16_t
 network_source_port(const network_handle nh)
 {
     const nhandle *h = (nhandle *)nh.ptr;
-    pthread_mutex_lock(h->name_mutex);
     uint16_t port = h->source_port;
-    pthread_mutex_unlock(h->name_mutex);
 
     return port;
 }
@@ -1701,8 +1713,19 @@ network_close_listener(network_listener nl)
 void
 network_shutdown(void)
 {
-    while (all_nhandles)
-        close_nhandle(all_nhandles);
+    /* This would be a good candidate for deferred deletion buuuut...
+     * we're shutting down anyway, may as well do it the lazy way. */
+    std::vector<network_handle> handles;
+
+    for (nhandle *h = all_nhandles; h; h = h->next) {
+        network_handle nh;
+        nh.ptr = h;
+        handles.push_back(nh);
+    }
+
+    for (network_handle nh : handles)
+        decrement_nhandle_refcount(nh);
+
     while (all_nlisteners)
         close_nlistener(all_nlisteners);
 }

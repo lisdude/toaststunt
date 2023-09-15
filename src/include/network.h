@@ -53,6 +53,8 @@ typedef struct {		/* Network's handle on a listening point */
     void *ptr;
 } network_listener;
 
+struct nhandle; /* Forward declaration of nhandle. */
+
 #include "server.h"		/* Include this *after* defining the types */
 
 struct proto {
@@ -437,6 +439,8 @@ extern void lock_connection_name_mutex(const network_handle nh);
 extern void unlock_connection_name_mutex(const network_handle nh);
 extern void increment_nhandle_refcount(const network_handle nh);
 extern void decrement_nhandle_refcount(const network_handle nh);
-extern int nhandle_refcount(const network_handle nh);
+extern uint32_t get_nhandle_refcount(const network_handle nh);
+extern uint32_t get_nhandle_refcount(nhandle *h);
+extern uint32_t nhandle_refcount(const network_handle nh);
 
 #endif				/* Network_H */
