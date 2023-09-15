@@ -6,23 +6,25 @@
 #include "functions.h"
 #include "thpool.h"        // thread pool
 
-#define MAX_BACKGROUND_THREADS  20      /* The total number threads allowed to be run from within the MOO.
+#define MAX_BACKGROUND_THREADS  20      /* The total number threads allowed to be queued from within the MOO.
                                            Can be overridden with $server_options.max_background_threads */
 
 typedef struct background_waiter {
-    vm the_vm;                          // Where we resume when we're done.
-    int handle;                         // Our position in the process table.
-    void (*callback)(Var, Var*);        // The callback function that does the actual work.
-    Var data;                           // Any data the callback function should be aware of.
-    bool active;                        // @kill will set active to false and the callback should handle it accordingly.
-    int fd[2];                          // The pipe used to resume the task immediately.
     Var return_value;                   // The final return value that gets sucked up by the network callback.
-    char *human_title;                  // A human readable explanation for the thread's existance.
-    threadpool *pool;                   // The thread pool to put this into.
+    Var data;                           // Any MOO data the callback function should be aware of. (Typically arglist.)
+    vm the_vm;                          // Where we resume when we're done.
+    void (*callback)(Var, Var*, void*); // The callback function that does the actual work.
+    void (*cleanup)(void*);             // Optional function to perform cleanup after success or error. Receives extra_data.
+    void *extra_data;                   // Additional non-Var-specific data for the callback function.
+                                        // NOTE: You must manage the memory of this yourself.
+    int fd[2];                          // The pipe used to resume the task immediately.
+    uint16_t handle;                    // Our position in the process table.
+    bool active;                        // @kill will set active to false and the callback should handle it accordingly.
 } background_waiter;
 
 // User-visible functions
-extern package background_thread(void (*callback)(Var, Var*), Var* data, char *human_title, threadpool *the_pool = nullptr);
+extern package background_thread(void (*callback)(Var, Var*, void*), Var* data, void *extra_data = nullptr, void (*cleanup)(void*) = nullptr);
 extern void make_error_map(enum error error_type, const char *msg, Var *ret);
+extern void background_shutdown();
 
 #endif /* EXTENSION_BACKGROUND_H */

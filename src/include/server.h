@@ -167,6 +167,7 @@ extern int read_values_pending_finalization(void);
  * of the server module from the network implementation.
  */
 extern int find_network_handle(Objid obj, network_handle **handle);
+extern bool is_shutdown_triggered();
 /***************************************************************/
 
 #include "streams.h"

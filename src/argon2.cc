@@ -10,7 +10,7 @@
 #include "map.h"
 #include "background.h"
 
-static void argon2_thread_callback(Var arglist, Var *r)
+static void argon2_thread_callback(Var arglist, Var *r, void *extra_data)
 {
     const int nargs = arglist.v.list[0].v.num;
 
@@ -60,20 +60,17 @@ bf_argon2(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
 #ifdef THREAD_ARGON2
-    char *human_string = nullptr;
-    asprintf(&human_string, "argon2");
-
-    return background_thread(argon2_thread_callback, &arglist, human_string);
+    return background_thread(argon2_thread_callback, &arglist);
 #else
     Var ret;
-    argon2_thread_callback(arglist, &ret);
+    argon2_thread_callback(&arglist, &ret);
 
     free_var(arglist);
     return make_var_pack(ret);
 #endif
 }
 
-static void argon2_verify_thread_callback(Var arglist, Var *r)
+static void argon2_verify_thread_callback(Var arglist, Var *r, void *extra_data)
 {
     const char *encoded = arglist.v.list[1].v.str;
     const char *str = arglist.v.list[2].v.str;
@@ -98,10 +95,7 @@ bf_argon2_verify(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
 #ifdef THREAD_ARGON2
-    char *human_string = nullptr;
-    asprintf(&human_string, "argon2_verify");
-
-    return background_thread(argon2_verify_thread_callback, &arglist, human_string);
+    return background_thread(argon2_verify_thread_callback, &arglist);
 #else
     Var ret;
     argon2_verify_thread_callback(arglist, &ret);

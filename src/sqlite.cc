@@ -346,7 +346,7 @@ bf_sqlite_info(Var arglist, Byte next, void *vdata, Objid progr)
 /* The function responsible for the actual execute call.
  * Contains functionality shared by both the threaded and
  * unthreaded builtins. */
-static void sqlite_execute_thread_callback(Var args, Var *r)
+static void sqlite_execute_thread_callback(Var args, Var *r, void *extra_data)
 {
     int index = args.v.list[1].v.num;
     if (!valid_handle(index))
@@ -452,16 +452,13 @@ bf_sqlite_execute(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    char *human_string = nullptr;
-    asprintf(&human_string, "sqlite_execute: %s", arglist.v.list[2].v.str);
-
-    return background_thread(sqlite_execute_thread_callback, &arglist, human_string);
+    return background_thread(sqlite_execute_thread_callback, &arglist);
 }
 
 /* The function responsible for the actual query call.
  * Contains functionality shared by both the threaded and
  * unthreaded builtins. */
-static void sqlite_query_thread_callback(Var args, Var *r)
+static void sqlite_query_thread_callback(Var args, Var *r, void *extra_data)
 {
     int index = args.v.list[1].v.num;
 
@@ -510,10 +507,7 @@ bf_sqlite_query(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    char *human_string = nullptr;
-    asprintf(&human_string, "sqlite_query: %s", arglist.v.list[2].v.str);
-
-    return background_thread(sqlite_query_thread_callback, &arglist, human_string);
+    return background_thread(sqlite_query_thread_callback, &arglist);
 }
 
 /* Identifies the row ID of the last insert command.

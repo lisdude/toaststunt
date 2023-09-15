@@ -16,7 +16,7 @@
   will suspend the MOO task, create a thread, run the callback function on the thread, and then resume
   the MOO task with the return value from the callback thread. A sample function (background_test)
   is provided for demonstration purposes. Additionally, you can set $server_options.max_background_threads
-  to limit the number of threads that the MOO can spawn at any given moment.
+  to limit the number of threads that the MOO can queue at any given moment.
 
   Your callback function should periodically (or oftenly) check the status of the background_waiter's active
   member, which will indicate whether or not the MOO task has been killed or not. If active is 0, the task is dead
@@ -29,8 +29,8 @@
 */
 
 static threadpool background_pool;
-static std::unordered_map <int, background_waiter*> background_process_table;
-static int next_background_handle = 1;
+static std::unordered_map <uint16_t, background_waiter*> background_process_table;
+static uint16_t next_background_handle = 1;
 
 /* Make sure creating a new thread won't exceed MAX_BACKGROUND_THREADS or $server_options.max_background_threads */
 static bool can_create_thread()
@@ -51,21 +51,24 @@ static void initialize_background_waiter(background_waiter *waiter)
     waiter->handle = next_background_handle;
     background_process_table[next_background_handle] = waiter;
     next_background_handle++;
+    waiter->extra_data = nullptr;
 }
 
 /* Remove the background waiter from the process table, free any memory,
  * and reset the maximum handle if there are no threads running. */
 static void deallocate_background_waiter(background_waiter *waiter)
 {
-    const int handle = waiter->handle;
-    network_unregister_fd(waiter->fd[0]);
-    if (waiter->fd[0] >= 0)
+    const uint16_t handle = waiter->handle;
+    if (waiter->cleanup)
+        waiter->cleanup(waiter->extra_data);
+    if (waiter->fd[0] >= 0) {
+        network_unregister_fd(waiter->fd[0]);
         close(waiter->fd[0]);
+    }
     if (waiter->fd[1] >= 0)
         close(waiter->fd[1]);
     free_var(waiter->return_value);
     free_var(waiter->data);
-    free(waiter->human_title);
     myfree(waiter, M_STRUCT);
     background_process_table.erase(handle);
 
@@ -130,10 +133,12 @@ static void run_callback(void *bw)
 {
     background_waiter *w = (background_waiter*)bw;
 
-    w->callback(w->data, &w->return_value);
+    w->callback(w->data, &w->return_value, w->extra_data);
 
-    // Write to our network pipe to resume the MOO loop
-    write(w->fd[1], "1", 2);
+    if (!is_shutdown_triggered()) {
+        // Write to our network pipe to resume the MOO loop
+        write(w->fd[1], "1", 2);
+    } 
 }
 
 /* The function called by the network when data has been read. This is the final stage and
@@ -169,7 +174,7 @@ background_suspender(vm the_vm, void *data)
     // Register so we can write to the pipe and resume the main loop if the MOO is idle
     network_register_fd(w->fd[0], network_callback, nullptr, data);
 
-    const int add_work_success = thpool_add_work(*(w->pool), run_callback, data);
+    const int add_work_success = thpool_add_work(background_pool, run_callback, data);
 
     if (add_work_success < 0) {
         errlog("Error adding work to thread pool\n");
@@ -183,29 +188,33 @@ background_suspender(vm the_vm, void *data)
 /* Create a new background thread, supplying a callback function, a Var of data, and a string of explanatory text for what the thread is.
  * If threading has been disabled for the current verb, this function will invoke the callback immediately. */
 package
-background_thread(void (*callback)(Var, Var*), Var* data, char *human_title, threadpool *the_pool)
+background_thread(void (*callback)(Var, Var*, void*), Var* data, void *extra_data, void (*cleanup)(void*))
 {
     const bool threading_enabled = get_thread_mode();
     if (threading_enabled && !can_create_thread())
     {
         errlog("Can't create a new thread\n");
+        free_var(*data);
+        if (cleanup)
+            cleanup(extra_data);
         return make_error_pack(E_QUOTA);
     }
 
     if (!threading_enabled)
     {
         Var r;
-        callback(*data, &r);
+        callback(*data, &r, extra_data);
         free_var(*data);
-        free(human_title);
+        if (cleanup)
+            cleanup(extra_data);
         return make_var_pack(r);
     } else {
         background_waiter *w = (background_waiter*)mymalloc(sizeof(background_waiter), M_STRUCT);
         initialize_background_waiter(w);
         w->callback = callback;
+        w->cleanup = cleanup;
         w->data = *data;
-        w->human_title = human_title;
-        w->pool = (the_pool == nullptr ? &background_pool : the_pool);
+        w->extra_data = extra_data;
         if (pipe(w->fd) == -1)
         {
             log_perror("Failed to create pipe for background thread");
@@ -231,29 +240,6 @@ bf_threads(Var arglist, Byte next, void *vdata, Objid progr)
         r.v.list[++count] = Var::new_int(it.first);
 
     return make_var_pack(r);
-}
-
-/* Returns a list of information about the thread:
- * {human title, ?active (aka @killed)}
- * Intended primarily for debugging, but possibly useful. */
-static package
-bf_thread_info(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    const int handle = arglist.v.list[1].v.num;
-    free_var(arglist);
-
-    if (!is_wizard(progr))
-        return make_error_pack(E_INVARG);
-
-    if (background_process_table.count(handle) == 0)
-        return make_error_pack(E_INVARG);
-
-    background_waiter *w = background_process_table[handle];
-    Var ret = new_list(2);
-    ret.v.list[1] = str_dup_to_var(w->human_title);
-    ret.v.list[2] = Var::new_int(w->active);
-
-    return make_var_pack(ret);
 }
 
 /* Allows the database to control the thread pools. It's entirely possible
@@ -296,7 +282,7 @@ static package bf_thread_pool(Var arglist, Byte next, void *vdata, Objid progr)
 #ifdef BACKGROUND_TEST
 /* The actual callback function for our background_test function. This function does all of the actual work
  * for the background_test. Receives a pointer to the relevant background_waiter struct. */
-static void background_test_callback(Var args, Var *ret)
+static void background_test_callback(Var args, Var *ret, void *extra_data)
 {
     int wait = (args.v.list[0].v.num >= 2 ? args.v.list[2].v.num : 5);
 
@@ -314,9 +300,7 @@ static void background_test_callback(Var args, Var *ret)
 static package
 bf_background_test(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    char *human_string = nullptr;
-    asprintf(&human_string, "background_test suspending for %" PRIdN " with string \"%s\"", arglist.v.list[2].v.num, arglist.v.list[1].v.str);
-    return background_thread(background_test_callback, &arglist, human_string);
+    return background_thread(background_test_callback, &arglist);
 }
 #endif
 
@@ -326,7 +310,6 @@ register_background()
     register_task_queue(background_enumerator);
     background_pool = thpool_init(TOTAL_BACKGROUND_THREADS);
     register_function("threads", 0, 0, bf_threads);
-    register_function("thread_info", 1, 1, bf_thread_info, TYPE_INT);
     register_function("thread_pool", 2, 3, bf_thread_pool, TYPE_STR, TYPE_STR, TYPE_INT);
 #ifdef BACKGROUND_TEST
     register_function("background_test", 0, 2, bf_background_test, TYPE_STR, TYPE_INT);

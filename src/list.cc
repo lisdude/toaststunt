@@ -930,7 +930,7 @@ bf_slice(Var arglist, Byte next, void *vdata, Objid progr)
 
 /* Sorts various MOO types using std::sort.
  * Args: LIST <values to sort>, [LIST <values to sort by>], [INT <natural sort ordering?>], [INT <reverse?>] */
-void sort_callback(const Var arglist, Var *ret)
+void sort_callback(Var arglist, Var *ret, void *extra_data)
 {
     const int nargs = arglist.v.list[0].v.num;
     const int list_to_sort = (nargs >= 2 && arglist.v.list[2].v.list[0].v.num > 0 ? 2 : 1);
@@ -1008,13 +1008,10 @@ void sort_callback(const Var arglist, Var *ret)
 static package
 bf_sort(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    char *human_string = nullptr;
-    asprintf(&human_string, "sorting %" PRIdN " element list", arglist.v.list[1].v.list[0].v.num);
-
-    return background_thread(sort_callback, &arglist, human_string);
+    return background_thread(sort_callback, &arglist);
 }
 
-void all_members_thread_callback(Var arglist, Var *ret)
+void all_members_thread_callback(Var arglist, Var *ret, void *extra_data)
 {
     *ret = new_list(0);
     Var data = arglist.v.list[1];
@@ -1029,10 +1026,7 @@ void all_members_thread_callback(Var arglist, Var *ret)
 static package
 bf_all_members(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    char *human_string = nullptr;
-    asprintf(&human_string, "all_members in %" PRIdN " element list", arglist.v.list[2].v.list[0].v.num);
-
-    return background_thread(all_members_thread_callback, &arglist, human_string);
+    return background_thread(all_members_thread_callback, &arglist);
 }
 
 static package

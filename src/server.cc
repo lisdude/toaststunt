@@ -93,7 +93,7 @@ static const char *this_program;
 
 static std::stringstream shutdown_message;
 
-static bool shutdown_triggered = false;
+static std::atomic<bool> shutdown_triggered(false);
 static bool in_emergency_mode = false;
 
 static Var checkpointed_connections;
@@ -2752,29 +2752,43 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 void
-name_lookup_callback(Var arglist, Var * ret)
+name_lookup_cleanup(void *extra_data)
+{
+    network_handle nh;
+    nh.ptr = extra_data;
+
+    decrement_nhandle_refcount(nh);
+}
+
+void
+name_lookup_callback(Var arglist, Var *ret, void *extra_data)
 {
     int nargs = arglist.v.list[0].v.num;
     Objid who = arglist.v.list[1].v.obj;
     shandle *h = find_shandle(who);
     bool rewrite_connect_name = nargs > 1 && is_true(arglist.v.list[2]);
 
-    if (!h || h->disconnect_me.load())
+    network_handle nh;
+    nh.ptr = extra_data;
+
+    if (!h || h->disconnect_me)
         make_error_map(E_INVARG, "Invalid connection", ret);
     else
     {
         const char *name;
         int status = lookup_network_connection_name(h->nhandle, &name);
-        *ret = str_dup_to_var(name);
+
+        /* If the server is shutting down, this is meaningless and creates
+         * a bit of a mess anyway. So don't bother continuing. */
+        if (!shutdown_triggered.load()) {
+        ret->type = TYPE_STR;
+        ret->v.str = name;
 
         if (rewrite_connect_name && status == 0)
             if (network_name_lookup_rewrite(who, name) != 0)
                 make_error_map(E_INVARG, "Failed to rewrite connection name.", ret);
-
-        free_str(name);
+        }
     }
-    if (h)
-        decrement_nhandle_refcount(h->nhandle);
 }
 
 static package
@@ -2788,16 +2802,14 @@ bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
        under the other threads. */
     shandle *h = find_shandle(arglist.v.list[1].v.obj);
 
-    if (!h || h->disconnect_me.load()) {
+    if (!h || h->disconnect_me) {
         free_var(arglist);
         return make_error_pack(E_INVARG);
     }
 
     increment_nhandle_refcount(h->nhandle);
 
-    char *human_string = nullptr;
-    asprintf(&human_string, "name_lookup for #%" PRIdN "", arglist.v.list[1].v.obj);
-    return background_thread(name_lookup_callback, &arglist, human_string);
+    return background_thread(name_lookup_callback, &arglist, (void*)h->nhandle.ptr, name_lookup_cleanup);
 }
 
 static package
@@ -3140,6 +3152,11 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     return make_var_pack(r);
+}
+
+bool is_shutdown_triggered()
+{
+    return shutdown_triggered;
 }
 
 void

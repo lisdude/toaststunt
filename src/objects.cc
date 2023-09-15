@@ -1038,7 +1038,7 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
 /* Locate an object in the database by name more quickly than is possible in-DB.
  * To avoid numerous list reallocations, we put everything in a vector and then
  * transfer it over to a list when we know how many values we have. */
-void locate_by_name_thread_callback(Var arglist, Var *ret)
+void locate_by_name_thread_callback(Var arglist, Var *ret, void *extra_data)
 {
     Var name, object;
     object.type = TYPE_OBJ;
@@ -1075,10 +1075,7 @@ bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    char *human_string = nullptr;
-    asprintf(&human_string, "locate_by_name: \"%s\"", arglist.v.list[1].v.str);
-
-    return background_thread(locate_by_name_thread_callback, &arglist, human_string);
+    return background_thread(locate_by_name_thread_callback, &arglist);
 }
 
 static bool multi_parent_isa(const Var *object, const Var *parents)
