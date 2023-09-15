@@ -904,7 +904,7 @@ bf_recycle_write(void *vdata)
 {
     Objid *data = (Objid *)vdata;
 
-    dbio_printf("bf_recycle data: oid = %d, cont = 0\n", *data);
+    dbio_printf("bf_recycle data: oid = %" PRIdN ", cont = 0\n", *data);
 }
 
 static void *
