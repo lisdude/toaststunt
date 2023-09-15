@@ -540,7 +540,7 @@ bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
         else
         {
 #ifdef LOG_CODE_CHANGES
-            oklog("CODE_CHANGE: %s (#%d) set verb #%" PRIdN ":%s\n", db_object_name(progr), progr, obj.v.obj, str_ref(db_verb_names(h)));
+            oklog("CODE_CHANGE: %s (#%" PRIdN ") set verb #%" PRIdN ":%s\n", db_object_name(progr), progr, obj.v.obj, db_verb_names(h));
 #endif
             db_set_verb_program(h, program);
         }
