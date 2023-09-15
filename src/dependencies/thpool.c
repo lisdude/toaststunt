@@ -8,7 +8,13 @@
  *
  ********************************/
 
+#if defined(__APPLE__)
+#include <AvailabilityMacros.h>
+#else
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
+#endif
+#endif
 #include <unistd.h>
 #include <signal.h>
 #include <stdio.h>
@@ -34,6 +40,7 @@
 #define err(str)
 #endif
 
+static volatile int threads_keepalive;
 static volatile int threads_on_hold;
 
 
@@ -80,7 +87,6 @@ typedef struct thpool_{
 	thread**   threads;                  /* pointer to threads        */
 	volatile int num_threads_alive;      /* threads currently alive   */
 	volatile int num_threads_working;    /* threads currently working */
-	volatile int keepalive;              /* keep pool alive           */
 	pthread_mutex_t  thcount_lock;       /* used for thread count etc */
 	pthread_cond_t  threads_all_idle;    /* signal to thpool_wait     */
 	jobqueue  jobqueue;                  /* job queue                 */
@@ -121,6 +127,7 @@ static void  bsem_wait(struct bsem *bsem_p);
 struct thpool_* thpool_init(int num_threads){
 
 	threads_on_hold   = 0;
+	threads_keepalive = 1;
 
 	if (num_threads < 0){
 		num_threads = 0;
@@ -135,7 +142,6 @@ struct thpool_* thpool_init(int num_threads){
 	}
 	thpool_p->num_threads_alive   = 0;
 	thpool_p->num_threads_working = 0;
-	thpool_p->keepalive = 1;
 
 	/* Initialise the job queue */
 	if (jobqueue_init(&thpool_p->jobqueue) == -1){
@@ -205,13 +211,13 @@ void thpool_wait(thpool_* thpool_p){
 
 /* Destroy the threadpool */
 void thpool_destroy(thpool_* thpool_p){
-	/* No need to destory if it's NULL */
+	/* No need to destroy if it's NULL */
 	if (thpool_p == NULL) return ;
 
 	volatile int threads_total = thpool_p->num_threads_alive;
 
 	/* End each thread 's infinite loop */
-	thpool_p->keepalive = 0;
+	threads_keepalive = 0;
 
 	/* Give one second to kill idle threads */
 	double TIMEOUT = 1.0;
@@ -254,7 +260,7 @@ void thpool_pause(thpool_* thpool_p) {
 /* Resume all threads in threadpool */
 void thpool_resume(thpool_* thpool_p) {
     // resuming a single threadpool hasn't been
-    // implemented yet, meanwhile this supresses
+    // implemented yet, meanwhile this suppresses
     // the warnings
     (void)thpool_p;
 
@@ -316,9 +322,9 @@ static void thread_hold(int sig_id) {
 */
 static void* thread_do(struct thread* thread_p){
 
-	/* Set thread name for profiling and debuging */
-	char thread_name[32] = {0};
-	snprintf(thread_name, 32, "thread-pool-%d", thread_p->id);
+	/* Set thread name for profiling and debugging */
+	char thread_name[16] = {0};
+	snprintf(thread_name, 16, "thpool-%d", thread_p->id);
 
 #if defined(__linux__)
 	/* Use prctl instead to prevent using _GNU_SOURCE flag and implicit declaration */
@@ -346,11 +352,11 @@ static void* thread_do(struct thread* thread_p){
 	thpool_p->num_threads_alive += 1;
 	pthread_mutex_unlock(&thpool_p->thcount_lock);
 
-	while(thpool_p->keepalive){
+	while(threads_keepalive){
 
 		bsem_wait(thpool_p->jobqueue.has_jobs);
 
-		if (thpool_p->keepalive){
+		if (threads_keepalive){
 
 			pthread_mutex_lock(&thpool_p->thcount_lock);
 			thpool_p->num_threads_working++;
