@@ -63,7 +63,7 @@ bf_argon2(Var arglist, Byte next, void *vdata, Objid progr)
     return background_thread(argon2_thread_callback, &arglist);
 #else
     Var ret;
-    argon2_thread_callback(&arglist, &ret);
+    argon2_thread_callback(arglist, &ret, nullptr);
 
     free_var(arglist);
     return make_var_pack(ret);
@@ -98,7 +98,7 @@ bf_argon2_verify(Var arglist, Byte next, void *vdata, Objid progr)
     return background_thread(argon2_verify_thread_callback, &arglist);
 #else
     Var ret;
-    argon2_verify_thread_callback(arglist, &ret);
+    argon2_verify_thread_callback(arglist, &ret, nullptr);
 
     free_var(arglist);
     return make_var_pack(ret);
