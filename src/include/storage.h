@@ -23,17 +23,6 @@
 
 #include "options.h"
 
-#define REFCOUNT_OFFSET     -1
-
-#if defined(MEMO_STRLEN) || defined(MEMO_VALUE_BYTES)
-#   define MEMO_OFFSET         REFCOUNT_OFFSET - 1
-#else
-#   define MEMO_OFFSET         REFCOUNT_OFFSET
-#endif
-#ifdef ENABLE_GC
-#   define GC_OFFSET           MEMO_OFFSET - 1
-#endif
-
 #ifdef ENABLE_GC
 /* See "Concurrent Cycle Collection in Reference Counted Systems",
  * (Bacon and Rajan, 2001) for a description of the cycle collection
@@ -48,60 +37,74 @@ typedef enum GC_Color {
     GC_PURPLE,
     GC_PINK
 } GC_Color;
-
-typedef struct gc_overhead {
-    unsigned int buffered:1;
-    GC_Color color:3;
-} gc_overhead;
  #endif
 
-static inline int
+typedef struct var_metadata {
+    std::atomic<uint32_t> refcount;
+#ifdef MEMO_SIZE
+    uint32_t size;                      // MEMO_SIZE: strlen / list/map bytes
+#endif
+#ifdef ENABLE_GC
+    GC_Color color:3;
+    unsigned int buffered:1;
+#endif
+} var_metadata;
+
+static inline uint32_t
 addref(const void *ptr)
 {
-    return ++((std::atomic_uint *)ptr)[REFCOUNT_OFFSET];
+    var_metadata *metadata = ((var_metadata*)ptr) - 1;
+    return ++(metadata->refcount);
 }
 
-static inline int
+static inline uint32_t
 delref(const void *ptr)
 {
-    return --((std::atomic_uint *)ptr)[REFCOUNT_OFFSET];
+    var_metadata *metadata = ((var_metadata*)ptr) - 1;
+    return --(metadata->refcount);
 }
 
-static inline int
+static inline uint32_t
 refcount(const void *ptr)
 {
-    return ((std::atomic_uint *)ptr)[REFCOUNT_OFFSET].load();
+    var_metadata *metadata = ((var_metadata*)ptr) - 1;
+    return metadata->refcount;
 }
 
 #ifdef ENABLE_GC
 static inline void
 gc_set_buffered(const void *ptr)
 {
-    ((gc_overhead *)ptr)[GC_OFFSET].buffered = 1;
+    var_metadata *metadata = ((var_metadata*)ptr) - 1;
+    metadata->buffered = 1;
 }
 
 static inline void
 gc_clear_buffered(const void *ptr)
 {
-    ((gc_overhead *)ptr)[GC_OFFSET].buffered = 0;
+    var_metadata *metadata = ((var_metadata*)ptr) - 1;
+    metadata->buffered = 0;
 }
 
 static inline int
 gc_is_buffered(const void *ptr)
 {
-    return ((gc_overhead *)ptr)[GC_OFFSET].buffered;
+    var_metadata *metadata = ((var_metadata*)ptr) - 1;
+    return metadata->buffered;
 }
 
 static inline void
 gc_set_color(const void *ptr, GC_Color color)
 {
-    ((gc_overhead *)ptr)[GC_OFFSET].color = color;
+    var_metadata *metadata = ((var_metadata*)ptr) - 1;
+    metadata->color = color;
 }
 
 static inline GC_Color
 gc_get_color(const void *ptr)
 {
-    return ((gc_overhead *)ptr)[GC_OFFSET].color;
+    var_metadata *metadata = ((var_metadata*)ptr) - 1;
+    return metadata->color;
 }
 #endif
 
@@ -142,12 +145,12 @@ free_str(const char *s)
 	myfree((void *) s, M_STRING);
 }
 
-#ifdef MEMO_STRLEN
+#ifdef MEMO_SIZE
 /*
  * Using the same mechanism as ref_count.h uses to hide Value ref counts,
  * keep a memozied strlen in the storage with the string.
  */
-#define memo_strlen(X)		((void)0, (((int *)(X))[MEMO_OFFSET]))
+#define memo_strlen(X)		((void)0, (((var_metadata *)(X))[-1].size))
 #else
 #define memo_strlen(X)		strlen(X)
 

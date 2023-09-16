@@ -41,27 +41,12 @@ refcount_overhead(Memory_Type type)
         case M_TRAV:
         case M_ANON:
         case M_WAIF:
-            total = MAX(sizeof(std::atomic_uint), sizeof(Var *));
-            break;
         case M_STRING:
-            total = sizeof(std::atomic_uint);
+            total = sizeof(var_metadata);
             break;
         default:
             total = 0;
     }
-
-#ifdef MEMO_VALUE_BYTES
-    if (type == M_LIST || type == M_TREE)
-        total += MAX(sizeof(int), sizeof(int *));
-#endif
-#ifdef MEMO_STRLEN
-    if (type == M_STRING)
-        total += MAX(sizeof(int), sizeof(int *));
-#endif
-#ifdef ENABLE_GC
-    if (type == M_LIST || type == M_TREE || type == M_ANON)
-        total += MAX(sizeof(gc_overhead), sizeof(gc_overhead *));
-#endif
 
     return total;
 }
@@ -85,21 +70,27 @@ mymalloc(unsigned size, Memory_Type type)
 
     if (offs) {
         memptr += offs;
-        ((std::atomic_uint *)memptr)[REFCOUNT_OFFSET] = 1;
+        var_metadata *metadata = (var_metadata *)(memptr - sizeof(var_metadata));
+
+        metadata->refcount = 1;
+
 #ifdef ENABLE_GC
         if (type == M_LIST || type == M_TREE || type == M_ANON) {
-            ((gc_overhead *)memptr)[GC_OFFSET].buffered = 0;
-            ((gc_overhead *)memptr)[GC_OFFSET].color = (type == M_ANON) ? GC_BLACK : GC_GREEN;
+            metadata->buffered = 0;
+            metadata->color = (type == M_ANON) ? GC_BLACK : GC_GREEN;
         }
 #endif /* ENABLE_GC */
-#ifdef MEMO_STRLEN
+
+#ifdef MEMO_SIZE
         if (type == M_STRING)
-            ((int *) memptr)[MEMO_OFFSET] = size - 1;
-#endif /* MEMO_STRLEN */
-#ifdef MEMO_VALUE_BYTES
+            metadata->size = size - 1;
+#endif /* MEMO_SIZE */
+
+#ifdef MEMO_SIZE
         if (type == M_LIST || type == M_TREE)
-            ((int *) memptr)[MEMO_OFFSET] = 0;
-#endif /* MEMO_VALUE_BYTES */
+            metadata->size = 0;
+#endif /* MEMO_SIZE */
+
     }
     return memptr;
 }

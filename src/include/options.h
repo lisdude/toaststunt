@@ -318,20 +318,13 @@
 #define STRING_INTERNING /* */
 
 /******************************************************************************
- * Store the length of the string WITH the string rather than recomputing
- * it each time it is needed.
+ * For size operations, store the data with the type rather than recomputing.
+ * String:     Store the length of the string.
+ * List / Map: Store the number of bytes of storage used.
  ******************************************************************************
- */
+*/
 
-#define MEMO_STRLEN /* */
-
-/******************************************************************************
- * Store the number of bytes of storage used by lists/maps WITH the list/map
- * rather than recomputing it each time it is needed.
- ******************************************************************************
- */
-
-#define MEMO_VALUE_BYTES /* */
+#define MEMO_SIZE
 
 /******************************************************************************
  * DEFAULT_MAX_STRING_CONCAT,      if set to a positive value, is the length

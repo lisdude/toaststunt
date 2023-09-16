@@ -644,12 +644,15 @@ map_dup(Var map)
 int
 map_sizeof(rbtree *tree)
 {
+#ifdef MEMO_SIZE
+    var_metadata *metadata = ((var_metadata*)tree) - 1;
+#endif
     rbtrav trav;
     const rbnode *pnode;
     int size;
 
-#ifdef MEMO_VALUE_BYTES
-    if ((size = (((int *)(tree))[MEMO_OFFSET])))
+#ifdef MEMO_SIZE
+    if ((size = metadata->size))
         return size;
 #endif
 
@@ -660,8 +663,8 @@ map_sizeof(rbtree *tree)
         size += value_bytes(pnode->value);
     }
 
-#ifdef MEMO_VALUE_BYTES
-    (((int *)(tree))[MEMO_OFFSET]) = size;
+#ifdef MEMO_SIZE
+    metadata->size = size;
 #endif
 
     return size;
@@ -686,9 +689,10 @@ mapinsert(Var map, Var key, Var value)
         free_var(map);
     }
 
-#ifdef MEMO_VALUE_BYTES
+#ifdef MEMO_SIZE
     /* reset the memoized size */
-    ((int *)(_new.v.tree))[MEMO_OFFSET] = 0;
+    var_metadata *metadata = ((var_metadata*)_new.v.tree) - 1;
+    metadata->size = 0;
 #endif
 
     rbnode node;
@@ -997,9 +1001,10 @@ bf_mapdelete(Var arglist, Byte next, void *vdata, Objid progr)
 
     r = var_refcount(map) == 1 ? var_ref(map) : map_dup(map);
 
-#ifdef MEMO_VALUE_BYTES
+#ifdef MEMO_SIZE
     /* reset the memoized size */
-    ((int *)(r.v.tree))[MEMO_OFFSET] = 0;
+    var_metadata *metadata = ((var_metadata*)r.v.tree) - 1;
+    metadata->size = 0;
 #endif
 
     rbnode node;

@@ -170,9 +170,10 @@ listset(Var list, Var value, int pos)
         free_var(list);
     }
 
-#ifdef MEMO_VALUE_BYTES
+#ifdef MEMO_SIZE
     /* reset the memoized size */
-    ((int *)(_new.v.list))[MEMO_OFFSET] = 0;
+    var_metadata *metadata = ((var_metadata*)_new.v.list) - 1;
+    metadata->size = 0;
 #endif
 
     free_var(_new.v.list[pos]);
@@ -194,9 +195,10 @@ doinsert(Var list, Var value, int pos)
 
     if (var_refcount(list) == 1 && pos == size) {
         list.v.list = (Var *) myrealloc(list.v.list, (size + 1) * sizeof(Var), M_LIST);
-#ifdef MEMO_VALUE_BYTES
+#ifdef MEMO_SIZE
         /* reset the memoized size */
-        ((int *)(list.v.list))[MEMO_OFFSET] = 0;
+        var_metadata *metadata = ((var_metadata*)list.v.list) - 1;
+        metadata->size = 0;
 #endif
         list.v.list[0].v.num = size;
         list.v.list[pos] = value;
@@ -513,10 +515,13 @@ unparse_value(Stream * s, Var v)
 int
 list_sizeof(Var *list)
 {
+#ifdef MEMO_SIZE
+    var_metadata *metadata = ((var_metadata*)list) - 1;
+#endif
     int i, len, size;
 
-#ifdef MEMO_VALUE_BYTES
-    if ((size = (((int *)(list))[MEMO_OFFSET])))
+#ifdef MEMO_SIZE
+    if ((size = metadata->size))
         return size;
 #endif
 
@@ -526,8 +531,8 @@ list_sizeof(Var *list)
         size += value_bytes(list[i]);
     }
 
-#ifdef MEMO_VALUE_BYTES
-    (((int *)(list))[MEMO_OFFSET]) = size;
+#ifdef MEMO_SIZE
+    metadata->size = size;
 #endif
 
     return size;
