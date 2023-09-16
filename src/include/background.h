@@ -2,12 +2,16 @@
 #define EXTENSION_BACKGROUND_H 1
 
 #include <map>
+#include <mutex>
+#include <condition_variable>
 
 #include "functions.h"
 #include "thpool.h"        // thread pool
 
 #define MAX_BACKGROUND_THREADS  20      /* The total number threads allowed to be queued from within the MOO.
                                            Can be overridden with $server_options.max_background_threads */
+
+#define BACKGROUND_TEST
 
 typedef struct background_waiter {
     Var return_value;                   // The final return value that gets sucked up by the network callback.
@@ -21,6 +25,10 @@ typedef struct background_waiter {
     uint16_t handle;                    // Our position in the process table.
     bool active;                        // @kill will set active to false and the callback should handle it accordingly.
 } background_waiter;
+
+extern pthread_mutex_t shutdown_mutex;
+extern pthread_cond_t shutdown_condition;
+extern uint16_t shutdown_complete;
 
 // User-visible functions
 extern package background_thread(void (*callback)(Var, Var*, void*), Var* data, void *extra_data = nullptr, void (*cleanup)(void*) = nullptr);

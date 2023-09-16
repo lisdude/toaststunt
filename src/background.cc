@@ -32,6 +32,10 @@ static threadpool background_pool;
 static std::unordered_map <uint16_t, background_waiter*> background_process_table;
 static uint16_t next_background_handle = 1;
 
+pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t shutdown_condition = PTHREAD_COND_INITIALIZER;
+uint16_t shutdown_complete = false;
+
 /* Make sure creating a new thread won't exceed MAX_BACKGROUND_THREADS or $server_options.max_background_threads */
 static bool can_create_thread()
 {
@@ -140,7 +144,18 @@ static void run_callback(void *bw)
     if (!is_shutdown_triggered()) {
         // Write to our network pipe to resume the MOO loop
         write(w->fd[1], "1", 2);
-    } 
+    } else if (w->active) {
+        /* The server is shutting down. Sneak this into the task queue before it goes...
+         * Note: We don't want to deallocate the background waiter at this point because
+         * it's going to be necessary when the task queue gets saved. */
+        task_queue_mutex.lock();
+        resume_task(w->the_vm, var_ref(w->return_value));
+        task_queue_mutex.unlock();
+        pthread_mutex_lock(&shutdown_mutex);
+        shutdown_complete++;
+        pthread_cond_signal(&shutdown_condition);
+        pthread_mutex_unlock(&shutdown_mutex);
+    }
 }
 
 /* The function called by the network when data has been read. This is the final stage and
@@ -226,6 +241,21 @@ background_thread(void (*callback)(Var, Var*, void*), Var* data, void *extra_dat
 
         return make_suspend_pack(background_suspender, (void*)w);
     }
+}
+
+/* Called when the server shuts down. This ensures that all threads have finished before dumping the database. */
+void background_shutdown()
+{
+    int active = thpool_num_threads_working(background_pool);
+    if (active) {
+        oklog("SHUTDOWN: Waiting for %d thread%s ...\n", active, active > 1 ? "s" : "");
+        thpool_destroy(background_pool);
+    }
+
+    pthread_mutex_lock(&shutdown_mutex);
+    while (shutdown_complete < active)
+        pthread_cond_wait(&shutdown_condition, &shutdown_mutex);
+    pthread_mutex_unlock(&shutdown_mutex);
 }
 
 static package

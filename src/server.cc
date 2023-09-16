@@ -2311,6 +2311,8 @@ main(int argc, char **argv)
 
         main_loop();
 
+        background_shutdown();
+
         network_shutdown();
     }
 

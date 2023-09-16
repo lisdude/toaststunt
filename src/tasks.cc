@@ -236,6 +236,9 @@ static ext_queue *external_queues = nullptr;
 #ifdef SAVE_FINISHED_TASKS
 Var finished_tasks = new_list(0);
 #endif
+std::mutex task_queue_mutex;
+std::condition_variable task_queue_condition;
+bool task_queue_ready = false;
 
 /*
  * Forward declarations for functions that operate on external queues.
