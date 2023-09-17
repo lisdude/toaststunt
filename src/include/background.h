@@ -11,8 +11,6 @@
 #define MAX_BACKGROUND_THREADS  20      /* The total number threads allowed to be queued from within the MOO.
                                            Can be overridden with $server_options.max_background_threads */
 
-#define BACKGROUND_TEST
-
 typedef struct background_waiter {
     Var return_value;                   // The final return value that gets sucked up by the network callback.
     Var data;                           // Any MOO data the callback function should be aware of. (Typically arglist.)
