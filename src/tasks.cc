@@ -164,10 +164,7 @@ typedef struct tqueue {
      *
      * If an unconnected queue becomes empty, it is destroyed.
      */
-    struct tqueue *next, **prev;    /* prev only valid on idle_tqueues */
-    Objid player;
-    Objid handler;
-    int connected;
+    struct tqueue *next, **prev;    /* prev only valid on idle_tqueues */       
     task *first_input, **last_input;
     task *first_itail, **last_itail;
     /* The input queue alternates between contiguous sequences of TASK_OOBs
@@ -181,33 +178,11 @@ typedef struct tqueue {
      * For tasks not at the end of a sequence,
      *   the next_itail field is ignored and may be garbage.
      */
-    int total_input_length;
-    int last_input_task_id;
-    int input_suspended;
 
     task *first_bg, **last_bg;
-    int usage;          /* a kind of inverted priority */
-    int num_bg_tasks;       /* in either here or waiting_tasks */
     char *output_prefix, *output_suffix;
     const char *flush_cmd;
-
-    /* Used in emergency mode and when handling the `.program'
-     * intrinsic command.  `program_object' _could_ be changed to hold
-     * a reference to either a permanent or anonymous object, however
-     * the reader only handles object numbers, so for now we leave
-     * it as an `Objid'.
-     */
-    Stream *program_stream;
-    Objid program_object;
-    const char *program_verb;
-
-    /* booleans */
-    int hold_input: 1;      /* input tasks must wait for read() */
-    int disable_oob: 1;     /* treat all input lines as inband */
-    int reading: 1;     /* some task is blocked on read() */
-    int parsing: 1;     /* some task is blocked on read_http() */
-    int icmds: 8;       /* which of .program/PREFIX/... are enabled */
-
+    
     /* Once a `http_parsing_state' is allocated and assigned to a task
      * queue, it is not freed until the task queue is freed -- the
      * theory being that once a connection is used for HTTP it's
@@ -216,6 +191,31 @@ typedef struct tqueue {
     struct http_parsing_state *parsing_state;
 
     vm reading_vm;
+    Objid player;
+    Objid handler;
+    int connected;
+    int total_input_length;
+    int last_input_task_id;
+    int input_suspended;
+    int usage;              /* a kind of inverted priority */
+    int num_bg_tasks;       /* in either here or waiting_tasks */
+
+    /* Used in emergency mode and when handling the `.program'
+     * intrinsic command.  `program_object' _could_ be changed to hold
+     * a reference to either a permanent or anonymous object, however
+     * the reader only handles object numbers, so for now we leave
+     * it as an `Objid'.
+     */
+    Stream *program_stream;
+    const char *program_verb;
+    Objid program_object;
+
+    /* booleans */
+    int icmds: 8;           /* which of .program/PREFIX/... are enabled */
+    bool hold_input;        /* input tasks must wait for read() */
+    bool disable_oob;       /* treat all input lines as inband */
+    bool reading;           /* some task is blocked on read() */
+    bool parsing;           /* some task is blocked on read_http() */
 } tqueue;
 
 typedef struct ext_queue {
@@ -244,10 +244,10 @@ bool task_queue_ready = false;
  * Forward declarations for functions that operate on external queues.
  */
 struct qcl_data {
-    Objid progr;
-    int show_all;
-    int i;
     Var tasks;
+    Objid progr;
+    int i;
+    bool show_all;
 };
 
 static task_enum_action
@@ -1012,44 +1012,44 @@ free_task_queue(task_queue q)
         ensure_usage(tq);
 }
 
-#define TASK_CO_TABLE(DEFINE, tq, value, _)             \
-    DEFINE(flush-command, _, TYPE_STR, str,             \
-           tq->flush_cmd ? str_ref(tq->flush_cmd) : str_dup(""),    \
-           {                                \
-                                            if (tq->flush_cmd)                   \
-                                            free_str(tq->flush_cmd);             \
-                                            if (value.type == TYPE_STR && value.v.str[0] != '\0')    \
-                                                tq->flush_cmd = str_ref(value.v.str);        \
-                                                else                         \
-                                                    tq->flush_cmd = 0;                   \
-                   })                               \
-                \
-                DEFINE(hold-input, _, TYPE_INT, num,                \
-                       tq->hold_input,                      \
-                       {                                \
-                                                        tq->hold_input = is_true(value);             \
-                                                        /* Anything to be done? */               \
-                                                        if (!tq->hold_input && tq->first_input)          \
-                                                        ensure_usage(tq);                    \
-                       })                               \
-                    \
-                    DEFINE(disable-oob, _, TYPE_INT, num,               \
-                           tq->disable_oob,                     \
-                           {                                \
-                                                            tq->disable_oob = is_true(value);            \
-                                                            /* Anything to be done? */               \
-                                                            if (!tq->disable_oob && tq->first_input          \
-                                                                    && (tq->first_itail->next                \
-                                                                            || tq->first_input->kind == TASK_OOB))       \
-                                                            ensure_usage(tq);                    \
-                           })                               \
-                        \
-                        DEFINE(intrinsic-commands, _, TYPE_LIST, list,          \
-                               icmd_list(tq->icmds).v.list,                 \
-                               {                                \
-                                                                if (!icmd_set_flags(tq, value))              \
-                                                                return 0;                        \
-                               })                               \
+#define TASK_CO_TABLE(DEFINE, tq, value, _)                                 \
+    DEFINE(flush-command, _, TYPE_STR, str,                                 \
+           tq->flush_cmd ? str_ref(tq->flush_cmd) : str_dup(""),            \
+           {                                                                \
+                if (tq->flush_cmd)                                          \
+                    free_str(tq->flush_cmd);                                \
+                    if (value.type == TYPE_STR && value.v.str[0] != '\0')   \
+                        tq->flush_cmd = str_ref(value.v.str);               \
+                    else                                                    \
+                        tq->flush_cmd = 0;                                  \
+            })                                                              \
+                                                                            \
+    DEFINE(hold-input, _, TYPE_INT, num,                                    \
+            tq->hold_input,                                                 \
+            {                                                               \
+                tq->hold_input = is_true(value);                            \
+                /* Anything to be done? */                                  \
+                if (!tq->hold_input && tq->first_input)                     \
+                    ensure_usage(tq);                                       \
+            })                                                              \
+                                                                            \
+    DEFINE(disable-oob, _, TYPE_INT, num,                                   \
+            tq->disable_oob,                                                \
+            {                                                               \
+                tq->disable_oob = is_true(value);                           \
+                /* Anything to be done? */                                  \
+                if (!tq->disable_oob && tq->first_input                     \
+                    && (tq->first_itail->next                               \
+                    || tq->first_input->kind == TASK_OOB))                  \
+                    ensure_usage(tq);                                       \
+            })                                                              \
+                                                                            \
+    DEFINE(intrinsic-commands, _, TYPE_LIST, list,                          \
+            icmd_list(tq->icmds).v.list,                                    \
+            {                                                               \
+                if (!icmd_set_flags(tq, value))                             \
+                    return 0;                                               \
+            })                                                              \
 
 int
 tasks_set_connection_option(task_queue q, const char *option, Var value)

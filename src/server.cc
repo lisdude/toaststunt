@@ -959,13 +959,13 @@ init_cmdline(int argc, char *argv[])
     cmdline_buflen = p - argv[0];
 }
 
-#define SERVER_CO_TABLE(DEFINE, H, VALUE, _)                \
-    DEFINE(binary, _, TYPE_INT, num,                    \
-           H->binary,                           \
-           {                                \
-                                            H->binary = is_true(VALUE);              \
-                                            network_set_connection_binary(H->nhandle, H->binary);    \
-           })                               \
+#define SERVER_CO_TABLE(DEFINE, H, VALUE, _)                             \
+    DEFINE(binary, _, TYPE_INT, num,                                     \
+           H->binary,                                                    \
+           {                                                             \
+                H->binary = is_true(VALUE);                              \
+                network_set_connection_binary(H->nhandle, H->binary);    \
+           })                                                            \
 
 static int
 server_set_connection_option(shandle * h, const char *option, Var value)
