@@ -712,6 +712,16 @@ mapinsert(Var map, Var key, Var value)
 }
 
 const rbnode *
+mapstrlookup(Var map, const char *key, Var *value, int case_matters)
+{
+    Var tmp;
+    tmp.type = TYPE_STR;
+    tmp.v.str = key;
+
+    return maplookup(map, tmp, value, case_matters);
+}
+
+const rbnode *
 maplookup(Var map, Var key, Var *value, int case_matters)
 {   /* does NOT consume `map' or `'key',
        does NOT increment the ref count on `value' */
