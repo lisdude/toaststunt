@@ -25,7 +25,7 @@ public:
     }
 };
 
-static pthread_mutex_t cache_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP; // protect the cache
+static pthread_mutex_t cache_mutex;
 typedef std::pair<const char*, unsigned char> cache_type;
 static std::map<cache_type, pcre_cache_entry*> pcre_pattern_cache;
 
@@ -395,6 +395,7 @@ pcre_shutdown(void)
     }
 
     pcre_pattern_cache.clear();
+    pthread_mutex_destroy(&cache_mutex);
 }
 
 #ifdef SQLITE3_FOUND
@@ -436,6 +437,14 @@ register_pcre() {
     register_function("pcre_match", 2, 4, bf_pcre_match, TYPE_STR, TYPE_STR, TYPE_INT, TYPE_INT);
     register_function("pcre_replace", 2, 2, bf_pcre_replace, TYPE_STR, TYPE_STR);
     register_function("pcre_cache_stats", 0, 0, bf_pcre_cache_stats);
+
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+
+    pthread_mutex_init(&cache_mutex, &attr);
+
+    pthread_mutexattr_destroy(&attr);
 }
 
 #else /* PCRE_FOUND */
