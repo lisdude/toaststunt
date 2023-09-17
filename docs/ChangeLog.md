@@ -1,5 +1,17 @@
 # ToastStunt ChangeLog
 
+## 2.7.1 (Sep 17, 2023)
+### Bug Fixes
+- Various 64-bit compatibility fixes.
+- PCRE cache no longer ignores the case sensitive option. And other improvements.
+- Fix various race conditions.
+- Fix a memory leak when LOG_CODE_CHANGES is enabled and you program a verb and then remove it.
+
+### New Features
+- Each connection now has an option to enable TCP keep-alives. These can be configured with `set_connection_option` by either specifying 1 (to enable and use defaults) or by specifying a map of options. The option keys are: idle, interval, and count. More information on what they do, and default values, can be found in options.h.
+- `listen()` now accepts a new key in its option map: interface. This allows you to specify the interface to listen on. (Similar to the --ipv4 or --ipv6 command-line arguments.)
+- `listeners()` now shows the interface being listened on.
+
 ## 2.7.0 (Mar 5, 2023)
 ### Bug Fixes
 - Fix a memory leak in `open_network_connection()` that occurred after a successful connection.
