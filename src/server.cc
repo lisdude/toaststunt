@@ -2106,7 +2106,7 @@ main(int argc, char **argv)
 
             case 'h':                   /* --help; show usage instructions */
                 print_usage();
-                break;
+                exit(1);
 
             default:
                 // Should we print usage here? It's pretty spammy...
