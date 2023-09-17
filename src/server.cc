@@ -176,6 +176,7 @@ static Var pending_list = new_list(0);
 /* maplookup doesn't consume the key, so here are common map keys that
    are used by functions like listen() and open_network_connection() */
 static Var ipv6_key = str_dup_to_var("ipv6");
+static Var interface_key = str_dup_to_var("interface");
 #ifdef USE_TLS
 static Var tls_key = str_dup_to_var("TLS");
 #endif
@@ -195,7 +196,7 @@ free_shandle(shandle * h)
 }
 
 static slistener *
-new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_ipv6 USE_TLS_BOOL_DEF TLS_CERT_PATH_DEF)
+new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_ipv6, const char *interface USE_TLS_BOOL_DEF TLS_CERT_PATH_DEF)
 {
     slistener *listener = (slistener *)mymalloc(sizeof(slistener), M_NETWORK);
     server_listener sl;
@@ -204,7 +205,7 @@ new_slistener(Objid oid, Var desc, int print_messages, enum error *ee, bool use_
     uint16_t port;
 
     sl.ptr = listener;
-    e = network_make_listener(sl, desc, &(listener->nlistener), &name, &ip_address, &port, use_ipv6 USE_TLS_BOOL TLS_CERT_PATH);
+    e = network_make_listener(sl, desc, &(listener->nlistener), &name, &ip_address, &port, use_ipv6, interface USE_TLS_BOOL TLS_CERT_PATH);
 
     if (ee)
         *ee = e;
@@ -2241,7 +2242,7 @@ main(int argc, char **argv)
             desc.v.num = the_port;
             for (int ip_type = 0; ip_type < 2; ip_type++)
             {
-                if ((new_listener = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, ip_type TLS_PORT_TYPE TLS_CERT_PATH)) == nullptr)
+                if ((new_listener = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, ip_type, nullptr TLS_PORT_TYPE TLS_CERT_PATH)) == nullptr)
                     errlog("Error creating %s%s listener on port %i.\n", port_type == PORT_TLS ? "TLS " : "", ip_type == PROTO_IPv6 ? "IPv6" : "IPv4", the_port);
                 else
                     initial_listeners.push_back(new_listener);
@@ -3014,6 +3015,7 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
     enum error e = E_NONE;
     slistener *l = nullptr;
     char error_msg[100];
+    const char *interface = nullptr;
 #ifdef USE_TLS
     bool use_tls = false;
     const char *certificate_path = nullptr;
@@ -3066,6 +3068,9 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
 
         if (maplookup(options, print_messages_key, &value, 0) != nullptr && is_true(value))
             print_messages = 1;
+
+        if (maplookup(options, interface_key, &value, 0) != nullptr && value.type == TYPE_STR)
+            interface = value.v.str;
     }
 
     if (e == E_NONE) {
@@ -3075,7 +3080,7 @@ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
         } else if (!valid(oid) || find_slistener(desc, ipv6)) {
             e = E_INVARG;
             sprintf(error_msg, "Invalid argument");
-        } else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6 USE_TLS_BOOL TLS_CERT_PATH))) {
+        } else if (!(l = new_slistener(oid, desc, print_messages, &e, ipv6, interface USE_TLS_BOOL TLS_CERT_PATH))) {
             sprintf(error_msg, unparse_error(e));
             /* Do nothing; e is already set */
         } else if (!start_listener(l)) {
@@ -3141,6 +3146,7 @@ bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
             entry = mapinsert(entry, var_ref(port), var_ref(l->desc));
             entry = mapinsert(entry, var_ref(print), Var::new_int(l->print_messages));
             entry = mapinsert(entry, var_ref(ipv6_key), Var::new_int(l->ipv6));
+            entry = mapinsert(entry, var_ref(interface_key), str_dup_to_var(l->name));
 #ifdef USE_TLS
             entry = mapinsert(entry, var_ref(tls_key), Var::new_int(nlistener_is_tls(l->nlistener.ptr)));
 #endif

@@ -801,11 +801,12 @@ network_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 
 enum error
 make_listener(Var desc, int *fd, const char **name, const char **ip_address,
-              uint16_t *port, const bool use_ipv6)
+              uint16_t *port, const bool use_ipv6, const char *interface)
 {
     int s, yes = 1;
     struct addrinfo hints;
     struct addrinfo * servinfo, *p;
+    const char *default_interface = use_ipv6 ? bind_ipv6 : bind_ipv4;
 
     if (desc.type != TYPE_INT)
         return E_TYPE;
@@ -816,7 +817,7 @@ make_listener(Var desc, int *fd, const char **name, const char **ip_address,
     hints.ai_flags = AI_PASSIVE;        // use all the IPs
 
     char *port_string = get_port_str(desc.v.num);
-    int rv = getaddrinfo(use_ipv6 ? bind_ipv6 : bind_ipv4, port_string, &hints, &servinfo);
+    int rv = getaddrinfo(interface ? interface : default_interface, port_string, &hints, &servinfo);
     free(port_string);
     if (rv != 0) {
         log_perror(gai_strerror(rv));
@@ -1218,10 +1219,11 @@ network_initialize(int argc, char **argv, Var *desc)
 enum error
 network_make_listener(server_listener sl, Var desc, network_listener * nl,
                       const char **name, const char **ip_address,
-                      uint16_t *port, bool use_ipv6 USE_TLS_BOOL_DEF TLS_CERT_PATH_DEF)
+                      uint16_t *port, bool use_ipv6, const char *interface 
+                      USE_TLS_BOOL_DEF TLS_CERT_PATH_DEF)
 {
     int fd;
-    enum error e = make_listener(desc, &fd, name, ip_address, port, use_ipv6);
+    enum error e = make_listener(desc, &fd, name, ip_address, port, use_ipv6, interface);
     nlistener *listener;
 
     if (e == E_NONE) {

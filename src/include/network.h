@@ -77,7 +77,7 @@ struct proto {
 
 extern enum error make_listener(Var desc, int *fd,
 				      const char **name, const char **ip_address,
-					  uint16_t *port, const bool use_ipv6);
+					  uint16_t *port, const bool use_ipv6, const char *interface);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
 				 * be used as a specification of a new local
@@ -177,7 +177,8 @@ extern int network_initialize(int argc, char **argv,
 extern enum error network_make_listener(server_listener sl, Var desc,
 					network_listener * nl, 
 					const char **name, const char **ip_address,
-					uint16_t *port, bool use_ipv6 USE_TLS_BOOL_DEF TLS_CERT_PATH_DEF);
+					uint16_t *port, bool use_ipv6, const char *interface 
+					USE_TLS_BOOL_DEF TLS_CERT_PATH_DEF);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
 				 * be used as a specification of a new local
