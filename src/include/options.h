@@ -173,6 +173,22 @@
 #define OUTBOUND_NETWORK 1
 
 /******************************************************************************
+ * These options control the default values for the TCP keep-alive connection option.
+ * When set_connection_option(<con>, "keep-alive", <value>) is given a true <value>,
+ * these defaults will be used. When given a MAP of options for <value>, the defaults
+ * will be used for values that don't appear in the option MAP. These options are:
+ * 
+ * KEEP_ALIVE_DEFAULT:   Whether keep-alive is enabled for all new connections by default.
+ * KEEP_ALIVE_IDLE:      The time (in seconds) before starting keep-alive probes.
+ * KEEP_ALIVE_INTERVAL:: The time (in seconds) between keep-alive probes.
+ * KEEP_ALIVE_COUNT:     The number of failed keep-alive probes before disconnecting.
+ */
+#define KEEP_ALIVE_DEFAULT    false
+#define KEEP_ALIVE_IDLE       300
+#define KEEP_ALIVE_INTERVAL   120
+#define KEEP_ALIVE_COUNT      5
+
+/******************************************************************************
  * The server supports secure TLS connections using the OpenSSL library.
  * If USE_TLS is defined, you will be able to listen() for TLS connections
  * and connect to TLS servers using open_network_connection().

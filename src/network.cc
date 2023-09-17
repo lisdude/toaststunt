@@ -95,11 +95,15 @@ typedef struct nhandle {
     int output_lines_flushed;
     uint16_t source_port;                   // port on server
     uint16_t destination_port;              // local port on connectee
+    uint16_t keep_alive_idle;
+    uint16_t keep_alive_interval;
+    uint8_t keep_alive_count;
     sa_family_t protocol_family;            // AF_INET, AF_INET6
     bool last_input_was_CR;
     bool input_suspended;
     bool outbound, binary;
     bool client_echo;
+    bool keep_alive;
 #ifdef USE_TLS
     SSL *tls;                               // TLS context; not TLS if null
     bool connected;
@@ -552,11 +556,21 @@ new_nhandle(const int rfd, const int wfd, const bool outbound, uint16_t listen_p
     h->name_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
     pthread_mutex_init(h->name_mutex, nullptr);
     h->refcount = 1;
+    h->keep_alive = KEEP_ALIVE_DEFAULT;
+    h->keep_alive_count = KEEP_ALIVE_COUNT;
+    h->keep_alive_idle = KEEP_ALIVE_IDLE;
+    h->keep_alive_interval = KEEP_ALIVE_INTERVAL;
 #ifdef USE_TLS
     h->tls = tls;
     h->connected = false;
     h->want_write = false;
 #endif
+
+    if (h->keep_alive) {
+        network_handle nh;
+        nh.ptr = h;
+        network_set_client_keep_alive(nh, Var::new_int(1));
+    }
 
     return h;
 }
@@ -1137,7 +1151,7 @@ tcp_arguments(int argc, char **argv, uint16_t *pport)
  *************************/
 
 int
-network_initialize(int argc, char **argv, Var * desc)
+network_initialize(int argc, char **argv, Var *desc)
 {
     uint16_t port = 0;
 
@@ -1645,10 +1659,18 @@ network_set_connection_binary(network_handle nh, bool do_binary)
     h->binary = do_binary;
 }
 
-#    define NETWORK_CO_TABLE(DEFINE, nh, value, _)      \
-    DEFINE(client-echo, _, TYPE_INT, num,            \
-           ((nhandle *)nh.ptr)->client_echo,         \
-           network_set_client_echo(nh, is_true(value));) \
+#define NETWORK_CO_TABLE(DEFINE, nh, value, _)                  \
+    DEFINE(client-echo, _, TYPE_INT, num,                       \
+           ((nhandle *)nh.ptr)->client_echo,                    \
+           network_set_client_echo(nh, is_true(value));         \
+           )                                                    \
+                                                                \
+    DEFINE(keep-alive, _, TYPE_MAP, tree,                       \
+            network_keep_alive_map(nh).v.tree,                  \
+            {                                                   \
+                if (!network_set_client_keep_alive(nh, value))  \
+                    return 0;                                   \
+            })                                                  \
 
 void
 network_set_client_echo(network_handle nh, int is_on)
@@ -1669,6 +1691,66 @@ network_set_client_echo(network_handle nh, int is_on)
     else
         telnet_cmd[1] = (char)TN_WILL;
     enqueue_output(nh, telnet_cmd, 3, 0, 1);
+}
+
+static Var
+network_keep_alive_map(network_handle nh)
+{
+    nhandle *h = (nhandle*)nh.ptr;
+
+    Var ret = new_map();
+    ret = mapinsert(ret, str_dup_to_var("enabled"), Var::new_int(h->keep_alive));
+    ret = mapinsert(ret, str_dup_to_var("idle"), Var::new_int(h->keep_alive_idle));
+    ret = mapinsert(ret, str_dup_to_var("interval"), Var::new_int(h->keep_alive_interval));
+    ret = mapinsert(ret, str_dup_to_var("count"), Var::new_int(h->keep_alive_count));
+
+    return ret;
+}
+
+/* Set keep-alive options for a connection. The arguments can either be an int or a map.
+    INT: Enable or disable. If enabling, default options are used. (See below.)
+    MAP: A MAP containing the various options that can be set. It's assumed that a 
+        non-empty MAP being provided means you want to enable TCP keepalive on the connection.
+    Defaults can be found in options.h.
+*/
+int
+network_set_client_keep_alive(network_handle nh, Var map)
+{
+    if (map.type != TYPE_INT && map.type != TYPE_MAP)
+        return 0;
+
+    nhandle *h = (nhandle*)nh.ptr;
+    int keep_alive = h->keep_alive;
+    int idle = h->keep_alive_idle;
+    int interval = h->keep_alive_interval;
+    int count = h->keep_alive_count;
+    Var value;
+
+    keep_alive = is_true(map);
+
+    if (map.type == TYPE_MAP) {
+        if (mapstrlookup(map, "idle", &value, 0) != nullptr && value.type == TYPE_INT && value.v.num > 0)
+            idle = value.v.num;
+        if (mapstrlookup(map, "interval", &value, 0) != nullptr && value.type == TYPE_INT && value.v.num > 0)
+            interval = value.v.num;
+        if (mapstrlookup(map, "count", &value, 0) != nullptr && value.type == TYPE_INT && value.v.num > 0)
+            count = value.v.num;        
+    }
+
+    if (setsockopt(h->rfd, SOL_SOCKET, SO_KEEPALIVE, &keep_alive, sizeof(keep_alive)) < 0 ||
+        setsockopt(h->rfd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle)) < 0 ||
+        setsockopt(h->rfd, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(interval)) < 0 ||
+        setsockopt(h->rfd, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count)) < 0) 
+    {
+        log_perror("TCP keepalive setsockopt failed");
+        return 0;
+    } else {
+        h->keep_alive = keep_alive;
+        h->keep_alive_idle = idle;
+        h->keep_alive_interval = interval;
+        h->keep_alive_count = count;
+        return 1;
+    }
 }
 
 #ifdef OUTBOUND_NETWORK

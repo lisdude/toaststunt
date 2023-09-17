@@ -342,6 +342,8 @@ extern int network_set_connection_option(network_handle nh,
 				 * the given setting if valid.
 				 */
 
+int network_set_client_keep_alive(network_handle nh, Var map);
+
 #ifdef OUTBOUND_NETWORK
 extern enum error network_open_connection(Var arglist, server_listener sl, bool use_ipv6 USE_TLS_BOOL_DEF);
 				/* The given MOO arguments should be used as a
