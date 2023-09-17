@@ -1740,7 +1740,11 @@ network_set_client_keep_alive(network_handle nh, Var map)
     }
 
     if (setsockopt(h->rfd, SOL_SOCKET, SO_KEEPALIVE, &keep_alive, sizeof(keep_alive)) < 0 ||
-        setsockopt(h->rfd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle)) < 0 ||
+#ifndef __MACH__
+setsockopt(h->rfd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle)) < 0 ||
+#else
+setsockopt(h->rfd, IPPROTO_TCP, TCP_KEEPALIVE, &idle, sizeof(idle)) < 0 ||
+#endif
         setsockopt(h->rfd, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(interval)) < 0 ||
         setsockopt(h->rfd, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count)) < 0) 
     {
