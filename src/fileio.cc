@@ -1,5 +1,6 @@
 /*
  * file i/o server modification
+ * Based on File Utilities Package (FIO) v1.5
  */
 
 #define FILE_IO 1
@@ -69,15 +70,6 @@ struct line_buffer {
     char *line;
     struct line_buffer *next;
 };
-
-
-/***************************************************************
- * Version and package informaion
- ***************************************************************/
-
-char file_package_name[]    = "FIO";
-char file_package_version[] = "1.7";
-
 
 /***************************************************************
  * File <-> FHANDLE descriptor table interface
@@ -345,24 +337,6 @@ const char *file_resolve_path(const char *pathname) {
 
 /***************************************************************
  * Built in functions
- * file_version
- ***************************************************************/
-
-static package
-bf_file_version(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    char tmpbuffer[50];
-    Var rv;
-
-    sprintf(tmpbuffer, "%s/%s", file_package_name, file_package_version);
-
-    rv.type = TYPE_STR;
-    rv.v.str = str_dup(tmpbuffer);
-
-    return make_var_pack(rv);
-
-}
-
 
 /***************************************************************
  * File open and close.
@@ -1594,7 +1568,6 @@ register_fileio(void)
 {
 #if FILE_IO
 
-    register_function("file_version", 0, 0, bf_file_version);
     register_function("file_handles", 0, 0, bf_file_handles);
 
     register_function("file_open", 2, 2, bf_file_open, TYPE_STR, TYPE_STR);
