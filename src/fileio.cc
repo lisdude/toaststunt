@@ -88,13 +88,17 @@ static std::unordered_map <Num, file_handle> file_table;
 static Num next_handle = 1;
 
 static char file_handle_valid(Var fhandle) {
-    Num i = fhandle.v.num;
     if (fhandle.type != TYPE_INT)
         return 0;
+    
+    Num i = fhandle.v.num;
+    
     if ((i < 0) || (i >= next_handle))
         return 0;
+    
     if (file_table.count(i) == 0)
         return 0;
+    
     return file_table[i].valid;
 }
 
