@@ -157,9 +157,12 @@ dbpriv_after_load(void)
  * allocate space for an `Object' and put the object into the array of
  * Objects.  The difference is the storage type used.  `M_ANON'
  * includes space for reference counts.
+ * `dbpriv_new_object()' now also optionally allocated as `M_ANON',
+ * allowing bf_create() to function as normal but without an added
+ * memory copy at the end.
  */
 Object *
-dbpriv_new_object(Num new_objid)
+dbpriv_new_object(Num new_objid, bool anonymous)
 {
     Object *o;
 
@@ -169,7 +172,13 @@ dbpriv_new_object(Num new_objid)
         num_objects++;
     }
 
-    o = objects[new_objid] = (Object *)mymalloc(sizeof(Object), M_OBJECT);
+    Memory_Type mem_type;
+    if (anonymous)
+        mem_type = M_ANON;
+    else
+        mem_type = M_OBJECT;
+
+    o = objects[new_objid] = (Object *)mymalloc(sizeof(Object), mem_type);
     o->id = new_objid;
     o->waif_propdefs = nullptr;
 
@@ -220,14 +229,14 @@ db_init_object(Object *o)
 }
 
 Objid
-db_create_object(Num new_objid)
+db_create_object(Num new_objid, bool anonymous)
 {
     Object *o;
 
     if (new_objid <= 0 || new_objid > num_objects)
         new_objid = num_objects;
 
-    o = dbpriv_new_object(new_objid);
+    o = dbpriv_new_object(new_objid, anonymous);
     db_init_object(o);
 
     return o->id;
@@ -372,14 +381,7 @@ db_make_anonymous(Objid oid, Objid last)
     free_var(o->last_move);
     free_var(o->contents);
 
-    /* Last step, reallocate the memory and copy -- anonymous objects
-     * require space for reference counting.
-     */
-    Object *t = (Object *)mymalloc(sizeof(Object), M_ANON);
-    memcpy(t, o, sizeof(Object));
-    myfree(o, M_OBJECT);
-
-    return t;
+    return o;
 }
 
 void

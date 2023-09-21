@@ -102,7 +102,7 @@ extern void db_clear_ancestor_cache();
 extern int valid(Objid);
 extern int is_valid(Var);
 
-extern Objid db_create_object(Num new_objid);
+extern Objid db_create_object(Num new_objid, bool anonymous = false);
 				/* Creates a new object with parent & location
 				 * == #-1.  Returns new object's id number.
 				 */
