@@ -34,7 +34,7 @@
 #include <fstream>
 #include <vector>
 #include <mutex>
-
+#include <getopt.h>
 #include <sys/types.h>      /* must be first on some systems */
 #include <signal.h>
 #include <stdarg.h>
@@ -79,7 +79,10 @@
 #include "background.h"
 #include "map.h"
 #include "pcre_moo.h" /* pcre shutdown */
-#include <getopt.h>
+
+#ifdef JEMALLOC_FOUND
+#include <jemalloc/jemalloc.h>
+#endif
 
 extern "C" {
 #include "dependencies/linenoise.h"
@@ -2176,6 +2179,9 @@ main(int argc, char **argv)
     applog(LOG_INFO1, "STARTING: Version %s (%" PRIdN "-bit) of the ToastStunt/LambdaMOO server\n", server_version, SERVER_BITS);
     applog(LOG_INFO1, "          (Task timeouts measured in %s seconds.)\n",
            virtual_timer_available() ? "server CPU" : "wall-clock");
+#ifdef JEMALLOC_FOUND
+    applog(LOG_INFO1, "          (Using jemalloc)\n");
+#endif
     applog(LOG_INFO1, "          (Process id %" PRIdN ")\n", parent_pid);
     if (waif_conversion_type != _TYPE_WAIF)
         applog(LOG_WARNING, "(Using type '%i' for waifs; will convert to '%i' at next checkpoint)\n", waif_conversion_type, _TYPE_WAIF);
@@ -2429,6 +2435,61 @@ bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
 
     return make_var_pack(s);
 }
+
+#ifdef JEMALLOC_FOUND
+/* Returns a LIST of stats from jemalloc about memory usage.
+ * NOTE: jemalloc must have been compiled with stats enabled for this to work.
+ *       Otherwise it will just return all 0's.
+ */
+static package
+bf_malloc_stats(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    size_t sz;
+
+    // Update the cached statistics.
+    uint64_t epoch = 1;
+    sz = sizeof(uint64_t);
+    mallctl("epoch", &epoch, &sz, &epoch, sz);
+
+    size_t allocated, active, resident, metadata, mapped, allocated_large, active_large;
+    sz = sizeof(size_t);
+
+    if (mallctl("stats.allocated", &allocated, &sz, NULL, 0) != 0)
+        allocated = 0;
+
+    if (mallctl("stats.active", &active, &sz, NULL, 0) != 0)
+        active = 0;
+
+    if (mallctl("stats.resident", &resident, &sz, NULL, 0) != 0)
+        resident = 0;
+
+    if (mallctl("stats.metadata", &metadata, &sz, NULL, 0) != 0)
+        metadata = 0;
+
+    if (mallctl("stats.mapped", &mapped, &sz, NULL, 0) != 0)
+        mapped = 0;
+
+    if (mallctl("stats.allocated_large", &allocated_large, &sz, NULL, 0) != 0)
+        allocated_large = 0;
+
+    if (mallctl("stats.active_large", &active_large, &sz, NULL, 0) != 0)
+        active_large = 0;
+
+    Var s = new_list(7);
+    s.v.list[1] = Var::new_int(allocated);
+    s.v.list[2] = Var::new_int(active);
+    s.v.list[3] = Var::new_int(resident);
+    s.v.list[4] = Var::new_int(metadata);
+    s.v.list[5] = Var::new_int(mapped);
+    s.v.list[6] = Var::new_int(allocated_large);
+    s.v.list[7] = Var::new_int(active_large);
+
+    return make_var_pack(s);
+}
+#endif
+
 
 /* Return resource usage information from the operating system.
  * Values returned: {{load averages}, user time, system time, page reclaims, page faults, block input ops, block output ops, voluntary context switches, involuntary context switches, signals received
@@ -3195,6 +3256,9 @@ register_server(void)
     register_function("renumber", 1, 1, bf_renumber, TYPE_OBJ);
     register_function("reset_max_object", 0, 0, bf_reset_max_object);
     register_function("memory_usage", 0, 0, bf_memory_usage);
+#ifdef JEMALLOC_FOUND
+    register_function("malloc_stats", 0, 0, bf_malloc_stats);
+#endif
     register_function("usage", 0, 0, bf_usage);
     register_function("panic", 0, 1, bf_panic, TYPE_STR);
     register_function("shutdown", 0, 1, bf_shutdown, TYPE_STR);

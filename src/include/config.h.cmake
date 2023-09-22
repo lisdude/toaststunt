@@ -80,6 +80,7 @@
 #cmakedefine PCRE_FOUND
 #cmakedefine SQLITE3_FOUND
 #cmakedefine OPENSSL_FOUND
+#cmakedefine JEMALLOC_FOUND
 
 #ifndef OPENSSL_FOUND
  #undef USE_TLS
