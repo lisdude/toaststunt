@@ -83,7 +83,7 @@ make -j2
 
 ### **Gentoo**
 ```bash
-emerge dev-db/sqlite app-text/aspell app-dicts/aspell-en app-crypt/argon2 cmake
+emerge dev-db/sqlite app-text/aspell app-dicts/aspell-en app-crypt/argon2 dev-utils/cmake dev-libs/libpcre
 mkdir build && cd build
 cmake ../
 make -j2
@@ -122,7 +122,7 @@ There are a few build options available to developers:
 | Warn         | Optimizations enabled, warnings enabled. (Previous default behavior)         |
 | LeakCheck    | Minimal optimizations enabled, debug enabled, and address sanitizer enabled. |
 
-To change the build, use: `cmake -D CMAKE_BUILD_TYPE:STRING=BuildNameHere ../`
+To change the build, use: `cmake -DCMAKE_BUILD_TYPE=BuildNameHere ../`
 
 ### Login screen not showing
 Due to the way proxy detection works, if you're connecting to your MOO from localhost, you won't see the login screen. This is a minor inconvenience and shouldn't affect your ability to actually use your MOO. However, if it bothers you, you can disable HAProxy rewriting:
