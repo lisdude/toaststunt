@@ -225,16 +225,28 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
         return make_raise_pack(E_QUOTA, "Too many database connections open.", var_ref(zero));
     }
 
-    /* NOTE: This relies on having FileIO. If you don't, you'll need
-     *       a function to resolve a SAFE path. */
-    const char *path = file_resolve_path(arglist.v.list[1].v.str);
-    if (path == nullptr)
+    const char *unresolved_path = arglist.v.list[1].v.str;
+    const char *path = nullptr;  // Initialize path to null
+    int dup_check = -1;  // Moved initialization here for scope
+
+    // Check for :memory: or :temp: database
+    if (strcmp(unresolved_path, ":memory:") == 0 || strcmp(unresolved_path, ":temp:") == 0)
     {
-        free_var(arglist);
-        return make_error_pack(E_INVARG);
+        path = unresolved_path;  // No resolution needed
+    }
+    else
+    {
+        /* NOTE: This relies on having FileIO. If you don't, you'll need
+         *       a function to resolve a SAFE path. */
+        path = file_resolve_path(unresolved_path);
+        if (path == nullptr)
+        {
+            free_var(arglist);
+            return make_error_pack(E_INVARG);
+        }
+        dup_check = database_already_open(path);
     }
 
-    int dup_check = database_already_open(path);
     if (dup_check != -1)
     {
         free_var(arglist);
@@ -258,7 +270,9 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
         const char *err = sqlite3_errmsg(handle->id);
         deallocate_handle(index, false);
         return make_raise_pack(E_NONE, err, var_ref(zero));
-    } else {
+    }
+    else
+    {
 #ifdef PCRE_FOUND
         sqlite3_create_function(handle->id, "REGEXP", 2, SQLITE_UTF8 | SQLITE_DETERMINISTIC, nullptr, &sqlite_regexp, nullptr, nullptr);
 #endif
