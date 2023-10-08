@@ -226,10 +226,10 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     const char *unresolved_path = arglist.v.list[1].v.str;
-    const char *path = nullptr;  // Initialize path to null
-    int dup_check = -1;  // Moved initialization here for scope
+    const char *path = nullptr;
+    int dup_check = -1;
 
-    // Check for :memory: or :temp: database
+    // Check for :memory: or "" database
     if (strcmp(unresolved_path, ":memory:") == 0 || strcmp(unresolved_path, "") == 0)
     {
         path = unresolved_path;  // No resolution needed
