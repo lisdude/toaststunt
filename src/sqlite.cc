@@ -230,7 +230,7 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
     int dup_check = -1;  // Moved initialization here for scope
 
     // Check for :memory: or :temp: database
-    if (strcmp(unresolved_path, ":memory:") == 0 || strcmp(unresolved_path, ":temp:") == 0)
+    if (strcmp(unresolved_path, ":memory:") == 0 || strcmp(unresolved_path, "") == 0)
     {
         path = unresolved_path;  // No resolution needed
     }
