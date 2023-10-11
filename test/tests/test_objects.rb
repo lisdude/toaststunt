@@ -16,7 +16,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal b, parent(d)
 
       # test that `children()' works for single inheritance hierarchies
-      assert_equal [b], children(a)
+      assert_equal b, children(a)
       assert_equal [c, d], children(b)
       assert_equal [], children(c)
       assert_equal [], children(d)
@@ -207,8 +207,8 @@ class TestObject < Test::Unit::TestCase
       assert_equal NOTHING, parent(c)
 
       assert_equal [], children(a)
-      assert_equal [a], children(b)
-      assert_equal [b], children(c)
+      assert_equal a, children(b)
+      assert_equal b, children(c)
 
       chparent(a, c)
 
@@ -229,25 +229,25 @@ class TestObject < Test::Unit::TestCase
       chparents(c, [])
 
       assert_equal [b, c], parents(a)
-      assert_equal [c], parents(b)
+      assert_equal c, parents(b)
       assert_equal [], parents(c)
 
       assert_equal [], children(a)
-      assert_equal [a], children(b)
+      assert_equal a, children(b)
       assert_equal [a, b], children(c)
 
       assert_equal [b, c], ancestors(a)
-      assert_equal [c], ancestors(b)
+      assert_equal c, ancestors(b)
       assert_equal [], ancestors(c)
 
       assert_equal [], descendants(a)
-      assert_equal [a], descendants(b)
+      assert_equal a, descendants(b)
       assert_equal [a, b], descendants(c)
 
       chparents(a, [c])
 
-      assert_equal [c], ancestors(a)
-      assert_equal [c], ancestors(b)
+      assert_equal c, ancestors(a)
+      assert_equal c, ancestors(b)
       assert_equal [], ancestors(c)
 
       assert_equal [], descendants(a)
@@ -434,7 +434,7 @@ class TestObject < Test::Unit::TestCase
       c = create([])
 
       assert_equal [x, y, z], parents(a)
-      assert_equal [x], parents(b)
+      assert_equal x, parents(b)
       assert_equal [], parents(c)
 
       assert_equal x, parent(a)
@@ -455,7 +455,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal b, parent(m)
       assert_equal b, parent(n)
 
-      assert_equal [b], children(e)
+      assert_equal b, children(e)
       assert_equal [m, n], children(b)
       assert_equal [], children(m)
       assert_equal [], children(n)
@@ -465,7 +465,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal b, get(m, 'location')
       assert_equal b, get(n, 'location')
 
-      assert_equal [b], get(e, 'contents')
+      assert_equal b, get(e, 'contents')
       assert_equal [m, n], get(b, 'contents')
       assert_equal [], get(m, 'contents')
       assert_equal [], get(n, 'contents')
@@ -516,8 +516,8 @@ class TestObject < Test::Unit::TestCase
       assert_equal b, parent(m)
       assert_equal b, parent(n)
 
-      assert_equal [b], children(x)
-      assert_equal [b], children(y)
+      assert_equal b, children(x)
+      assert_equal b, children(y)
       assert_equal [m, n], children(b)
       assert_equal [], children(m)
       assert_equal [], children(n)
@@ -636,16 +636,16 @@ class TestObject < Test::Unit::TestCase
       assert_equal a, parent(b)
       assert_equal b, parent(c)
 
-      assert_equal [b], children(a)
-      assert_equal [c], children(b)
+      assert_equal b, children(a)
+      assert_equal c, children(b)
       assert_equal [], children(c)
 
       assert_equal NOTHING, get(a, 'location')
       assert_equal a, get(b, 'location')
       assert_equal b, get(c, 'location')
 
-      assert_equal [b], get(a, 'contents')
-      assert_equal [c], get(b, 'contents')
+      assert_equal b, get(a, 'contents')
+      assert_equal c, get(b, 'contents')
       assert_equal [], get(c, 'contents')
 
       assert_equal l, renumber(b)
@@ -655,9 +655,9 @@ class TestObject < Test::Unit::TestCase
       assert_equal a, parent(l)
       assert_equal l, parent(c)
 
-      assert_equal [l], children(a)
+      assert_equal l, children(a)
       assert_equal E_INVARG, children(b)
-      assert_equal [c], children(l)
+      assert_equal c, children(l)
       assert_equal [], children(c)
 
       assert_equal NOTHING, get(a, 'location')
@@ -665,9 +665,9 @@ class TestObject < Test::Unit::TestCase
       assert_equal a, get(l, 'location')
       assert_equal l, get(c, 'location')
 
-      assert_equal [l], get(a, 'contents')
+      assert_equal l, get(a, 'contents')
       assert_equal E_INVIND, get(b, 'contents')
-      assert_equal [c], get(l, 'contents')
+      assert_equal c, get(l, 'contents')
       assert_equal [], get(c, 'contents')
 
       recycle(create(:nothing)) # create a hole
@@ -691,8 +691,8 @@ class TestObject < Test::Unit::TestCase
       assert_equal [a, c], parents(e)
 
       assert_equal [d, e], children(a)
-      assert_equal [d], children(b)
-      assert_equal [e], children(c)
+      assert_equal d, children(b)
+      assert_equal e, children(c)
       assert_equal [], children(d)
       assert_equal [], children(e)
 
@@ -702,8 +702,8 @@ class TestObject < Test::Unit::TestCase
       assert_equal a, get(d, 'location')
       assert_equal b, get(e, 'location')
 
-      assert_equal [d], get(a, 'contents')
-      assert_equal [e], get(b, 'contents')
+      assert_equal d, get(a, 'contents')
+      assert_equal e, get(b, 'contents')
       assert_equal [], get(c, 'contents')
       assert_equal [], get(d, 'contents')
       assert_equal [], get(e, 'contents')
@@ -718,8 +718,8 @@ class TestObject < Test::Unit::TestCase
       assert_equal [a, c], parents(e)
 
       assert_equal [l, e], children(a)
-      assert_equal [l], children(b)
-      assert_equal [e], children(c)
+      assert_equal l, children(b)
+      assert_equal e, children(c)
       assert_equal E_INVARG, children(d)
       assert_equal [], children(l)
       assert_equal [], children(e)
@@ -731,8 +731,8 @@ class TestObject < Test::Unit::TestCase
       assert_equal a, get(l, 'location')
       assert_equal b, get(e, 'location')
 
-      assert_equal [l], get(a, 'contents')
-      assert_equal [e], get(b, 'contents')
+      assert_equal l, get(a, 'contents')
+      assert_equal e, get(b, 'contents')
       assert_equal [], get(c, 'contents')
       assert_equal E_INVIND, get(d, 'contents')
       assert_equal [], get(l, 'contents')
@@ -761,8 +761,8 @@ class TestObject < Test::Unit::TestCase
       assert_equal a, get(b, 'location')
       assert_equal b, get(c, 'location')
 
-      assert_equal [b], get(a, 'contents')
-      assert_equal [c], get(b, 'contents')
+      assert_equal b, get(a, 'contents')
+      assert_equal c, get(b, 'contents')
       assert_equal [], get(c, 'contents')
     end
   end
@@ -778,16 +778,16 @@ class TestObject < Test::Unit::TestCase
         vc << %Q|return {"e", @`pass() ! ANY => {}'};|
       end
 
-      assert_equal ['e'], call(e, 'foo')
-      assert_equal ['e'], call(b, 'foo')
-      assert_equal ['e'], call(c, 'foo')
+      assert_equal 'e', call(e, 'foo')
+      assert_equal 'e', call(b, 'foo')
+      assert_equal 'e', call(c, 'foo')
 
       add_verb(b, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
       set_verb_code(b, 'foo') do |vc|
         vc << %Q|return {"b", @`pass() ! ANY => {}'};|
       end
 
-      assert_equal ['e'], call(e, 'foo')
+      assert_equal 'e', call(e, 'foo')
       assert_equal ['b', 'e'], call(b, 'foo')
       assert_equal ['b', 'e'], call(c, 'foo')
 
@@ -796,7 +796,7 @@ class TestObject < Test::Unit::TestCase
         vc << %Q|return {"c", @`pass() ! ANY => {}'};|
       end
 
-      assert_equal ['e'], call(e, 'foo')
+      assert_equal 'e', call(e, 'foo')
       assert_equal ['b', 'e'], call(b, 'foo')
       assert_equal ['c', 'b', 'e'], call(c, 'foo')
 
@@ -816,25 +816,25 @@ class TestObject < Test::Unit::TestCase
 
       chparents(c, [e, b])
 
-      assert_equal ['e'], call(e, 'foo')
+      assert_equal 'e', call(e, 'foo')
       assert_equal ['b', 'e'], call(b, 'foo')
       assert_equal ['c', 'e'], call(c, 'foo')
 
       chparents(c, [b, e])
 
-      assert_equal ['e'], call(e, 'foo')
+      assert_equal 'e', call(e, 'foo')
       assert_equal ['b', 'e'], call(b, 'foo')
       assert_equal ['c', 'b', 'e'], call(c, 'foo')
 
       chparents(b, [])
 
-      assert_equal ['e'], call(e, 'foo')
-      assert_equal ['b'], call(b, 'foo')
+      assert_equal 'e', call(e, 'foo')
+      assert_equal 'b', call(b, 'foo')
       assert_equal ['c', 'b'], call(c, 'foo')
 
       delete_verb(b, 'foo')
 
-      assert_equal ['e'], call(e, 'foo')
+      assert_equal 'e', call(e, 'foo')
       assert_equal E_VERBNF, call(b, 'foo')
       assert_equal ['c', 'e'], call(c, 'foo')
 
@@ -842,7 +842,7 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal E_VERBNF, call(e, 'foo')
       assert_equal E_VERBNF, call(b, 'foo')
-      assert_equal ['c'], call(c, 'foo')
+      assert_equal 'c', call(c, 'foo')
 
       assert_equal [b, e], parents(c)
 
@@ -1130,8 +1130,8 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal 'e', get(e, 'e')
       assert_equal 'e1', get(e, 'e1')
-      assert_equal ['b'], get(e, 'b')
-      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'b', get(e, 'b')
+      assert_equal 'b1', get(e, 'b1')
       assert_equal E_PROPNF, get(e, 'c')
       assert_equal 'e', get(m, 'e')
       assert_equal 'e1', get(m, 'e1')
@@ -1224,43 +1224,43 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal 'e', get(e, 'e')
       assert_equal 'e1', get(e, 'e1')
-      assert_equal ['b'], get(e, 'b')
-      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'b', get(e, 'b')
+      assert_equal 'b1', get(e, 'b1')
       assert_equal location, get(e, 'c')
       assert_equal 'e', get(m, 'e')
       assert_equal 'e', get(n, 'e')
       assert_equal 'e1', get(m, 'e1')
       assert_equal 'e1', get(n, 'e1')
-      assert_equal ['b'], get(m, 'b')
-      assert_equal ['b'], get(n, 'b')
-      assert_equal ['b1'], get(m, 'b1')
-      assert_equal ['b1'], get(n, 'b1')
+      assert_equal 'b', get(m, 'b')
+      assert_equal 'b', get(n, 'b')
+      assert_equal 'b1', get(m, 'b1')
+      assert_equal 'b1', get(n, 'b1')
       assert_equal location, get(m, 'c')
       assert_equal location, get(n, 'c')
 
       assert_equal 'ee', set(e, 'e', 'ee')
-      assert_equal ['bb'], set(e, 'b', ['bb'])
+      assert_equal 'bb', set(e, 'b', ['bb'])
       assert_equal location, set(e, 'c', location)
       assert_equal '11', set(m, 'e', '11')
       assert_equal 'ee', set(n, 'e', 'ee')
-      assert_equal ['22'], set(m, 'b', ['22'])
-      assert_equal ['bb'], set(n, 'b',  ['bb'])
+      assert_equal '22', set(m, 'b', ['22'])
+      assert_equal 'bb', set(n, 'b',  ['bb'])
       assert_equal location, set(m, 'c', location)
       assert_equal location, set(n, 'c', location)
 
       assert_equal 'ee', get(e, 'e')
       assert_equal 'e1', get(e, 'e1')
-      assert_equal ['bb'], get(e, 'b')
-      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'bb', get(e, 'b')
+      assert_equal 'b1', get(e, 'b1')
       assert_equal location, get(e, 'c')
       assert_equal '11', get(m, 'e')
       assert_equal 'ee', get(n, 'e')
       assert_equal 'e1', get(m, 'e1')
       assert_equal 'e1', get(n, 'e1')
-      assert_equal ['22'], get(m, 'b')
-      assert_equal ['bb'], get(n, 'b')
-      assert_equal ['b1'], get(m, 'b1')
-      assert_equal ['b1'], get(n, 'b1')
+      assert_equal '22', get(m, 'b')
+      assert_equal 'bb', get(n, 'b')
+      assert_equal 'b1', get(m, 'b1')
+      assert_equal 'b1', get(n, 'b1')
       assert_equal location, get(m, 'c')
       assert_equal location, get(n, 'c')
 
@@ -1268,17 +1268,17 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal 'e', get(e, 'e')
       assert_equal 'e1', get(e, 'e1')
-      assert_equal ['bb'], get(e, 'b')
-      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'bb', get(e, 'b')
+      assert_equal 'b1', get(e, 'b1')
       assert_equal location, get(e, 'c')
       assert_equal '11', get(m, 'e')
       assert_equal 'ee', get(n, 'e')
       assert_equal 'e1', get(m, 'e1')
       assert_equal 'e1', get(n, 'e1')
-      assert_equal ['22'], get(m, 'b')
-      assert_equal ['bb'], get(n, 'b')
-      assert_equal ['b1'], get(m, 'b1')
-      assert_equal ['b1'], get(n, 'b1')
+      assert_equal '22', get(m, 'b')
+      assert_equal 'bb', get(n, 'b')
+      assert_equal 'b1', get(m, 'b1')
+      assert_equal 'b1', get(n, 'b1')
       assert_equal location, get(m, 'c')
       assert_equal location, get(n, 'c')
 
@@ -1289,21 +1289,21 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal 'e', get(e, 'e')
       assert_equal 'e1', get(e, 'e1')
-      assert_equal ['bb'], get(e, 'b')
-      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'bb', get(e, 'b')
+      assert_equal 'b1', get(e, 'b1')
       assert_equal location, get(e, 'c')
       assert_equal 'e', get(m, 'e')
       assert_equal 'e', get(n, 'e')
       assert_equal 'e1', get(m, 'e1')
       assert_equal 'e1', get(n, 'e1')
-      assert_equal ['bb'], get(m, 'b')
-      assert_equal ['bb'], get(n, 'b')
-      assert_equal ['b1'], get(m, 'b1')
-      assert_equal ['b1'], get(n, 'b1')
+      assert_equal 'bb', get(m, 'b')
+      assert_equal 'bb', get(n, 'b')
+      assert_equal 'b1', get(m, 'b1')
+      assert_equal 'b1', get(n, 'b1')
       assert_equal location, get(m, 'c')
       assert_equal location, get(n, 'c')
 
-      assert_equal ['b'], set(e, 'b',  ['b'])
+      assert_equal 'b', set(e, 'b',  ['b'])
 
       assert chparent(e, [c, b])
 
@@ -1325,17 +1325,17 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal 'e', get(e, 'e')
       assert_equal 'e1', get(e, 'e1')
-      assert_equal ['b'], get(e, 'b')
-      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'b', get(e, 'b')
+      assert_equal 'b1', get(e, 'b1')
       assert_equal location, get(e, 'c')
       assert_equal 'e', get(m, 'e')
       assert_equal 'e', get(n, 'e')
       assert_equal 'e1', get(m, 'e1')
       assert_equal 'e1', get(n, 'e1')
-      assert_equal ['b'], get(m, 'b')
-      assert_equal ['b'], get(n, 'b')
-      assert_equal ['b1'], get(m, 'b1')
-      assert_equal ['b1'], get(n, 'b1')
+      assert_equal 'b', get(m, 'b')
+      assert_equal 'b', get(n, 'b')
+      assert_equal 'b1', get(m, 'b1')
+      assert_equal 'b1', get(n, 'b1')
       assert_equal location, get(m, 'c')
       assert_equal location, get(n, 'c')
 
@@ -1346,17 +1346,17 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal 'e', get(e, 'e')
       assert_equal 'e1', get(e, 'e1')
-      assert_equal ['b'], get(e, 'b')
-      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'b', get(e, 'b')
+      assert_equal 'b1', get(e, 'b1')
       assert_equal E_PROPNF, get(e, 'c')
       assert_equal 'e', get(m, 'e')
       assert_equal 'e', get(n, 'e')
       assert_equal 'e1', get(m, 'e1')
       assert_equal 'e1', get(n, 'e1')
-      assert_equal ['b'], get(m, 'b')
-      assert_equal ['b'], get(n, 'b')
-      assert_equal ['b1'], get(m, 'b1')
-      assert_equal ['b1'], get(n, 'b1')
+      assert_equal 'b', get(m, 'b')
+      assert_equal 'b', get(n, 'b')
+      assert_equal 'b1', get(m, 'b1')
+      assert_equal 'b1', get(n, 'b1')
       assert_equal E_PROPNF, get(m, 'c')
       assert_equal E_PROPNF, get(n, 'c')
 
@@ -1395,8 +1395,8 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal 'e', get(e, 'e')
       assert_equal 'e1', get(e, 'e1')
-      assert_equal ['b'], get(e, 'b')
-      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'b', get(e, 'b')
+      assert_equal 'b1', get(e, 'b1')
       assert_equal 'rr', get(e, 'rr')
       assert_equal 'rrr', get(e, 'rrr')
       assert_equal 'rrrr', get(e, 'rrrr')
@@ -1405,10 +1405,10 @@ class TestObject < Test::Unit::TestCase
       assert_equal 'e', get(n, 'e')
       assert_equal 'e1', get(m, 'e1')
       assert_equal 'e1', get(n, 'e1')
-      assert_equal ['b'], get(m, 'b')
-      assert_equal ['b'], get(n, 'b')
-      assert_equal ['b1'], get(m, 'b1')
-      assert_equal ['b1'], get(n, 'b1')
+      assert_equal 'b', get(m, 'b')
+      assert_equal 'b', get(n, 'b')
+      assert_equal 'b1', get(m, 'b1')
+      assert_equal 'b1', get(n, 'b1')
       assert_equal 'rr', get(m, 'rr')
       assert_equal 'rrr', get(m, 'rrr')
       assert_equal 'rrrr', get(m, 'rrrr')
@@ -1447,8 +1447,8 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal 'e', get(e, 'e')
       assert_equal 'e1', get(e, 'e1')
-      assert_equal ['b'], get(e, 'b')
-      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'b', get(e, 'b')
+      assert_equal 'b1', get(e, 'b1')
       assert_equal 'rr', get(e, 'rr')
       assert_equal E_PROPNF, get(e, 'rrr')
       assert_equal 'rrrr', get(e, 'rrrr')
@@ -1457,10 +1457,10 @@ class TestObject < Test::Unit::TestCase
       assert_equal 'e', get(n, 'e')
       assert_equal 'e1', get(m, 'e1')
       assert_equal 'e1', get(n, 'e1')
-      assert_equal ['b'], get(m, 'b')
-      assert_equal ['b'], get(n, 'b')
-      assert_equal ['b1'], get(m, 'b1')
-      assert_equal ['b1'], get(n, 'b1')
+      assert_equal 'b', get(m, 'b')
+      assert_equal 'b', get(n, 'b')
+      assert_equal 'b1', get(m, 'b1')
+      assert_equal 'b1', get(n, 'b1')
       assert_equal 'rr', get(m, 'rr')
       assert_equal E_PROPNF, get(m, 'rrr')
       assert_equal 'rrrr', get(m, 'rrrr')
@@ -1499,8 +1499,8 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal 'e', get(e, 'e')
       assert_equal 'e1', get(e, 'e1')
-      assert_equal ['b'], get(e, 'b')
-      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'b', get(e, 'b')
+      assert_equal 'b1', get(e, 'b1')
       assert_equal E_PROPNF, get(e, 'rr')
       assert_equal E_PROPNF, get(e, 'rrr')
       assert_equal E_PROPNF, get(e, 'rrrr')
@@ -1509,10 +1509,10 @@ class TestObject < Test::Unit::TestCase
       assert_equal 'e', get(n, 'e')
       assert_equal 'e1', get(m, 'e1')
       assert_equal 'e1', get(n, 'e1')
-      assert_equal ['b'], get(m, 'b')
-      assert_equal ['b'], get(n, 'b')
-      assert_equal ['b1'], get(m, 'b1')
-      assert_equal ['b1'], get(n, 'b1')
+      assert_equal 'b', get(m, 'b')
+      assert_equal 'b', get(n, 'b')
+      assert_equal 'b1', get(m, 'b1')
+      assert_equal 'b1', get(n, 'b1')
       assert_equal E_PROPNF, get(m, 'rr')
       assert_equal E_PROPNF, get(m, 'rrr')
       assert_equal E_PROPNF, get(m, 'rrrr')
@@ -1646,7 +1646,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal 'x', get(b, 'x')
 
       set(b, 'x', ['x'])
-      assert_equal ['x'], get(b, 'x')
+      assert_equal 'x', get(b, 'x')
 
       c = create(x)
       assert_equal [player, 'rc'], property_info(c, 'x')
@@ -1662,7 +1662,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal 'x', get(a, 'x')
 
       set(a, 'x', ['x'])
-      assert_equal ['x'], get(a, 'x')
+      assert_equal 'x', get(a, 'x')
 
       b = create(NOTHING)
       chparent(b, x)
@@ -1689,21 +1689,21 @@ class TestObject < Test::Unit::TestCase
       assert_equal NOTHING, parent(a)
 
       assert_equal [], ancestors(a)
-      assert_equal [a], ancestors(b)
+      assert_equal a, ancestors(b)
       assert_equal [b, a], ancestors(c)
       assert_equal [c, b, a], ancestors(d)
       assert_equal [d, c, b, a], ancestors(e)
 
-      assert_equal [b], children(a)
-      assert_equal [c], children(b)
-      assert_equal [d], children(c)
-      assert_equal [e], children(d)
+      assert_equal b, children(a)
+      assert_equal c, children(b)
+      assert_equal d, children(c)
+      assert_equal e, children(d)
       assert_equal [], children(e)
 
       assert_equal [b, c, d, e], descendants(a)
       assert_equal [c, d, e], descendants(b)
       assert_equal [d, e], descendants(c)
-      assert_equal [e], descendants(d)
+      assert_equal e, descendants(d)
       assert_equal [], descendants(e)
 
       assert_equal E_RECMOVE, chparent(a, e)
@@ -1721,16 +1721,16 @@ class TestObject < Test::Unit::TestCase
       assert_equal [a, e, d], ancestors(b)
       assert_equal [b, a, e, d], ancestors(c)
       assert_equal [], ancestors(d)
-      assert_equal [d], ancestors(e)
+      assert_equal d, ancestors(e)
 
-      assert_equal [b], children(a)
-      assert_equal [c], children(b)
+      assert_equal b, children(a)
+      assert_equal c, children(b)
       assert_equal [], children(c)
-      assert_equal [e], children(d)
-      assert_equal [a], children(e)
+      assert_equal e, children(d)
+      assert_equal a, children(e)
 
       assert_equal [b, c], descendants(a)
-      assert_equal [c], descendants(b)
+      assert_equal c, descendants(b)
       assert_equal [], descendants(c)
       assert_equal [e, a, b, c], descendants(d)
       assert_equal [a, b, c], descendants(e)
@@ -1747,16 +1747,16 @@ class TestObject < Test::Unit::TestCase
       assert_equal [e, d], ancestors(b)
       assert_equal [b, e, d], ancestors(c)
       assert_equal [], ancestors(d)
-      assert_equal [d], ancestors(e)
+      assert_equal d, ancestors(e)
 
       assert_equal E_INVARG, children(a)
-      assert_equal [c], children(b)
+      assert_equal c, children(b)
       assert_equal [], children(c)
-      assert_equal [e], children(d)
-      assert_equal [b], children(e)
+      assert_equal e, children(d)
+      assert_equal b, children(e)
 
       assert_equal E_INVARG, descendants(a)
-      assert_equal [c], descendants(b)
+      assert_equal c, descendants(b)
       assert_equal [], descendants(c)
       assert_equal [e, b, c], descendants(d)
       assert_equal [b, c], descendants(e)

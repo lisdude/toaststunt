@@ -80,7 +80,7 @@ class TestMoocodeParsing < Test::Unit::TestCase
       o = create(:nothing)
       add_verb(o, [player, 'xd', 'and'], ['this', 'none', 'this'])
       set_verb_code(o, 'and', ['1 &. 2;'])
-      assert_equal ['1 &. 2;'], verb_code(o, 'and')
+      assert_equal '1 &. 2;', verb_code(o, 'and')
     end
   end
 
@@ -104,7 +104,7 @@ class TestMoocodeParsing < Test::Unit::TestCase
       o = create(:nothing)
       add_verb(o, [player, 'xd', 'or'], ['this', 'none', 'this'])
       set_verb_code(o, 'or', ['1 |. 2;'])
-      assert_equal ['1 |. 2;'], verb_code(o, 'or')
+      assert_equal '1 |. 2;', verb_code(o, 'or')
     end
   end
 
@@ -128,7 +128,7 @@ class TestMoocodeParsing < Test::Unit::TestCase
       o = create(:nothing)
       add_verb(o, [player, 'xd', 'xor'], ['this', 'none', 'this'])
       set_verb_code(o, 'xor', ['1 ^. 2;'])
-      assert_equal ['1 ^. 2;'], verb_code(o, 'xor')
+      assert_equal '1 ^. 2;', verb_code(o, 'xor')
     end
   end
 
@@ -152,7 +152,7 @@ class TestMoocodeParsing < Test::Unit::TestCase
       o = create(:nothing)
       add_verb(o, [player, 'xd', 'complement'], ['this', 'none', 'this'])
       set_verb_code(o, 'complement', ['~123;'])
-      assert_equal ['~123;'], verb_code(o, 'complement')
+      assert_equal '~123;', verb_code(o, 'complement')
     end
   end
 
@@ -176,7 +176,7 @@ class TestMoocodeParsing < Test::Unit::TestCase
       o = create(:nothing)
       add_verb(o, [player, 'xd', 'shift_left'], ['this', 'none', 'this'])
       set_verb_code(o, 'shift_left', ['1 << 2;'])
-      assert_equal ['1 << 2;'], verb_code(o, 'shift_left')
+      assert_equal '1 << 2;', verb_code(o, 'shift_left')
     end
   end
 
@@ -200,7 +200,7 @@ class TestMoocodeParsing < Test::Unit::TestCase
       o = create(:nothing)
       add_verb(o, [player, 'xd', 'shift_right'], ['this', 'none', 'this'])
       set_verb_code(o, 'shift_right', ['1 >> 2;'])
-      assert_equal ['1 >> 2;'], verb_code(o, 'shift_right')
+      assert_equal '1 >> 2;', verb_code(o, 'shift_right')
     end
   end
 

@@ -39,13 +39,13 @@ class TestLooping < Test::Unit::TestCase
   def test_that_invalid_for_loops_do_not_compile
     run_test_as('programmer') do
       r = eval(%|x = {}; for in ({"1", "2", "3", "4", "5"}); endfor; return x;|)
-      assert r[0] =~ /syntax error/
+      assert r =~ /syntax error/
       r = eval(%|x = {}; for i, j, k in ({"1", "2", "3", "4", "5"}); endfor; return x;|)
-      assert r[0] =~ /syntax error/
+      assert r =~ /syntax error/
       r = eval(%|x = {}; for i in ({"1", "2", "3", "4", "5"}); continue x; endfor; return x;|)
-      assert r[0] =~ /Invalid loop name/
+      assert r =~ /Invalid loop name/
       r = eval(%|x = {}; for i, j in ({"1", "2", "3", "4", "5"}); continue x; endfor; return x;|)
-      assert r[0] =~ /Invalid loop name/
+      assert r =~ /Invalid loop name/
     end
   end
 

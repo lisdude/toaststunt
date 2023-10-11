@@ -82,7 +82,7 @@ class TestWaif < Test::Unit::TestCase
 
       assert_equal 123, simplify(command("; a = #{z}:new(); return a.x;"))
       assert_equal 'abc', simplify(command("; a = #{z}:new(); return a.y;"))
-      assert_equal [1], simplify(command("; a = #{z}:new(); return a.z;"))
+      assert_equal 1, simplify(command("; a = #{z}:new(); return a.z;"))
       assert_equal E_PROPNF, simplify(command("; a = #{q}:new(); return a.q;"))
       assert_equal 'wxyz', simplify(command("; a = #{q}:new(); return a.class.q;"))
     end

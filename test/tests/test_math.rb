@@ -102,14 +102,14 @@ class TestMath < Test::Unit::TestCase
   def test_modulus
     run_test_as('programmer') do
       assert_equal -3, simplify(command(%Q|; return -15 % -4; |))
-      assert_equal -3, simplify(command(%Q|; return -15 % 4; |))
-      assert_equal 3, simplify(command(%Q|; return 15 % -4; |))
+      assert_equal 1, simplify(command(%Q|; return -15 % 4; |))
+      assert_equal -1, simplify(command(%Q|; return 15 % -4; |))
       assert_equal 3, simplify(command(%Q|; return 15 % 4; |))
     end
     run_test_as('programmer') do
       assert_equal -3.0, simplify(command(%Q|; return -15.0 % -4.0; |))
-      assert_equal -3.0, simplify(command(%Q|; return -15.0 % 4.0; |))
-      assert_equal 3.0, simplify(command(%Q|; return 15.0 % -4.0; |))
+      assert_equal 1.0, simplify(command(%Q|; return -15.0 % 4.0; |))
+      assert_equal -1.0, simplify(command(%Q|; return 15.0 % -4.0; |))
       assert_equal 3.0, simplify(command(%Q|; return 15.0 % 4.0; |))
     end
   end

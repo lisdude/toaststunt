@@ -155,7 +155,7 @@ class TestFileio < Test::Unit::TestCase
       fh = file_open('test_fileio.tmp', 'r-tn')
       lines = file_readlines(fh, 1, 5)
       file_close(fh)
-      assert_equal(['onetwothreefourfive'], lines)
+      assert_equal('onetwothreefourfive', lines)
       file_remove('test_fileio.tmp')
     end
   end

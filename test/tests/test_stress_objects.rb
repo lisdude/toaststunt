@@ -97,7 +97,7 @@ class TestStressObjects < Test::Unit::TestCase
         assert_equal NOTHING, parent(a)
         assert_not_equal E_TYPE, chparent(a, o)
         assert_equal _(o), parent(a)
-        assert_equal [_(o)], ancestors(a)
+        assert_equal _(o), ancestors(a)
       end
 
       run_test_as('wizard') do
@@ -132,12 +132,12 @@ class TestStressObjects < Test::Unit::TestCase
 
         if typeof(a) == TYPE_OBJ
           assert_equal [], children(a)
-          assert_equal [_(a)], children(b)
-          assert_equal [_(b)], children(c)
+          assert_equal _(a), children(b)
+          assert_equal _(b), children(c)
         else
           assert_equal [], children(a)
           assert_equal [], children(b)
-          assert_equal [_(b)], children(c)
+          assert_equal _(b), children(c)
         end
 
         chparent(a, c)
@@ -153,7 +153,7 @@ class TestStressObjects < Test::Unit::TestCase
         else
           assert_equal [], children(a)
           assert_equal [], children(b)
-          assert_equal [_(b)], children(c)
+          assert_equal _(b), children(c)
         end
 
         chparent(a, NOTHING)
@@ -165,37 +165,37 @@ class TestStressObjects < Test::Unit::TestCase
         chparents(a, [b, c])
 
         assert_equal [_(b), _(c)], parents(a)
-        assert_equal [_(c)], parents(b)
+        assert_equal _(c), parents(b)
         assert_equal [], parents(c)
 
         if typeof(a) == TYPE_OBJ
           assert_equal [], children(a)
-          assert_equal [_(a)], children(b)
+          assert_equal _(a), children(b)
           assert_equal [_(b), _(a)], children(c)
         else
           assert_equal [], children(a)
           assert_equal [], children(b)
-          assert_equal [_(b)], children(c)
+          assert_equal _(b), children(c)
         end
 
         assert_equal [_(b), _(c)], ancestors(a)
-        assert_equal [_(c)], ancestors(b)
+        assert_equal _(c), ancestors(b)
         assert_equal [], ancestors(c)
 
         if typeof(a) == TYPE_OBJ
           assert_equal [], descendants(a)
-          assert_equal [_(a)], descendants(b)
+          assert_equal _(a), descendants(b)
           assert_equal [_(b), _(a)], descendants(c)
         else
           assert_equal [], descendants(a)
           assert_equal [], descendants(b)
-          assert_equal [_(b)], descendants(c)
+          assert_equal _(b), descendants(c)
         end
 
         chparents(a, [c])
 
-        assert_equal [_(c)], ancestors(a)
-        assert_equal [_(c)], ancestors(b)
+        assert_equal _(c), ancestors(a)
+        assert_equal _(c), ancestors(b)
         assert_equal [], ancestors(c)
 
         if typeof(a) == TYPE_OBJ
@@ -205,7 +205,7 @@ class TestStressObjects < Test::Unit::TestCase
         else
           assert_equal [], descendants(a)
           assert_equal [], descendants(b)
-          assert_equal [_(b)], descendants(c)
+          assert_equal _(b), descendants(c)
         end
 
         chparents(a, [])
@@ -544,7 +544,7 @@ class TestStressObjects < Test::Unit::TestCase
         c = create([], args[1])
 
         assert_equal [_(x), _(y), _(z)], parents(a)
-        assert_equal [_(x)], parents(b)
+        assert_equal _(x), parents(b)
         assert_equal [], parents(c)
 
         assert_equal _(x), parent(a)

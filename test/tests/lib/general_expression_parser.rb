@@ -26,7 +26,7 @@ class GeneralExpressionParser < Parslet::Parser
 
   rule(:err)        { (str('E_') >> match('[A-Z]').repeat(1)).as(:err) >> space? }
 
-  rule(:string)     { (str('"') >> (str('\\') >> any | str('"').absnt? >> any).repeat >> str('"')).as(:string) >> space? }
+  rule(:string)     { (str('"') >> (str('\\') >> any | str('"').absent? >> any).repeat >> str('"')).as(:string) >> space? }
 
   rule(:pair)       { expression.as(:key) >> str('->') >> space? >> expression.as(:value) }
 

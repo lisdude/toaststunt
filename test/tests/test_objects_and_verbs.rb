@@ -679,7 +679,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
         o = create(*args)
         assert_equal [], verbs(o)
         add_verb(o, ['player', '', 'foobar'], ['this', 'none', 'this'])
-        assert_equal ['foobar'], verbs(o)
+        assert_equal 'foobar', verbs(o)
       end
     end
   end
@@ -1138,16 +1138,16 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
           vc << %Q|return {"e", @`pass() ! ANY => {}'};|
         end
 
-        assert_equal ['e'], call(e, 'foo')
-        assert_equal ['e'], call(b, 'foo')
-        assert_equal ['e'], call(c, 'foo')
+        assert_equal 'e', call(e, 'foo')
+        assert_equal 'e', call(b, 'foo')
+        assert_equal 'e', call(c, 'foo')
 
         add_verb(b, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
         set_verb_code(b, 'foo') do |vc|
           vc << %Q|return {"b", @`pass() ! ANY => {}'};|
         end
 
-        assert_equal ['e'], call(e, 'foo')
+        assert_equal 'e', call(e, 'foo')
         assert_equal ['b', 'e'], call(b, 'foo')
         assert_equal ['b', 'e'], call(c, 'foo')
 
@@ -1156,7 +1156,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
           vc << %Q|return {"c", @`pass() ! ANY => {}'};|
         end
 
-        assert_equal ['e'], call(e, 'foo')
+        assert_equal 'e', call(e, 'foo')
         assert_equal ['b', 'e'], call(b, 'foo')
         assert_equal ['c', 'b', 'e'], call(c, 'foo')
 
@@ -1176,25 +1176,25 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
 
         chparents(c, [e, b])
 
-        assert_equal ['e'], call(e, 'foo')
+        assert_equal 'e', call(e, 'foo')
         assert_equal ['b', 'e'], call(b, 'foo')
         assert_equal ['c', 'e'], call(c, 'foo')
 
         chparents(c, [b, e])
 
-        assert_equal ['e'], call(e, 'foo')
+        assert_equal 'e', call(e, 'foo')
         assert_equal ['b', 'e'], call(b, 'foo')
         assert_equal ['c', 'b', 'e'], call(c, 'foo')
 
         typeof(c) == TYPE_ANON ? chparents(b, [], [c]) : chparents(b, [])
 
-        assert_equal ['e'], call(e, 'foo')
-        assert_equal ['b'], call(b, 'foo')
+        assert_equal 'e', call(e, 'foo')
+        assert_equal 'b', call(b, 'foo')
         assert_equal ['c', 'b'], call(c, 'foo')
 
         delete_verb(b, 'foo')
 
-        assert_equal ['e'], call(e, 'foo')
+        assert_equal 'e', call(e, 'foo')
         assert_equal E_VERBNF, call(b, 'foo')
         assert_equal ['c', 'e'], call(c, 'foo')
 
@@ -1202,7 +1202,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
 
         assert_equal E_VERBNF, call(e, 'foo')
         assert_equal E_VERBNF, call(b, 'foo')
-        assert_equal ['c'], call(c, 'foo')
+        assert_equal 'c', call(c, 'foo')
 
         assert_equal [_(b), _(e)], parents(c)
 

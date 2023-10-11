@@ -74,7 +74,7 @@ class TestIndexAndRangeExtensions < Test::Unit::TestCase
       assert_equal({1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 'a' => 'a', 'b' => 'b', 'c' => 'c'}, eval(%|t = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7]; t[$..^] = ["a" -> "a", "b" -> "b", "c" -> "c"]; return t;|))
 
       assert_equal ['two', 'three'], eval(%|return {"one", "two", "three"}[$ - 1..$];|)
-      assert_equal ['three'], eval(%|return {"one", "two", "three"}[3..3];|)
+      assert_equal 'three', eval(%|return {"one", "two", "three"}[3..3];|)
       assert_equal [], eval(%|return {"one", "two", "three"}[17..12];|)
       assert_equal [1, 2, 3, 4, 5, 6, 7], eval(%|return {1, 2, 3, 4, 5, 6, 7}[^..$];|)
       assert_equal [2, 3, 4, 5, 6], eval(%|return {1, 2, 3, 4, 5, 6, 7}[^ + 1 .. $ - 1];|)
@@ -111,7 +111,7 @@ class TestIndexAndRangeExtensions < Test::Unit::TestCase
         vc << 'return "foobar"[^ + 2 ^ 2 .. $ - #0.off];'
       end
       vc = simplify command %|; return verb_code(#{o}, "foobar");|
-      assert_equal ['return "foobar"[^ + 2 ^ 2..$ - $off];'], vc
+      assert_equal 'return "foobar"[^ + 2 ^ 2..$ - $off];', vc
     end
   end
 

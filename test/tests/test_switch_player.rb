@@ -4,7 +4,7 @@ class TestSwitchPlayer < Test::Unit::TestCase
 
   def test_that_switch_player_does_not_work_for_non_wizards
     run_test_as('programmer') do
-      assert_equal E_PERM, switch_player(player, player)
+      assert_equal E_PERM, simplify(switch_player(player, player))
     end
   end
 

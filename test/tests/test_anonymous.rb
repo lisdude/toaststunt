@@ -100,7 +100,7 @@ class TestAnonymous < Test::Unit::TestCase
 
       assert_equal 123, simplify(command("; a = create(#{z}, 1); return a.x;"))
       assert_equal 'abc', simplify(command("; a = create(#{z}, 1); return a.y;"))
-      assert_equal [1], simplify(command("; a = create(#{z}, 1); return a.z;"))
+      assert_equal 1, simplify(command("; a = create(#{z}, 1); return a.z;"))
     end
   end
 

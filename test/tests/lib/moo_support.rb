@@ -50,7 +50,7 @@ module MooSupport
   TYPE_OBJ = 1
   TYPE_ANON = 12
 
-  raise '"./test.yml" configuration file not found' unless File.exists?('./test.yml')
+  raise '"./test.yml" configuration file not found' unless File.exist?('./test.yml')
 
   @@options = YAML.load(File.open('./test.yml'))
 
@@ -543,7 +543,7 @@ module MooSupport
   end
 
   def switch_player(old_player, new_player)
-    simplify command %Q|; switch_player(#{value_ref(old_player)}, #{value_ref(new_player)}); notify(#{value_ref(new_player)}, "{-1, 0}"); notify(#{value_ref(new_player)}, "-=!-v-!=-");|
+    command %Q|; switch_player(#{value_ref(old_player)}, #{value_ref(new_player)}); notify(#{value_ref(new_player)}, "{-1, 0}"); notify(#{value_ref(new_player)}, "-=!-v-!=-");|
   end
 
   def boot_player(player)

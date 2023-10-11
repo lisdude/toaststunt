@@ -175,7 +175,7 @@ class TestCollectionImprovements < Test::Unit::TestCase
         vc << 'return y;'
       end
       # assert_equal [[[[[1]]]]], call(o, 'foobar') - parslet issues
-      assert_equal [1], call(o, 'foobar')
+      assert_equal 1, call(o, 'foobar')
       set_verb_code(o, 'foobar') do |vc|
         vc << 'x = [1 -> [1 -> [1 -> [1 -> [1 -> 1]]]]];'
         vc << 'y = x;'

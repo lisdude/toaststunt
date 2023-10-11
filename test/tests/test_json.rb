@@ -296,9 +296,9 @@ class TestJson < Test::Unit::TestCase
       assert_equal(["~C2~80", "~C3~B8", "~C8~80", "~DF~BF"], parse_json('[\"\\\\u0080\",\"\\\\u00f8\",\"\\\\u0200\",\"\\\\u07ff\"]'))
       assert_equal(["~E0~A0~80", "~EF~BF~BF"], parse_json('[\"\\\\u0800\",\"\\\\uffff\"]'))
       assert_equal(["~F0~90~80~80", "~F0~9D~84~9E"], parse_json('[\"\\\\ud800\\\\\udc00\",\"\\\\ud834\\\\\udd1e\"]'))
-      assert_equal(["~0A~0D~1B~7F"], parse_json('[\"\\\\u000A\\\\u000D\\\\u001b\\\\u007f\"]'))
-      assert_equal(["~C2~80~C3~B8~C8~80~DF~BF"], parse_json('[\"\\\\u0080\\\\u00f8\\\\u0200\\\\u07ff\"]'))
-      assert_equal(["~0A~C8~80~0D~F0~90~80~80"], parse_json('[\"\\\\u000A\\\\u0200\\\\u000D\\\\ud800\\\\\udc00\"]'))
+      assert_equal("~0A~0D~1B~7F", parse_json('[\"\\\\u000A\\\\u000D\\\\u001b\\\\u007f\"]'))
+      assert_equal("~C2~80~C3~B8~C8~80~DF~BF", parse_json('[\"\\\\u0080\\\\u00f8\\\\u0200\\\\u07ff\"]'))
+      assert_equal("~0A~C8~80~0D~F0~90~80~80", parse_json('[\"\\\\u000A\\\\u0200\\\\u000D\\\\ud800\\\\\udc00\"]'))
     end
   end
 
