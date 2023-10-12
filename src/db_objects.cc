@@ -619,83 +619,83 @@ db_object_bytes(Var obj)
 #define ARRAY_SIZE_IN_BYTES (array_size / 8)
 #define CLEAR_BIT_ARRAY() memset(bit_array, 0, ARRAY_SIZE_IN_BYTES)
 
-#define DEFUNC(name, field)                     \
-    \
-    static int                              \
-    db1_count_##name(Object *o)                     \
-    {                                   \
-        int i, c, n = 0;                            \
-        Var tmp, field = enlist_var(var_ref(o->field));         \
-        Object *o2;                             \
-        Objid oid;                              \
-        \
-        FOR_EACH(tmp, field, i, c) {                    \
-            if (valid(oid = tmp.v.obj)) {                   \
-                if (bit_is_false(bit_array, oid)) {             \
-                    bit_true(bit_array, oid);               \
-                    o2 = dbpriv_find_object(oid);               \
-                    n += db1_count_##name(o2) + 1;              \
-                }                               \
-            }                               \
-        }                                   \
-        \
-        free_var(field);                            \
-        \
-        return n;                               \
-    }                                   \
-    \
-    static void                             \
-    db2_add_##name(Object *o, Var *plist, int *px)              \
-    {                                   \
-        int i, c;                               \
-        Var tmp, field = enlist_var(var_ref(o->field));         \
-        Object *o2;                             \
-        Objid oid;                              \
-        \
-        FOR_EACH(tmp, field, i, c) {                    \
-            if (valid(oid = tmp.v.obj)) {                   \
-                if (bit_is_false(bit_array, oid)) {             \
-                    bit_true(bit_array, oid);               \
-                    ++(*px);                        \
-                    plist->v.list[*px].type = TYPE_OBJ;         \
-                    plist->v.list[*px].v.obj = oid;             \
-                    o2 = dbpriv_find_object(oid);               \
-                    db2_add_##name(o2, plist, px);              \
-                }                               \
-            }                               \
-        }                                   \
-        \
-        free_var(field);                            \
-    }                                   \
-    \
-    Var                                 \
-    db_##name(Var obj, bool full)                       \
-    {                                   \
-        Object *o;                              \
-        int n, i = 0;                           \
-        Var list;                               \
-        \
-        o = dbpriv_dereference(obj);                    \
-        if ((o->field.type == TYPE_OBJ && o->field.v.obj == NOTHING) || \
-                (o->field.type == TYPE_LIST && listlength(o->field) == 0))  \
-            return full ? enlist_var(var_ref(obj)) : new_list(0);       \
-        \
-        CLEAR_BIT_ARRAY();                          \
-        \
-        n = db1_count_##name(o) + (full ? 1 : 0);               \
-        \
-        list = new_list(n);                         \
-        \
-        if (full)                               \
-            list.v.list[++i] = var_ref(obj);                \
-        \
-        CLEAR_BIT_ARRAY();                          \
-        \
-        db2_add_##name(o, &list, &i);                   \
-        \
-        list.v.list[0].v.num = i; /* sketchy */             \
-        \
-        return list;                            \
+#define DEFUNC(name, field)                                                  \
+                                                                             \
+    static int                                                               \
+    db1_count_##name(Object *o)                                              \
+    {                                                                        \
+        int i, c, n = 0;                                                     \
+        Var tmp, field = enlist_var(var_ref(o->field));                      \
+        Object *o2;                                                          \
+        Objid oid;                                                           \
+                                                                             \
+        FOR_EACH(tmp, field, i, c) {                                         \
+            if (valid(oid = tmp.v.obj)) {                                    \
+                if (bit_is_false(bit_array, oid)) {                          \
+                    bit_true(bit_array, oid);                                \
+                    o2 = dbpriv_find_object(oid);                            \
+                    n += db1_count_##name(o2) + 1;                           \
+                }                                                            \
+            }                                                                \
+        }                                                                    \
+                                                                             \
+        free_var(field);                                                     \
+                                                                             \
+        return n;                                                            \
+    }                                                                        \
+                                                                             \
+    static void                                                              \
+    db2_add_##name(Object *o, Var *plist, int *px)                           \
+    {                                                                        \
+        int i, c;                                                            \
+        Var tmp, field = enlist_var(var_ref(o->field));                      \
+        Object *o2;                                                          \
+        Objid oid;                                                           \
+                                                                             \
+        FOR_EACH(tmp, field, i, c) {                                         \
+            if (valid(oid = tmp.v.obj)) {                                    \
+                if (bit_is_false(bit_array, oid)) {                          \
+                    bit_true(bit_array, oid);                                \
+                    ++(*px);                                                 \
+                    plist->v.list[*px].type = TYPE_OBJ;                      \
+                    plist->v.list[*px].v.obj = oid;                          \
+                    o2 = dbpriv_find_object(oid);                            \
+                    db2_add_##name(o2, plist, px);                           \
+                }                                                            \
+            }                                                                \
+        }                                                                    \
+                                                                             \
+        free_var(field);                                                     \
+    }                                                                        \
+                                                                             \
+    Var                                                                      \
+    db_##name(Var obj, bool full)                                            \
+    {                                                                        \
+        Object *o;                                                           \
+        int n, i = 0;                                                        \
+        Var list;                                                            \
+                                                                             \
+        o = dbpriv_dereference(obj);                                         \
+        if ((o->field.type == TYPE_OBJ && o->field.v.obj == NOTHING) ||      \
+                (o->field.type == TYPE_LIST && listlength(o->field) == 0))   \
+            return full ? enlist_var(var_ref(obj)) : new_list(0);            \
+                                                                             \
+        CLEAR_BIT_ARRAY();                                                   \
+                                                                             \
+        n = db1_count_##name(o) + (full ? 1 : 0);                            \
+                                                                             \
+        list = new_list(n);                                                  \
+                                                                             \
+        if (full)                                                            \
+            list.v.list[++i] = var_ref(obj);                                 \
+                                                                             \
+        CLEAR_BIT_ARRAY();                                                   \
+                                                                             \
+        db2_add_##name(o, &list, &i);                                        \
+                                                                             \
+        list.v.list[0].v.num = i; /* sketchy */                              \
+                                                                             \
+        return list;                                                         \
     }
 
 DEFUNC(descendants, children);
