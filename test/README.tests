@@ -1,6 +1,6 @@
 Tests are written in the Ruby programming language using the
 Test::Unit framework. The Parslet library is used to parse responses
-from the Stunt server under test.
+from the ToastStunt server under test.
 
 To run the tests:
 
@@ -16,12 +16,15 @@ To run the tests:
     ln -s `which sleep` sleep
     ln -s `which true` true
 
-5) Build the server and copy the executable into the test directory. Verify the settings in test.yml are accurate for your options.
+5) Build the server and copy the executable into the test directory.
 
-6) In one console/terminal/window, run the Stunt server in the test directory:
+6) Verify the settings in test.yml are accurate for your configuration.
+
+7) In one console/terminal/window, run the ToastStunt server in the test directory:
     ./moo Test.db /dev/null 9898
 
-7) In another console/terminal/window, run the tests:
-    make tests
+8) In another console/terminal/window, run the tests:
+    make
 
-8) Delete the moo binary from the test directory when done.
+9) Clean up the moo executable and the files created in /tmp:
+    make clean
