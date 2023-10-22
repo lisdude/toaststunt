@@ -678,7 +678,7 @@ bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
 #define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
 #endif
 

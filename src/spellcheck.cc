@@ -66,7 +66,7 @@ bf_spellcheck(Var arglist, Byte next, void *vdata, Objid progr) {
 void register_spellcheck(void)
 {
     // FreeBSD / macOS/REL aspell doesn't include version string for some reason. (Maybe just remove this?)
-#if !defined(__FreeBSD__) && !defined(__MACH__) && !defined(USING_REL)
+#if !defined(__FreeBSD__) && !defined(__MACH__) && !defined(USING_REL) && !defined(__OpenBSD__)
     oklog("REGISTER_SPELLCHECK: v%s (Aspell Library v%s)\n", EXT_SPELLCHECK_VERSION, aspell_version_string());
 #else
     oklog("REGISTER_SPELLCHECK: v%s\n", EXT_SPELLCHECK_VERSION);
