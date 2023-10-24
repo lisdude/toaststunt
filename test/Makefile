@@ -2,14 +2,21 @@
 
 TEST_FILES := $(wildcard tests/*.rb)
 
-tests: $(TEST_FILES)
-	@for test in $^; do \
-		echo -e "\n\nRunning $$test..." ; \
+tests:
+	exit_status=0; \
+	for test in $(TEST_FILES) ; do \
+		echo "\n\nRunning $$test..." ; \
 		ruby -r rubygems -Itests/lib $$test ; \
-	done
+		test_exit_code=$$? ; \
+		if [ $$test_exit_code -ne 0 ]; then \
+			echo "Test $$test failed with exit code $$test_exit_code"; \
+			exit_status=$$test_exit_code; \
+		fi; \
+	done; \
+	exit $$exit_status
 
 %: tests/%.rb
-	@echo -e "\n\nRunning $<..." ; \
+	@echo "\n\nRunning $<..." ; \
 	ruby -r rubygems -Itests/lib $<
 
 clean:
