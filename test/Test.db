@@ -1,21 +1,28 @@
-** LambdaMOO Database, Format Version 4 **
-8
-5
-0
+** LambdaMOO Database, Format Version 17 **
 2
 3
 4
+0 values pending finalization
+0 clocks
+0 queued tasks
+0 suspended tasks
+0 interrupted tasks
+0 active connections with listeners
+8
 #0
 System Object
-
 16
 3
--1
--1
--1
 1
 -1
-2
+10
+0
+4
+0
+1
+1
+4
+0
 3
 do_login_command
 3
@@ -63,29 +70,53 @@ waif
 1
 #1
 Root Class
-
 144
 3
+1
 -1
--1
--1
--1
+10
 0
+4
+0
+1
 -1
+4
+7
+1
+0
+1
+2
+1
+3
+1
+4
+1
+5
+1
+6
+1
+7
 0
 0
 0
 #2
 The First Room
-
 0
 3
--1
-3
--1
 1
 -1
+10
+0
+4
+2
+1
 3
+1
+4
+1
+1
+4
+0
 1
 eval
 3
@@ -95,71 +126,96 @@ eval
 0
 #3
 Wizard
-
 7
 3
-2
--1
-4
 1
--1
+2
+10
+0
 4
+0
+1
+1
+4
+0
 0
 0
 0
 #4
 Programmer
-
 3
 4
-2
--1
--1
 1
--1
-5
+2
+10
+0
+4
+0
+1
+1
+4
+0
 0
 0
 0
 #5
 Anonymous Class
-
 256
 3
--1
--1
--1
 1
 -1
-6
+10
+0
+4
+0
+1
+1
+4
+0
 0
 0
 0
 #6
 Server Options
-
 0
 3
--1
--1
--1
 1
 -1
-7
+10
+0
+4
+0
+1
+1
+4
 0
 0
+2
+bg_seconds
+fg_seconds
+2
 0
+10
+3
+5
+0
+10
+3
+5
 #7
 Waif Class
-
 128
 3
--1
--1
--1
 1
 -1
--1
+10
+0
+4
+0
+1
+1
+4
+0
 1
 new
 3
@@ -167,11 +223,13 @@ new
 -1
 0
 0
+0
+5
 #0:0
 if ((args && (length(args) == 1)) && (args[1] == "shutdown"))
 reset_max_object();
 while (max_object() > #7)
-ticks_left() < 2000 || seconds_left() < 2 && suspend(0);
+((ticks_left() < 2000) || (seconds_left() < 2)) && suspend(0);
 `recycle(max_object()) ! ANY';
 reset_max_object();
 endwhile
@@ -238,6 +296,3 @@ set_task_perms(caller_perms());
 player = caller_perms();
 return new_waif();
 .
-0 clocks
-0 queued tasks
-0 suspended tasks
