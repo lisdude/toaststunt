@@ -9,6 +9,8 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Debug
+  # placing the dependencies here so we can use for caching
+  APT_DEPENDENCIES: "build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev libargon2-dev libssl-dev perl"
 
 jobs:
   build_and_test:
@@ -16,9 +18,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
+      
+      - name: Cache Apt Dependencies
+        uses: actions/cache@v3
+        with:
+          path: /var/cache/apt/archives
+          key: apt-cache-${{ runner.os }}-${{ env.APT_DEPENDENCIES }}
+          restore-keys: |
+            apt-cache-${{ runner.os }}-
 
       - name: Install dependencies
-        run: sudo apt-get install -y build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev libargon2-dev libssl-dev perl
+        run: sudo apt-get install -y ${{ env.APT_DEPENDENCIES }}
 
       - name: Configure CMake
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -45,6 +55,16 @@ jobs:
 
       - name: Link true Into Executables
         run: ln -s $(which true) ${{github.workspace}}/test/executables/true
+
+
+      - name: Cache Ruby Gems
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{github.workspace}}/test/vendor/bundle
+          key: gems-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            gems-${{ runner.os }}-
 
       - name: Fix Bundler
         working-directory: ${{github.workspace}}/test
