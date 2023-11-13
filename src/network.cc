@@ -1376,8 +1376,10 @@ network_process_io(int timeout)
         {
             mplex_add_reader(h->rfd);
 #ifdef USE_TLS
-            if (h->tls && SSL_has_pending(h->tls))
+            if (h->tls && h->connected && SSL_has_pending(h->tls)) {
                 pending_tls = true;
+                timeout = 0;
+            }
 #endif
         }
         if (h->output_head)
@@ -1385,7 +1387,7 @@ network_process_io(int timeout)
     }
     add_registered_fds();
 
-    if (!pending_tls && mplex_wait(timeout))
+    if (mplex_wait(timeout) && !pending_tls)
         return 0;
     else {
         for (l = all_nlisteners; l; l = l->next)
