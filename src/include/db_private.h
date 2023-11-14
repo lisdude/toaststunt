@@ -154,12 +154,11 @@ extern void dbpriv_set_all_users(Var);
 				 * db_all_users().
 				 */
 
-extern Object *dbpriv_new_object(Num new_objid, bool anonymous = false);
+extern Object *dbpriv_new_object(Num new_objid);
 extern Object *dbpriv_new_anonymous_object(void);
 				/* Creates a new object, assigning it a number,
 				 * but doesn't fill in any of the fields other
-				 * than `id'. If anonymous is true, memory is
-                 * allocated for metadata via M_ANON.
+				 * than `id'.
 				 */
 extern void db_init_object(Object *);
 				/* Initializes a new object.

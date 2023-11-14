@@ -388,7 +388,7 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
         else {
             enum error e;
             Objid last = db_last_used_objid();
-            Objid oid = db_create_object(-1, anonymous);
+            Objid oid = db_create_object(-1);
             Var args;
 
             db_set_object_owner(oid, !valid(owner) ? oid : owner);
