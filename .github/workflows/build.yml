@@ -22,7 +22,10 @@ jobs:
       - name: Cache Apt Dependencies
         uses: actions/cache@v3
         with:
-          path: /var/cache/apt/archives
+          path: |
+            /var/cache/apt/archives
+            !/var/cache/apt/archives/partial
+            !/var/cache/apt/archives/lock
           key: apt-cache-${{ runner.os }}-${{ env.APT_DEPENDENCIES }}
           restore-keys: |
             apt-cache-${{ runner.os }}-
