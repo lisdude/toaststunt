@@ -20,6 +20,7 @@ struct pcre_cache_entry {
     unsigned int cache_hits;
     std::atomic_uint refcount;
 };
+typedef std::pair<const char*, unsigned char> cache_type;
 
 extern void pcre_shutdown(void);
 
