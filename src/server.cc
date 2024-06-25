@@ -398,7 +398,6 @@ handle_user_defined_signal(int sig)
     }
 
     free_var(result);
-    free_var(args);
 }
 
 static void
