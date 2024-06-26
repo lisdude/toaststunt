@@ -1094,7 +1094,7 @@ static bool multi_parent_isa(const Var *object, const Var *parents)
  * With only one argument, player flag is assumed to be the only condition.
  * With two arguments, parent is the only condition.
  * With three arguments, parent is checked first and then the player flag is checked.
- * occupants(LIST objects, OBJ | LIST parent, ?INT player flag set)
+ * occupants(LIST objects, OBJ | LIST parent, ?INT player flag set, ?INT inverse match)
  */
 static package
 bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
@@ -1106,6 +1106,7 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
     bool check_parent = nargs == 1 ? false : true;
     Var parent = check_parent ? arglist.v.list[2] : nothing;
     bool check_player_flag = (nargs == 1 || (nargs > 2 && is_true(arglist.v.list[3])));
+    bool inverse_match = (nargs > 3 && is_true(arglist.v.list[4]));
 
     if (check_parent && !is_obj_or_list_of_objs(parent)) {
         free_var(arglist);
@@ -1115,10 +1116,10 @@ bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
         free_var(arglist);
         return make_error_pack(E_INVARG);
     }
-
+    
     for (int x = 1; x <= content_length; x++) {
         Objid oid = contents.v.list[x].v.obj;
-        if ((!check_parent ? 1 : multi_parent_isa(&contents.v.list[x], &parent))
+        if ((!check_parent ? 1 : (inverse_match ? !multi_parent_isa(&contents.v.list[x], &parent) : multi_parent_isa(&contents.v.list[x], &parent)))
                 && (!check_player_flag || (check_player_flag && is_user(oid))))
         {
             ret = setadd(ret, contents.v.list[x]);
@@ -1294,7 +1295,7 @@ register_objects(void)
                                       TYPE_OBJ, TYPE_OBJ, TYPE_INT);
     register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_INT);
     register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
-    register_function("occupants", 1, 3, bf_occupants, TYPE_LIST, TYPE_ANY, TYPE_INT);
+    register_function("occupants", 1, 4, bf_occupants, TYPE_LIST, TYPE_ANY, TYPE_INT, TYPE_INT);
     register_function("locations", 1, 3, bf_locations, TYPE_OBJ, TYPE_OBJ, TYPE_INT);
 #ifdef USE_ANCESTOR_CACHE
     register_function("clear_ancestor_cache", 0, 0, bf_clear_ancestor_cache);
