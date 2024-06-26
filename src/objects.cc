@@ -1094,6 +1094,7 @@ static bool multi_parent_isa(const Var *object, const Var *parents)
  * With only one argument, player flag is assumed to be the only condition.
  * With two arguments, parent is the only condition.
  * With three arguments, parent is checked first and then the player flag is checked.
+ * With four arguments, the parent check is inversed; items that are not descended from <parent> are returned.
  * occupants(LIST objects, OBJ | LIST parent, ?INT player flag set, ?INT inverse match)
  */
 static package
