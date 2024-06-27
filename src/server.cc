@@ -1574,13 +1574,27 @@ server_resume_input(Objid connection)
 }
 
 bool
-is_localhost(Objid connection)
+is_trusted_proxy(Objid connection)
 {
     shandle *existing_h = find_shandle(connection);
-    if (!existing_h)
+    Var proxies;
+
+    if (!existing_h) {
         return false;
-    else
-        return network_is_localhost(existing_h->nhandle);
+    } else if (!get_server_option(existing_h->listener, "trusted_proxies", &proxies) || proxies.type != TYPE_LIST) {
+        return false;
+    } else {
+        
+        int i;
+        const char *ip = network_ip_address(existing_h->nhandle);
+
+        for (i = 1; i <= proxies.v.list[0].v.num; i++) {
+            if (proxies.v.list[i].type == TYPE_STR && strcmp(ip, proxies.v.list[i].v.str) == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 int

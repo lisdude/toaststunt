@@ -435,9 +435,6 @@ extern int network_set_nonblocking(int fd);
 
 extern int rewrite_connection_name(network_handle nh, const char *destination, const char *destination_port, const char *source, const char *source_port);
 extern int network_name_lookup_rewrite(Objid obj, const char *name);
-extern bool network_is_localhost(network_handle nh);
-				/* Return true if the network handle's destination IP address
-				   is coming from 127.0.0.1 or ::1 */
 extern void lock_connection_name_mutex(const network_handle nh);
 extern void unlock_connection_name_mutex(const network_handle nh);
 extern void increment_nhandle_refcount(const network_handle nh);

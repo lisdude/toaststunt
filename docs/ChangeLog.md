@@ -1,5 +1,15 @@
 # ToastStunt ChangeLog
 
+## 2.7.2 (In progress)
+### Bug Fixes
+- Fix memory corruption in the signal handler.
+
+### New Features
+- Remove the `proxy_rewrite` server option. Instead, you can now add trusted proxy IP addresses to the `$server_options.trusted_proxies` property or the equivalent property on the listening object itself. Any connecting IP found in this list will have the login screen suppressed, and will accept forwarded IP addresses via the HAProxy Proxy protocol, at which point the welcome screen will be printed. To regain the legacy functionality, you can set `$server_options.trusted_proxies` to `{"127.0.0.1", "::1"}`
+
+### *** COMPATIBILITY WARNINGS ***
+- If you rely on the proxy rewriting behavior, note that it is **no longer** enabled by default. See the entry above about trusted proxies.
+
 ## 2.7.1 (Sep 17, 2023)
 ### Bug Fixes
 - Various 64-bit compatibility fixes.

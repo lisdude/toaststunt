@@ -888,7 +888,7 @@ do_login_task(tqueue * tq, char *command)
     bool clear_command = false; /* A flag that determines whether or not do_login_command
                                    will fall through with a blank command */
 
-    if (server_int_option("proxy_rewrite", 1) && is_localhost(tq->player))
+    if (is_trusted_proxy(tq->player))
     {
         /* To avoid printing the login screen (and allow redlists to work), ignore blank lines coming from localhost.
          * For special circumstances, the user can override this behavior with a 'do_blank_command' verb on the listening object.

@@ -1408,19 +1408,6 @@ network_process_io(int timeout)
     }
 }
 
-bool
-network_is_localhost(const network_handle nh)
-{
-    const nhandle *h = (nhandle *) nh.ptr;
-    const char *ip = h->destination_ipaddr;
-    int ret = 0;
-
-    if (strcmp(ip, "127.0.0.1") == 0 || strcmp(ip, "::1") == 0)
-        ret = 1;
-
-    return ret;
-}
-
 int
 rewrite_connection_name(network_handle nh, const char *destination, const char *destination_ip, const char *source, const char *source_port)
 {

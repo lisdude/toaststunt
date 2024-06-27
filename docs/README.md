@@ -125,7 +125,9 @@ There are a few build options available to developers:
 To change the build, use: `cmake -DCMAKE_BUILD_TYPE=BuildNameHere ../`
 
 ### Login screen not showing
-Due to the way proxy detection works, if you're connecting to your MOO from localhost, you won't see the login screen. This is a minor inconvenience and shouldn't affect your ability to actually use your MOO. However, if it bothers you, you can disable HAProxy rewriting:
+Due to the way proxy detection works in versions of the server prior to 2.7.1_22, if you're connecting to your MOO from localhost, you won't see the login screen. This is a minor inconvenience and shouldn't affect your ability to actually use your MOO. However, if it bothers you, you can disable HAProxy rewriting:
 
 1. `@prop $server_options.proxy_rewrite 0`
 2. `;load_server_options()`
+
+**NOTE**: Newer versions of the server control proxy rewriting via the `$server_options.trusted_proxies` property instead.

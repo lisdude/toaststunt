@@ -171,7 +171,8 @@ extern bool is_shutdown_triggered();
 /***************************************************************/
 
 #include "streams.h"
-bool is_localhost(Objid connection);
+bool is_trusted_proxy(Objid connection);
+/* Is the connecting IP a trusted proxy ($server_options.trusted_proxies) */
 int proxy_connected(Objid connection, char *command);
 
 #include "db.h"
