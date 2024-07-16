@@ -468,7 +468,7 @@ pull_input(nhandle * h)
                 else if (c == 0x08 || c == 0x7F)
                     stream_delete_char(s);
 #endif
-                else if (c == TN_IAC && ptr + 2 <= end) {
+                else if (c == TN_IAC && ptr + 2 < end) {
                     // Pluck a telnet IAC sequence out of the middle of the input
                     int telnet_counter = 1;
                     unsigned char cmd = *(ptr + telnet_counter);
@@ -476,7 +476,7 @@ pull_input(nhandle * h)
                         stream_add_raw_bytes_to_binary(oob, ptr, 3);
                         ptr += 2;
                     } else {
-                        while (cmd != TN_SE && ptr + telnet_counter <= end)
+                        while (cmd != TN_SE && ptr + telnet_counter < end)
                             cmd = *(ptr + telnet_counter++);
 
                         if (cmd == TN_SE) {
