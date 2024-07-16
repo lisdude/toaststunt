@@ -1909,6 +1909,7 @@ print_usage()
     fprintf(stderr, "\nNETWORKING OPTIONS\n");
     fprintf(stderr, "  %-20s %s\n", "-o, --outbound", "enable outbound network connections");
     fprintf(stderr, "  %-20s %s\n", "-O, --no-outbound", "disable outbound network connections");
+    fprintf(stderr, "  %-20s %s\n", "    --no-ipv6", "don't listen on IPv6 for default ports");
     fprintf(stderr, "  %-20s %s\n", "-4, --ipv4", "restrict IPv4 listeners to a specific address");
     fprintf(stderr, "  %-20s %s\n", "-6, --ipv6", "restrict IPv6 listeners to a specific address");
     fprintf(stderr, "  %-20s %s\n", "-r, --tls-cert", "TLS certificate to use");
@@ -1950,6 +1951,7 @@ main(int argc, char **argv)
     bool cmdline_key = false;
     bool cmdline_filedir = false;
     bool cmdline_execdir = false;
+    bool cmdline_noipv6 = false;
     //
 
     std::vector<uint16_t> initial_ports;
@@ -1970,6 +1972,7 @@ main(int argc, char **argv)
         {"clear-move",      no_argument,        nullptr,            'm'},
         {"outbound",        no_argument,        nullptr,            'o'},
         {"no-outbound",     no_argument,        nullptr,            'O'},
+        {"no-ipv6",         no_argument,        nullptr,            '3'},
         {"tls-port",        no_argument,        nullptr,            't'},
         {"ipv4",            required_argument,  nullptr,            '4'},
         {"ipv6",            required_argument,  nullptr,            '6'},
@@ -2046,6 +2049,12 @@ main(int argc, char **argv)
                 cmdline_outbound = true;
                 outbound_network_enabled = false;
 #endif
+            }
+            break;
+            
+            case '3':                   /* --no-ipv6; disable initial IPv6 listeners */
+            {
+                cmdline_noipv6 = true;
             }
             break;
 
@@ -2222,6 +2231,8 @@ main(int argc, char **argv)
     }
 
     applog(LOG_NOTICE, "NETWORK: Outbound network connections %s.\n", outbound_network_enabled ? "enabled" : "disabled");
+    if (cmdline_noipv6)
+        applog(LOG_INFO2, "CMDLINE: Not listening for IPv6 connections on default ports.\n");
     if (cmdline_ipv4)
         applog(LOG_INFO2, "CMDLINE: IPv4 source address restricted to: %s.\n", bind_ipv4);
     if (cmdline_ipv6)
@@ -2259,7 +2270,7 @@ main(int argc, char **argv)
         for (auto &the_port : *ports)
         {
             desc.v.num = the_port;
-            for (int ip_type = 0; ip_type < 2; ip_type++)
+            for (int ip_type = 0; ip_type < (cmdline_noipv6 ? 1 : 2); ip_type++)
             {
                 if ((new_listener = new_slistener(SYSTEM_OBJECT, desc, 1, nullptr, ip_type, nullptr TLS_PORT_TYPE TLS_CERT_PATH)) == nullptr)
                     errlog("Error creating %s%s listener on port %i.\n", port_type == PORT_TLS ? "TLS " : "", ip_type == PROTO_IPv6 ? "IPv6" : "IPv4", the_port);
