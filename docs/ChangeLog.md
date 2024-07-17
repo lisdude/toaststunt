@@ -1,6 +1,6 @@
 # ToastStunt ChangeLog
 
-## 2.7.2 (In progress)
+## 2.7.2 (Jul 17, 2024)
 ### Bug Fixes
 - Fix memory corruption in the signal handler.
 - Fix buffer overflow in telnet IAC capture.
