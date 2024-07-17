@@ -401,8 +401,12 @@ static void sqlite_execute_thread_callback(Var args, Var *r, void *extra_data)
                 sqlite3_bind_double(stmt, x, args.v.list[3].v.list[x].v.fnum);
                 break;
             case TYPE_OBJ:
-                sqlite3_bind_text(stmt, x, object_to_string(&args.v.list[3].v.list[x]),  -1, nullptr);
+            {
+                char *to_string = object_to_string(&args.v.list[3].v.list[x]);
+                sqlite3_bind_text(stmt, x, to_string, -1, SQLITE_TRANSIENT);
+                free(to_string);
                 break;
+            }
         }
     }
 
