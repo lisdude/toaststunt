@@ -3222,7 +3222,7 @@ bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
 // Save the keys for later
     static const Var object = str_dup_to_var("object");
     static const Var port = str_dup_to_var("port");
-    static const Var print = str_dup_to_var("print_messages");
+    static const Var print = str_dup_to_var("print-messages");
 
     for (l = all_slisteners; l; l = l->next) {
         if (!find_listener || equality(find, (find.type == TYPE_OBJ) ? Var::new_obj(l->oid) : l->desc, 0)) {
