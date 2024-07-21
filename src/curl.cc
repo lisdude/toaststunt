@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "log.h"
 #include "background.h"
+#include "server.h"
 
 static CURL *curl_handle = nullptr;
 
@@ -48,7 +49,7 @@ static void curl_thread_callback(Var arglist, Var *ret, void *extra_data)
 
     chunk.result = (char*)malloc(1);
     chunk.size = 0;
-    
+
     if (nargs > 2)
         timeout = arglist.v.list[3].v.num;
 
@@ -62,7 +63,6 @@ static void curl_thread_callback(Var arglist, Var *ret, void *extra_data)
 
     if (nargs > 1 && is_true(arglist.v.list[2]))
         curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1L);
-    
 
     res = curl_easy_perform(curl_handle);
 
@@ -82,6 +82,8 @@ bf_curl(Var arglist, Byte next, void *vdata, Objid progr)
 {
     if (!is_wizard(progr))
         return make_error_pack(E_PERM);
+    else if (!outbound_network_enabled)
+        return make_raise_pack(E_PERM, "Outbound network connections are disabled.", zero);
 
     return background_thread(curl_thread_callback, &arglist);
 }
@@ -89,6 +91,9 @@ bf_curl(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_url_encode(Var arglist, Byte next, void *vdata, Objid progr)
 {
+    if (!outbound_network_enabled)
+        return make_raise_pack(E_PERM, "Outbound network connections are disabled.", zero);
+
     Var r;
     const char *url = arglist.v.list[1].v.str;
 
@@ -111,6 +116,9 @@ bf_url_encode(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_url_decode(Var arglist, Byte next, void *vdata, Objid progr)
 {
+    if (!outbound_network_enabled)
+        return make_raise_pack(E_PERM, "Outbound network connections are disabled.", zero);
+
     Var r;
     const char *url = arglist.v.list[1].v.str;
 
@@ -132,20 +140,26 @@ bf_url_decode(Var arglist, Byte next, void *vdata, Objid progr)
 
 void curl_shutdown(void)
 {
-    curl_global_cleanup();
-    
-    if (curl_handle != nullptr)
-        curl_easy_cleanup(curl_handle);
+    if (outbound_network_enabled)
+    {
+        curl_global_cleanup();
+
+        if (curl_handle != nullptr)
+            curl_easy_cleanup(curl_handle);
+    }
 }
 
 void
 register_curl(void)
 {
-    oklog("REGISTER_CURL: Using libcurl version %s\n", curl_version());
-    curl_global_init(CURL_GLOBAL_ALL);
-    curl_handle = curl_easy_init();
- 
-   register_function("curl", 1, 3, bf_curl, TYPE_STR, TYPE_ANY, TYPE_INT);
+    if (outbound_network_enabled)
+    {
+        oklog("REGISTER_CURL: Using libcurl version %s\n", curl_version());
+        curl_global_init(CURL_GLOBAL_ALL);
+        curl_handle = curl_easy_init();
+    }
+
+    register_function("curl", 1, 3, bf_curl, TYPE_STR, TYPE_ANY, TYPE_INT);
     register_function("url_encode", 1, 1, bf_url_encode, TYPE_STR);
     register_function("url_decode", 1, 1, bf_url_decode, TYPE_STR);
 }
