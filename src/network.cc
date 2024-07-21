@@ -985,7 +985,7 @@ timeout_proc(Timer_ID id, Timer_Data data)
     throw timeout_exception();
 }
 
-enum error
+package
 open_connection(Var arglist, int *read_fd, int *write_fd,
                 const char **name, const char **ip_addr,
                 uint16_t *port, sa_family_t *protocol,
@@ -995,15 +995,18 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
     int s, result;
     struct addrinfo * servinfo, *p, hint;
     int yes = 1;
+#ifdef USE_TLS
+    char *tls_error_msg;
+#endif
 
     if (!outbound_network_enabled)
-        return E_PERM;
+        return make_raise_pack(E_PERM, "Outbound network connections are disabled.", zero);
 
     if (arglist.v.list[0].v.num < 2)
-        return E_ARGS;
+        return make_error_pack(E_ARGS);
     else if (arglist.v.list[1].type != TYPE_STR ||
              arglist.v.list[2].type != TYPE_INT)
-        return E_TYPE;
+        return make_error_pack(E_TYPE);
 
     const char *host_name = arglist.v.list[1].v.str;
     int host_port = arglist.v.list[2].v.num;
@@ -1018,7 +1021,7 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
     free(port_string);
     if (rv != 0) {
         errlog("open_connection getaddrinfo error: %s\n", gai_strerror(rv));
-        return E_INVARG;
+        return make_raise_pack(E_INVARG, "getaddrinfo error", str_dup_to_var(gai_strerror(rv)));
     }
 
     /* If we have multiple results, we'll bind to the first one we can. */
@@ -1033,7 +1036,7 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
             log_perror("Error setting listening socket options");
             close(s);
             freeaddrinfo(servinfo);
-            return E_QUOTA;
+            return make_raise_pack(E_QUOTA, "Error setting listening socket options", zero);
         }
 
         break;
@@ -1046,7 +1049,7 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
         if (errno == EACCES)
             e = E_PERM;
         freeaddrinfo(servinfo);
-        return e;
+        return make_raise_pack(e, "Failed to bind to listening socket", str_dup_to_var(strerror(errno)));
     }
 
     try {
@@ -1068,10 +1071,11 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
                 int tls_success = SSL_connect(*tls);
                 if (tls_success <= 0) {
                     SSL_get_error(*tls, tls_success);
-                    errlog("TLS: Connect failed: %s\n", ERR_error_string(ERR_get_error(), nullptr));
+                    tls_error_msg = ERR_error_string(ERR_get_error(), nullptr);
+                    ERR_clear_error();
+                    errlog("TLS: Connect failed: %s\n", tls_error_msg);
                     result = -1;
                     errno = TLS_CONNECT_FAIL;
-                    ERR_clear_error();
                 } else {
 #ifdef LOG_TLS_CONNECTIONS
                     oklog("TLS: %s. Cipher: %s\n", SSL_state_string_long(*tls), SSL_get_cipher(*tls));
@@ -1096,21 +1100,22 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
                 errno == ENETUNREACH ||
                 errno == ETIMEDOUT) {
             log_perror("open_network_connection error");
-            return E_INVARG;
+            return make_raise_pack(E_INVARG, "Connection failure", strerror(errno));
 #ifdef USE_TLS
         } else if (errno == TLS_FAIL) {
-            return E_INVARG;
+            return make_raise_pack(E_INVARG, "Error creating TLS context", zero);
         } else if (errno == TLS_CONNECT_FAIL) {
             if (*tls) {
                 SSL_shutdown(*tls);
                 SSL_free(*tls);
             }
-            return E_INVARG;
+            package ret = make_raise_pack(E_INVARG, "TLS connection failed", str_dup_to_var(tls_error_msg));
+            return ret;
 #endif
         }
 
         log_perror("Connecting in open_connection");
-        return E_QUOTA;
+        return make_raise_pack(E_QUOTA, "Connection failure", str_dup_to_var(strerror(errno)));
     }
 
     *read_fd = *write_fd = s;
@@ -1126,7 +1131,7 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
 
     freeaddrinfo(servinfo);
 
-    return E_NONE;
+    return make_error_pack(E_NONE);
 }
 #endif              /* OUTBOUND_NETWORK */
 
@@ -1749,7 +1754,7 @@ setsockopt(h->rfd, IPPROTO_TCP, TCP_KEEPALIVE, &idle, sizeof(idle)) < 0 ||
 }
 
 #ifdef OUTBOUND_NETWORK
-enum error
+extern package
 network_open_connection(Var arglist, server_listener sl, bool use_ipv6 USE_TLS_BOOL_DEF)
 {
     int rfd, wfd;
@@ -1757,14 +1762,14 @@ network_open_connection(Var arglist, server_listener sl, bool use_ipv6 USE_TLS_B
     const char *ip_addr;
     uint16_t port;
     sa_family_t protocol;
-    enum error e;
+    package e;
     nhandle *h;
 #ifdef USE_TLS
     SSL *tls = nullptr;
 #endif
 
     e = open_connection(arglist, &rfd, &wfd, &name, &ip_addr, &port, &protocol, use_ipv6 USE_TLS_BOOL SSL_CONTEXT_2_ARG);
-    if (e == E_NONE) {
+    if (e.u.raise.code.type == E_NONE) {
         h = make_new_connection(sl, rfd, wfd, 1, 0, nullptr, nullptr, port, name, ip_addr, protocol SSL_CONTEXT_1_ARG);
 #ifdef USE_TLS
         h->connected = true;
