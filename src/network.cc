@@ -1068,6 +1068,7 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
             } else {
                 SSL_set_fd(*tls, s);
                 SSL_set_connect_state(*tls);
+                SSL_set_tlsext_host_name(*tls, host_name);
                 int tls_success = SSL_connect(*tls);
                 if (tls_success <= 0) {
                     SSL_get_error(*tls, tls_success);
