@@ -2885,12 +2885,12 @@ name_lookup_callback(Var arglist, Var *ret, void *extra_data)
         /* If the server is shutting down, this is meaningless and creates
          * a bit of a mess anyway. So don't bother continuing. */
         if (!shutdown_triggered.load()) {
-        ret->type = TYPE_STR;
-        ret->v.str = name;
+            ret->type = TYPE_STR;
+            ret->v.str = name;
 
-        if (rewrite_connect_name && status == 0)
-            if (network_name_lookup_rewrite(who, name) != 0)
-                make_error_map(E_INVARG, "Failed to rewrite connection name.", ret);
+            if (rewrite_connect_name && status == 0)
+                if (network_name_lookup_rewrite(who, name, nh) != 0)
+                    make_error_map(E_INVARG, "Failed to rewrite connection name.", ret);
         }
     }
 }

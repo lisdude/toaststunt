@@ -1415,7 +1415,7 @@ network_process_io(int timeout)
 }
 
 int
-rewrite_connection_name(network_handle nh, const char *destination, const char *destination_ip, const char *source, const char *source_port)
+rewrite_connection_name(const network_handle nh, const char *destination, const char *destination_ip, const char *source, const char *source_port)
 {
     const char *nameinfo;
     struct addrinfo *address;
@@ -1447,13 +1447,9 @@ rewrite_connection_name(network_handle nh, const char *destination, const char *
 }
 
 int
-network_name_lookup_rewrite(Objid obj, const char *name)
+network_name_lookup_rewrite(const Objid obj, const char *name, const network_handle nh)
 {
-    network_handle *nh;
-    if (find_network_handle(obj, &nh) < 0)
-        return -1;
-
-    nhandle *h = (nhandle *) nh->ptr;
+    nhandle *h = (nhandle *) nh.ptr;
 
     pthread_mutex_lock(h->name_mutex);
     applog(LOG_INFO3, "NAME_LOOKUP: connection_name for #%" PRIdN " changed from `%s` to `%s`\n", obj, h->name, name);
@@ -1521,21 +1517,20 @@ lookup_network_connection_name(const network_handle nh, const char **name)
     const nhandle *h = (nhandle *) nh.ptr;
     int retval = 0;
 
-    pthread_mutex_lock(h->name_mutex);
-
     struct addrinfo *address = 0;
     int status = getaddrinfo(h->destination_ipaddr, nullptr, &tcp_hint, &address);
+
     if (status < 0) {
         // Better luck next time.
+        pthread_mutex_lock(h->name_mutex);
         *name = str_dup(h->name);
+        pthread_mutex_unlock(h->name_mutex);
         retval = -1;
     } else {
         *name = get_nameinfo(address->ai_addr);
     }
     if (address)
         freeaddrinfo(address);
-
-    pthread_mutex_unlock(h->name_mutex);
 
     return retval;
 }
