@@ -1765,7 +1765,7 @@ network_open_connection(Var arglist, server_listener sl, bool use_ipv6 USE_TLS_B
 #endif
 
     e = open_connection(arglist, &rfd, &wfd, &name, &ip_addr, &port, &protocol, use_ipv6 USE_TLS_BOOL SSL_CONTEXT_2_ARG);
-    if (e.u.raise.code.type == E_NONE) {
+    if (e.u.raise.code.v.err == E_NONE) {
         h = make_new_connection(sl, rfd, wfd, 1, 0, nullptr, nullptr, port, name, ip_addr, protocol SSL_CONTEXT_1_ARG);
 #ifdef USE_TLS
         h->connected = true;
