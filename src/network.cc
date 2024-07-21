@@ -1382,7 +1382,7 @@ network_process_io(int timeout)
         {
             mplex_add_reader(h->rfd);
 #ifdef USE_TLS
-            if (h->tls && h->connected && SSL_has_pending(h->tls)) {
+            if (h->tls && SSL_has_pending(h->tls)) {
                 pending_tls = true;
                 timeout = 0;
             }
@@ -1401,7 +1401,7 @@ network_process_io(int timeout)
                 accept_new_connection(l);
         for (h = all_nhandles; h; h = hnext) {
             hnext = h->next;
-            if (((mplex_is_readable(h->rfd) && !pull_input(h))
+            if (((fd_is_readable(h) && !pull_input(h))
                     || (mplex_is_writable(h->wfd) && !push_output(h))) && get_nhandle_refcount(h) == 1) {
                 server_close(h->shandle);
                 network_handle nh;
@@ -1824,4 +1824,17 @@ int
 network_set_connection_option(network_handle nh, const char *option, Var value)
 {
     CONNECTION_OPTION_SET(NETWORK_CO_TABLE, nh, option, value);
+}
+
+static inline bool fd_is_readable(const nhandle *h)
+{
+    if (mplex_is_readable(h->rfd))
+        return true;
+
+#ifdef USE_TLS
+    if (h->tls && SSL_has_pending(h->tls))
+        return true;
+#endif
+
+    return false;
 }

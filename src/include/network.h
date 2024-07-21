@@ -444,4 +444,12 @@ extern uint32_t get_nhandle_refcount(const network_handle nh);
 extern uint32_t get_nhandle_refcount(nhandle *h);
 extern uint32_t nhandle_refcount(const network_handle nh);
 
+static inline bool fd_is_readable(const nhandle *h);
+				/* Return true iff the most recent mplex_wait()
+				 * call terminated (in part) because reading
+				 * had become possible on the given descriptor.
+				 * OR if the given descriptor has pending TLS
+				 */
+
+
 #endif				/* Network_H */
