@@ -1101,7 +1101,7 @@ open_connection(Var arglist, int *read_fd, int *write_fd,
                 errno == ENETUNREACH ||
                 errno == ETIMEDOUT) {
             log_perror("open_network_connection error");
-            return make_raise_pack(E_INVARG, "Connection failure", strerror(errno));
+            return make_raise_pack(E_INVARG, "Connection failure", str_dup_to_var(strerror(errno)));
 #ifdef USE_TLS
         } else if (errno == TLS_FAIL) {
             return make_raise_pack(E_INVARG, "Error creating TLS context", zero);
