@@ -1,4 +1,14 @@
 # ToastStunt ChangeLog
+## 2.7.3 (In Progress)
+### Bug Fixes
+- `listeners()` now uses the correct key for print-messages.
+- Threaded DNS lookups had an issue that made them freeze the server just as badly as non-threaded DNS lookups. This has been resolved. (See ToastCore for an example implementation of handling slow lookups without allowing a connection to process commands.)
+- `curl` and related functions are now disabled when outbound network connections are disabled.
+- Large amounts of input on TLS connections could cause it to fail to go through until the next command. This is now fixed.
+
+### New Features
+- `open_network_connection` now displays more helpful error messages in-MOO, particularly when catching errors in a try.
+- Outbound TLS connections now include the SNI.
 
 ## 2.7.2 (Jul 17, 2024)
 ### Bug Fixes
