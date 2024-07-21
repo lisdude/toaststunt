@@ -434,8 +434,8 @@ extern int network_set_nonblocking(int fd);
 				 */
 #endif
 
-extern int rewrite_connection_name(network_handle nh, const char *destination, const char *destination_port, const char *source, const char *source_port);
-extern int network_name_lookup_rewrite(Objid obj, const char *name);
+extern int rewrite_connection_name(const network_handle nh, const char *destination, const char *destination_port, const char *source, const char *source_port);
+extern int network_name_lookup_rewrite(const Objid obj, const char *name, const network_handle nh);
 extern void lock_connection_name_mutex(const network_handle nh);
 extern void unlock_connection_name_mutex(const network_handle nh);
 extern void increment_nhandle_refcount(const network_handle nh);
