@@ -25,6 +25,7 @@
 
 #include "structures.h"
 #include "streams.h"
+#include "functions.h"
 #include <netdb.h>      // sa_family_t
 
 /* These get set by command-line options in server.cc */
@@ -127,7 +128,7 @@ extern enum accept_error
 
 #ifdef OUTBOUND_NETWORK
 
-extern enum error open_connection(Var arglist,
+extern package open_connection(Var arglist,
 					int *read_fd, int *write_fd,
 					const char **name, const char **ip_addr,
 					uint16_t *port, sa_family_t *protocol, bool use_ipv6 USE_TLS_BOOL_DEF SSL_CONTEXT_2_DEF);
@@ -346,7 +347,7 @@ extern int network_set_connection_option(network_handle nh,
 int network_set_client_keep_alive(network_handle nh, Var map);
 
 #ifdef OUTBOUND_NETWORK
-extern enum error network_open_connection(Var arglist, server_listener sl, bool use_ipv6 USE_TLS_BOOL_DEF);
+extern package network_open_connection(Var arglist, server_listener sl, bool use_ipv6 USE_TLS_BOOL_DEF);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be made.  If the arguments are OK and the

@@ -2665,7 +2665,7 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
     Options: ipv6 -> INT, listener -> OBJ, tls -> INT, tls_verify -> INT */
 
     Var r;
-    enum error e;
+    package e;
     server_listener sl;
     slistener l;
     bool use_ipv6 = false;
@@ -2731,7 +2731,7 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
 
     e = network_open_connection(arglist, sl, use_ipv6 USE_TLS_BOOL);
     free_var(arglist);
-    if (e == E_NONE) {
+    if (e.u.raise.code.v.err == E_NONE) {
         /* The connection was successfully opened, implying that
          * server_new_connection was called, implying and a new negative
          * player number was allocated for the connection.  Thus, the old
@@ -2739,14 +2739,10 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
          */
         r.type = TYPE_OBJ;
         r.v.obj = next_unconnected_player + 1;
-    } else {
-        r.type = TYPE_ERR;
-        r.v.err = e;
-    }
-    if (r.type == TYPE_ERR)
-        return make_error_pack(r.v.err);
-    else
         return make_var_pack(r);
+    } else {
+        return e;
+    }
 
 #else               /* !OUTBOUND_NETWORK */
 
