@@ -1,5 +1,5 @@
 --indent=spaces=4
---indent-preprocessor
+--indent-preproc-block
 --pad-oper
 --pad-comma
 --pad-header
