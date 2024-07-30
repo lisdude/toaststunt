@@ -9,6 +9,7 @@
 ### New Features
 - `open_network_connection` now displays more helpful error messages in-MOO, particularly when catching errors in a try.
 - Outbound TLS connections now include the SNI.
+- PCRE improvements.
 
 ## 2.7.2 (Jul 17, 2024)
 ### Bug Fixes
