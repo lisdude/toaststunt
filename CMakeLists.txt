@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 7)
 set(VERSION_RELEASE 2)
-set(VERSION_EXT "_9")
+set(VERSION_EXT "_11")
 project(ToastStunt VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_RELEASE} LANGUAGES CXX C)
 
 # Compile Options
@@ -53,7 +53,7 @@ else()
 endif()
 
 # Compiler Flags
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_STANDARD 99)
 
 # These flags are shared by the RELEASE and WARN build types.
@@ -73,10 +73,10 @@ set(CMAKE_C_FLAGS_WARN   "${SHARED_COMPILE_FLAGS} -Wall -Wno-unused-parameter -W
 set(CMAKE_CXX_FLAGS_WARN "${CMAKE_C_FLAGS_WARN}")
 
 # Check for memory leaks: Minimal optimizations, debug enabled, and sanitize address
-set(CMAKE_C_FLAGS_LEAKCHECK  "-O1 -g -fsanitize=thread -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+set(CMAKE_C_FLAGS_LEAKCHECK  "-O1 -g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 set(CMAKE_CXX_FLAGS_LEAKCHECK "${CMAKE_C_FLAGS_LEAKCHECK}")
 if(CMAKE_BUILD_TYPE MATCHES "LeakCheck")
-    set(EXTRA_LINKER_FLAGS "-fsanitize=thread")
+    set(EXTRA_LINKER_FLAGS "-fsanitize=address")
 endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
