@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <unordered_map>
 #include <limits.h>
+#include <string>
 
 #include "pcre_moo.h"
 #include "functions.h"
@@ -15,6 +16,10 @@
 #include "map.h"
 #include "dependencies/pcrs.h"
 #include "dependencies/xtrapbits.h"
+
+#ifndef PCRE_STUDY_JIT_COMPILE
+#define PCRE_STUDY_JIT_COMPILE 0
+#endif
 
 template<>
 struct std::hash<cache_type>
@@ -37,10 +42,6 @@ public:
 static pthread_mutex_t cache_mutex;
 typedef std::pair<const char*, unsigned char> cache_type;
 static std::unordered_map<cache_type, pcre_cache_entry*, std::hash<cache_type>, CacheEqual> pcre_pattern_cache;
-
-static void free_entry(pcre_cache_entry *);
-static void delete_cache_entry(const char *pattern, unsigned char options);
-static Var result_indices(int ovector[], int n);
 
 static struct pcre_cache_entry *
 get_pcre(const char *string, unsigned char options)
@@ -92,7 +93,7 @@ get_pcre(const char *string, unsigned char options)
             entry->error = str_dup(buf);
         } else {
             const char *error = nullptr;
-            entry->extra = pcre_study(entry->re, 0, &error);
+            entry->extra = pcre_study(entry->re, PCRE_STUDY_JIT_COMPILE, &error);
             if (error != nullptr)
                 entry->error = str_dup(error);
             else
@@ -443,7 +444,12 @@ void sqlite_regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv)
 
 void
 register_pcre() {
-    oklog("REGISTER_PCRE: Using PCRE Library v%s\n", pcre_version());
+    oklog("REGISTER_PCRE: Using PCRE Library v%s"
+#ifdef PCRE_CONFIG_JIT
+    " (JIT)"
+#endif
+    "\n", pcre_version());
+
     //                                                   string    pattern   ?case     ?find_all
     register_function("pcre_match", 2, 4, bf_pcre_match, TYPE_STR, TYPE_STR, TYPE_INT, TYPE_INT);
     register_function("pcre_replace", 2, 2, bf_pcre_replace, TYPE_STR, TYPE_STR);
