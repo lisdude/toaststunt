@@ -1,6 +1,6 @@
 #include "options.h"
 
-#ifdef CURL_FOUND
+#ifndef CURL_FOUND
 
 #include <curl/curl.h>
 
