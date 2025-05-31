@@ -35,7 +35,6 @@
 #define MININT	((Num) -9223372036854775807LL)
 #endif
 #define MAXOBJ	((Objid) MAXINT)
-#define MAXOBJ	((Objid) MAXINT)
 #define MINOBJ	((Objid) MININT)
 
 #ifdef ONLY_32_BITS
