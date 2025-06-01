@@ -78,6 +78,14 @@ typedef struct text_block {
     int length;
 } text_block;
 
+typedef enum {
+    TELNET_STATE_NORMAL,      // Processing normal text
+    TELNET_STATE_IAC,         // Just saw IAC
+    TELNET_STATE_COMMAND,     // Reading a command after IAC
+    TELNET_STATE_SUBNEG,      // In subnegotiation
+    TELNET_STATE_SUBNEG_IAC   // Saw IAC while in subnegotiation
+} TelnetState;
+
 typedef struct nhandle {
     struct nhandle *next, **prev;
     server_handle shandle;
@@ -104,6 +112,10 @@ typedef struct nhandle {
     bool outbound, binary;
     bool client_echo;
     bool keep_alive;
+    TelnetState telnet_state;
+    Stream *command_stream;    // Accumulates telnet command currently being processed
+    unsigned char telnet_cmd;  // Current command byte being processed
+
 #ifdef USE_TLS
     SSL *tls;                               // TLS context; not TLS if null
     bool connected;
@@ -370,16 +382,95 @@ push_output(nhandle * h)
     return 1;
 }
 
+int 
+process_telnet_byte(nhandle *h, Stream *input_stream, Stream *oob_stream, unsigned char c) 
+{
+    #define TN_IAC  255
+    #define TN_DO   253
+    #define TN_DONT 254
+    #define TN_WILL 251
+    #define TN_WONT 252
+    #define TN_SE   240
+    #define TN_SB   250
+        if (stream_length(h->command_stream) >= MAX_LINE_BYTES) {
+        errlog("Connection `%s` exceeded MAX_LINE_BYTES in telnet command! (%" PRIdN " /%" PRIdN ")\n", 
+               h->name, stream_length(h->command_stream), MAX_LINE_BYTES);
+        return 0;  // Signal connection should be closed
+    }
+
+    switch (h->telnet_state) {
+        case TELNET_STATE_NORMAL:
+            if (c == TN_IAC) {
+                h->telnet_state = TELNET_STATE_IAC;
+                reset_stream(h->command_stream);
+                stream_add_char(h->command_stream, c);
+            } else {
+                if (isgraph(c) || c == ' ' || c == '\t')
+                    stream_add_char(input_stream, c);
+#ifdef INPUT_APPLY_BACKSPACE
+                else if (c == 0x08 || c == 0x7F)
+                    stream_delete_char(input_stream);
+#endif
+                if ((c == '\r' || (c == '\n' && !h->last_input_was_CR)))
+                    server_receive_line(h->shandle, reset_stream(input_stream), 0);
+                h->last_input_was_CR = (c == '\r');
+            }
+            break;
+
+        case TELNET_STATE_IAC:
+            stream_add_char(h->command_stream, c);
+            if (c == TN_IAC) {
+                h->telnet_state = TELNET_STATE_NORMAL;
+            } else {
+                h->telnet_cmd = c;
+                if (c == TN_SB) {
+                    h->telnet_state = TELNET_STATE_SUBNEG;
+                } else if (c == TN_WILL || c == TN_WONT || c == TN_DO || c == TN_DONT) {
+                    h->telnet_state = TELNET_STATE_COMMAND;
+                } else {
+                    stream_add_raw_bytes_to_binary(oob_stream, 
+                        stream_contents(h->command_stream),
+                        stream_length(h->command_stream));
+                    h->telnet_state = TELNET_STATE_NORMAL;
+                }
+            }
+            break;
+
+        case TELNET_STATE_COMMAND:
+            stream_add_char(h->command_stream, c);
+            stream_add_raw_bytes_to_binary(oob_stream,
+                stream_contents(h->command_stream),
+                stream_length(h->command_stream));
+            h->telnet_state = TELNET_STATE_NORMAL;
+            break;
+
+        case TELNET_STATE_SUBNEG:
+            stream_add_char(h->command_stream, c);
+            if (c == TN_IAC) {
+                h->telnet_state = TELNET_STATE_SUBNEG_IAC;
+            }
+            break;
+
+        case TELNET_STATE_SUBNEG_IAC:
+            stream_add_char(h->command_stream, c);
+            if (c == TN_SE) {
+                stream_add_raw_bytes_to_binary(oob_stream,
+                    stream_contents(h->command_stream),
+                    stream_length(h->command_stream));
+                h->telnet_state = TELNET_STATE_NORMAL;
+            } else if (c == TN_IAC) {
+                h->telnet_state = TELNET_STATE_SUBNEG;
+            } else {
+                h->telnet_state = TELNET_STATE_SUBNEG;
+            }
+            break;
+    }
+    return 1;
+}
+
 static int
 pull_input(nhandle * h)
 {
-#define TN_IAC  255
-#define TN_DO   253
-#define TN_DONT 254
-#define TN_WILL 251
-#define TN_WONT 252
-#define TN_SE   240
-
     Stream *s = h->input;
 
     if (stream_length(s) >= MAX_LINE_BYTES) {
@@ -458,47 +549,18 @@ pull_input(nhandle * h)
             server_receive_line(h->shandle, reset_stream(s), false);
             h->last_input_was_CR = 0;
         } else {
-            Stream *oob = new_stream(3);
+            Stream *oob = new_stream(100);
+            
             for (ptr = buffer, end = buffer + count; ptr < end; ptr++) {
-                unsigned char c = *ptr;
-
-                if (isgraph(c) || c == ' ' || c == '\t')
-                    stream_add_char(s, c);
-#ifdef INPUT_APPLY_BACKSPACE
-                else if (c == 0x08 || c == 0x7F)
-                    stream_delete_char(s);
-#endif
-                else if (c == TN_IAC && ptr + 2 < end) {
-                    // Pluck a telnet IAC sequence out of the middle of the input
-                    int telnet_counter = 1;
-                    unsigned char cmd = *(ptr + telnet_counter);
-                    if (cmd == TN_WILL || cmd == TN_WONT || cmd == TN_DO || cmd == TN_DONT) {
-                        stream_add_raw_bytes_to_binary(oob, ptr, 3);
-                        ptr += 2;
-                    } else {
-                        while (cmd != TN_SE && ptr + telnet_counter < end)
-                            cmd = *(ptr + telnet_counter++);
-
-                        if (cmd == TN_SE) {
-                            // We got a complete option sequence.
-                            stream_add_raw_bytes_to_binary(oob, ptr, telnet_counter);
-                            ptr += --telnet_counter;
-                        } else {
-                            /* We couldn't find the end of the option sequence, so, unfortunately,
-                             * we just consider this IAC wasted. The rest of the out of band commands
-                             * will get passed to do_out_of_band_command as gibberish. */
-                        }
-                    }
+                if (!process_telnet_byte(h, s, oob, *ptr)) {
+                    free_stream(oob);
+                    return 0;  // Close connection due to oversize telnet command
                 }
-
-                if ((c == '\r' || (c == '\n' && !h->last_input_was_CR)))
-                    server_receive_line(h->shandle, reset_stream(s), 0);
-
-                h->last_input_was_CR = (c == '\r');
             }
 
-            if (stream_length(oob) > 0)
+            if (stream_length(oob) > 0) {
                 server_receive_line(h->shandle, reset_stream(oob), 1);
+            }
 
             free_stream(oob);
         }
@@ -560,6 +622,9 @@ new_nhandle(const int rfd, const int wfd, const bool outbound, uint16_t listen_p
     h->keep_alive_count = KEEP_ALIVE_COUNT;
     h->keep_alive_idle = KEEP_ALIVE_IDLE;
     h->keep_alive_interval = KEEP_ALIVE_INTERVAL;
+    h->telnet_state = TELNET_STATE_NORMAL;
+    h->command_stream = new_stream(100);  // Initial size
+    h->telnet_cmd = 0;
 #ifdef USE_TLS
     h->tls = tls;
     h->connected = false;
@@ -591,6 +656,7 @@ close_nhandle(nhandle * h)
         b = bb;
     }
     free_stream(h->input);
+    free_stream(h->command_stream);
     network_close_connection(h->rfd, h->wfd);
     free_str(h->name);
     free_str(h->source_address);
