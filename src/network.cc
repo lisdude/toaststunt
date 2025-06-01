@@ -420,7 +420,6 @@ process_telnet_byte(nhandle *h, Stream *input_stream, Stream *oob_stream, unsign
         case TELNET_STATE_IAC:
             stream_add_char(h->command_stream, c);
             if (c == TN_IAC) {
-                stream_add_char(input_stream, c);
                 h->telnet_state = TELNET_STATE_NORMAL;
             } else {
                 h->telnet_cmd = c;
