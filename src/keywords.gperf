@@ -45,6 +45,8 @@ endtry,		DBV_Exceptions, tENDTRY
 ANY,		DBV_Exceptions, tANY
 break,		DBV_BreakCont, tBREAK
 continue,	DBV_BreakCont, tCONTINUE
+true,		DBV_Bool, tTRUE
+false,		DBV_Bool, tFALSE
 E_NONE,		DBV_Prehistory, tERROR,	E_NONE
 E_TYPE,		DBV_Prehistory, tERROR,	E_TYPE
 E_DIV,		DBV_Prehistory, tERROR,	E_DIV

@@ -97,6 +97,7 @@ static void     check_loop_name(const char *, enum loop_exit_kind);
 %token  <error> tERROR
 %token  tIF tELSE tELSEIF tENDIF tFOR tIN tENDFOR tRETURN tFORK tENDFORK
 %token  tWHILE tENDWHILE tTRY tENDTRY tEXCEPT tFINALLY tANY tBREAK tCONTINUE
+%token  tTRUE tFALSE
 
 %token  tTO tARROW tMAP
 
@@ -380,6 +381,16 @@ expr:
 		{
 		    $$ = alloc_var(TYPE_ERR);
 		    $$->e.var.v.err = $1;
+		}
+	| tTRUE
+		{
+		    $$ = alloc_var(TYPE_BOOL);
+		    $$->e.var.v.truth = true;
+		}
+	| tFALSE
+		{
+		    $$ = alloc_var(TYPE_BOOL);
+		    $$->e.var.v.truth = false;
 		}
 	| tID
 		{
