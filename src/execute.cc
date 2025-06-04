@@ -1680,17 +1680,46 @@ finish_comparison:
                  * values below because we know that `OP_INDEXSET'
                  * will fill them back in for us.
                  */
-                if (var_refcount(NEXT_TOP_RT_VALUE) > 1) {
+                /* Skip duplication for waifs since they handle their own mutation via _set_index */
+                if (NEXT_TOP_RT_VALUE.type != TYPE_WAIF && var_refcount(NEXT_TOP_RT_VALUE) > 1) {
                     Var temp = var_dup(NEXT_TOP_RT_VALUE);
                     free_var(NEXT_TOP_RT_VALUE);
                     NEXT_TOP_RT_VALUE = temp;
                 }
 
-                /* Two cases are possible: list[index] or map[key] */
+                /* Three cases are possible: list[index], map[key], or waif[key] */
                 Var list, index;
 
                 index = TOP_RT_VALUE;
                 list = NEXT_TOP_RT_VALUE;
+#ifdef WAIF_DICT
+                if (list.type == TYPE_WAIF) {
+                    Objid _class;
+                    Var args;
+                    enum error err = E_NONE;
+
+                    args = new_list(1);
+                    args.v.list[1] = var_ref(index);
+
+                    _class = list.v.waif->_class;
+                    if (!valid(_class)) {
+                        err = E_INVIND;
+                    } else if (!is_wizard(db_object_owner(_class))) {
+                        err = E_TYPE;
+                    } else {
+                        STORE_STATE_VARIABLES();
+                        err = call_verb2(_class, waif_index_verb, list, args, 0, DEFAULT_THREAD_MODE);
+                        if (err == E_VERBNF) {
+                            err = E_TYPE;
+                        }
+                        LOAD_STATE_VARIABLES();
+                    }
+                    if (err != E_NONE) {
+                        free_var(args);
+                        PUSH_ERROR(err);
+                    }
+                } else
+#endif
                 if (list.type == TYPE_MAP) {
                     Var value;
                     const rbnode *node;
@@ -1713,7 +1742,11 @@ finish_comparison:
                         list.v.list[index.v.num].type = TYPE_NONE;
                     }
                 } else {
+#ifdef WAIF_DICT
+                    PUSH_TYPE_MISMATCH(3, list.type, TYPE_LIST, TYPE_MAP, TYPE_WAIF);
+#else
                     PUSH_TYPE_MISMATCH(2, list.type, TYPE_LIST, TYPE_MAP);
+#endif
                 }
             }
             break;

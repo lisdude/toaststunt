@@ -326,8 +326,9 @@ Var
 sublist(Var list, int lower, int upper)
 {
     if (lower > upper) {
+        Var empty = new_list(0);
         free_var(list);
-        return new_list(0);
+        return empty;
     } else {
         Var r;
         int i;
