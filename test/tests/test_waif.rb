@@ -323,5 +323,20 @@ class TestWaif < Test::Unit::TestCase
     end
   end
 
+  def test_setting_and_getting_nested_waif_map_indexes
+    run_test_as('programmer') do
+      # Create a waif class with a map property
+      waif_class = create(:waif)
+      add_property(waif_class, ':data', {}, [player, ''])
+      
+      result = simplify(command(%Q|; w = #{waif_class}:new(); w.data = ["outer" -> ["inner" -> "value"]]; return w.data["outer"]["inner"];|))
+      assert_equal "value", result
+      
+      # Test multiple levels of nesting
+      result = simplify(command(%Q|; w = #{waif_class}:new(); w.data = ["a" -> ["b" -> ["c" -> 42]]]; return w.data["a"]["b"]["c"];|))
+      assert_equal 42, result
+    end
+  end
+
 
 end
