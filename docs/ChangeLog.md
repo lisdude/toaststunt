@@ -5,11 +5,29 @@
 - Threaded DNS lookups had an issue that made them freeze the server just as badly as non-threaded DNS lookups. This has been resolved. (See ToastCore for an example implementation of handling slow lookups without allowing a connection to process commands.)
 - `curl` and related functions are now disabled when outbound network connections are disabled.
 - Large amounts of input on TLS connections could cause it to fail to go through until the next command. This is now fixed.
+- Fixed waif crashes when indexing nested maps containing waifs.
+- Fixed telnet IAC IAC sequences not being properly handled.
+- PCRE now properly uses JIT compilation when available.
+- Enable support for the Dictionary Server (DICT) protocol when using curl.
 
 ### New Features
 - `open_network_connection` now displays more helpful error messages in-MOO, particularly when catching errors in a try.
 - Outbound TLS connections now include the SNI.
 - PCRE improvements.
+- Added state machine for telnet protocol handling to improve reliability.
+- Booleans `true` and `false` are now keywords in the parser rather than runtime environment variables, making them first-class citizens in the language. (See `compatibility warnings` below for information on edge cases that may impact your database.)
+
+### *** COMPATIBILITY WARNINGS ***
+
+In this release, booleans have been migrated to keywords instead of runtime environment variables. For this reason, databases that previously used `true' or `false' in variable assignments will no longer load.
+
+In preparation for this edge case, we've devised a script that will do most of the heavy lifting of tracking these down in your database. The script is located [docs/Scripts/fix_var_bools.sh](here). You can run the following command on your database of choice, replacing <database> with your actual database file name. The script will locate variable assignments and offer to update them. The existing database will be backed up to <database>.bak.
+
+```bash
+fix_var_bools.sh <database>
+```
+
+We strongly recommend vetting scripts before running them on your system. If you wish to do this conversion by hand, loading the database file into a text editor and performing a find for `true = ' and `false = ' should help you track down errant verbs.
 
 ## 2.7.2 (Jul 17, 2024)
 ### Bug Fixes
