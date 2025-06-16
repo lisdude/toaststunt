@@ -16,6 +16,7 @@
 - PCRE improvements.
 - Added state machine for telnet protocol handling to improve reliability.
 - Booleans `true` and `false` are now keywords in the parser rather than runtime environment variables, making them first-class citizens in the language. (See `compatibility warnings` below for information on edge cases that may impact your database.)
+- Extend `mapdelete()` to accept a list of keys to delete. When passed a list as the second argument, mapdelete() will now delete multiple keys from the map in a single operation. If any key in the list is not found, a descriptive error is raised showing which key was missing.
 
 ### *** COMPATIBILITY WARNINGS ***
 
