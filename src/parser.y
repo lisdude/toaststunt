@@ -429,6 +429,19 @@ expr:
 		{
 		    $$ = alloc_binary(EXPR_PROP, $1, $4);
 		}
+	| expr '.' tTRUE
+		{
+		    /* let's us use booleans as property names without .("true") or .("false") */
+		    Expr *prop = alloc_var(TYPE_STR);
+		    prop->e.var.v.str = str_dup("true");
+		    $$ = alloc_binary(EXPR_PROP, $1, prop);
+		}
+	| expr '.' tFALSE
+		{
+		    Expr *prop = alloc_var(TYPE_STR);
+		    prop->e.var.v.str = str_dup("false");
+		    $$ = alloc_binary(EXPR_PROP, $1, prop);
+		}
 	| expr ':' tID '(' arglist ')'
 		{
 		    /* treat foo:bar(args) like foo:("bar")(args) */
