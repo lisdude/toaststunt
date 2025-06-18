@@ -1097,38 +1097,67 @@ static bool multi_parent_isa(const Var *object, const Var *parents)
  * With four arguments, the parent check is inversed; items that are not descended from <parent> are returned.
  * occupants(LIST objects, OBJ | LIST parent, ?INT player flag set, ?INT inverse match)
  */
-static package
-bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
-{   /* (object) */
-    Var ret = new_list(0);
-    int nargs = arglist.v.list[0].v.num;
-    Var contents = arglist.v.list[1];
-    int content_length = contents.v.list[0].v.num;
-    bool check_parent = nargs == 1 ? false : true;
-    Var parent = check_parent ? arglist.v.list[2] : nothing;
-    bool check_player_flag = (nargs == 1 || (nargs > 2 && is_true(arglist.v.list[3])));
-    bool inverse_match = (nargs > 3 && is_true(arglist.v.list[4]));
+void occupants_callback(Var arglist, Var *ret, void *extra_data)
+{
+    const int nargs = arglist.v.list[0].v.num;
+    const Var contents = arglist.v.list[1];
+    const int content_length = contents.v.list[0].v.num;
+    const bool check_parent = nargs == 1 ? false : true;
+    const Var parent = check_parent ? arglist.v.list[2] : nothing;
+const    bool check_player_flag = (nargs == 1 || (nargs > 2 && is_true(arglist.v.list[3])));
+    const bool inverse_match = (nargs > 3 && is_true(arglist.v.list[4]));
 
+    // Validate arguments
     if (check_parent && !is_obj_or_list_of_objs(parent)) {
-        free_var(arglist);
-        return make_error_pack(E_TYPE);
+        ret->type = TYPE_ERR;
+        ret->v.err = E_TYPE;
+        return;
     }
     else if (!is_list_of_objs(contents) || !all_valid(contents)) {
-        free_var(arglist);
-        return make_error_pack(E_INVARG);
+        ret->type = TYPE_ERR;
+        ret->v.err = E_INVARG;
+        return;
     }
+    
+    std::vector<Objid> tmp;
     
     for (int x = 1; x <= content_length; x++) {
         Objid oid = contents.v.list[x].v.obj;
-        if ((!check_parent ? 1 : (inverse_match ? !multi_parent_isa(&contents.v.list[x], &parent) : multi_parent_isa(&contents.v.list[x], &parent)))
-                && (!check_player_flag || (check_player_flag && is_user(oid))))
-        {
-            ret = setadd(ret, contents.v.list[x]);
+        
+        // In case our object gets recycled
+        if (!valid(oid)) {
+            continue;
+        }
+        
+        bool parent_matches = true;
+        if (check_parent) {
+            if (inverse_match) {
+                parent_matches = !multi_parent_isa(&contents.v.list[x], &parent);
+            } else {
+                parent_matches = multi_parent_isa(&contents.v.list[x], &parent);
+            }
+        }
+        
+        bool player_matches = !check_player_flag || is_user(oid);
+        
+        // Add to results if both conditions pass
+        if (parent_matches && player_matches) {
+            tmp.push_back(oid);
         }
     }
+    
+    // Create our final result
+    *ret = new_list(tmp.size());
+    const auto vector_size = tmp.size();
+    for (size_t x = 0; x < vector_size; x++) {
+        ret->v.list[x + 1] = Var::new_obj(tmp[x]);
+    }
+}
 
-    free_var(arglist);
-    return make_var_pack(ret);
+static package
+bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    return background_thread(occupants_callback, &arglist);
 }
 
 /* Return a list of nested locations for an object.
