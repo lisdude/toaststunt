@@ -97,7 +97,6 @@ static void     check_loop_name(const char *, enum loop_exit_kind);
 %token  <error> tERROR
 %token  tIF tELSE tELSEIF tENDIF tFOR tIN tENDFOR tRETURN tFORK tENDFORK
 %token  tWHILE tENDWHILE tTRY tENDTRY tEXCEPT tFINALLY tANY tBREAK tCONTINUE
-%token  tTRUE tFALSE
 
 %token  tTO tARROW tMAP
 
@@ -382,16 +381,6 @@ expr:
 		    $$ = alloc_var(TYPE_ERR);
 		    $$->e.var.v.err = $1;
 		}
-	| tTRUE
-		{
-		    $$ = alloc_var(TYPE_BOOL);
-		    $$->e.var.v.truth = true;
-		}
-	| tFALSE
-		{
-		    $$ = alloc_var(TYPE_BOOL);
-		    $$->e.var.v.truth = false;
-		}
 	| tID
 		{
 		    $$ = alloc_expr(EXPR_ID);
@@ -428,19 +417,6 @@ expr:
 	| expr '.' '(' expr ')'
 		{
 		    $$ = alloc_binary(EXPR_PROP, $1, $4);
-		}
-	| expr '.' tTRUE
-		{
-		    /* let's us use booleans as property names without .("true") or .("false") */
-		    Expr *prop = alloc_var(TYPE_STR);
-		    prop->e.var.v.str = str_dup("true");
-		    $$ = alloc_binary(EXPR_PROP, $1, prop);
-		}
-	| expr '.' tFALSE
-		{
-		    Expr *prop = alloc_var(TYPE_STR);
-		    prop->e.var.v.str = str_dup("false");
-		    $$ = alloc_binary(EXPR_PROP, $1, prop);
 		}
 	| expr ':' tID '(' arglist ')'
 		{
