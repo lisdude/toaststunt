@@ -1,5 +1,5 @@
 # ToastStunt ChangeLog
-## 2.7.3 (In Progress)
+## 2.7.3 (Jun 20, 2025)
 ### Bug Fixes
 - `listeners()` now uses the correct key for print-messages.
 - Threaded DNS lookups had an issue that made them freeze the server just as badly as non-threaded DNS lookups. This has been resolved. (See ToastCore for an example implementation of handling slow lookups without allowing a connection to process commands.)
@@ -15,20 +15,9 @@
 - Outbound TLS connections now include the SNI.
 - PCRE improvements.
 - Added state machine for telnet protocol handling to improve reliability.
-- Booleans `true` and `false` are now keywords in the parser rather than runtime environment variables, making them first-class citizens in the language. (See `compatibility warnings` below for information on edge cases that may impact your database.)
 - Extend `mapdelete()` to accept a list of keys to delete. When passed a list as the second argument, mapdelete() will now delete multiple keys from the map in a single operation. If any key in the list is not found, a descriptive error is raised showing which key was missing.
-
-### *** COMPATIBILITY WARNINGS ***
-
-In this release, booleans have been migrated to keywords instead of runtime environment variables. For this reason, databases that previously used `true' or `false' in variable assignments will no longer load.
-
-In preparation for this edge case, we've devised a script that will do most of the heavy lifting of tracking these down in your database. The script is located [docs/Scripts/fix_var_bools.sh](here). You can run the following command on your database of choice, replacing <database> with your actual database file name. The script will locate variable assignments and offer to update them. The existing database will be backed up to <database>.bak.
-
-```bash
-fix_var_bools.sh <database>
-```
-
-We strongly recommend vetting scripts before running them on your system. If you wish to do this conversion by hand, loading the database file into a text editor and performing a find for `true = ' and `false = ' should help you track down errant verbs.
+- Thread `occupants()` and improve performance when validating large lists of objects. **WARNING**: As with all other threaded functions, using occupants() in situations where it may be called many times, such as in loops, will implicitly suspend the verb akin to how reading input is handled. This may not be what you want! If this is undesirable, use `set_thread_mode(0)` prior to the function call in your verb.
+- Removed `clear_ancestor_cache()` builtin.
 
 ## 2.7.2 (Jul 17, 2024)
 ### Bug Fixes
