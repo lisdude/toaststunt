@@ -265,6 +265,8 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
             if (!(proto == TYPE_ANY
                     || (proto == TYPE_NUMERIC && (arg == TYPE_INT
                                                   || arg == TYPE_FLOAT))
+                    || (proto == TYPE_FLAG && (arg == TYPE_INT
+                                               || arg == TYPE_BOOL))
                     || proto == arg)) {
                 free_var(arglist);
 

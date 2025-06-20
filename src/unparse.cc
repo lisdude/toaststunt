@@ -184,7 +184,7 @@ parse_error(const char *e)
 const char*
 parse_type(var_type var)
 {
-    /* We can't use these two special #defines in a switch statement
+    /* We can't use these special #defines in a switch statement
        because they're less than the minimum value of the enum. So
        this is slightly silly, but functional. */
 
@@ -192,6 +192,8 @@ parse_type(var_type var)
         return "number";
     else if (var == TYPE_ANY)
         return "any type";
+    else if (var == TYPE_FLAG)
+        return "flag";
 
     switch (var) {
         case TYPE_INT:
