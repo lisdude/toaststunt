@@ -1311,10 +1311,10 @@ register_objects(void)
     register_function_with_read_write("move", 2, 3, bf_move,
                                       bf_move_read, bf_move_write,
                                       TYPE_OBJ, TYPE_OBJ, TYPE_INT);
-    register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_INT);
-    register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_INT);
-    register_function("occupants", 1, 4, bf_occupants, TYPE_LIST, TYPE_ANY, TYPE_INT, TYPE_INT);
-    register_function("locations", 1, 3, bf_locations, TYPE_OBJ, TYPE_OBJ, TYPE_INT);
+    register_function("isa", 2, 3, bf_isa, TYPE_ANY, TYPE_ANY, TYPE_FLAG);
+    register_function("locate_by_name", 1, 2, bf_locate_by_name, TYPE_STR, TYPE_FLAG);
+    register_function("occupants", 1, 4, bf_occupants, TYPE_LIST, TYPE_ANY, TYPE_FLAG, TYPE_FLAG);
+    register_function("locations", 1, 3, bf_locations, TYPE_OBJ, TYPE_OBJ, TYPE_FLAG);
     register_function("recycled_objects", 0, 0, bf_recycled_objects);
     register_function("next_recycled_object", 0, 1, bf_next_recycled_object, TYPE_OBJ);
     register_function("owned_objects", 1, 1, bf_owned_objects, TYPE_OBJ);
