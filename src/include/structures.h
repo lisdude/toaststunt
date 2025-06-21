@@ -107,7 +107,7 @@ typedef enum {
     _TYPE_ITER,			/* map iterator; not visible */
     _TYPE_ANON,			/* anonymous object; user-visible */
     _TYPE_WAIF,         /* lightweight object; user-visible */
-    TYPE_BOOL,			/* Experimental boolean type */
+    TYPE_BOOL,			/* boolean type */
     /* THE END - complex aliases come next */
     TYPE_STR = (_TYPE_STR | TYPE_COMPLEX_FLAG),
     TYPE_FLOAT = (_TYPE_FLOAT),

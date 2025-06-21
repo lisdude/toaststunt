@@ -215,7 +215,7 @@ parse_type(var_type var)
         case TYPE_WAIF:
             return "waif";
         case TYPE_BOOL:
-            return "bool";
+            return "boolean";
         default:
             return "unknown type";
     }
