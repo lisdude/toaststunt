@@ -1765,10 +1765,10 @@ register_list(void)
     register_function("listset", 3, 3, bf_listset,
                       TYPE_LIST, TYPE_ANY, TYPE_INT);
     register_function("equal", 2, 2, bf_equal, TYPE_ANY, TYPE_ANY);
-    register_function("explode", 1, 3, bf_explode, TYPE_STR, TYPE_STR, TYPE_INT);
+    register_function("explode", 1, 3, bf_explode, TYPE_STR, TYPE_STR, TYPE_FLAG);
     register_function("reverse", 1, 1, bf_reverse, TYPE_ANY);
     register_function("slice", 1, 3, bf_slice, TYPE_LIST, TYPE_ANY, TYPE_ANY);
-    register_function("sort", 1, 4, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_INT, TYPE_INT);
+    register_function("sort", 1, 4, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_FLAG, TYPE_FLAG);
     register_function("all_members", 2, 2, bf_all_members, TYPE_ANY, TYPE_LIST);
 
     /* string */
@@ -1779,9 +1779,9 @@ register_list(void)
     register_function("rmatch", 2, 3, bf_rmatch, TYPE_STR, TYPE_STR, TYPE_ANY);
     register_function("substitute", 2, 2, bf_substitute, TYPE_STR, TYPE_LIST);
     register_function("index", 2, 4, bf_index,
-                      TYPE_STR, TYPE_STR, TYPE_ANY, TYPE_INT);
+                      TYPE_STR, TYPE_STR, TYPE_ANY, TYPE_FLAG);
     register_function("rindex", 2, 4, bf_rindex,
-                      TYPE_STR, TYPE_STR, TYPE_ANY, TYPE_INT);
+                      TYPE_STR, TYPE_STR, TYPE_ANY, TYPE_FLAG);
     register_function("strcmp", 2, 2, bf_strcmp, TYPE_STR, TYPE_STR);
     register_function("strsub", 3, 4, bf_strsub,
                       TYPE_STR, TYPE_STR, TYPE_STR, TYPE_ANY);
