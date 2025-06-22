@@ -1,4 +1,12 @@
 # ToastStunt ChangeLog
+## 2.8.0 (In progress)
+### Bug Fixes
+- Temporarily reenable the emptylist bandaid until we can find the culprit.
+
+### New Features
+- Add an optional unclean_shutdown parameter to `shutdown()`, which replicates the functionality found in the `panic()` builtin.
+- Remove the `panic()` builtin.
+
 ## 2.7.3 (Jun 20, 2025)
 ### Bug Fixes
 - `listeners()` now uses the correct key for print-messages.

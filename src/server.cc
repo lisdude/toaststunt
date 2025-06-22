@@ -2575,48 +2575,34 @@ bf_usage(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-/* Unceremoniously exit the server, creating a panic dump of the database. */
-static package
-bf_panic(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    const char *msg;
-
-    if (!is_wizard(progr)) {
-        free_var(arglist);
-        return make_error_pack(E_PERM);
-    }
-
-    if (arglist.v.list[0].v.num) {
-        msg = str_dup(arglist.v.list[1].v.str);
-    } else {
-        msg = "";
-    }
-
-    free_var(arglist);
-    panic_moo(msg);
-
-    return make_error_pack(E_NONE);
-}
-
-
 static package
 bf_shutdown(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    int nargs = arglist.v.list[0].v.num;
+    const int nargs = arglist.v.list[0].v.num;
     const char *message = (nargs >= 1 ? arglist.v.list[1].v.str : nullptr);
+    const int unclean_shutdown = (nargs >= 2 ? is_true(arglist.v.list[2]) : 0);
 
     if (!is_wizard(progr)) {
         free_var(arglist);
         return make_error_pack(E_PERM);
     }
 
-    shutdown_triggered = true;
-    shutdown_message << "shutdown() called by " << object_name(progr);
-    if (message)
-        shutdown_message << ": " << message;
+    if (unclean_shutdown) {
+        /* Unclean shutdown - unceremoniously exit the server, creating a panic dump of the database */
+        const char *panic_msg = message ? str_dup(message) : "";
+        free_var(arglist);
+        panic_moo(panic_msg);
+        return make_error_pack(E_NONE);
+    } else {
+        /* Clean shutdown */
+        shutdown_triggered = true;
+        shutdown_message << "shutdown() called by " << object_name(progr);
+        if (message)
+            shutdown_message << ": " << message;
 
-    free_var(arglist);
-    return no_var_pack();
+        free_var(arglist);
+        return no_var_pack();
+    }
 }
 
 static package
@@ -3280,8 +3266,7 @@ register_server(void)
     register_function("malloc_stats", 0, 0, bf_malloc_stats);
 #endif
     register_function("usage", 0, 0, bf_usage);
-    register_function("panic", 0, 1, bf_panic, TYPE_STR);
-    register_function("shutdown", 0, 1, bf_shutdown, TYPE_STR);
+    register_function("shutdown", 0, 2, bf_shutdown, TYPE_STR, TYPE_ANY);
     register_function("dump_database", 0, 0, bf_dump_database);
     register_function("db_disk_size", 0, 0, bf_db_disk_size);
     register_function("open_network_connection", 2, 3, bf_open_network_connection,

@@ -12,6 +12,7 @@
     - New argument to `move()` to effectively `listinsert()` the object into the destination's .contents
     - New argument to `is_member()` for controlling case sensitivity of equality comparisons. No third argument or a true value results in standard functionality; a false value as the third argument results in case not mattering at all
     - Update `random()` to accept a second optional argument for setting the maximum value returned. Including the second argument will treat the first argument as the minimum.
+    - Update `shutdown()` to accept a second optional argument for triggering an unclean shutdown (panic). This effectively replaces the `panic()` builtin, previously available in versions 2.7.3 and earlier.
     - SIGUSR1 will close and reopen the logfile, allowing it to be rotated without restarting the server.
     - '-m' command line option to clear all last_move properties in your database (and not set them again for the lifetime of the process).
     - Build system is now CMake
