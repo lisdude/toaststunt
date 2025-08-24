@@ -1104,7 +1104,7 @@ void occupants_callback(Var arglist, Var *ret, void *extra_data)
     const int content_length = contents.v.list[0].v.num;
     const bool check_parent = nargs == 1 ? false : true;
     const Var parent = check_parent ? arglist.v.list[2] : nothing;
-const    bool check_player_flag = (nargs == 1 || (nargs > 2 && is_true(arglist.v.list[3])));
+const bool check_player_flag = (nargs == 1 || (nargs > 2 && is_true(arglist.v.list[3])));
     const bool inverse_match = (nargs > 3 && is_true(arglist.v.list[4]));
 
     // Validate arguments
