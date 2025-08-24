@@ -592,8 +592,10 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
 
     errno = 0;
 
-    if ((begin < 1) || (begin > end))
+    if ((begin < 1) || (begin > end)) {
+        free_var(arglist);
         return make_error_pack(E_INVARG);
+    }
     if (!file_verify_caller(progr)) {
         r = file_raise_notokcall("file_readlines", progr);
     } else if ((f = file_handle_file_safe(fhandle)) == nullptr) {
