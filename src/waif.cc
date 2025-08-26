@@ -34,9 +34,11 @@
 #include "log.h"        // errlog
 #include "map.h"
 #include <unordered_map>
+#include <vector>
+#include <algorithm>
 
-static unsigned long waif_count = 0;
 static std::unordered_map<Objid, unsigned int> waif_class_count;
+static std::vector<Waif *> waif_instances;
 std::unordered_map<Waif *, bool> destroyed_waifs;
 
 #define PROP_MAPPED(Mmap, Mbit) ((Mmap)[(Mbit) / 32] & (1 << ((Mbit) % 32)))
@@ -288,8 +290,8 @@ new_waif(Objid _class, Objid owner)
     for (i = 0; i < WAIF_MAPSZ; ++i)
         res.v.waif->map[i] = 0;
     res.v.waif->propvals = alloc_waif_propvals(res.v.waif, 1);
-    ++waif_count;
     waif_class_count[_class]++;
+    waif_instances.push_back(res.v.waif);
 
     return res;
 }
@@ -582,7 +584,9 @@ free_waif(Waif *waif)
     waif_class_count[waif->_class]--;
     if (waif_class_count[waif->_class] <= 0)
         waif_class_count.erase(waif->_class);
-
+    auto it = std::find(waif_instances.begin(), waif_instances.end(), waif);
+    if (it != waif_instances.end())
+        waif_instances.erase(it);
     /* assert(refcount(waif) == 0) */
     cnt = count_waif_propvals(waif);
     free_waif_propdefs(waif->propdefs);
@@ -591,7 +595,6 @@ free_waif(Waif *waif)
     if (waif->propvals)
         myfree(waif->propvals, M_WAIF_XTRA);
     myfree(waif, M_WAIF);
-    --waif_count;
 
 }
 
@@ -625,7 +628,7 @@ bf_waif_stats(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     Var r = new_map();
-    r = mapinsert(r, str_dup_to_var("total"), Var::new_int(waif_count));
+    r = mapinsert(r, str_dup_to_var("total"), Var::new_int(waif_instances.size()));
     r = mapinsert(r, str_dup_to_var("pending_recycle"), Var::new_int(destroyed_waifs.size()));
 
     for (auto& x : waif_class_count) {
@@ -635,11 +638,42 @@ bf_waif_stats(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+static package
+bf_waifs(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (arglist.v.list[0].v.num > 0) {
+        // Optional arg checking.
+        if (!arglist.v.list[1].is_object()) {
+            free_var(arglist);
+            return make_error_pack(E_TYPE);
+        } else if (!is_valid(arglist.v.list[1])) {
+            free_var(arglist);
+            return make_error_pack(E_INVARG);
+        }
+    }
+
+    Var r = new_list(0);
+    for (auto& w : waif_instances) {
+        if (arglist.v.list[0].v.num > 0 && arglist.v.list[1].v.obj != w->_class) {
+            continue;
+        }
+        Var e;
+        e.type = TYPE_WAIF;
+        e.v.waif = w;
+        addref(w);
+        r = listappend(r, e);
+    }
+
+    free_var(arglist);
+    return make_var_pack(r);
+}
+
 void
 register_waif()
 {
     register_function("new_waif", 0, 0, bf_new_waif);
     register_function("waif_stats", 0, 0, bf_waif_stats);
+    register_function("waifs", 0, 1, bf_waifs, TYPE_OBJ);
 }
 
 /* Waif property permissions are derived from the class object's property
@@ -855,7 +889,7 @@ waif_before_saving()
 {
     int size;
 
-    size = sizeof(Waif *) * waif_count;
+    size = sizeof(Waif *) * waif_instances.size();
     saved_waifs = (Waif **) mymalloc(size, M_WAIF_XTRA);
     memset(saved_waifs, 0, size);
     n_saved_waifs = 0;
@@ -874,7 +908,7 @@ write_waif(Var v)
      * mapping will be wrong and we'll just ignore the index.
      */
     index = w->waif_save_index;
-    if (index < waif_count && saved_waifs[index] == w) {
+    if (index < waif_instances.size() && saved_waifs[index] == w) {
         /* just refer to an old one */
         dbio_printf("r %d\n.\n", index);    /* XXX 1.9 terminator*/
         return;
@@ -930,7 +964,7 @@ void
 waif_after_saving()
 {
     myfree(saved_waifs, M_WAIF_XTRA);
-    if (n_saved_waifs != waif_count)
+    if (n_saved_waifs != waif_instances.size())
         errlog("WARN: waif_count != n_saved_waifs!\n");
 }
 
@@ -973,7 +1007,7 @@ read_waif()
 
     /* Extend the table by doubling its size if we've filled it.
      */
-    if (waif_count == n_saved_waifs) {
+    if (waif_instances.size() == n_saved_waifs) {
         int size;
 
         n_saved_waifs *= 2;
@@ -987,7 +1021,7 @@ read_waif()
     /* These have to line up or subsequent refs will not get the right
      * waif.
      */
-    if (index != waif_count)
+    if (index != waif_instances.size())
         panic_moo("WAIF index mismatch");
 
     /* I'd like to use new_waif() here but this is so hacked up it
@@ -995,7 +1029,8 @@ read_waif()
      */
     res.type = TYPE_WAIF;
     res.v.waif = (Waif *) mymalloc(sizeof(Waif), M_WAIF);
-    saved_waifs[waif_count++] = w = res.v.waif;
+    saved_waifs[waif_instances.size()] = w = res.v.waif;
+    waif_instances.push_back(res.v.waif);
     res.v.waif->propdefs = nullptr;
     res.v.waif->_class = dbio_read_objid();
     res.v.waif->owner = dbio_read_objid();
@@ -1057,7 +1092,7 @@ waif_after_loading()
      * I recommend qsort()ing the pointers.
      */
     oklog("VALIDATE: Check for self-referential waifs ...\n");
-    for (i = 0; i < waif_count; ++i) {
+    for (i = 0; i < waif_instances.size(); ++i) {
         Waif *w = saved_waifs[i];
         Object *o = dbpriv_find_object(w->_class);
 
