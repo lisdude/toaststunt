@@ -1689,8 +1689,12 @@ player_connected(Objid old_id, Objid new_id, bool is_newly_created)
         if (new_h->print_messages)
             send_message(new_h->listener, new_h->nhandle, "redirect_to_msg",
                          "*** Redirecting old connection to this port ***", 0);
-        network_close(existing_h->nhandle);
-        free_shandle(existing_h);
+        if (get_nhandle_refcount(existing_h->nhandle) > 1) {
+            existing_h->disconnect_me = true;
+        } else {
+            network_close(existing_h->nhandle);
+            free_shandle(existing_h);
+        }
         if (existing_listener == new_h->listener)
             call_notifier(new_id, new_h->listener, "user_reconnected");
         else {
@@ -1745,8 +1749,12 @@ player_switched(Objid old_id, Objid new_id, bool silent)
         if (!silent && new_h->print_messages)
             send_message(new_h->listener, new_h->nhandle, "redirect_to_msg",
                          "*** Redirecting old connection to this port ***", 0);
-        network_close(existing_h->nhandle);
-        free_shandle(existing_h);
+        if (get_nhandle_refcount(existing_h->nhandle) > 1) {
+            existing_h->disconnect_me = true;
+        } else {
+            network_close(existing_h->nhandle);
+            free_shandle(existing_h);
+        }
     } else {
         if (!silent && new_h->print_messages)
             send_message(new_h->listener, new_h->nhandle, "connect_msg",
