@@ -69,7 +69,10 @@ static void curl_thread_callback(Var arglist, Var *ret, void *extra_data)
     if (res != CURLE_OK)
         make_error_map(E_INVARG, curl_easy_strerror(res), ret);
     else {
-        *ret = str_dup_to_var(raw_bytes_to_binary(chunk.result, chunk.size));
+        Stream *s = new_stream(chunk.size);
+        stream_add_raw_bytes_to_binary(s, chunk.result, chunk.size);
+        *ret = str_dup_to_var(reset_stream(s));
+        free_stream(s);
         oklog("CURL: %lu bytes retrieved from: %s\n", (unsigned long)chunk.size, arglist.v.list[1].v.str);
     }
 
