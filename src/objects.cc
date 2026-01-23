@@ -31,7 +31,6 @@
 #include "structures.h"
 #include "utils.h"
 #include "log.h"
-#include "background.h"   // Threads
 
 static int
 controls(Objid who, Objid what)
@@ -1038,7 +1037,7 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
 /* Locate an object in the database by name more quickly than is possible in-DB.
  * To avoid numerous list reallocations, we put everything in a vector and then
  * transfer it over to a list when we know how many values we have. */
-void locate_by_name_thread_callback(Var arglist, Var *ret, void *extra_data)
+static void locate_by_name_callback(Var arglist, Var *ret)
 {
     Var name, object;
     object.type = TYPE_OBJ;
@@ -1075,7 +1074,10 @@ bf_locate_by_name(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    return background_thread(locate_by_name_thread_callback, &arglist);
+    Var ret;
+    locate_by_name_callback(arglist, &ret);
+    free_var(arglist);
+    return make_var_pack(ret);
 }
 
 static bool multi_parent_isa(const Var *object, const Var *parents)
@@ -1097,7 +1099,7 @@ static bool multi_parent_isa(const Var *object, const Var *parents)
  * With four arguments, the parent check is inversed; items that are not descended from <parent> are returned.
  * occupants(LIST objects, OBJ | LIST parent, ?INT player flag set, ?INT inverse match)
  */
-void occupants_callback(Var arglist, Var *ret, void *extra_data)
+static void occupants_callback(Var arglist, Var *ret)
 {
     const int nargs = arglist.v.list[0].v.num;
     const Var contents = arglist.v.list[1];
@@ -1157,7 +1159,12 @@ const bool check_player_flag = (nargs == 1 || (nargs > 2 && is_true(arglist.v.li
 static package
 bf_occupants(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    return background_thread(occupants_callback, &arglist);
+    Var ret;
+    occupants_callback(arglist, &ret);
+    free_var(arglist);
+    if (ret.type == TYPE_ERR)
+        return make_error_pack(ret.v.err);
+    return make_var_pack(ret);
 }
 
 /* Return a list of nested locations for an object.
