@@ -2863,18 +2863,24 @@ name_lookup_callback(Var arglist, Var *ret, void *extra_data)
 {
     int nargs = arglist.v.list[0].v.num;
     Objid who = arglist.v.list[1].v.obj;
-    shandle *h = find_shandle(who);
     bool rewrite_connect_name = nargs > 1 && is_true(arglist.v.list[2]);
 
     network_handle nh;
     nh.ptr = extra_data;
 
-    if (!h || h->disconnect_me)
+    bool valid_connection;
+    {
+        std::lock_guard<std::recursive_mutex> lock(all_shandles_mutex);
+        shandle *h = find_shandle(who);
+        valid_connection = h && !h->disconnect_me.load();
+    }
+
+    if (!valid_connection)
         make_error_map(E_INVARG, "Invalid connection", ret);
     else
     {
         const char *name;
-        int status = lookup_network_connection_name(h->nhandle, &name);
+        int status = lookup_network_connection_name(nh, &name);
 
         /* If the server is shutting down, this is meaningless and creates
          * a bit of a mess anyway. So don't bother continuing. */
