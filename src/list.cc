@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <algorithm> // std::sort
 #include "dependencies/strnatcmp.c" // natural sorting
+#include <mutex>
 #include <vector>
 
 #include <ctype.h>
@@ -55,16 +56,18 @@ new_list(int size)
     Var *ptr;
 
     if (size == 0) {
+        static std::once_flag emptylist_init;
 
-        if (emptylist.v.list == nullptr) {
-            if ((ptr = (Var *)mymalloc(1 * sizeof(Var), M_LIST)) == nullptr)
+        std::call_once(emptylist_init, []() {
+            Var *ptr = (Var *)mymalloc(1 * sizeof(Var), M_LIST);
+            if (ptr == nullptr)
                 panic_moo("EMPTY_LIST: mymalloc failed");
 
             emptylist.type = TYPE_LIST;
             emptylist.v.list = ptr;
             emptylist.v.list[0].type = TYPE_INT;
             emptylist.v.list[0].v.num = 0;
-        }
+        });
 
 #ifdef ENABLE_GC
         assert(gc_get_color(emptylist.v.list) == GC_GREEN);
