@@ -1,6 +1,7 @@
 #ifndef EXTENSION_BACKGROUND_H
 #define EXTENSION_BACKGROUND_H 1
 
+#include <atomic>
 #include <map>
 #include <mutex>
 #include <condition_variable>
@@ -21,7 +22,7 @@ typedef struct background_waiter {
                                         // NOTE: You must manage the memory of this yourself.
     int fd[2];                          // The pipe used to resume the task immediately.
     uint16_t handle;                    // Our position in the process table.
-    bool active;                        // @kill will set active to false and the callback should handle it accordingly.
+    std::atomic<bool> active;           // @kill will set active to false and the callback should handle it accordingly.
 } background_waiter;
 
 extern pthread_mutex_t shutdown_mutex;
