@@ -1583,8 +1583,12 @@ lookup_network_connection_name(const network_handle nh, const char **name)
     const nhandle *h = (nhandle *) nh.ptr;
     int retval = 0;
 
+    pthread_mutex_lock(h->name_mutex);
+    const char *ipaddr_copy = str_dup(h->destination_ipaddr);
+    pthread_mutex_unlock(h->name_mutex);
+
     struct addrinfo *address = 0;
-    int status = getaddrinfo(h->destination_ipaddr, nullptr, &tcp_hint, &address);
+    int status = getaddrinfo(ipaddr_copy, nullptr, &tcp_hint, &address);
 
     if (status < 0) {
         // Better luck next time.
@@ -1595,6 +1599,9 @@ lookup_network_connection_name(const network_handle nh, const char **name)
     } else {
         *name = get_nameinfo(address->ai_addr);
     }
+
+    free_str(ipaddr_copy);
+
     if (address)
         freeaddrinfo(address);
 
