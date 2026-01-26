@@ -157,7 +157,7 @@ set_prop_info(Var obj, const char *pname, Var info, Objid progr)
     enum error e;
     db_prop_handle h;
 
-    if (!obj.is_object())
+    if (!obj.is_obj())
         e = E_TYPE;
     else if (!is_valid(obj))
         e = E_INVARG;
@@ -217,7 +217,7 @@ bf_add_prop(Var arglist, Byte next, void *vdata, Objid progr)
 
     if ((e = validate_prop_info(info, &owner, &flags, &new_name)) != E_NONE)
         ; /* already failed */
-    else if (new_name || !obj.is_object())
+    else if (new_name || !obj.is_obj())
         e = E_TYPE;
     else if (!is_valid(obj))
         e = E_INVARG;
@@ -242,9 +242,9 @@ bf_delete_prop(Var arglist, Byte next, void *vdata, Objid progr)
     const char *pname = arglist.v.list[2].v.str;
     enum error e = E_NONE;
 
-    if (!obj.is_object())
+    if (!obj.is_obj())
         e = E_TYPE;
-    if (!is_valid(obj))
+    else if (!is_valid(obj))
         e = E_INVARG;
     else if (!db_object_allows(obj, progr, FLAG_WRITE))
         e = E_PERM;
