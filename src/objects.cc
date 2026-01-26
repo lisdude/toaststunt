@@ -870,7 +870,12 @@ moving_contents:
                     Var cp = db_object_parents2(child);
                     Var op = db_object_parents(oid);
                     if (cp.is_obj()) {
-                        db_change_parents(child, op, none);
+                        if (!db_change_parents(child, op, none)) {
+                            free_var(obj);
+                            free_var(*data);
+                            free_data(data);
+                            return make_error_pack(E_INVARG);
+                        }
                     }
                     else {
                         int i = 1;
@@ -895,7 +900,13 @@ moving_contents:
                             _new = setadd(_new, var_ref(cp.v.list[i]));
                             i++;
                         }
-                        db_change_parents(child, _new, none);
+                        if (!db_change_parents(child, _new, none)) {
+                            free_var(_new);
+                            free_var(obj);
+                            free_var(*data);
+                            free_data(data);
+                            return make_error_pack(E_INVARG);
+                        }
                         free_var(_new);
                     }
                 }
