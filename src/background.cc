@@ -22,6 +22,18 @@
   member, which will indicate whether or not the MOO task has been killed or not. If active is 0, the task is dead
   and your function should clean up and not bother worrying about returning anything.
 
+  WARNING: Your functions should not do anything that access the database directly! Database accesses are NOT
+           currently thread safe! Things that you should not do:
+
+           - Iterating objects (db_last_used_objid, valid, dbpriv_find_object)
+           - Reading properties (db_find_property, db_object_*)
+           - Reading object flags (is_user, is_wizard)
+           - Traversing parent/child hierarchies (db_object_isa, db_ancestors)
+
+           (Consider: Your function is iterating through all objects in one thread. The main thread then recycles
+           an object. You did a valid() check in your function, but the recycle happened right after that, so now
+           you're in unsafe territory.)
+
   Demonstrates:
      - Suspending tasks
      - Spawning external threads

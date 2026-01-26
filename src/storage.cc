@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <mutex>
 
 #include "config.h"
 #include "list.h"
@@ -109,11 +110,12 @@ str_dup(const char *s)
 
     if (s == nullptr || *s == '\0') {
         static char *emptystring;
+        static std::once_flag emptystring_init;
 
-        if (!emptystring) {
+        std::call_once(emptystring_init, []() {
             emptystring = (char *) mymalloc(1, M_STRING);
             *emptystring = '\0';
-        }
+        });
         addref(emptystring);
         return emptystring;
     } else {

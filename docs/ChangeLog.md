@@ -2,6 +2,8 @@
 ## 2.8.0 (In progress)
 ### Bug Fixes
 - Temporarily reenable the emptylist bandaid until we can find the culprit.
+- Fix various race conditions and threading bugs / pitfalls.
+- `occupants()` and `locate_by_name()` are no longer threaded functions, as they do unsafe database accesses.
 
 ### New Features
 - Add an optional unclean_shutdown parameter to `shutdown()`, which replicates the functionality found in the `panic()` builtin.

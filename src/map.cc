@@ -28,6 +28,7 @@
  *****************************************************************************/
 
 #include <assert.h>
+#include <mutex>
 
 #include <string.h>
 
@@ -599,9 +600,11 @@ Var
 new_map(void)
 {
     static Var map;
+    static std::once_flag map_init;
 
-    if (map.v.tree == nullptr)
+    std::call_once(map_init, []() {
         map = empty_map();
+    });
 
 #ifdef ENABLE_GC
     assert(gc_get_color(map.v.tree) == GC_GREEN);

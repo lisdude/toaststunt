@@ -42,7 +42,7 @@ new_stream(int size)
 
 size_t stream_alloc_maximum = 0;
 
-static int allow_stream_exceptions = 0;
+static thread_local int allow_stream_exceptions = 0;
 
 void
 enable_stream_exceptions()
