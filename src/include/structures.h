@@ -231,6 +231,14 @@ typedef struct Waif {
 	return v;
     }
 
+    static Var
+    new_anon(Object *anon) {
+        Var v;
+        v.type = TYPE_ANON;
+        v.v.anon = anon;
+        return v;
+    }
+
     bool
     is_str() const {
 	return TYPE_STR == type;

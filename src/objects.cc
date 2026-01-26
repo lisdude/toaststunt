@@ -388,13 +388,26 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
         else {
             enum error e;
             Objid last = db_last_used_objid();
-            Objid oid = db_create_object(-1);
+            Objid oid = db_create_object(-1, anonymous);
             Var args;
 
             db_set_object_owner(oid, !valid(owner) ? oid : owner);
 
-            if (!db_change_parents(Var::new_obj(oid), arglist.v.list[1], none)) {
-                db_destroy_object(oid);
+            /* This tmp var is used to indicate to db_change_parents that there's no need to
+             * update the children of the parents and to update the anonymous_objects map.
+             * For normal objects, it's just... a normal object. */
+            Var tmp;
+            if (anonymous) {
+                tmp.type = TYPE_ANON;
+                tmp.v.anon = dbpriv_find_object(oid);
+            } else {
+                tmp = Var::new_obj(oid);
+            }
+            if (!db_change_parents(tmp, arglist.v.list[1], none)) {
+                if (anonymous)
+                    dbpriv_cleanup_failed_anonymous_create(oid);
+                else
+                    db_destroy_object(oid);
                 db_set_last_used_objid(last);
                 free_var(arglist);
                 return make_error_pack(E_INVARG);
@@ -539,7 +552,7 @@ bf_create_read(void)
 
 static package
 bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
-{   /* (OBJ obj, OBJ|LIST what, LIST anon) */
+{   /* (OBJ obj, OBJ|LIST what) */
     Var obj = arglist.v.list[1];
     Var what = arglist.v.list[2];
     int n = listlength(arglist);
@@ -553,9 +566,6 @@ bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
     if (n > 2 && !is_wizard(progr)) {
         free_var(arglist);
         return make_error_pack(E_PERM);
-    }
-    else if (n > 2) {
-        anon_kids = arglist.v.list[3];
     }
 
     if (!is_valid(obj)
@@ -669,6 +679,34 @@ bf_children(Var arglist, Byte next, void *vdata, Objid progr)
         return make_var_pack(r);
     }
 }
+
+/* A general-purpose anonymous object informational function. Intended for debugging, not production. */
+#ifndef NDEBUG
+static package
+bf_anon(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (!is_wizard(progr)) {
+        free_var(arglist);
+        return make_error_pack(E_PERM);
+    }
+
+    Var ret;
+
+    if (arglist.v.list[0].v.num == 0) {
+        // Show available functions
+        ret = new_list(4);
+        ret.v.list[1] = str_dup_to_var("total_parents");    // total entries in anonymous_objects
+        ret.v.list[2] = str_dup_to_var("parents");          // the parent keys in anonymous_objects
+        ret.v.list[3] = str_dup_to_var("total_children");   // total anon children for <parent>. second arg
+        ret.v.list[4] = str_dup_to_var("children");         // anon children of <parent>. requires second argument
+    } else {
+        ret = db_anon_debug(arglist.v.list[1], arglist.v.list[0].v.num < 2 ? Var::new_int(0) : arglist.v.list[2]);
+    }
+
+    free_var(arglist);
+    return make_var_pack(ret);
+}
+#endif
 
 static package
 bf_ancestors(Var arglist, Byte next, void *vdata, Objid progr)
@@ -814,6 +852,7 @@ moving_contents:
 
             if (TYPE_OBJ == obj.type) {
                 Objid c, oid = obj.v.obj;
+                Var child;
 
                 while ((c = get_first(oid, db_for_all_contents)) != NOTHING)
                     if (move_to_nothing(c))
@@ -827,11 +866,11 @@ moving_contents:
                 /* we can now be confident that OID has no contents and no location */
 
                 /* do the same thing for the inheritance hierarchy */
-                while ((c = get_first(oid, db_for_all_children)) != NOTHING) {
-                    Var cp = db_object_parents(c);
+                while (db_next_child(oid, &child)) {
+                    Var cp = db_object_parents2(child);
                     Var op = db_object_parents(oid);
                     if (cp.is_obj()) {
-                        db_change_parents(Var::new_obj(c), op, none);
+                        db_change_parents(child, op, none);
                     }
                     else {
                         int i = 1;
@@ -856,7 +895,7 @@ moving_contents:
                             _new = setadd(_new, var_ref(cp.v.list[i]));
                             i++;
                         }
-                        db_change_parents(Var::new_obj(c), _new, none);
+                        db_change_parents(child, _new, none);
                         free_var(_new);
                     }
                 }
@@ -1292,10 +1331,10 @@ register_objects(void)
                                       TYPE_ANY);
     register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_ANY);
     register_function("valid", 1, 1, bf_valid, TYPE_ANY);
-    register_function("chparents", 2, 3, bf_chparent_chparents,
-                      TYPE_ANY, TYPE_LIST, TYPE_LIST);
-    register_function("chparent", 2, 3, bf_chparent_chparents,
-                      TYPE_ANY, TYPE_OBJ, TYPE_LIST);
+    register_function("chparents", 2, 2, bf_chparent_chparents,
+                      TYPE_ANY, TYPE_LIST);
+    register_function("chparent", 2, 2, bf_chparent_chparents,
+                      TYPE_ANY, TYPE_OBJ);
     register_function("parents", 1, 1, bf_parents, TYPE_ANY);
     register_function("parent", 1, 1, bf_parent, TYPE_ANY);
     register_function("children", 1, 1, bf_children, TYPE_ANY);
@@ -1318,4 +1357,7 @@ register_objects(void)
     register_function("recycled_objects", 0, 0, bf_recycled_objects);
     register_function("next_recycled_object", 0, 1, bf_next_recycled_object, TYPE_OBJ);
     register_function("owned_objects", 1, 1, bf_owned_objects, TYPE_OBJ);
+#ifndef NDEBUG
+    register_function("anon", 0, 2, bf_anon, TYPE_LIST, TYPE_ANY);
+#endif
 }

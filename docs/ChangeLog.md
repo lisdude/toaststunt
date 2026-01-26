@@ -6,6 +6,7 @@
 ### New Features
 - Add an optional unclean_shutdown parameter to `shutdown()`, which replicates the functionality found in the `panic()` builtin.
 - Remove the `panic()` builtin.
+- Anonymous children are no longer invalidated when properties change on their parents.
 
 ## 2.7.3 (Jun 20, 2025)
 ### Bug Fixes

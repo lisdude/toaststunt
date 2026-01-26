@@ -20,6 +20,7 @@
  *****************************************************************************/
 
 #include <assert.h>
+#include <unordered_set>
 
 #include "collection.h"
 #include "config.h"
@@ -30,6 +31,7 @@
 #include "storage.h"
 #include "utils.h"
 #include "waif.h"
+#include "log.h"
 
 Propdef
 dbpriv_new_propdef(const char *name)
@@ -123,8 +125,6 @@ insert_prop2(Var obj, int pos, Pval pval)
     free_waif_propdefs((WaifPropdefs*)o->waif_propdefs);
     o->waif_propdefs = nullptr;
 
-    dbpriv_assign_nonce(o);
-
     for (i = 0; i < pos; i++)
         new_propval[i] = o->propval[i];
 
@@ -157,7 +157,15 @@ insert_prop_recursively(Objid root, int prop_pos, Pval pv)
 
     Var descendant, descendants = db_descendants(Var::new_obj(root), false);
     int i, c, offset = 0;
-    int offsets[listlength(descendants)];
+
+    Num perm_count = listlength(descendants);
+    std::unordered_set<Object*> seen;
+    dbpriv_append_anon_list(root, &descendants, &seen);
+    for (i = 1; i <= perm_count; i++)
+        dbpriv_append_anon_list(descendants.v.list[i].v.obj, &descendants, &seen);
+
+    int num_descendants = listlength(descendants);
+    int *offsets = (int *)mymalloc(num_descendants * sizeof(int), M_INT);
 
     FOR_EACH(descendant, descendants, i, c) {
         offset = properties_offset(Var::new_obj(root), descendant);
@@ -166,9 +174,13 @@ insert_prop_recursively(Objid root, int prop_pos, Pval pv)
 
     FOR_EACH(descendant, descendants, i, c) {
         offset = offsets[i - 1];
-        insert_prop(descendant.v.obj, offset + prop_pos, pv);
+        if (descendant.type == TYPE_ANON)
+            insert_prop2(descendant, offset + prop_pos, pv);
+        else
+            insert_prop(descendant.v.obj, offset + prop_pos, pv);
     }
 
+    myfree(offsets, M_INT);
     free_var(descendants);
 }
 
@@ -276,8 +288,6 @@ remove_prop2(Var obj, int pos)
 
     nprops = --o->nval;
 
-    dbpriv_assign_nonce(o);
-
     free_waif_propdefs((WaifPropdefs *)o->waif_propdefs);
     o->waif_propdefs = nullptr;
 
@@ -310,7 +320,15 @@ remove_prop_recursively(Objid root, int prop_pos)
 
     Var descendant, descendants = db_descendants(Var::new_obj(root), false);
     int i, c, offset = 0;
-    int offsets[listlength(descendants)];
+
+    Num perm_count = listlength(descendants);
+    std::unordered_set<Object*> seen;
+    dbpriv_append_anon_list(root, &descendants, &seen);
+    for (i = 1; i <= perm_count; i++)
+        dbpriv_append_anon_list(descendants.v.list[i].v.obj, &descendants, &seen);
+
+    int num_descendants = listlength(descendants);
+    int *offsets = (int *)mymalloc(num_descendants * sizeof(int), M_INT);
 
     FOR_EACH(descendant, descendants, i, c) {
         offset = properties_offset(Var::new_obj(root), descendant);
@@ -319,9 +337,13 @@ remove_prop_recursively(Objid root, int prop_pos)
 
     FOR_EACH(descendant, descendants, i, c) {
         offset = offsets[i - 1];
-        remove_prop(descendant.v.obj, offset + prop_pos);
+        if (descendant.type == TYPE_ANON)
+            remove_prop2(descendant, offset + prop_pos);
+        else
+            remove_prop(descendant.v.obj, offset + prop_pos);
     }
 
+    myfree(offsets, M_INT);
     free_var(descendants);
 }
 
@@ -968,8 +990,6 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
     me->propval = new_propval;
     me->nval = new_count;
 
-    dbpriv_assign_nonce(me);
-
     myfree(old_offsets, M_INT);
     myfree(new_offsets, M_INT);
 
@@ -1018,7 +1038,14 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
             _new = listconcat(_new, var_ref(new_ancestors));
             old = listconcat(old, var_ref(old_ancestors));
         }
-        dbpriv_fix_properties_after_chparent(child, old, _new, none);
+        /* For permanent children, gather their anonymous children */
+        Var child_anon_kids = new_list(0);
+        if (child.type == TYPE_OBJ) {
+            std::unordered_set<Object*> seen;
+            dbpriv_append_anon_list(child.v.obj, &child_anon_kids, &seen);
+        }
+        dbpriv_fix_properties_after_chparent(child, old, _new, child_anon_kids);
+        free_var(child_anon_kids);
         free_var(_new);
         free_var(old);
     }

@@ -777,7 +777,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
         clear_property(m, 'e')
         clear_property(n, 'e')
 
-        typeof(m) == TYPE_ANON ? chparent(e, b, [m, n]) : chparent(e, b)
+        chparent(e, b)
 
         assert_equal [player, ''], property_info(e, 'e')
         assert_equal [player, ''], property_info(e, 'e1')
@@ -799,7 +799,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
         assert_equal 'e', get(n, 'e')
         assert_equal 'e1', get(n, 'e1')
 
-        typeof(m) == TYPE_ANON ? chparent(e, c, [m, n]) : chparent(e, c)
+        chparent(e, c)
 
         assert_equal [player, ''], property_info(e, 'e')
         assert_equal [player, ''], property_info(e, 'e1')
@@ -883,7 +883,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
         chparent(m, e)
         chparent(n, e)
 
-        typeof(m) == TYPE_ANON ? chparents(e, [b, c], [m, n]) : chparents(e, [b, c])
+        chparents(e, [b, c])
 
         assert_equal [player, ''], property_info(e, 'e')
         assert_equal [player, ''], property_info(e, 'e1')
@@ -984,7 +984,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
 
         assert_equal 'b', set(e, 'b',  ['b'])
 
-        typeof(m) == TYPE_ANON ? chparents(e, [c, b], [m, n]) : chparents(e, [c, b])
+        chparents(e, [c, b])
 
         assert_equal [player, ''], property_info(e, 'e')
         assert_equal [player, ''], property_info(e, 'e1')
@@ -1051,7 +1051,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
         add_property(r, 'rrr', 'rrr', [player, 'r'])
         add_property(r, 'rr', 'rr', [player, 'w'])
 
-        typeof(m) == TYPE_ANON ? chparents(e, [b, r, c], [m, n]) : chparents(e, [b, r, c])
+         chparents(e, [b, r, c])
 
         assert_equal [player, ''], property_info(e, 'e')
         assert_equal [player, ''], property_info(e, 'e1')
@@ -1161,7 +1161,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
         assert_equal E_PROPNF, get(m, 'c')
         assert_equal E_PROPNF, get(n, 'c')
 
-        typeof(m) == TYPE_ANON ? chparents(e, [c, b], [m, n]) : chparents(e, [c, b])
+        chparents(e, [c, b])
 
         assert_equal [player, ''], property_info(e, 'e')
         assert_equal [player, ''], property_info(e, 'e1')

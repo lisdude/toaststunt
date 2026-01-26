@@ -99,10 +99,13 @@ extern void db_shutdown(void);
 
 /**** objects ****/
 extern void db_clear_ancestor_cache();
+#ifndef NDEBUG
+extern Var db_anon_debug(Var options, Var arguments);
+#endif
 extern int valid(Objid);
 extern int is_valid(Var);
 
-extern Objid db_create_object(Num new_objid);
+extern Objid db_create_object(Num new_objid, bool anonymous = false);
 				/* Creates a new object with parent & location
 				 * == #-1.  Returns new object's id number.
 				 */
@@ -211,18 +214,18 @@ extern Var db_object_children(Objid);
 				 * if the reference is to be persistent.
 				 */
 
-extern int db_count_children(Objid);
-extern int db_for_all_children(Objid,
-			       int (*)(void *, Objid),
-			       void *);
-				/* The outcome is unspecified if any of the
+extern int db_next_child(Objid oid, Var *ret);
+				/* A replacement for db_for_all_children that
+				 * also includes anonymous children. 
+				 * The outcome is unspecified if any of the
 				 * following functions are called during a call
-				 * to db_for_all_children():
+				 * to db_next_child():
 				 *      db_create_object()
 				 *      db_destroy_object()
 				 *      db_renumber_object()
 				 *      db_change_parent()
 				 */
+
 extern int db_change_parents(Var obj, Var parents, Var anon_kids);
 				/* db_change_parents() returns true (and
 				 * actually changes the parent of OBJ) iff

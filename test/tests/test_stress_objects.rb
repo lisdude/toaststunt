@@ -320,7 +320,7 @@ class TestStressObjects < Test::Unit::TestCase
       assert_equal E_ARGS, simplify(command(%Q|; chparent();|))
       assert_equal E_ARGS, simplify(command(%Q|; chparent(1);|))
       assert_equal E_ARGS, simplify(command(%Q|; chparent(1, 2, 3, 4);|))
-      assert_equal E_TYPE, simplify(command(%Q|; chparent(1, 2, 3);|))
+      assert_equal E_ARGS, simplify(command(%Q|; chparent(1, 2, 3);|))
       assert_equal E_TYPE, simplify(command(%Q|; chparent(1, 2);|))
       assert_equal E_TYPE, simplify(command(%Q|; chparent($object, 2);|))
       assert_equal E_TYPE, simplify(command(%Q|; chparent($object, "2");|))
@@ -427,64 +427,6 @@ class TestStressObjects < Test::Unit::TestCase
     end
   end
 
-  def test_that_wizards_may_pass_a_third_argument_to_chparent_chparents
-    SCENARIOS.each do |args|
-      run_test_as('programmer') do
-        o = create(*args)
-        assert_equal E_PERM, simplify(command("; chparent(#{o}, $object, {});"))
-        assert_equal E_PERM, simplify(command("; chparents(#{o}, {$object}, {});"))
-      end
-      run_test_as('wizard') do
-        o = create(*args)
-        assert_not_equal E_PERM, simplify(command("; chparent(#{o}, $object, {});"))
-        assert_not_equal E_PERM, simplify(command("; chparents(#{o}, {$object}, {});"))
-      end
-    end
-  end
-
-  def test_that_the_third_argument_cannot_contain_duplicates
-    run_test_as('wizard') do
-      o = create(:object)
-      p = create(o)
-
-      a = create(p, 1)
-      b = create(p, 1)
-
-      assert_equal E_INVARG, chparent(p, :object, [a, a])
-      assert_equal E_INVARG, chparents(p, [:object], [b, b])
-    end
-  end
-
-  def test_that_the_third_argument_must_contain_anonymous_objects
-    run_test_as('wizard') do
-      o = create(:object)
-      p = create(o)
-
-      s = MooObj.new('#1')
-      t = MooObj.new('#2')
-      m = create(p, 0)
-      n = create(p, 0)
-
-      assert_equal E_INVARG, chparent(p, :object, [s, t])
-      assert_equal E_INVARG, chparents(p, [:object], [m, n])
-    end
-  end
-
-  def test_that_the_third_argument_must_contain_children_of_the_first_argument
-    run_test_as('wizard') do
-      o = create(:object)
-      p = create(o)
-
-      x = create(o, 1)
-      y = create(o, 1)
-      a = create(:anonymous, 1)
-      b = create(:anonymous, 1)
-
-      assert_equal E_INVARG, chparent(p, :object, [x, y])
-      assert_equal E_INVARG, chparents(p, [:object], [a, b])
-    end
-  end
-
   def test_that_the_list_of_children_must_not_define_properties_on_the_proposed_parents
     run_test_as('wizard') do
       o = create(:object)
@@ -501,8 +443,8 @@ class TestStressObjects < Test::Unit::TestCase
       add_property(x, 'foo', 0, [player, ''])
       add_property(x, 'bar', 0, [player, ''])
 
-      assert_equal E_INVARG, chparent(p, x, [a])
-      assert_equal E_INVARG, chparents(p, [x], [b])
+      assert_equal E_INVARG, chparent(p, x)
+      assert_equal E_INVARG, chparents(p, [x])
     end
   end
 
@@ -516,8 +458,8 @@ class TestStressObjects < Test::Unit::TestCase
       a = create(r, 1)
       b = create(r, 1)
 
-      chparent(r, p, [a, b])
-      chparents(r, [o], [a, b])
+      chparent(r, p)
+      chparents(r, [o])
 
       assert_equal [_(r), _(o)], ancestors(a)
       assert_equal [_(r), _(o)], ancestors(b)
@@ -567,11 +509,7 @@ class TestStressObjects < Test::Unit::TestCase
 
         recycle(b)
 
-        if typeof(m) == TYPE_OBJ
-          assert_equal [_(a), _(c)], parents(m)
-        else
-          assert_equal false, valid(m)
-        end
+        assert_equal [_(a), _(c)], parents(m)
       end
     end
   end
@@ -593,25 +531,13 @@ class TestStressObjects < Test::Unit::TestCase
         assert_equal [_(a), _(b), _(c), _(m)], parents(x)
 
         recycle(b)
-        if typeof(x) == TYPE_OBJ
-          assert_equal [_(a), _(c), _(m)], parents(x)
-        else
-          assert_equal false, valid(x)
-        end
+        assert_equal [_(a), _(c), _(m)], parents(x)
 
         recycle(m)
-        if typeof(x) == TYPE_OBJ
-          assert_equal [_(a), _(c), _(d), _(e)], parents(x)
-        else
-          assert_equal false, valid(x)
-        end
+        assert_equal [_(a), _(c), _(d), _(e)], parents(x)
 
         recycle(e)
-        if typeof(x) == TYPE_OBJ
-          assert_equal [_(a), _(c), _(d)], parents(x)
-        else
-          assert_equal false, valid(x)
-        end
+        assert_equal [_(a), _(c), _(d)], parents(x)
       end
     end
   end

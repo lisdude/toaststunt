@@ -22,6 +22,7 @@
 #define DB_PRIVATE_h
 
 #include <stdexcept>
+#include <unordered_set>
 
 #include "config.h"
 #include "program.h"
@@ -59,32 +60,20 @@ typedef struct Pval {
 } Pval;
 
 typedef struct Object {
-    Objid id;
-
-    Objid owner;
-
-    const char *name;
-    int flags; /* see db.h for `flags' values */
-
     Var location;
     Var last_move;
     Var contents;
     Var parents;
     Var children;
-
-    Pval *propval;
-    unsigned int nval;
-
-    Verbdef *verbdefs;
     Proplist propdefs;
-
-    /* The nonce marks changes to the propval layout caused by changes
-     * to parentage, property addition/deletion, etc.  Every value is
-     * globally unique.
-     */
-    unsigned int nonce;
-
+    Objid id;
+    Objid owner;
+    const char *name;
+    Pval *propval;
+    Verbdef *verbdefs;
     void *waif_propdefs;
+    int flags; /* see db.h for `flags' values */
+    unsigned int nval; // number of propdefs
 } Object;
 
 /*
@@ -121,8 +110,6 @@ extern void db_priv_affected_callable_verb_lookup(void);
 extern Var db_read_anonymous();
 extern void db_write_anonymous(Var);
 
-extern void dbpriv_assign_nonce(Object *);
-
 extern Objid dbpriv_object_owner(Object *);
 extern void dbpriv_set_object_owner(Object *, Objid owner);
 
@@ -143,36 +130,60 @@ extern Var dbpriv_object_children(Object *);
 extern Var dbpriv_object_location(Object *);
 extern Var dbpriv_object_last_move(Object *);
 extern Var dbpriv_object_contents(Object *);
-				/* These functions do not change the reference
-				 * count of the list they return.  Thus, the
-				 * caller should var_ref() the value if the
-				 * reference is to be persistent.
-				 */
+                /* These functions do not change the reference
+                 * count of the list they return.  Thus, the
+                 * caller should var_ref() the value if the
+                 * reference is to be persistent.
+                 */
 
 extern void dbpriv_set_all_users(Var);
-				/* Initialize the list returned by
-				 * db_all_users().
-				 */
+                /* Initialize the list returned by
+                 * db_all_users().
+                 */
 
-extern Object *dbpriv_new_object(Num new_objid);
+extern Object *dbpriv_new_object(Num new_objid, bool anonymous = false);
 extern Object *dbpriv_new_anonymous_object(void);
-				/* Creates a new object, assigning it a number,
-				 * but doesn't fill in any of the fields other
-				 * than `id'.
-				 */
-extern void db_init_object(Object *);
-				/* Initializes a new object.
-				 */
+                /* Creates a new object, assigning it a number,
+                 * but doesn't fill in any of the fields other
+                 * than `id'. If anonymous is true, memory is
+                 * allocated for metadata via M_ANON.
+                 */
+
+extern void dbpriv_remove_anon(Objid parent, Object *obj);
+extern void dbpriv_add_anon(Objid parent, Object *obj);
+                /* Add or remove anonymous object pointers
+                 * to the global anonymous_objects map.
+                 */
+
+extern void dbpriv_append_anon_list(Objid root, Var *ret, std::unordered_set<Object*> *seen);
+                /* Append all of the anons for <root> into
+                 * the list at <ret>. (Typically used for
+                 * adding to descendant lists.)
+                 */
+
+extern void dbpriv_destroy_anon_map();
+                /* Free everything in the anonymous object map. */
+
+extern void dbpriv_cleanup_failed_anonymous_create(Objid oid);
+                /* Clean up an anonymous object that failed during
+                 * bf_create. Removes from objects[], destroys, and frees.
+                 */
+
+extern void db_init_object(Object *, bool anonymous = false);
+                /* Initializes a new object.
+                 * If anonymous is true, don't initialize:
+                 * location, last_move, or contents.
+                 */
 
 extern void dbpriv_new_recycled_object(void);
-				/* Does the equivalent of creating and
-				 * destroying an object, with the net effect of
-				 * using up the next available object number.
-				 */
+                /* Does the equivalent of creating and
+                 * destroying an object, with the net effect of
+                 * using up the next available object number.
+                 */
 
 extern Object *dbpriv_find_object(Objid);
-				/* Returns 0 if given object is not valid.
-				 */
+                /* Returns 0 if given object is not valid.
+                 */
 
 extern void dbpriv_after_load(void);
 
@@ -181,33 +192,33 @@ extern void dbpriv_after_load(void);
 extern Propdef dbpriv_new_propdef(const char *);
 
 extern int dbpriv_check_properties_for_chparent(Var obj,
-						Var parents,
-						Var anon_kids);
-				/* Return true iff PARENTS defines no
-				 * properties that are also defined by either
-				 * OBJ or any of OBJ's descendants, or by
-				 * other parents in PARENTS and their
-				 * ancestors.
-				 */
+                        Var parents,
+                        Var anon_kids);
+                /* Return true iff PARENTS defines no
+                 * properties that are also defined by either
+                 * OBJ or any of OBJ's descendants, or by
+                 * other parents in PARENTS and their
+                 * ancestors.
+                 */
 
 extern void dbpriv_fix_properties_after_chparent(Var obj,
-						 Var old_ancestors,
-						 Var new_ancestors,
-						 Var anon_kids);
-				/* OBJ has just had its parents changed.
-				 * Fix up the properties of OBJ and its
-				 * descendants, removing obsolete ones
-				 * and adding clear new ones, as
-				 * appropriate for its new parents.
-				 */
+                        Var old_ancestors,
+                        Var new_ancestors,
+                        Var anon_kids);
+                /* OBJ has just had its parents changed.
+                 * Fix up the properties of OBJ and its
+                 * descendants, removing obsolete ones
+                 * and adding clear new ones, as
+                 * appropriate for its new parents.
+                 */
 
 /*********** Verbs ***********/
 
 extern void dbpriv_build_prep_table(void);
-				/* Should be called once near the beginning of
-				 * the world, to initialize the
-				 * prepositional-phrase matching table.
-				 */
+                /* Should be called once near the beginning of
+                 * the world, to initialize the
+                 * prepositional-phrase matching table.
+                 */
 
 /*********** DBIO ***********/
 
@@ -220,13 +231,13 @@ public:
     ~dbpriv_dbio_failed() throw() override {}
 
     const char* what() const throw() override {
-	return "dbio failed";
+        return "dbio failed";
     }
 };
 
-				/* Raised by DBIO in case of failure (e.g.,
-				 * running out of disk space for the dump).
-				 */
+/* Raised by DBIO in case of failure (e.g.,
+ * running out of disk space for the dump).
+ */
 
 extern void dbpriv_set_dbio_input(FILE *);
 extern void dbpriv_set_dbio_output(FILE *);

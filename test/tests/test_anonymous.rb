@@ -198,7 +198,7 @@ class TestAnonymous < Test::Unit::TestCase
     end
   end
 
-  def test_that_recycling_a_parent_invalidates_an_anonymous_object
+  def test_that_recycling_a_parent_does_not_invalidate_an_anonymous_object
     run_test_as('programmer') do
       o = create(:nothing)
       add_verb(o, ['player', 'xd', 'go'], ['this', 'none', 'this'])
@@ -208,11 +208,11 @@ class TestAnonymous < Test::Unit::TestCase
         vc << %Q|recycle(o);|
         vc << %Q|return valid(a);|
       end
-      assert_equal 0, call(o, 'go')
+      assert_equal 1, call(o, 'go')
     end
   end
 
-  def test_that_chparents_on_a_parent_invalidates_an_anonymous_object
+  def test_that_chparents_on_a_parent_does_not_invalidate_an_anonymous_object
     run_test_as('programmer') do
       o = create(:nothing)
       add_verb(o, ['player', 'xd', 'go'], ['this', 'none', 'this'])
@@ -226,11 +226,11 @@ class TestAnonymous < Test::Unit::TestCase
         vc << %Q|chparents(c, {b, a});|
         vc << %Q|return {valid(m), valid(n)};|
       end
-      assert_equal [1, 0], call(o, 'go')
+      assert_equal [1, 1], call(o, 'go')
     end
   end
 
-  def test_that_adding_a_property_to_a_parent_invalidates_an_anonymous_object
+  def test_that_adding_a_property_to_a_parent_does_not_invalidate_an_anonymous_object
     run_test_as('programmer') do
       o = create(:nothing)
       add_verb(o, ['player', 'xd', 'go'], ['this', 'none', 'this'])
@@ -242,11 +242,11 @@ class TestAnonymous < Test::Unit::TestCase
         vc << %Q|add_property(p, "xyz", 1, {player, ""});|
         vc << %Q|return {valid(a), valid(b)};|
       end
-      assert_equal [1, 0], call(o, 'go')
+      assert_equal [1, 1], call(o, 'go')
     end
   end
 
-  def test_that_deleting_a_property_from_a_parent_invalidates_an_anonymous_object
+  def test_that_deleting_a_property_from_a_parent_does_not_invalidate_an_anonymous_object
     run_test_as('programmer') do
       o = create(:nothing)
       add_verb(o, ['player', 'xd', 'go'], ['this', 'none', 'this'])
@@ -259,7 +259,7 @@ class TestAnonymous < Test::Unit::TestCase
         vc << %Q|delete_property(p, "xyz");|
         vc << %Q|return {valid(a), valid(b)};|
       end
-      assert_equal [1, 0], call(o, 'go')
+      assert_equal [1, 1], call(o, 'go')
     end
   end
 

@@ -321,7 +321,6 @@ ng_read_object(int anonymous)
     }
     else {
         o = dbpriv_new_object(-1);
-        dbpriv_assign_nonce(o);
     }
 
     o->name = dbio_read_string_intern();
@@ -344,6 +343,19 @@ ng_read_object(int anonymous)
     o->contents = dbio_read_var();
 
     o->parents = dbio_read_var();
+
+    if (anonymous) {
+        /* Update the anonymous object map. */
+        Var parent;
+        int i, c;
+        if (o->parents.type == TYPE_OBJ && valid(o->parents.v.obj))
+            dbpriv_add_anon(o->parents.v.obj, o);
+        else if (o->parents.type == TYPE_LIST)
+            FOR_EACH(parent, o->parents, i, c)
+                if (parent.type == TYPE_OBJ && valid(parent.v.obj))
+                    dbpriv_add_anon(parent.v.obj, o);
+    }
+
     o->children = dbio_read_var();
 
     o->verbdefs = nullptr;
@@ -757,8 +769,6 @@ v4_upgrade_objects()
         MAYBE_LOG_PROGRESS;
         if (o) {
             Object *_new = dbpriv_new_object(-1);
-
-            dbpriv_assign_nonce(_new);
 
             _new->name = o->name;
             _new->flags = o->flags;
@@ -1290,4 +1300,6 @@ db_shutdown()
 
     free_str(input_db_name);
     free_str(dump_db_name);
+
+    dbpriv_destroy_anon_map();
 }

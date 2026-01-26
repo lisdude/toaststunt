@@ -919,7 +919,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
 
         chparent(c, a)
         chparent(b, NOTHING)
-        typeof(c) == TYPE_ANON ? chparent(a, b, [c]) : chparent(a, b)
+        chparent(a, b)
 
         assert_equal 'foo', call(a, 'foo')
         assert_equal E_VERBNF, call(b, 'foo')
@@ -1186,7 +1186,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
         assert_equal ['b', 'e'], call(b, 'foo')
         assert_equal ['c', 'b', 'e'], call(c, 'foo')
 
-        typeof(c) == TYPE_ANON ? chparents(b, [], [c]) : chparents(b, [])
+        chparents(b, [])
 
         assert_equal 'e', call(e, 'foo')
         assert_equal 'b', call(b, 'foo')
