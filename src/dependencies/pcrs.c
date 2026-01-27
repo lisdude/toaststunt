@@ -14,9 +14,6 @@
  *                <andreas@oesterhelt.org>
  *
  *                Copyright (C) 2006, 2007 Fabian Keil <fk@fabiankeil.de>
- * 
- * Portions Copyright   :  Written by and Copyright (C) 2001 the
- *                Privoxy team. https://www.privoxy.org/
  *
  *                This program is free software; you can redistribute it
  *                and/or modify it under the terms of the GNU General
@@ -39,10 +36,10 @@
  *********************************************************************/
 
 
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
-#include <stdio.h>
 
 #include "pcrs.h"
 
@@ -50,7 +47,7 @@
  * Internal prototypes
  */
 
-static int              pcrs_parse_perl_options(const char *optstring, int *flags);
+static int              pcrs_parse_perl_options(const char *optstring, unsigned int *flags);
 static pcrs_substitute *pcrs_compile_replacement(const char *replacement, int trivialflag,
                         int capturecount, int *errptr);
 static int              is_hex_sequence(const char *sequence);
@@ -71,45 +68,48 @@ static int              xdtoi(const int d);
  *********************************************************************/
 const char *pcrs_strerror(const int error)
 {
-   static char buf[100];
+   static PCRE2_UCHAR8 buf[100];
 
    if (error != 0)
    {
       switch (error)
       {
          /* Passed-through PCRE error: */
-         case PCRE_ERROR_NOMEMORY:     return "No memory";
+         case PCREn(ERROR_NOMEMORY):     return "(pcre:) No memory";
 
          /* Shouldn't happen unless PCRE or PCRS bug, or user messed with compiled job: */
-         case PCRE_ERROR_NULL:         return "NULL code or subject or ovector";
-         case PCRE_ERROR_BADOPTION:    return "Unrecognized option bit";
-         case PCRE_ERROR_BADMAGIC:     return "Bad magic number in code";
-         case PCRE_ERROR_UNKNOWN_NODE: return "Bad node in pattern";
-
+         case PCREn(ERROR_NULL):         return "(pcre:) NULL code or subject or ovector";
+         case PCREn(ERROR_BADOPTION):    return "(pcre:) Unrecognized option bit";
+         case PCREn(ERROR_BADMAGIC):     return "(pcre:) Bad magic number in code";
+#if defined(PCRE_ERROR_UNKNOWN_NODE)
+         case PCRE_ERROR_UNKNOWN_NODE: return "(pcre:) Bad node in pattern";
+#endif
          /* Can't happen / not passed: */
-         case PCRE_ERROR_NOSUBSTRING:  return "PCRE error: No substring";
-         case PCRE_ERROR_NOMATCH:      return "PCRE error: No match";
+         case PCREn(ERROR_NOSUBSTRING):  return "(pcre:) Fire in power supply";
+         case PCREn(ERROR_NOMATCH):      return "(pcre:) Water in power supply";
 
 #ifdef PCRE_ERROR_MATCHLIMIT
-         case PCRE_ERROR_MATCHLIMIT:   return "Match limit reached";
+         /*
+          * Only reported by PCRE versions newer than our own.
+          */
+         case PCREn(ERROR_MATCHLIMIT):   return "(pcre:) Match limit reached";
 #endif /* def PCRE_ERROR_MATCHLIMIT */
-
          /* PCRS errors: */
-         case PCRS_ERR_NOMEM:          return "No memory";
-         case PCRS_ERR_CMDSYNTAX:      return "Syntax error while parsing command";
-         case PCRS_ERR_STUDY:          return "PCRE error while studying the pattern";
-         case PCRS_ERR_BADJOB:         return "Bad job - NULL job, pattern or substitute";
-         case PCRS_WARN_BADREF:        return "Backreference out of range";
+         case PCRS_ERR_NOMEM:          return "(pcrs:) No memory";
+         case PCRS_ERR_CMDSYNTAX:      return "(pcrs:) Syntax error while parsing command";
+         case PCRS_ERR_STUDY:          return "(pcrs:) PCRE error while studying the pattern";
+         case PCRS_ERR_BADJOB:         return "(pcrs:) Bad job - NULL job, pattern or substitute";
+         case PCRS_WARN_BADREF:        return "(pcrs:) Backreference out of range";
          case PCRS_WARN_TRUNCATION:
-            return "At least one variable was too big and has been truncated before compilation";
-         
+            return "(pcrs:) At least one variable was too big and has been truncated before compilation";
+
          default:
-            snprintf(buf, sizeof(buf), "Unknown error (%d)", error);
-            return buf;
+            pcre2_get_error_message(error, buf, sizeof(buf));
+            return (const char*)buf;
       }
    }
    /* error >= 0: No error */
-   return "Everything's just fine. Thanks for asking.";
+   return "(pcrs:) Everything's just fine. Thanks for asking.";
 
 }
 
@@ -133,7 +133,7 @@ const char *pcrs_strerror(const int error)
  * Returns     :  option integer suitable for pcre
  *
  *********************************************************************/
-static int pcrs_parse_perl_options(const char *optstring, int *flags)
+static int pcrs_parse_perl_options(const char *optstring, unsigned int *flags)
 {
    size_t i;
    int rc = 0;
@@ -147,13 +147,13 @@ static int pcrs_parse_perl_options(const char *optstring, int *flags)
       {
          case 'e': break; /* ToDo ;-) */
          case 'g': *flags |= PCRS_GLOBAL; break;
-         case 'i': rc |= PCRE_CASELESS; break;
-         case 'm': rc |= PCRE_MULTILINE; break;
+         case 'i': rc |= PCREn(CASELESS); break;
+         case 'm': rc |= PCREn(MULTILINE); break;
          case 'o': break;
-         case 's': rc |= PCRE_DOTALL; break;
-         case 'x': rc |= PCRE_EXTENDED; break;
+         case 's': rc |= PCREn(DOTALL); break;
+         case 'x': rc |= PCREn(EXTENDED); break;
          case 'D': *flags |= PCRS_DYNAMIC; break;
-         case 'U': rc |= PCRE_UNGREEDY; break;
+         case 'U': rc |= PCREn(UNGREEDY); break;
          case 'T': *flags |= PCRS_TRIVIAL; break;
          default: break;
       }
@@ -161,6 +161,7 @@ static int pcrs_parse_perl_options(const char *optstring, int *flags)
    return rc;
 
 }
+
 
 /*********************************************************************
  *
@@ -191,7 +192,11 @@ static pcrs_substitute *pcrs_compile_replacement(const char *replacement, int tr
    int i, k, l, quoted;
    char *text;
    pcrs_substitute *r;
+#ifndef FUZZ
    size_t length;
+#else
+   static size_t length;
+#endif
    i = k = l = quoted = 0;
 
    /*
@@ -418,14 +423,9 @@ pcrs_job *pcrs_free_job(pcrs_job *job)
    else
    {
       next = job->next;
-      if (job->pattern != NULL) free(job->pattern);
-      if (job->hints != NULL)
+      if (job->pattern != NULL)
       {
-#ifdef PCRE_CONFIG_JIT
-         pcre_free_study(job->hints);
-#else
-         free(job->hints);
-#endif
+         pcre2_code_free(job->pattern);
       }
       if (job->substitute != NULL)
       {
@@ -573,10 +573,9 @@ pcrs_job *pcrs_compile_command(const char *command, int *errptr)
 pcrs_job *pcrs_compile(const char *pattern, const char *substitute, const char *options, int *errptr)
 {
    pcrs_job *newjob;
-   int flags;
+   unsigned int flags;
    int capturecount;
-   const char *error;
-   int pcre_study_options = 0;
+   int ret;
 
    *errptr = 0;
 
@@ -608,39 +607,38 @@ pcrs_job *pcrs_compile(const char *pattern, const char *substitute, const char *
    /*
     * Compile the pattern
     */
-   newjob->pattern = pcre_compile(pattern, newjob->options, &error, errptr, NULL);
+   PCRE2_SIZE error_offset;
+   newjob->pattern = pcre2_compile((const unsigned char *)pattern,
+      PCRE2_ZERO_TERMINATED, (unsigned)newjob->options, errptr,
+      &error_offset, NULL);
    if (newjob->pattern == NULL)
    {
       pcrs_free_job(newjob);
       return NULL;
    }
 
-
-#ifdef PCRE_STUDY_JIT_COMPILE
+#ifdef DISABLE_PCRE_JIT_COMPILATION
+#warning PCRE_STUDY_JIT_COMPILE is supported but Privoxy has been configured not to use it
+#else
    if (!(flags & PCRS_DYNAMIC))
    {
-      pcre_study_options = PCRE_STUDY_JIT_COMPILE;
+      /* Try to enable JIT compilation but continue if it's unsupported. */
+      if ((ret = pcre2_jit_compile(newjob->pattern, PCRE2_JIT_COMPLETE)) &&
+          (ret != PCRE2_ERROR_JIT_BADOPTION))
+      {
+         *errptr = ret;
+         pcrs_free_job(newjob);
+         return NULL;
+       }
    }
 #endif
-
-   /*
-    * Generate hints. This has little overhead, since the
-    * hints will be NULL for a boring pattern anyway.
-    */
-   newjob->hints = pcre_study(newjob->pattern, pcre_study_options, &error);
-   if (error != NULL)
-   {
-      *errptr = PCRS_ERR_STUDY;
-      pcrs_free_job(newjob);
-      return NULL;
-   }
 
 
    /*
     * Determine the number of capturing subpatterns.
     * This is needed for handling $+ in the substitute.
     */
-   if (0 > (*errptr = pcre_fullinfo(newjob->pattern, newjob->hints, PCRE_INFO_CAPTURECOUNT, &capturecount)))
+   if (0 > (*errptr = pcre2_pattern_info(newjob->pattern, PCRE2_INFO_CAPTURECOUNT, &capturecount)))
    {
       pcrs_free_job(newjob);
       return NULL;
@@ -752,14 +750,15 @@ int pcrs_execute_list(pcrs_job *joblist, char *subject, size_t subject_length, c
  *********************************************************************/
 int pcrs_execute(pcrs_job *job, const char *subject, size_t subject_length, char **result, size_t *result_length)
 {
-   int offsets[3 * PCRS_MAX_SUBMATCHES],
-       offset,
+   int offset,
        i, k,
        matches_found,
        submatches,
        max_matches = PCRS_MAX_MATCH_INIT;
    size_t newsize;
    pcrs_match *matches, *dummy;
+   pcre2_match_data *pcre2_matches;
+   size_t *offsets;
    char *result_offset;
 
    offset = i = 0;
@@ -773,12 +772,18 @@ int pcrs_execute(pcrs_job *job, const char *subject, size_t subject_length, char
       return(PCRS_ERR_BADJOB);
    }
 
-   if (NULL == (matches = (pcrs_match *)malloc((size_t)max_matches * sizeof(pcrs_match))))
+   if (NULL == (pcre2_matches = pcre2_match_data_create_from_pattern(job->pattern, NULL)))
    {
       return(PCRS_ERR_NOMEM);
    }
-   memset(matches, '\0', (size_t)max_matches * sizeof(pcrs_match));
+   offsets = pcre2_get_ovector_pointer(pcre2_matches);
 
+   if (NULL == (matches = (pcrs_match *)malloc((size_t)max_matches * sizeof(pcrs_match))))
+   {
+      pcre2_match_data_free(pcre2_matches);
+      return(PCRS_ERR_NOMEM);
+   }
+   memset(matches, '\0', (size_t)max_matches * sizeof(pcrs_match));
 
    /*
     * Find the pattern and calculate the space
@@ -786,14 +791,15 @@ int pcrs_execute(pcrs_job *job, const char *subject, size_t subject_length, char
     */
    newsize = subject_length;
 
-   while ((submatches = pcre_exec(job->pattern, job->hints, subject, (int)subject_length, offset, 0, offsets, 3 * PCRS_MAX_SUBMATCHES)) > 0)
+   while ((submatches = pcre2_match(job->pattern, (const unsigned char *)subject,
+                           subject_length, (size_t)offset, 0, pcre2_matches, NULL)) > 0)
    {
       job->flags |= PCRS_SUCCESS;
       matches[i].submatches = submatches;
 
       for (k = 0; k < submatches; k++)
       {
-         matches[i].submatch_offset[k] = offsets[2 * k];
+         matches[i].submatch_offset[k] = (int)offsets[2 * k];
 
          /* Note: Non-found optional submatches have length -1-(-1)==0 */
          matches[i].submatch_length[k] = (size_t)(offsets[2 * k + 1] - offsets[2 * k]);
@@ -810,7 +816,7 @@ int pcrs_execute(pcrs_job *job, const char *subject, size_t subject_length, char
       newsize += (size_t)offsets[0] * (size_t)job->substitute->backref_count[PCRS_MAX_SUBMATCHES];
 
       /* chunk after match */
-      matches[i].submatch_offset[PCRS_MAX_SUBMATCHES + 1] = offsets[1];
+      matches[i].submatch_offset[PCRS_MAX_SUBMATCHES + 1] = (int)offsets[1];
       matches[i].submatch_length[PCRS_MAX_SUBMATCHES + 1] = subject_length - (size_t)offsets[1] - 1;
       newsize += (subject_length - (size_t)offsets[1]) * (size_t)job->substitute->backref_count[PCRS_MAX_SUBMATCHES + 1];
 
@@ -837,12 +843,14 @@ int pcrs_execute(pcrs_job *job, const char *subject, size_t subject_length, char
             break;
       /* Go find the next one */
       else
-         offset = offsets[1];
+         offset = (int)offsets[1];
    }
    /* Pass pcre error through if (bad) failure */
-   if (submatches < PCRE_ERROR_NOMATCH)
+   if (submatches < PCRE2_ERROR_NOMATCH)
    {
       free(matches);
+      pcre2_match_data_free(pcre2_matches);
+
       return submatches;
    }
    matches_found = i;
@@ -851,10 +859,16 @@ int pcrs_execute(pcrs_job *job, const char *subject, size_t subject_length, char
    /*
     * Get memory for the result (must be freed by caller!)
     * and append terminating null byte.
+    *
+    * Note: Additional 16-byte padding allocated as workaround for potential
+    * JIT code buffer overruns. This was carried over from Privoxy's PCRE2
+    * implementation and may prevent edge-case crashes in JIT-optimized patterns.
     */
-   if ((*result = (char *)malloc(newsize + 1)) == NULL)
+   if ((*result = (char *)malloc(newsize + 1 + 16)) == NULL)
    {
       free(matches);
+      pcre2_match_data_free(pcre2_matches);
+
       return PCRS_ERR_NOMEM;
    }
    else
@@ -907,7 +921,9 @@ int pcrs_execute(pcrs_job *job, const char *subject, size_t subject_length, char
    memcpy(result_offset, subject + offset, subject_length - (size_t)offset);
 
    *result_length = newsize;
+   pcre2_match_data_free(pcre2_matches);
    free(matches);
+
    return matches_found;
 
 }
@@ -935,6 +951,7 @@ static int is_hex_sequence(const char *sequence)
            is_hex_digit(sequence[2]) &&
            is_hex_digit(sequence[3]));
 }
+
 
 /*********************************************************************
  *
@@ -997,3 +1014,10 @@ static int xtoi(const char *s)
 
    return 0;
 }
+
+
+/*
+  Local Variables:
+  tab-width: 3
+  end:
+*/
