@@ -4,11 +4,15 @@
 - Temporarily reenable the emptylist bandaid until we can find the culprit.
 - Fix various race conditions and threading bugs / pitfalls.
 - `occupants()` and `locate_by_name()` are no longer threaded functions, as they do unsafe database accesses.
+- Fixed crash on malloc failure when compiling PCRE patterns.
+- Fixed crash when PCRE substring extraction fails.
 
 ### New Features
 - Add an optional unclean_shutdown parameter to `shutdown()`, which replicates the functionality found in the `panic()` builtin.
 - Remove the `panic()` builtin.
 - Anonymous children are no longer invalidated when properties change on their parents.
+- Migrated from PCRE to PCRE2. PCRE1 is deprecated and unmaintained. PCRE2 provides better performance, security, and ongoing support.
+- JSON null values now map to E_NONE instead of the string "null" when parsing JSON.
 
 ## 2.7.3 (Jun 20, 2025)
 ### Bug Fixes
