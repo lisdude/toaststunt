@@ -92,6 +92,10 @@ get_pcre(const char *string, unsigned char options)
         char buf[256];
 
         entry = (pcre_cache_entry*)malloc(sizeof(pcre_cache_entry));
+        if (entry == nullptr) {
+            pthread_mutex_unlock(&cache_mutex);
+            return nullptr;
+        }
         entry->error = nullptr;
         entry->re = nullptr;
         entry->captures = 0;
@@ -155,6 +159,11 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
 
     /* Compile the pattern */
     struct pcre_cache_entry *entry = get_pcre(pattern, options);
+
+    if (entry == nullptr) {
+        free_var(arglist);
+        return make_raise_pack(E_QUOTA, "Out of memory compiling pattern", var_ref(zero));
+    }
 
     if (entry->error != nullptr)
     {
@@ -452,6 +461,10 @@ void sqlite_regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv)
     }
 
     struct pcre_cache_entry *entry = get_pcre(pattern, 0);
+    if (entry == nullptr) {
+        sqlite3_result_error(ctx, "Out of memory compiling pattern", -1);
+        return;
+    }
     if (entry->error != nullptr)
     {
         sqlite3_result_error(ctx, entry->error, -1);
