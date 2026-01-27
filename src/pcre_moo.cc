@@ -280,7 +280,11 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
 
                 PCRE2_UCHAR *substring_buffer;
                 PCRE2_SIZE substring_length;
-                pcre2_substring_get_bynumber(match_data, i, &substring_buffer, &substring_length);
+                int get_result = pcre2_substring_get_bynumber(match_data, i, &substring_buffer, &substring_length);
+                if (get_result < 0) {
+                    /* Failed to get substring, skip it */
+                    continue;
+                }
 
                 Var pos = result_indices(ovector, i);
 
