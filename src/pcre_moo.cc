@@ -151,8 +151,8 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
     if (arglist.v.list[0].v.num >= 4 && arglist.v.list[4].v.num == 0)
         flags ^= FIND_ALL;
 
-    /* Return E_INVARG if the pattern or subject are empty. */
-    if (pattern[0] == '\0' || subject[0] == '\0') {
+    /* Return E_INVARG if the pattern is empty. */
+    if (pattern[0] == '\0') {
         free_var(arglist);
         return make_error_pack(E_INVARG);
     }
