@@ -1,6 +1,6 @@
 #include "options.h"
 
-#ifdef PCRE_FOUND
+#ifdef PCRE2_FOUND
 
 #include <ctype.h>
 #include <unordered_map>
@@ -497,6 +497,6 @@ register_pcre() {
     pthread_mutexattr_destroy(&attr);
 }
 
-#else /* PCRE_FOUND */
+#else /* PCRE2_FOUND */
 void register_pcre(void) { }
-#endif /* PCRE_FOUND */
+#endif /* PCRE2_FOUND */
