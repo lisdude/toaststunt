@@ -193,8 +193,8 @@ handle_null(void *ctx)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
     Var v;
-    v.type = TYPE_STR;
-    v.v.str = str_dup("null");
+    v.type = TYPE_ERR;
+    v.v.err = E_NONE;
     PUSH(pctx->top, v);
     return 1;
 }
