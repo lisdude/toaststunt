@@ -154,7 +154,7 @@ else()
 endif()
 find_package(Nettle REQUIRED)
 find_package(Argon2 REQUIRED)
-find_package(PCRE)
+find_package(PCRE2)
 find_package(CURL)
 find_package(ASPELL)
 find_package(SQLite3)
@@ -178,7 +178,7 @@ set(src_CSRCS
     src/http_parser.c
     src/regexpr.c)
 
-if(PCRE_FOUND)
+if(PCRE2_FOUND)
     list(APPEND src_CSRCS src/dependencies/pcrs.c)
 endif()
 
@@ -279,9 +279,9 @@ else()
     target_link_libraries(moo Threads::Threads)
 endif()
 
-if(PCRE_FOUND)
-    include_directories(${PCRE_INCLUDE_DIRS})
-    target_link_libraries(moo ${PCRE_LIBRARIES})
+if(PCRE2_FOUND)
+    include_directories(${PCRE2_INCLUDE_DIRS})
+    target_link_libraries(moo ${PCRE2_LIBRARIES})
 endif()
 
 if(CURL_FOUND)

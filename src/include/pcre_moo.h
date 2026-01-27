@@ -1,9 +1,8 @@
 #ifndef EXTENSION_PCRE_H
 #define EXTENSION_PCRE_H
 
-#ifndef _PCRE_H
-#include <pcre.h>
-#endif
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 #include "structures.h"
 
@@ -14,9 +13,8 @@
 
 struct pcre_cache_entry {
     char *error;
-    pcre *re;
-    pcre_extra *extra;
-    int captures;
+    pcre2_code *re;
+    uint32_t captures;
     unsigned int cache_hits;
     std::atomic_uint refcount;
 };
@@ -25,7 +23,7 @@ typedef std::pair<const char*, unsigned char> cache_type;
 
 static void free_entry(pcre_cache_entry *);
 static void delete_cache_entry(const char *pattern, unsigned char options);
-static Var result_indices(int ovector[], int n);
+static Var result_indices(PCRE2_SIZE ovector[], int n);
 extern void pcre_shutdown(void);
 
 #ifdef SQLITE3_FOUND

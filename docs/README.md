@@ -75,7 +75,7 @@ ToastStunt is a network accessible, multi-user, programmable, interactive system
 ## Build Instructions
 ### **Debian/Ubuntu/WSL**
 ```bash
-apt install build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre3-dev nettle-dev g++ libcurl4-openssl-dev libargon2-dev libssl-dev
+apt install build-essential bison gperf cmake libsqlite3-dev libaspell-dev libpcre2-dev nettle-dev g++ libcurl4-openssl-dev libargon2-dev libssl-dev
 mkdir build && cd build
 cmake ../
 make -j2
@@ -83,7 +83,7 @@ make -j2
 
 ### **Gentoo**
 ```bash
-emerge dev-db/sqlite app-text/aspell app-dicts/aspell-en app-crypt/argon2 dev-utils/cmake dev-libs/libpcre
+emerge dev-db/sqlite app-text/aspell app-dicts/aspell-en app-crypt/argon2 dev-utils/cmake dev-libs/libpcre2
 mkdir build && cd build
 cmake ../
 make -j2
@@ -91,7 +91,7 @@ make -j2
 
 ### **FreeBSD**
 ```bash
-pkg install bison gperf gcc cmake sqlite3 aspell pcre nettle libargon2
+pkg install bison gperf gcc cmake sqlite3 aspell pcre2 nettle libargon2
 mkdir build && cd build
 cmake ../
 make -j2
@@ -105,7 +105,7 @@ If using OpenSSL, you may have to export an environment variable before running 
 - Intel: `export PKG_CONFIG_PATH="/usr/local/opt/openssl@3/lib/pkgconfig"`
 
 ```bash
-brew install pcre aspell nettle cmake openssl argon2
+brew install pcre2 aspell nettle cmake openssl argon2
 mkdir build && cd build
 cmake ../
 make -j2

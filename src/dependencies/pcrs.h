@@ -3,7 +3,7 @@
 
 /*********************************************************************
  *
- * File        :  pcrs.h,v $
+ * File        :  $Source: /cvsroot/ijbswa/current/pcrs.h,v $
  *
  * Purpose     :  Header file for pcrs.c
  *
@@ -33,12 +33,14 @@
  *********************************************************************/
 
 
-#ifndef _PCRE_H
-#include <pcre.h>
-#endif
-
-#ifdef __cplusplus
-extern "C" {
+#define PCRE2_CODE_UNIT_WIDTH 8
+#define PCREn(x) PCRE2_ ## x
+#ifndef _PCRE2_H
+#  ifdef PCRE2_H_IN_SUBDIR
+#    include <pcre2/pcre2.h>
+#  else
+#    include <pcre2.h>
+#  endif
 #endif
 
 /*
@@ -59,22 +61,23 @@ extern "C" {
  * They are supposed to be handled together with PCRE error
  * codes and have to start with an offset to prevent overlaps.
  *
- * PCRE 6.7 uses error codes from -1 to -21, PCRS error codes
- * below -100 should be safe for a while.
+ * PCRE 6.7 uses error codes from -1 to -21,
+ * PCRE2 10.42 uses error codes from -66 to 101.
+ * PCRS error codes below -300 should be safe for a while.
  */
-#define PCRS_ERR_NOMEM           -100      /* Failed to acquire memory. */
-#define PCRS_ERR_CMDSYNTAX       -101      /* Syntax of s///-command */
-#define PCRS_ERR_STUDY           -102      /* pcre error while studying the pattern */
-#define PCRS_ERR_BADJOB          -103      /* NULL job pointer, pattern or substitute */
-#define PCRS_WARN_BADREF         -104      /* Backreference out of range */
-#define PCRS_WARN_TRUNCATION     -105      /* At least one pcrs variable was too big,
+#define PCRS_ERR_NOMEM           -300      /* Failed to acquire memory. */
+#define PCRS_ERR_CMDSYNTAX       -301      /* Syntax of s///-command */
+#define PCRS_ERR_STUDY           -302      /* pcre error while studying the pattern */
+#define PCRS_ERR_BADJOB          -303      /* NULL job pointer, pattern or substitute */
+#define PCRS_WARN_BADREF         -304      /* Backreference out of range */
+#define PCRS_WARN_TRUNCATION     -305      /* At least one pcrs variable was too big,
                                             * only the first part was used. */
 
 /* Flags */
-#define PCRS_GLOBAL          1      /* Job should be applied globally, as with perl's g option */
-#define PCRS_TRIVIAL         2      /* Backreferences in the substitute are ignored */
-#define PCRS_SUCCESS         4      /* Job did previously match */
-#define PCRS_DYNAMIC         8      /* Job is dynamic (used to disable JIT compilation) */
+#define PCRS_GLOBAL          0x08000000u      /* Job should be applied globally, as with perl's g option */
+#define PCRS_TRIVIAL         0x10000000u      /* Backreferences in the substitute are ignored */
+#define PCRS_SUCCESS         0x20000000u      /* Job did previously match */
+#define PCRS_DYNAMIC         0x40000000u      /* Job is dynamic (used to disable JIT compilation) */
 
 
 /*
@@ -111,10 +114,9 @@ typedef struct {
 /* A PCRS job */
 
 typedef struct PCRS_JOB {
-  pcre *pattern;                            /* The compiled pcre pattern */
-  pcre_extra *hints;                        /* The pcre hints for the pattern */
+  pcre2_code *pattern;
   int options;                              /* The pcre options (numeric) */
-  int flags;                                /* The pcrs and user flags (see "Flags" above) */
+  unsigned int flags;                       /* The pcrs and user flags (see "Flags" above) */
   pcrs_substitute *substitute;              /* The compiled pcrs substitute */
   struct PCRS_JOB *next;                    /* Pointer for chaining jobs to joblists */
 } pcrs_job;
@@ -123,6 +125,10 @@ typedef struct PCRS_JOB {
 /*
  * Prototypes:
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Main usage */
 extern pcrs_job        *pcrs_compile_command(const char *command, int *errptr);
@@ -137,18 +143,18 @@ extern void             pcrs_free_joblist(pcrs_job *joblist);
 /* Info on errors: */
 extern const char *pcrs_strerror(const int error);
 
-
-/**
- * This macro is used to free a pointer that may be NULL.
- * It also sets the variable to NULL after it's been freed.
- * The parameter should be a simple variable without side effects.
- */
+/* Helper macros */
 #define freez(X)  { if(X) { free((void*)X); X = NULL ; } }
-
 #define is_hex_digit(x) ((x) && strchr("0123456789ABCDEF", toupper(x)))
 
 #ifdef __cplusplus
-} /* extern "C" */
+}
 #endif
 
 #endif /* ndef PCRS_H_INCLUDED */
+
+/*
+  Local Variables:
+  tab-width: 3
+  end:
+*/

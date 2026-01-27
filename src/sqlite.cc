@@ -14,7 +14,7 @@
 #include "log.h"
 #include "server.h"
 #include "map.h"
-#ifdef PCRE_FOUND
+#ifdef PCRE2_FOUND
 #include "pcre_moo.h"    // SQLite regexp function
 #endif
 
@@ -273,7 +273,7 @@ bf_sqlite_open(Var arglist, Byte next, void *vdata, Objid progr)
     }
     else
     {
-#ifdef PCRE_FOUND
+#ifdef PCRE2_FOUND
         sqlite3_create_function(handle->id, "REGEXP", 2, SQLITE_UTF8 | SQLITE_DETERMINISTIC, nullptr, &sqlite_regexp, nullptr, nullptr);
 #endif
         handle->path = str_dup(path);
