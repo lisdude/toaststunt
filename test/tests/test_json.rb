@@ -265,6 +265,8 @@ class TestJson < Test::Unit::TestCase
       assert_equal "{\"foo\":\"bar~zzbaz\"}", generate_json({"foo" => "bar~zzbaz"})
       assert_equal "{\"foo\":\"bar~f\"}", generate_json({"foo" => "bar~f"})
       assert_equal "{\"foo\":\"bar~\"}", generate_json({"foo" => "bar~"})
+      assert_equal "{\"foo\":\"Hoodie (~1.5k)\"}", generate_json({"foo" => "Hoodie (~1.5k)"})
+      assert_equal "{\"foo\":\"~0.5\"}", generate_json({"foo" => "~0.5"})
     end
   end
 
@@ -322,6 +324,8 @@ class TestJson < Test::Unit::TestCase
       assert(simplify(command(%Q|; x = ["foo" -> "bar~0Abaz"]; return x == parse_json(generate_json(x)); |)))
       assert(simplify(command(%Q|; x = ["foo" -> "bar~0Dbaz"]; return x == parse_json(generate_json(x)); |)))
       assert(simplify(command(%Q|; x = ["foo" -> "bar~09baz"]; return x == parse_json(generate_json(x)); |)))
+      assert(simplify(command(%Q|; x = ["foo" -> "Hoodie (~1.5k)"]; return x == parse_json(generate_json(x)); |)))
+      assert(simplify(command(%Q|; x = ["foo" -> "~0.5"]; return x == parse_json(generate_json(x)); |)))
 
       assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar\\\\\\"baz\\"}"; return x == generate_json(parse_json(x)); |)))
       assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar\\\\\\\baz\\"}"; return x == generate_json(parse_json(x)); |)))

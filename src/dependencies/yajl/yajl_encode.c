@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 void
 yajl_string_encode(yajl_buf buf, const unsigned char * str,
@@ -61,7 +62,7 @@ yajl_string_encode2(const yajl_print_t print,
             print(ctx, (const char *) (str + beg), end - beg);
             beg = ++end;
             continue;
-        } else if (end < len - 2 && (end == 0 || str[end-1] != '\\') && str[end] == '~' && (str[end + 1] == '0' || str[end + 1] == '1')) {
+        } else if (end < len - 2 && (end == 0 || str[end-1] != '\\') && str[end] == '~' && (str[end + 1] == '0' || str[end + 1] == '1') && isxdigit(str[end + 2])) {
             char c1, c2;
             const char * escaped = NULL;
             if ((c1 = str[end + 1]) == '0' && (c2 = str[end + 2]) == '8')
