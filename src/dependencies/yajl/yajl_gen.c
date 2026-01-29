@@ -51,11 +51,12 @@ typedef enum {
     yajl_gen_error
 } yajl_gen_state;
 
-struct yajl_gen_t 
+struct yajl_gen_t
 {
     unsigned int depth;
     unsigned int pretty;
     const char * indentString;
+    unsigned int disable_binary_escapes;
     yajl_gen_state state[YAJL_MAX_DEPTH];
     yajl_print_t print;
     void * ctx; /* yajl_buf */
@@ -101,6 +102,7 @@ yajl_gen_alloc2(const yajl_print_t callback,
         const char *indent = config->indentString;
         g->pretty = config->beautify;
         g->indentString = config->indentString;
+        g->disable_binary_escapes = config->disable_binary_escapes;
         if (indent) {
           for (; *indent; indent++) {
             if (*indent != '\n'
@@ -267,7 +269,7 @@ yajl_gen_string(yajl_gen g, const unsigned char * str,
 {
     ENSURE_VALID_STATE; INSERT_SEP; INSERT_WHITESPACE;
     g->print(g->ctx, "\"", 1);
-    yajl_string_encode2(g->print, g->ctx, str, len);
+    yajl_string_encode2(g->print, g->ctx, str, len, g->disable_binary_escapes);
     g->print(g->ctx, "\"", 1);
     APPENDED_ATOM;
     FINAL_NEWLINE;

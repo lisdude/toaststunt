@@ -42,14 +42,15 @@ void
 yajl_string_encode(yajl_buf buf, const unsigned char * str,
                    unsigned int len)
 {
-    yajl_string_encode2((const yajl_print_t) &yajl_buf_append, buf, str, len);
+    yajl_string_encode2((const yajl_print_t) &yajl_buf_append, buf, str, len, 0);
 }
 
 void
 yajl_string_encode2(const yajl_print_t print,
                     void * ctx,
                     const unsigned char * str,
-                    unsigned int len)
+                    unsigned int len,
+                    unsigned int disable_binary_escapes)
 {
     unsigned int beg = 0;
     unsigned int end = 0;
@@ -62,7 +63,7 @@ yajl_string_encode2(const yajl_print_t print,
             print(ctx, (const char *) (str + beg), end - beg);
             beg = ++end;
             continue;
-        } else if (end < len - 2 && (end == 0 || str[end-1] != '\\') && str[end] == '~' && (str[end + 1] == '0' || str[end + 1] == '1') && isxdigit(str[end + 2])) {
+        } else if (!disable_binary_escapes && end < len - 2 && (end == 0 || str[end-1] != '\\') && str[end] == '~' && (str[end + 1] == '0' || str[end + 1] == '1') && isxdigit(str[end + 2])) {
             char c1, c2;
             const char * escaped = NULL;
             if ((c1 = str[end + 1]) == '0' && (c2 = str[end + 2]) == '8')

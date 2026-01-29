@@ -270,6 +270,20 @@ class TestJson < Test::Unit::TestCase
     end
   end
 
+  def test_that_generate_json_can_disable_binary_string_processing
+    run_test_as('wizard') do
+      # With binary processing disabled, ~0X and ~1X should pass through unchanged
+      assert_equal "{\"foo\":\"bar~08baz\"}", generate_json({"foo" => "bar~08baz"}, "common-subset", 1)
+      assert_equal "{\"foo\":\"bar~0Cbaz\"}", generate_json({"foo" => "bar~0Cbaz"}, "common-subset", 1)
+      assert_equal "{\"foo\":\"bar~0Abaz\"}", generate_json({"foo" => "bar~0Abaz"}, "common-subset", 1)
+      assert_equal "{\"foo\":\"bar~0Dbaz\"}", generate_json({"foo" => "bar~0Dbaz"}, "common-subset", 1)
+
+      # Default behavior (binary processing enabled) should still work
+      assert_equal "{\"foo\":\"bar\\bbaz\"}", generate_json({"foo" => "bar~08baz"}, "common-subset", 0)
+      assert_equal "{\"foo\":\"bar\\bbaz\"}", generate_json({"foo" => "bar~08baz"})
+    end
+  end
+
   def test_that_parse_json_turns_escaped_strings_into_moo_binary_string_encoded_values
     run_test_as('wizard') do
       assert_equal({"foo" => "bar\"baz"}, parse_json('{\"foo\":\"bar\\\\\\"baz\"}'))

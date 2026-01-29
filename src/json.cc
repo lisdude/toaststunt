@@ -594,7 +594,7 @@ static package
 bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
 {
     yajl_gen g;
-    yajl_gen_config cfg = { 0, "" };
+    yajl_gen_config cfg = { 0, "", 0 };
 
     struct generate_context gctx;
     gctx.mode = MODE_COMMON_SUBSET;
@@ -606,7 +606,9 @@ bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
 
     package pack;
 
-    if (1 < arglist.v.list[0].v.num) {
+    int nargs = arglist.v.list[0].v.num;
+
+    if (nargs >= 2) {
         if (!strcasecmp(arglist.v.list[2].v.str, "common-subset")) {
             gctx.mode = MODE_COMMON_SUBSET;
         } else if (!strcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
@@ -615,6 +617,10 @@ bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
             free_var(arglist);
             return make_error_pack(E_INVARG);
         }
+    }
+
+    if (nargs >= 3) {
+        cfg.disable_binary_escapes = is_true(arglist.v.list[3]);
     }
 
     g = yajl_gen_alloc(&cfg, nullptr);
@@ -641,5 +647,5 @@ void
 register_yajl(void)
 {
     register_function("parse_json", 1, 2, bf_parse_json, TYPE_STR, TYPE_STR);
-    register_function("generate_json", 1, 2, bf_generate_json, TYPE_ANY, TYPE_STR);
+    register_function("generate_json", 1, 3, bf_generate_json, TYPE_ANY, TYPE_STR, TYPE_ANY);
 }

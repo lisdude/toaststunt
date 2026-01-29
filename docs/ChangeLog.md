@@ -6,13 +6,16 @@
 - `occupants()` and `locate_by_name()` are no longer threaded functions, as they do unsafe database accesses.
 - Fixed crash on malloc failure when compiling PCRE patterns.
 - Fixed crash when PCRE substring extraction fails.
+- Fixed generate_json mangling strings with ~0 or ~1 followed by non-hex characters.
 
 ### New Features
 - Add an optional unclean_shutdown parameter to `shutdown()`, which replicates the functionality found in the `panic()` builtin.
 - Remove the `panic()` builtin.
 - Anonymous children are no longer invalidated when properties change on their parents.
-- Migrated from PCRE to PCRE2. PCRE1 is deprecated and unmaintained. PCRE2 provides better performance, security, and ongoing support.
+- Migrated from PCRE to the PCRe2 library. See the README for updated build instructions.
 - JSON null values now map to E_NONE instead of the string "null" when parsing JSON.
+- Allow empty subjects in pcre_match.
+- Add an optional third argument to generate_json to disable binary string escaping.
 
 ## 2.7.3 (Jun 20, 2025)
 ### Bug Fixes
@@ -39,7 +42,6 @@
 - Fix memory corruption in the signal handler.
 - Fix buffer overflow in telnet IAC capture.
 - Fix a memory leak when converting from objects to strings in SQLite.
-
 ### New Features
 - Remove the `proxy_rewrite` server option. Instead, you can now add trusted proxy IP addresses to the `$server_options.trusted_proxies` property or the equivalent property on the listening object itself. Any connecting IP found in this list will have the login screen suppressed, and will accept forwarded IP addresses via the HAProxy Proxy protocol, at which point the welcome screen will be printed. To regain the legacy functionality, you can set `$server_options.trusted_proxies` to `{"127.0.0.1", "::1"}`
 - Add a fourth argument to `occupants()` to inverse the parent match.

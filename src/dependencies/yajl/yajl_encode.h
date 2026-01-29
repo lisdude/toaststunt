@@ -39,7 +39,8 @@
 void yajl_string_encode2(const yajl_print_t printer,
                          void * ctx,
                          const unsigned char * str,
-                         unsigned int length);
+                         unsigned int length,
+                         unsigned int disable_binary_escapes);
 
 void yajl_string_encode(yajl_buf buf, const unsigned char * str,
                         unsigned int length);
