@@ -12,7 +12,7 @@
 - Add an optional unclean_shutdown parameter to `shutdown()`, which replicates the functionality found in the `panic()` builtin.
 - Remove the `panic()` builtin.
 - Anonymous children are no longer invalidated when properties change on their parents.
-- Migrated from PCRE to the PCRe2 library. See the README for updated build instructions.
+- Migrated from PCRE to the PCRE2 library. See the README for updated build instructions.
 - JSON null values now map to E_NONE instead of the string "null" when parsing JSON.
 - Allow empty subjects in pcre_match.
 - Add an optional third argument to generate_json to disable binary string escaping.
@@ -25,8 +25,6 @@
 - Large amounts of input on TLS connections could cause it to fail to go through until the next command. This is now fixed.
 - Fixed waif crashes when indexing nested maps containing waifs.
 - Fixed telnet IAC IAC sequences not being properly handled.
-- PCRE now properly uses JIT compilation when available.
-- Enable support for the Dictionary Server (DICT) protocol when using curl.
 
 ### New Features
 - `open_network_connection` now displays more helpful error messages in-MOO, particularly when catching errors in a try.
@@ -36,6 +34,8 @@
 - Extend `mapdelete()` to accept a list of keys to delete. When passed a list as the second argument, mapdelete() will now delete multiple keys from the map in a single operation. If any key in the list is not found, a descriptive error is raised showing which key was missing.
 - Thread `occupants()` and improve performance when validating large lists of objects. **WARNING**: As with all other threaded functions, using occupants() in situations where it may be called many times, such as in loops, will implicitly suspend the verb akin to how reading input is handled. This may not be what you want! If this is undesirable, use `set_thread_mode(0)` prior to the function call in your verb.
 - Removed `clear_ancestor_cache()` builtin.
+- PCRE now properly uses JIT compilation when available.
+- Enable support for the Dictionary Server (DICT) protocol when using curl.
 
 ## 2.7.2 (Jul 17, 2024)
 ### Bug Fixes
