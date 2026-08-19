@@ -8,6 +8,12 @@
 - Fixed crash when PCRE substring extraction fails.
 - Fixed generate_json mangling strings with ~0 or ~1 followed by non-hex characters.
 - Fixed the build against Nettle 4.0, which dropped the length argument from its `*_digest` functions.
+- Fixed a heap buffer overflow in `pcre_match()` named-group handling.
+- Fixed `push_output()` dropping connections on zero-length writes.
+- Fixed `compare()` truncating 64-bit integer and object map keys to 32 bits.
+- Fixed a double-free when forking with a non-numeric delay and debug disabled.
+- Fixed `next_recycled_object()` skipping a recycled max object.
+- Fixed --tls-port to actually consider the port, like its shorter equivalent.
 
 ### New Features
 - Add an optional unclean_shutdown parameter to `shutdown()`, which replicates the functionality found in the `panic()` builtin.
