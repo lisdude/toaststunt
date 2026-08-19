@@ -1287,7 +1287,7 @@ bf_next_recycled_object(Var arglist, Byte next, void *vdata, Objid progr)
 
     package ret = make_var_pack(Var::new_int(0));
 
-    for (; i_obj < max_obj; i_obj++) {
+    for (; i_obj <= max_obj; i_obj++) {
         if (!valid(i_obj)) {
             ret = make_var_pack(Var::new_obj(i_obj));
             break;
