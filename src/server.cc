@@ -1981,7 +1981,7 @@ main(int argc, char **argv)
         {"outbound",        no_argument,        nullptr,            'o'},
         {"no-outbound",     no_argument,        nullptr,            'O'},
         {"no-ipv6",         no_argument,        nullptr,            '3'},
-        {"tls-port",        no_argument,        nullptr,            't'},
+        {"tls-port",        required_argument,  nullptr,            't'},
         {"ipv4",            required_argument,  nullptr,            '4'},
         {"ipv6",            required_argument,  nullptr,            '6'},
         {"port",            required_argument,  nullptr,            'p'},
