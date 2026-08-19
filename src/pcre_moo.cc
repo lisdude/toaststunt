@@ -235,8 +235,11 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
             /* We'll use a bit array to indicate which index matches are superfluous. e.g. which results
              * have a NAMED result instead of a numbered result. I'm definitely open to better ideas! */
             unsigned char *bit_array;
-            bit_array = (unsigned char *)mymalloc(rc * sizeof(unsigned char), M_ARRAY);
-            memset(bit_array, 0, rc);
+            /* Indexed by capture group number, not by rc (the count of
+             * participating groups), so it must span every group. */
+            size_t bit_array_size = (entry->captures + 1 + BITS_IN_BYTE - 1) / BITS_IN_BYTE;
+            bit_array = (unsigned char *)mymalloc(bit_array_size * sizeof(unsigned char), M_ARRAY);
+            memset(bit_array, 0, bit_array_size);
             (void)pcre2_pattern_info(entry->re, PCRE2_INFO_NAMECOUNT, &named_substrings);
 
             if (named_substrings > 0)
