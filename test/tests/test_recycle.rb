@@ -259,4 +259,28 @@ class Testrecycle < Test::Unit::TestCase
     end
   end
 
+  def test_that_next_recycled_object_finds_a_recycled_max_object
+    run_test_as('wizard') do
+      o = create(NOTHING)
+      assert_equal o, max_object
+      recycle(o)
+      assert_equal o, max_object
+      assert_equal false, valid(o)
+      assert evaluate("#{o} in recycled_objects()") > 0
+      assert_equal o, evaluate("next_recycled_object(#{o})")
+      assert_equal evaluate("recycled_objects()[1]"), evaluate("next_recycled_object()")
+      assert_equal o, evaluate("recreate(#{o}, $nothing)")
+      assert_equal true, valid(o)
+      assert_equal 0, evaluate("next_recycled_object(#{o})")
+      recycle(o)
+    end
+  end
+
+  def test_that_next_recycled_object_rejects_objects_beyond_max_object
+    run_test_as('wizard') do
+      assert_equal E_INVARG, evaluate("next_recycled_object(toobj(toint(max_object()) + 1))")
+      assert_equal E_INVARG, evaluate("next_recycled_object($nothing)")
+    end
+  end
+
 end
