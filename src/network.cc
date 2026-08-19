@@ -341,7 +341,7 @@ push_output(nhandle * h)
 #endif
             count = write(h->wfd, b->start, b->length);
 #ifdef USE_TLS
-        if (count <= 0) {
+        if (count < 0 || (count == 0 && h->tls)) {
             if (h->tls) {
                 int error = SSL_get_error(h->tls, count);
                 if (error == SSL_ERROR_WANT_WRITE || error == SSL_ERROR_WANT_READ || errno == eagain || errno == ewouldblock)
