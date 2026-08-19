@@ -410,9 +410,9 @@ compare(Var lhs, Var rhs, int case_matters)
     if (lhs.type == rhs.type) {
         switch (lhs.type) {
             case TYPE_INT:
-                return lhs.v.num - rhs.v.num;
+                return lhs.v.num < rhs.v.num ? -1 : (lhs.v.num > rhs.v.num ? 1 : 0);
             case TYPE_OBJ:
-                return lhs.v.obj - rhs.v.obj;
+                return lhs.v.obj < rhs.v.obj ? -1 : (lhs.v.obj > rhs.v.obj ? 1 : 0);
             case TYPE_ERR:
                 return lhs.v.err - rhs.v.err;
             case TYPE_STR:
