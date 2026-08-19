@@ -206,7 +206,7 @@ int proxy_connected(Objid connection, char *command);
 		 value = MAX_LIST_VALUE_BYTES_LIMIT;						\
 	   }))															\
 	   																\
-  DEFINE( SVO_MAX_MAP_VALUE_BYTES, max_list_value_bytes,			\
+  DEFINE( SVO_MAX_MAP_VALUE_BYTES, max_map_value_bytes,				\
 																	\
 	  int, DEFAULT_MAX_MAP_VALUE_BYTES,								\
 	 _STATEMENT({													\

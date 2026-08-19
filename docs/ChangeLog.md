@@ -14,6 +14,7 @@
 - Fixed a double-free when forking with a non-numeric delay and debug disabled.
 - Fixed `next_recycled_object()` skipping a recycled max object.
 - Fixed --tls-port to actually consider the port, like its shorter equivalent.
+- Fixed `$server_options.max_map_value_bytes` being ignored; map value size limits were read from `max_list_value_bytes` instead.
 
 ### New Features
 - Add an optional unclean_shutdown parameter to `shutdown()`, which replicates the functionality found in the `panic()` builtin.
