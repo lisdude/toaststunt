@@ -2096,6 +2096,7 @@ finish_comparison:
                     var_type time_type = time.type;
                     free_var(time);
                     RAISE_TYPE_MISMATCH(2, time_type, TYPE_INT, TYPE_FLOAT);
+                    break;
                 }
                 when = time.type == TYPE_INT ? time.v.num : time.v.fnum;
                 free_var(time);
