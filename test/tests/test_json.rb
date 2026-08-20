@@ -166,6 +166,17 @@ class TestJson < Test::Unit::TestCase
     end
   end
 
+  def test_that_parsing_a_very_long_json_string_does_not_overflow_the_stack
+    run_test_as('programmer') do
+      # Build the input in-MOO so the test protocol and Ruby parser do not
+      # need to transport a multi-megabyte literal.  The old implementation
+      # placed one byte per input byte on the C stack; 16 MiB reliably
+      # exceeded a normal server thread's stack.
+      result = simplify command %q|; value = "x"; for i in [1..24]; value = value + value; endfor; return length(parse_json("\"" + value + "\""));|
+      assert_equal 16_777_216, result
+    end
+  end
+
   def test_for_things_I_hate_that_work
     run_test_as('wizard') do
       assert_equal 12, parse_json('12abc')

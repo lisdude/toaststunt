@@ -114,6 +114,7 @@ struct parse_context {
     struct stack_item *top;
     mode_type mode;
     int depth;
+    int max_depth;
 };
 
 struct generate_context {
@@ -186,6 +187,25 @@ append_type(const char *str, var_type type)
             panic_moo("Unsupported type in append_type()");
     }
     return reset_stream(stream);
+}
+
+/* Copy `len' bytes into a fresh MOO string.  The scratch buffer lives on
+ * the heap (unlike the stack VLAs this replaces) so that arbitrarily long
+ * JSON strings -- including ones arriving from the network via curl()'s
+ * "parse" option, where this runs on a background thread with a small
+ * stack -- can never overflow the stack.  Anything after an embedded NUL
+ * is truncated, as MOO strings cannot represent NUL. */
+static const char *
+counted_str_dup(const char *val, size_t len)
+{
+    char *temp = (char *)malloc(len + 1);
+    if (temp == nullptr)
+        panic_moo("counted_str_dup: allocation failed");
+    memcpy(temp, val, len);
+    temp[len] = '\0';
+    const char *r = str_dup(temp);
+    free(temp);
+    return r;
 }
 
 static int
@@ -282,32 +302,25 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
             }
             case TYPE_ERR:
             {
-                char temp[len + 1];
-                strncpy(temp, val, len);
-                temp[len] = '\0';
+                const char *temp = counted_str_dup(val, len);
                 v.type = TYPE_ERR;
                 int err = parse_error(temp);
                 v.v.err = err > -1 ? (error)err : E_NONE;
+                free_str(temp);
                 break;
             }
             case TYPE_STR:
             {
-                char temp[len + 1];
-                strncpy(temp, val, len);
-                temp[len] = '\0';
                 v.type = TYPE_STR;
-                v.v.str = str_dup(temp);
+                v.v.str = counted_str_dup(val, len);
                 break;
             }
             default:
                 panic_moo("Unsupported type in handle_string()");
         }
     } else {
-        char temp[len + 1];
-        strncpy(temp, val, len);
-        temp[len] = '\0';
         v.type = TYPE_STR;
-        v.v.str = str_dup(temp);
+        v.v.str = counted_str_dup(val, len);
     }
 
     PUSH(pctx->top, v);
@@ -319,7 +332,7 @@ handle_start_map(void *ctx)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
 
-    if (pctx->depth >= server_int_option("json_max_parse_depth", JSON_MAX_PARSE_DEPTH))
+    if (pctx->depth >= pctx->max_depth)
         return 0;
 
     Var k, v;
@@ -352,7 +365,7 @@ handle_start_array(void *ctx)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
 
-    if (pctx->depth >= server_int_option("json_max_parse_depth", JSON_MAX_PARSE_DEPTH))
+    if (pctx->depth >= pctx->max_depth)
         return 0;
 
     Var v;
@@ -522,10 +535,18 @@ static yajl_callbacks callbacks = {
     handle_end_array
 };
 
-/**** built in functions ****/
+/**** shared helpers ****/
 
-static package
-bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
+/* Parse `len' bytes of JSON text into a MOO value.  Returns 1 and
+ * stores the value in `out' on success; returns 0 on failure (and
+ * stores nothing).
+ *
+ * This function is safe to call from a background thread: it touches
+ * no database state, which is why the maximum nesting depth is passed
+ * in rather than read from $server_options here.
+ */
+int
+json_parse_string(const char *str, size_t len, int embedded_types, int max_depth, Var *out)
 {
     yajl_handle hand;
     yajl_parser_config cfg = { 1, 1 };
@@ -535,56 +556,99 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
     pctx.top = &pctx.stack;
     pctx.stack.v.type = TYPE_INT;
     pctx.stack.v.v.num = 0;
-    pctx.mode = MODE_COMMON_SUBSET;
+    pctx.mode = embedded_types ? MODE_EMBEDDED_TYPES : MODE_COMMON_SUBSET;
     pctx.depth = 0;
+    pctx.max_depth = max_depth;
 
-    const char *str = arglist.v.list[1].v.str;
-    size_t len = strlen(str);
+    hand = yajl_alloc(&callbacks, &cfg, nullptr, (void *)&pctx);
 
-    package pack;
+    /* Note: the intermediate yajl_parse() status is deliberately ignored;
+     * for bare scalars it reports "insufficient data" until
+     * yajl_parse_complete() finishes the value, and any real error is
+     * reported by yajl_parse_complete() as well. */
+    if (len > 0)
+        yajl_parse(hand, (const unsigned char *)str, len);
+    stat = yajl_parse_complete(hand);
 
-    int done = 0;
+    int ok;
+    if (stat != yajl_status_ok || pctx.top == &pctx.stack) {
+        /* clean up the stack */
+        while (pctx.top != &pctx.stack) {
+            Var v = POP(pctx.top);
+            free_var(v);
+        }
+        ok = 0;
+    } else {
+        *out = POP(pctx.top);
+        ok = 1;
+    }
+
+    yajl_free(hand);
+    return ok;
+}
+
+/* Generate JSON text for a MOO value.  Returns a freshly str_dup()'d
+ * string (release with free_str()) or nullptr if the value cannot be
+ * represented.
+ *
+ * NOT thread-safe: the generator uses static scratch streams.  Only
+ * call this from the main server thread.
+ */
+char *
+json_generate_string(Var v, int embedded_types, int disable_binary_escapes)
+{
+    yajl_gen g;
+    yajl_gen_config cfg = { 0, "", 0 };
+
+    struct generate_context gctx;
+    gctx.mode = embedded_types ? MODE_EMBEDDED_TYPES : MODE_COMMON_SUBSET;
+
+    cfg.disable_binary_escapes = disable_binary_escapes ? 1 : 0;
+
+    g = yajl_gen_alloc(&cfg, nullptr);
+
+    char *result = nullptr;
+    if (yajl_gen_status_ok == generate(g, v, &gctx)) {
+        const unsigned char *buf;
+        unsigned int len;
+        yajl_gen_get_buf(g, &buf, &len);
+        result = str_dup((const char *)buf);
+    }
+
+    yajl_gen_clear(g);
+    yajl_gen_free(g);
+
+    return result;
+}
+
+/**** built in functions ****/
+
+static package
+bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    int embedded_types = 0;
 
     if (1 < arglist.v.list[0].v.num) {
         if (!strcasecmp(arglist.v.list[2].v.str, "common-subset")) {
-            pctx.mode = MODE_COMMON_SUBSET;
+            embedded_types = 0;
         } else if (!strcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
-            pctx.mode = MODE_EMBEDDED_TYPES;
+            embedded_types = 1;
         } else {
             free_var(arglist);
             return make_error_pack(E_INVARG);
         }
     }
 
-    hand = yajl_alloc(&callbacks, &cfg, nullptr, (void *)&pctx);
+    const char *str = arglist.v.list[1].v.str;
+    int max_depth = server_int_option("json_max_parse_depth", JSON_MAX_PARSE_DEPTH);
 
-    while (!done) {
-        if (len == 0)
-            done = 1;
+    package pack;
+    Var v;
 
-        if (done)
-            stat = yajl_parse_complete(hand);
-        else
-            stat = yajl_parse(hand, (const unsigned char *)str, len);
-
-        len = 0;
-
-        if (done) {
-            if (stat != yajl_status_ok) {
-                /* clean up the stack */
-                while (pctx.top != &pctx.stack) {
-                    Var v = POP(pctx.top);
-                    free_var(v);
-                }
-                pack = make_error_pack(E_INVARG);
-            } else {
-                Var v = POP(pctx.top);
-                pack = make_var_pack(v);
-            }
-        }
-    }
-
-    yajl_free(hand);
+    if (json_parse_string(str, strlen(str), embedded_types, max_depth, &v))
+        pack = make_var_pack(v);
+    else
+        pack = make_error_pack(E_INVARG);
 
     free_var(arglist);
     return pack;
