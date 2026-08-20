@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <unordered_set>
+
 #include "config.h"
 #include "db.h"
 #include "db_private.h"
@@ -495,6 +497,13 @@ find_callable_verbdef(Object *start, const char *verb)
 
     Var stack = enlist_var(var_ref(start->parents));
 
+    /* With multiple inheritance the same ancestor is reachable along many
+     * paths.  Without this set the walk visits every *path* rather than
+     * every *node*, which is exponential in the number of stacked
+     * diamonds -- on a lookup that runs for every verb call. */
+    std::unordered_set<Object *> seen;
+    seen.insert(start);
+
     while (listlength(stack) > 0) {
         Var top;
 
@@ -504,6 +513,9 @@ find_callable_verbdef(Object *start, const char *verb)
         free_var(top);
 
         if (!o) /* if it's invalid, AKA $nothing */
+            continue;
+
+        if (!seen.insert(o).second)
             continue;
 
         if ((v = find_verbdef_by_name(o, verb, 1)) != nullptr)
@@ -550,6 +562,12 @@ db_find_callable_verb(Var recv, const char *verb)
     Var stack = new_list(0);
     stack = listappend(stack, var_ref(recv));
 
+    /* See find_callable_verbdef(): the same ancestor must not be expanded
+     * once per path through the hierarchy.  Declared before the label so it
+     * survives the `goto try_again' below -- an object already examined here
+     * has already been searched, or already been expanded. */
+    std::unordered_set<Object *> seen;
+
 try_again:
     while (listlength(stack) > 0) {
         Var top;
@@ -558,6 +576,10 @@ try_again:
 
         if (top.is_object() && is_valid(top)) {
             o = dbpriv_dereference(top);
+            if (!seen.insert(o).second) {
+                free_var(top);
+                continue;
+            }
             if (o->verbdefs == nullptr) {
                 /* keep looking */
                 stack = (TYPE_OBJ == o->parents.type)
