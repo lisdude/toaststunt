@@ -93,8 +93,14 @@ property_defined_at(const char *pname, int phash, Object *o)
  * `pname'.
  */
 static int
-property_defined_at_or_below(const char *pname, int phash, Object *o)
+property_defined_at_or_below(const char *pname, int phash, Object *o,
+                             std::unordered_set<Object *> *seen)
 {
+    /* A descendant reachable along several paths must only be searched
+     * once; otherwise this is exponential in the number of diamonds. */
+    if (nullptr == o || !seen->insert(o).second)
+        return 0;
+
     Proplist *props = &(o->propdefs);
     int length = props->cur_length;
     int i;
@@ -107,11 +113,19 @@ property_defined_at_or_below(const char *pname, int phash, Object *o)
     Var children = o->children;
     for (i = 1; i <= children.v.list[0].v.num; i++) {
         Object *child = dbpriv_dereference(children.v.list[i]);
-        if (property_defined_at_or_below(pname, phash, child))
+        if (property_defined_at_or_below(pname, phash, child, seen))
             return 1;
     }
 
     return 0;
+}
+
+static int
+property_defined_at_or_below(const char *pname, int phash, Object *o)
+{
+    std::unordered_set<Object *> seen;
+
+    return property_defined_at_or_below(pname, phash, o, &seen);
 }
 
 static void
@@ -236,14 +250,19 @@ rename_waif_prop_recursively(Var root, const char *old, const char *_new)
 {
     Object *o = dbpriv_dereference(root);
 
-    if (o->waif_propdefs)
+    if (o && o->waif_propdefs)
         waif_rename_propdef(o, old, _new);
 
+    /* db_descendants() already returns the whole transitive set, so walk it
+     * once.  Recursing into each descendant recomputed the same closure over
+     * and over, which blew up on any deep or wide hierarchy. */
     Var descendant, descendants = db_descendants(root, false);
     int i, c = 0;
 
     FOR_EACH(descendant, descendants, i, c) {
-        rename_waif_prop_recursively(Var::new_obj(descendant.v.obj), old, _new);
+        Object *d = dbpriv_dereference(descendant);
+        if (d && d->waif_propdefs)
+            waif_rename_propdef(d, old, _new);
     }
 
     free_var(descendants);
@@ -770,13 +789,29 @@ dbpriv_check_properties_for_chparent(Var obj, Var parents, Var anon_kids)
     Var stack = enlist_var(var_dup(parents));
     Var top;
 
+    /* `seen' is what keeps this linear.  Without it the walk follows every
+     * distinct path through the inheritance DAG rather than every distinct
+     * node, which is exponential in the number of stacked diamonds -- and
+     * this runs inside a builtin, where the task timeout cannot preempt it.
+     * (`setadd' below de-duplicates the *result*, not the *traversal*.) */
+    std::unordered_set<Object *> seen;
+
     while (listlength(stack) > 0) {
         POP_TOP(top, stack);
         if (is_valid(top)) {
-            Var tmp = dbpriv_dereference(top)->parents;
+            Object *o = dbpriv_dereference(top);
+            if (!seen.insert(o).second) {
+                free_var(top);
+                continue;
+            }
+            Var tmp = o->parents;
             tmp = enlist_var(var_ref(tmp));
             stack = listconcat(tmp, stack);
             ancestors = setadd(ancestors, top);
+        }
+        else {
+            /* POP_TOP took a reference; setadd() would have consumed it. */
+            free_var(top);
         }
     }
 
