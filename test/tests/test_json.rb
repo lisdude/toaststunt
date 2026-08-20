@@ -130,6 +130,14 @@ class TestJson < Test::Unit::TestCase
     end
   end
 
+  def test_that_boolean_map_keys_generate_json_without_crashing
+    run_test_as('wizard') do
+      assert_equal '{"true":1}', simplify(command(%q|; return generate_json([true -> 1], "common-subset");|))
+      assert_equal '{"false|bool":2}', simplify(command(%q|; return generate_json([false -> 2], "embedded-types");|))
+      assert simplify(command(%q|; value = [true -> 1]; return value == parse_json(generate_json(value, "embedded-types"), "embedded-types");|))
+    end
+  end
+
   def test_that_parsing_json_works_for_complex_values_in_default_mode
     run_test_as('wizard') do
       assert_equal [1, 1.1, "1.2", "#13", "E_ARGS", [2, 2.2, "foo"], {"1" => "1"}], parse_json('[1, 1.1, \"1.2\", \"#13\", \"E_ARGS\", [2, 2.2, \"foo\"], {\"1\": \"1\"}]')

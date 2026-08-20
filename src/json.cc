@@ -139,7 +139,7 @@ static var_type
 valid_type(const char **val, size_t *len)
 {
     /* format: "...|<TYPE>"
-       where <TYPE> is a MOO type string: "obj", "int", "float", "err", "str" */
+       where <TYPE> is a MOO type string: "obj", "int", "float", "err", "str", "bool" */
     if (*len > 3 && !strncmp(*val + *len - 4, "|obj", 4)) {
         *len = *len - 4;
         return TYPE_OBJ;
@@ -155,6 +155,9 @@ valid_type(const char **val, size_t *len)
     } else if (*len > 3 && !strncmp(*val + *len - 4, "|str", 4)) {
         *len = *len - 4;
         return TYPE_STR;
+    } else if (*len > 4 && !strncmp(*val + *len - 5, "|bool", 5)) {
+        *len = *len - 5;
+        return TYPE_BOOL;
     } else
         return TYPE_NONE;
 }
@@ -182,6 +185,9 @@ append_type(const char *str, var_type type)
             break;
         case TYPE_STR:
             stream_add_string(stream, "|str");
+            break;
+        case TYPE_BOOL:
+            stream_add_string(stream, "|bool");
             break;
         default:
             panic_moo("Unsupported type in append_type()");
@@ -315,6 +321,9 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
                 v.v.str = counted_str_dup(val, len);
                 break;
             }
+            case TYPE_BOOL:
+                v = Var::new_bool(len == 4 && !strncmp(val, "true", len));
+                break;
             default:
                 panic_moo("Unsupported type in handle_string()");
         }
@@ -400,6 +409,7 @@ generate_key(yajl_gen g, Var v, void *ctx)
         case TYPE_INT:
         case TYPE_FLOAT:
         case TYPE_ERR:
+        case TYPE_BOOL:
         {
             const char *tmp = value_to_literal(v);
             if (MODE_EMBEDDED_TYPES == gctx->mode)
