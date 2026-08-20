@@ -1047,6 +1047,23 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
     if (!check_for_duplicates(new_parents))
         return 0;
 
+    /* Every new parent must exist.  The callers are supposed to have
+     * checked this, but bf_recreate() historically did not, and the loops
+     * below index objects[] directly. */
+    if (TYPE_OBJ == new_parents.type) {
+        if (NOTHING != new_parents.v.obj && !valid(new_parents.v.obj))
+            return 0;
+    }
+    else if (TYPE_LIST == new_parents.type) {
+        Var p;
+        int pi, pc;
+        FOR_EACH(p, new_parents, pi, pc)
+            if (TYPE_OBJ != p.type || !valid(p.v.obj))
+                return 0;
+    }
+    else
+        return 0;
+
     /* Gather a list of anonymous children. */
     bool free_anon_kids = false;
     if (anon_kids.type != TYPE_LIST || anon_kids.v.list[0].v.num == 0)
@@ -1101,18 +1118,28 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
     /* only adjust the parent's children for permanent objects */
     if (TYPE_OBJ == obj.type) {
         /* remove me/obj from my old parents' children */
-        if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING)
-            objects[old_parents.v.obj]->children = setremove(objects[old_parents.v.obj]->children, obj);
-        else if (old_parents.type == TYPE_LIST)
+        Object *po;
+
+        if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING) {
+            if ((po = dbpriv_find_object(old_parents.v.obj)) != nullptr)
+                po->children = setremove(po->children, obj);
+        }
+        else if (old_parents.type == TYPE_LIST) {
             FOR_EACH(parent, old_parents, i, c)
-            objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, obj);
+                if ((po = dbpriv_find_object(parent.v.obj)) != nullptr)
+                    po->children = setremove(po->children, obj);
+        }
 
         /* add me/obj to my new parents' children */
-        if (new_parents.type == TYPE_OBJ && new_parents.v.obj != NOTHING)
-            objects[new_parents.v.obj]->children = setadd(objects[new_parents.v.obj]->children, obj);
-        else if (new_parents.type == TYPE_LIST)
+        if (new_parents.type == TYPE_OBJ && new_parents.v.obj != NOTHING) {
+            if ((po = dbpriv_find_object(new_parents.v.obj)) != nullptr)
+                po->children = setadd(po->children, obj);
+        }
+        else if (new_parents.type == TYPE_LIST) {
             FOR_EACH(parent, new_parents, i, c)
-            objects[parent.v.obj]->children = setadd(objects[parent.v.obj]->children, obj);
+                if ((po = dbpriv_find_object(parent.v.obj)) != nullptr)
+                    po->children = setadd(po->children, obj);
+        }
     } else if (obj.type == TYPE_ANON) {
         /* Update the anonymous object map. */
         if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING)

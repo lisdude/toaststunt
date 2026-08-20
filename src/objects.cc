@@ -471,6 +471,16 @@ bf_recreate(Var arglist, Byte next, void *vdata, Objid progr)
             return make_error_pack(E_INVARG);
         }
 
+        /* The parent must exist, exactly as bf_create() requires.  Without
+         * this, db_change_parents() indexes the object table with a bogus
+         * objid. */
+        if (arglist.v.list[2].type == TYPE_OBJ
+                && !valid(arglist.v.list[2].v.obj)
+                && arglist.v.list[2].v.obj != NOTHING) {
+            free_var(arglist);
+            return make_error_pack(E_INVARG);
+        }
+
         Objid owner = progr;
         if (arglist.v.list[0].v.num > 2 && arglist.v.list[3].type == TYPE_OBJ && is_valid(arglist.v.list[3]))
             owner = arglist.v.list[3].v.obj;
