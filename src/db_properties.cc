@@ -1153,6 +1153,21 @@ dbpriv_fix_properties_after_chparent(void *snapshot)
     size_t n = snap->objs.size();
     size_t k;
 
+    /* By far the most common case: a create(), or a chparent of an object
+     * with nothing below it.  There is only one object to re-lay-out, so
+     * skip the ordering machinery entirely rather than allocating a map,
+     * two vectors and a set to sort a single element. */
+    if (1 == n) {
+        if (nullptr != dbpriv_dereference(snap->objs[0])) {
+            Var new_ancestors = db_ancestors(snap->objs[0], true);
+            relayout_properties(snap->objs[0], snap->old_ancestors[0],
+                                new_ancestors);
+            free_var(new_ancestors);
+        }
+        dbpriv_free_ancestry_snapshot(snapshot);
+        return;
+    }
+
     std::unordered_map<Object *, size_t> index;
     for (k = 0; k < n; k++) {
         Object *o = dbpriv_dereference(snap->objs[k]);
