@@ -1354,25 +1354,45 @@ db_object_isa(Var object, Var parent)
         dbpriv_find_object(object.v.obj) :
         object.v.anon;
 
+    if (nullptr == o)
+        return 0;
+
     Var ancestor, ancestors = enlist_var(var_ref(o->parents));
+
+    /* Expand each ancestor once.  Without this the walk follows every path
+     * through the inheritance DAG, which is exponential in the number of
+     * stacked diamonds. */
+    std::unordered_set<Object *> seen;
+    seen.insert(o);
+
+    int found = 0;
 
     while (listlength(ancestors) > 0) {
         POP_TOP(ancestor, ancestors);
 
-        if (ancestor.v.obj == NOTHING)
+        if (TYPE_OBJ != ancestor.type || NOTHING == ancestor.v.obj) {
+            free_var(ancestor);
             continue;
+        }
 
         if (equality(ancestor, parent, 0)) {
-            free_var(ancestors);
-            return 1;
+            free_var(ancestor);
+            found = 1;
+            break;
         }
 
         t = dbpriv_find_object(ancestor.v.obj);
+        free_var(ancestor);
+
+        if (nullptr == t || !seen.insert(t).second)
+            continue;
 
         ancestors = listconcat(ancestors, enlist_var(var_ref(t->parents)));
     }
 
-    return 0;
+    free_var(ancestors);
+
+    return found;
 }
 
 void do_fixup_owners(Object *o, const Objid obj)
