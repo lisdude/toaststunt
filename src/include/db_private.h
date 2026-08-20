@@ -224,11 +224,6 @@ extern void dbpriv_fix_properties_after_chparent(void *snapshot);
                  * (frees) SNAPSHOT.
                  */
 
-extern void dbpriv_free_ancestry_snapshot(void *snapshot);
-                /* Discard a snapshot without using it, e.g.
-                 * when the chparent turns out to be
-                 * impossible.
-                 */
 
 /*********** Verbs ***********/
 

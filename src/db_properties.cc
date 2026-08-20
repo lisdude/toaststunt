@@ -19,7 +19,6 @@
  * Routines for manipulating properties on DB objects
  *****************************************************************************/
 
-#include <assert.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -988,10 +987,14 @@ relayout_properties(Var obj, Var old_ancestors, Var new_ancestors)
      * hold.  Keep the checks below anyway: a violation must degrade into
      * clear properties, never into a walk off the end of `propval'. */
     const int have = (int)me->nval;
-    if (old_count != have)
-        errlog("PROPERTY LAYOUT: %s expected %d old properties but has %d\n",
-               (TYPE_OBJ == obj.type) ? "object" : "anonymous object",
-               old_count, have);
+    if (old_count != have) {
+        if (TYPE_OBJ == obj.type)
+            errlog("PROPERTY LAYOUT: #%" PRIdN " expected %d old properties, has %d\n",
+                   (Num)obj.v.obj, old_count, have);
+        else
+            errlog("PROPERTY LAYOUT: anonymous object expected %d old properties, has %d\n",
+                   old_count, have);
+    }
 
     if (new_count != 0) {
         new_propval = (Pval *)mymalloc(new_count * sizeof(Pval), M_PVAL);
@@ -1132,8 +1135,8 @@ dbpriv_snapshot_ancestry(Var obj, Var anon_kids)
     return snap;
 }
 
-void
-dbpriv_free_ancestry_snapshot(void *snapshot)
+static void
+free_ancestry_snapshot(void *snapshot)
 {
     AncestrySnapshot *snap = (AncestrySnapshot *)snapshot;
     size_t n = snap->objs.size();
@@ -1164,7 +1167,7 @@ dbpriv_fix_properties_after_chparent(void *snapshot)
                                 new_ancestors);
             free_var(new_ancestors);
         }
-        dbpriv_free_ancestry_snapshot(snapshot);
+        free_ancestry_snapshot(snapshot);
         return;
     }
 
@@ -1243,5 +1246,5 @@ dbpriv_fix_properties_after_chparent(void *snapshot)
         free_var(new_ancestors);
     }
 
-    dbpriv_free_ancestry_snapshot(snapshot);
+    free_ancestry_snapshot(snapshot);
 }
