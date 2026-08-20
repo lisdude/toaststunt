@@ -1906,7 +1906,8 @@ write_forked_task(forked_task ft)
     unsigned lineno = find_line_number(ft.program, ft.f_index, 0);
 
     /* saving rounds to the nearest second.  restart is slow anyway */
-    dbio_printf("0 %d %d %d\n", lineno, ROUND(&ft.start_tv), ft.id);
+    dbio_printf("0 %u %" PRIdN " %d\n", lineno,
+                (Num)ROUND(&ft.start_tv), ft.id);
     write_activ_as_pi(ft.a);
     write_rt_env(ft.program->var_names, ft.rt_env, ft.program->num_var_names);
     dbio_write_forked_program(ft.program, ft.f_index);
@@ -1916,7 +1917,8 @@ static void
 write_suspended_task(suspended_task st)
 {
     /* saving rounds down to the nearest second.  restart is slow anyway */
-    dbio_printf("%d %d ", ROUND(&st.start_tv), st.the_vm->task_id);
+    dbio_printf("%" PRIdN " %d ", (Num)ROUND(&st.start_tv),
+                st.the_vm->task_id);
     dbio_write_var(st.value);
     write_vm(st.the_vm);
 }
@@ -2032,7 +2034,8 @@ read_task_queue(void)
         return 0;
     }
     for (; count > 0; count--) {
-        int first_lineno, id, old_size, st;
+        int first_lineno, id, old_size;
+        Num st;
         char c;
         struct timeval start_tv;
         Program *program;
@@ -2040,7 +2043,7 @@ read_task_queue(void)
         const char **old_names;
         activation a;
 
-        if (dbio_scanf("%d %d %d %d%c",
+        if (dbio_scanf("%d %d %" SCNdN " %d%c",
                        &dummy, &first_lineno, &st, &id, &c) != 5
                 || c != '\n') {
             errlog("READ_TASK_QUEUE: Bad numbers, count = %d.\n", count);
@@ -2078,16 +2081,19 @@ read_task_queue(void)
     }
     for (; suspended_count > 0; suspended_count--) {
         task *t = (task *)mymalloc(sizeof(task), M_TASK);
-        int task_id, st;
+        int task_id;
+        Num st;
         char c;
 
         t->kind = TASK_SUSPENDED;
-        if (dbio_scanf("%d %d%c", &st, &task_id, &c) != 3) {
+        if (dbio_scanf("%" SCNdN " %d%c", &st, &task_id, &c) != 3) {
             errlog("READ_TASK_QUEUE: Bad suspended task header, count = %d\n",
                    suspended_count);
             return 0;
         }
-        t->t.suspended.start_tv.tv_sec = st;
+        /* Old 64-bit servers wrote an indefinite INTNUM_MAX timeout through
+         * a 32-bit %d conversion, producing -1 in the database. */
+        t->t.suspended.start_tv.tv_sec = st < 0 ? INTNUM_MAX : st;
         t->t.suspended.start_tv.tv_usec = 0;
         if (c == ' ')
             t->t.suspended.value = dbio_read_var();
