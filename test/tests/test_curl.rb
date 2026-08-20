@@ -41,6 +41,26 @@ class TestCurl < Test::Unit::TestCase
     end
   end
 
+  def test_that_non_map_legacy_truthy_values_still_include_headers
+    with_http_server([response('200 OK', 'payload')]) do |port, requests|
+      run_test_as('wizard') do
+        r = curl(%|"http://127.0.0.1:#{port}/", {"legacy truthy value"}|)
+        assert r.index('HTTP/1.1 200 OK'), "headers not included in #{r.inspect}"
+        assert r.index('payload'), "body missing from #{r.inspect}"
+      end
+    end
+  end
+
+  def test_that_dict_remains_available_with_an_options_map
+    with_dict_server do |port, commands|
+      run_test_as('wizard') do
+        r = curl(%|"dict://127.0.0.1:#{port}/d:toast", ["timeout" -> 5, "max_size" -> 4096]|)
+        assert r.index('definition body'), "DICT response missing from #{r.inspect}"
+      end
+      assert commands.any? { |line| line.start_with?('DEFINE ') }, commands.inspect
+    end
+  end
+
   def test_that_post_with_a_body_works
     with_http_server([response('200 OK', 'created')]) do |port, requests|
       run_test_as('wizard') do
@@ -334,6 +354,43 @@ class TestCurl < Test::Unit::TestCase
     end
     begin
       yield port, requests
+      thread.join(10)
+    ensure
+      server.close rescue nil
+      thread.kill
+    end
+  end
+
+  def with_dict_server
+    server = TCPServer.new('127.0.0.1', 0)
+    port = server.addr[1]
+    commands = []
+    thread = Thread.new do
+      client = server.accept
+      begin
+        client.write("220 test dictionary server ready\r\n")
+        while (line = client.gets)
+          commands << line.chomp
+          case line
+          when /\ACLIENT /
+            client.write("250 client accepted\r\n")
+          when /\ADEFINE /
+            client.write("150 1 definitions retrieved\r\n")
+            client.write("151 \"toast\" test \"test dictionary\"\r\n")
+            client.write("definition body\r\n.\r\n250 ok\r\n")
+          when /\AQUIT/
+            client.write("221 bye\r\n")
+            break
+          else
+            client.write("500 unsupported command\r\n")
+          end
+        end
+      ensure
+        client.close rescue nil
+      end
+    end
+    begin
+      yield port, commands
       thread.join(10)
     ensure
       server.close rescue nil
