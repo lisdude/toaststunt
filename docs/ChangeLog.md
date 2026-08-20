@@ -27,6 +27,7 @@
 - Fixed a bug that would cause indefinitely suspended tasks (via `suspend()` with no arguments) to immediately resume upon rebooting the database.
 
 ### New Features
+- Updated the CMake configuration for compatibility with CMake 4.4 policies and eliminated configuration warnings.
 - `curl()` now accepts an options map as its second argument, extending it into a full HTTP client: `curl(url, ["method" -> "POST", "json" -> value, ...])`. Recognized options:
     - `"method"`: `"GET"`, `"HEAD"`, `"POST"`, `"PUT"`, `"PATCH"`, `"DELETE"`, or `"OPTIONS"` (defaults to `"GET"`, or `"POST"` when a body is supplied)
     - `"body"`: a (binary) string sent as the request body
