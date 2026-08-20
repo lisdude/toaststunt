@@ -15,8 +15,31 @@
 - Fixed `next_recycled_object()` skipping a recycled max object.
 - Fixed --tls-port to actually consider the port, like its shorter equivalent.
 - Fixed `$server_options.max_map_value_bytes` being ignored; map value size limits were read from `max_list_value_bytes` instead.
+- Fixed `curl()`, `url_encode()`, and `url_decode()` leaking their arguments when erroring out early.
+- Fixed a potential stack overflow when parsing JSON documents containing very long strings.
 
 ### New Features
+- `curl()` now accepts an options map as its second argument, extending it into a full HTTP client: `curl(url, ["method" -> "POST", "json" -> value, ...])`. Recognized options:
+    - `"method"`: `"GET"`, `"HEAD"`, `"POST"`, `"PUT"`, `"PATCH"`, `"DELETE"`, or `"OPTIONS"` (defaults to `"GET"`, or `"POST"` when a body is supplied)
+    - `"body"`: a (binary) string sent as the request body
+    - `"json"`: any MOO value, serialized as the JSON request body (sets `Content-Type: application/json` unless you provide your own)
+    - `"headers"`: a map of request headers (`["Authorization" -> "Bearer ...", "X-Multi" -> {"a", "b"}]`); names and values are validated so header injection is impossible
+    - `"timeout"`: seconds, between 1 and `$server_options.curl_max_timeout`
+    - `"max_size"`: lower the response size cap for this request
+    - `"follow_redirects"`: follow http(s) redirects, which are never followed by default; `1` (or `true`) uses the default limit of 5 hops, a larger integer sets the limit (up to 20)
+    - `"parse"`: parse the response body as JSON in common-subset mode
+    - `"full"`: return `["status" -> INT, "headers" -> MAP, "body" -> STR|parsed, "url" -> STR]` instead of just the body; repeated response headers accumulate into a list
+    - `"include_headers"`: prepend the raw response headers to the body (equivalent to the legacy second argument)
+    - `"user_agent"`: override the User-Agent header
+
+  The legacy forms `curl(url)`, `curl(url, include_headers)`, and `curl(url, include_headers, timeout)` behave as before.
+- New `CURL_ALLOWED_METHODS` compile-time option (options.h): a comma-separated list restricting which request methods curl may use (checked after the method is fully resolved, so it also covers the implicit POST selected by a `"body"`/`"json"` option). For example, `"GET,HEAD"` makes curl read-only. Defaults to all supported methods.
+- curl responses are capped by `$server_options.curl_max_response_bytes` (default 10MB).
+- curl timeouts are limited by `$server_options.curl_max_timeout` (default 300s), with the default set by `$server_options.curl_timeout`.
+- curl advertises `Accept-Encoding` and transparently decodes compressed responses.
+- curl now uses `ToastStunt/<version>` as its default User-Agent.
+- curl transfers abort promptly during server shutdown.
+- curl sets `CURLOPT_NOSIGNAL` for thread safety.
 - Add an optional unclean_shutdown parameter to `shutdown()`, which replicates the functionality found in the `panic()` builtin.
 - Remove the `panic()` builtin.
 - Anonymous children are no longer invalidated when properties change on their parents.
@@ -25,11 +48,15 @@
 - Allow empty subjects in pcre_match.
 - Add an optional third argument to generate_json to disable binary string escaping.
 
+### *** COMPATIBILITY WARNINGS ***
+- curl responses larger than 10MB now fail with an `E_QUOTA` error map, and explicit timeouts above 300 seconds now raise `E_INVARG`. Raise `$server_options.curl_max_response_bytes` / `$server_options.curl_max_timeout` if you need more.
+- curl requests now identify themselves as `ToastStunt/<version>` instead of `libcurl-agent/1.0` and advertise `Accept-Encoding` (compressed responses are decoded for you).
+
 ## 2.7.3 (Jun 20, 2025)
 ### Bug Fixes
 - `listeners()` now uses the correct key for print-messages.
 - Threaded DNS lookups had an issue that made them freeze the server just as badly as non-threaded DNS lookups. This has been resolved. (See ToastCore for an example implementation of handling slow lookups without allowing a connection to process commands.)
-- `curl` and related functions are now disabled when outbound network connections are disabled.
+- curl and related functions are now disabled when outbound network connections are disabled.
 - Large amounts of input on TLS connections could cause it to fail to go through until the next command. This is now fixed.
 - Fixed waif crashes when indexing nested maps containing waifs.
 - Fixed telnet IAC IAC sequences not being properly handled.

@@ -15,3 +15,8 @@
     - NO_NAME_LOOKUP (disable automatic DNS name resolution on new connections. Can be overridden with $server_options.no_name_lookup)
     - PCRE_PATTERN_CACHE_SIZE (specifies how many PCRE patterns are cached)
     - INCLUDE_RT_VARS (Include runtime environment variables in the stack argument for `handle_uncaught_error`, `handle_task_timeout`, and `handle_lagging_task`)
+    - CURL_TIMEOUT (default number of seconds a curl() transfer may take) [can be overridden with $server_options.curl_timeout]
+    - CURL_MAX_TIMEOUT (largest timeout a curl() caller may request) [can be overridden with $server_options.curl_max_timeout]
+    - CURL_MAX_RESPONSE_BYTES (maximum number of response bytes curl() will buffer before aborting) [can be overridden with $server_options.curl_max_response_bytes]
+    - CURL_MAX_REDIRECTS / CURL_MAX_REDIRECTS_LIMIT (default and maximum redirect-following depth for curl()'s "follow_redirects" option)
+    - CURL_ALLOWED_METHODS (comma-separated list of HTTP methods curl() may use, e.g. "GET,HEAD" for a read-only curl())
