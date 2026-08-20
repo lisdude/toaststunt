@@ -39,7 +39,7 @@
     - `"include_headers"`: prepend the raw response headers to the body (equivalent to the legacy second argument)
     - `"user_agent"`: override the User-Agent header
 
-  The legacy forms `curl(url)`, `curl(url, include_headers)`, and `curl(url, include_headers, timeout)` behave as before.
+  Calls without an options map keep the old behavior.
 - New `CURL_ALLOWED_METHODS` compile-time option (options.h): a comma-separated list restricting which request methods curl may use (checked after the method is fully resolved, so it also covers the implicit POST selected by a `"body"`/`"json"` option). For example, `"GET,HEAD"` makes curl read-only. Defaults to all supported methods.
 - curl responses are capped by `$server_options.curl_max_response_bytes` (default 10MB).
 - curl timeouts are limited by `$server_options.curl_max_timeout` (default 300s), with the default set by `$server_options.curl_timeout`.
@@ -56,6 +56,7 @@
 - Add an optional third argument to generate_json to disable binary string escaping.
 
 ### *** COMPATIBILITY WARNINGS ***
+- A map passed as `curl()`'s second argument is now interpreted as an options map. Legacy calls that used an arbitrary nonempty map merely as a truthy `include_headers` value must pass a non-map truthy value or use `["include_headers" -> 1]` instead.
 - curl responses larger than 10MB now fail with an `E_QUOTA` error map, and explicit timeouts above 300 seconds now raise `E_INVARG`. Raise `$server_options.curl_max_response_bytes` / `$server_options.curl_max_timeout` if you need more.
 - curl requests now identify themselves as `ToastStunt/<version>` instead of `libcurl-agent/1.0` and advertise `Accept-Encoding` (compressed responses are decoded for you).
 
