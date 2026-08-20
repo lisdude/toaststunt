@@ -1110,8 +1110,10 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
 
     Var old_parents = o->parents;
 
-    /* save this; we need it later */
-    Var old_ancestors = db_ancestors(obj, true);
+    /* Record the ancestor list of everything below `obj' while the graph is
+     * still intact.  With multiple inheritance this cannot be reconstructed
+     * afterwards -- see dbpriv_snapshot_ancestry(). */
+    void *ancestry = dbpriv_snapshot_ancestry(obj, anon_kids);
     Var parent;
     int i, c;
 
@@ -1174,12 +1176,8 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
     }
 #endif /* USE_ANCESTOR_CACHE */
 
-    Var new_ancestors = db_ancestors(obj, true);
+    dbpriv_fix_properties_after_chparent(ancestry);
 
-    dbpriv_fix_properties_after_chparent(obj, old_ancestors, new_ancestors, anon_kids);
-
-    free_var(old_ancestors);
-    free_var(new_ancestors);
     if (free_anon_kids)
         free_var(anon_kids);
 

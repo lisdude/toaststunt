@@ -20,7 +20,9 @@
  *****************************************************************************/
 
 #include <assert.h>
+#include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "collection.h"
 #include "config.h"
@@ -898,8 +900,12 @@ dbpriv_check_properties_for_chparent(Var obj, Var parents, Var anon_kids)
  * laying out the properties in memory, consult the intersection, and
  * preserve information about those properties.
  */
-void
-dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancestors, Var anon_kids)
+/*
+ * Re-lay-out a single object's property values, given the ancestor lists it
+ * had before and after the chparent.  Does not touch anything else.
+ */
+static void
+relayout_properties(Var obj, Var old_ancestors, Var new_ancestors)
 {
     Object *o;
     Var ancestor;
@@ -943,7 +949,14 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
     Object *me = dbpriv_dereference(obj);
     Pval *new_propval = nullptr;
 
-    assert(old_count == me->nval);
+    /* The ancestry snapshot taken before the graph changed should make this
+     * hold.  Keep the checks below anyway: a violation must degrade into
+     * clear properties, never into a walk off the end of `propval'. */
+    const int have = (int)me->nval;
+    if (old_count != have)
+        errlog("PROPERTY LAYOUT: %s expected %d old properties but has %d\n",
+               (TYPE_OBJ == obj.type) ? "object" : "anonymous object",
+               old_count, have);
 
     if (new_count != 0) {
         new_propval = (Pval *)mymalloc(new_count * sizeof(Pval), M_PVAL);
@@ -956,21 +969,44 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
                 int o1 = old_offsets[l - 1];
                 int o2 = old_offsets[l];
                 for (x = o1; x < o2; x++, n1++) {
+                    if (nullptr == me->propval || x < 0 || x >= have) {
+                        new_propval[n1].var = clear;
+                        new_propval[n1].owner = me->owner;
+                        new_propval[n1].perms = 0;
+                        continue;
+                    }
                     new_propval[n1].var = var_ref(me->propval[x].var);
                     new_propval[n1].owner = me->propval[x].owner;
                     new_propval[n1].perms = me->propval[x].perms;
                 }
             }
             else {
+                /* This ancestor is newly inherited.  Copy the owner/perms of
+                 * its property slots from whichever parent it arrived
+                 * through.  `po' stays null if no parent yields it, which
+                 * should not happen -- but the old code then indexed a stale
+                 * `offset' off an arbitrary object. */
                 Var parent, parents = enlist_var(var_ref(me->parents));
-                FOR_EACH(parent, parents, i3, c3)
-                if (valid(parent.v.obj))
-                    if ((offset = properties_offset(ancestor, parent)) > -1)
+                Object *po = nullptr;
+                int poffset = -1;
+                FOR_EACH(parent, parents, i3, c3) {
+                    if (!valid(parent.v.obj))
+                        continue;
+                    if ((poffset = properties_offset(ancestor, parent)) > -1) {
+                        po = dbpriv_find_object(parent.v.obj);
                         break;
+                    }
+                }
                 free_var(parents);
                 for (x = 0; n1 < n2; x++, n1++) {
-                    Pval pv = dbpriv_find_object(parent.v.obj)->propval[offset + x];
                     new_propval[n1].var = clear;
+                    if (nullptr == po || nullptr == po->propval || poffset < 0
+                            || poffset + x < 0 || poffset + x >= (int)po->nval) {
+                        new_propval[n1].owner = me->owner;
+                        new_propval[n1].perms = 0;
+                        continue;
+                    }
+                    Pval pv = po->propval[poffset + x];
                     new_propval[n1].owner = pv.perms & PF_CHOWN ? me->owner : pv.owner;
                     new_propval[n1].perms = pv.perms;
                 }
@@ -983,7 +1019,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
      */
     int c;
     if (me->propval) {
-        for (c = 0; c < old_count; c++)
+        for (c = 0; c < have; c++)
             free_var(me->propval[c].var);
         myfree(me->propval, M_PVAL);
     }
@@ -992,63 +1028,170 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
 
     myfree(old_offsets, M_INT);
     myfree(new_offsets, M_INT);
+}
 
-    /*
-     * Recursively call dbpriv_fix_properties_after_chparent for each
-     * child.  For each child's parents assemble the old ancestors.
-     * When we come to me (obj) as parent, use my old ancestors
-     * instead of my new ancestors.
-     */
-    Var parent, child;
-    int i4, c4, i5, c5, i6, c6;
-    Var children;
+/*
+ * Multiple inheritance makes the fixup after a chparent more delicate than a
+ * recursive descent over `children'.
+ *
+ *   - An object can be reachable from the reparented object along more than
+ *     one path (a "diamond"), so a plain recursion visits it more than once
+ *     and re-lays-out data an earlier visit already rewrote.
+ *
+ *   - Worse, an affected object's *old* ancestor list cannot be recovered
+ *     once the graph has been mutated.  The old code rebuilt it by calling
+ *     db_ancestors() on the object's other parents -- but if one of those is
+ *     itself a descendant of the reparented object, that call returns the
+ *     *new* ancestry, which silently inflates the old layout and sends the
+ *     copy and free loops past the end of `propval'.
+ *
+ * So the old ancestry of every affected object is snapshotted *before* the
+ * graph changes, and afterwards each of them is re-laid-out exactly once,
+ * parents before children.
+ */
 
-    if (TYPE_LIST == anon_kids.type)
-        children = listconcat(var_ref(me->children), var_ref(anon_kids));
-    else
-        children = var_ref(me->children);
+struct AncestrySnapshot {
+    std::vector<Var> objs;
+    std::vector<Var> old_ancestors;
+};
 
-    FOR_EACH(child, children, i4, c4) {
-        Object *oc = dbpriv_dereference(child);
-        Var _new = new_list(1);
-        Var old = new_list(1);
-        _new.v.list[1] = var_ref(child);
-        old.v.list[1] = var_ref(child);
-        if (TYPE_LIST == oc->parents.type) {
-            FOR_EACH(parent, oc->parents, i5, c5) {
-                Object *op = dbpriv_find_object(parent.v.obj);
-                if (op->id == obj.v.obj) {
-                    Var tmp;
-                    FOR_EACH(tmp, old_ancestors, i6, c6)
-                    old = setadd(old, var_ref(tmp));
-                    FOR_EACH(tmp, new_ancestors, i6, c6)
-                    _new = setadd(_new, var_ref(tmp));
-                }
-                else {
-                    Var tmp, all = db_ancestors(Var::new_obj(op->id), true);
-                    FOR_EACH(tmp, all, i6, c6) {
-                        old = setadd(old, var_ref(tmp));
-                        _new = setadd(_new, var_ref(tmp));
-                    }
-                    free_var(all);
-                }
-            }
-        }
-        else {
-            _new = listconcat(_new, var_ref(new_ancestors));
-            old = listconcat(old, var_ref(old_ancestors));
-        }
-        /* For permanent children, gather their anonymous children */
-        Var child_anon_kids = new_list(0);
-        if (child.type == TYPE_OBJ) {
-            std::unordered_set<Object*> seen;
-            dbpriv_append_anon_list(child.v.obj, &child_anon_kids, &seen);
-        }
-        dbpriv_fix_properties_after_chparent(child, old, _new, child_anon_kids);
-        free_var(child_anon_kids);
-        free_var(_new);
-        free_var(old);
+void *
+dbpriv_snapshot_ancestry(Var obj, Var anon_kids)
+{
+    AncestrySnapshot *snap = new AncestrySnapshot();
+
+    /* `obj' and every permanent object below it: exactly the set whose
+     * ancestry -- and therefore property layout -- a chparent can change. */
+    Var affected = (TYPE_OBJ == obj.type)
+                   ? db_descendants(obj, true)
+                   : enlist_var(var_ref(obj));
+
+    /* ...plus their anonymous children.  Anonymous objects cannot be parents,
+     * so they are always leaves of the affected set. */
+    std::unordered_set<Object *> seen;
+    Var anons = new_list(0);
+    if (TYPE_OBJ == obj.type) {
+        Var d;
+        int i, c;
+        FOR_EACH(d, affected, i, c)
+            dbpriv_append_anon_list(d.v.obj, &anons, &seen);
+    }
+    if (TYPE_LIST == anon_kids.type) {
+        Var k;
+        int i, c;
+        FOR_EACH(k, anon_kids, i, c)
+            if (TYPE_ANON == k.type && seen.insert(k.v.anon).second)
+                anons = listappend(anons, var_ref(k));
+    }
+    affected = listconcat(affected, anons);
+
+    Var a;
+    int i, c;
+    FOR_EACH(a, affected, i, c) {
+        snap->objs.push_back(var_ref(a));
+        snap->old_ancestors.push_back(db_ancestors(a, true));
     }
 
-    free_var(children);
+    free_var(affected);
+
+    return snap;
+}
+
+void
+dbpriv_free_ancestry_snapshot(void *snapshot)
+{
+    AncestrySnapshot *snap = (AncestrySnapshot *)snapshot;
+    size_t n = snap->objs.size();
+
+    for (size_t k = 0; k < n; k++) {
+        free_var(snap->objs[k]);
+        free_var(snap->old_ancestors[k]);
+    }
+
+    delete snap;
+}
+
+void
+dbpriv_fix_properties_after_chparent(void *snapshot)
+{
+    AncestrySnapshot *snap = (AncestrySnapshot *)snapshot;
+    size_t n = snap->objs.size();
+    size_t k;
+
+    std::unordered_map<Object *, size_t> index;
+    for (k = 0; k < n; k++) {
+        Object *o = dbpriv_dereference(snap->objs[k]);
+        if (nullptr != o)
+            index[o] = k;
+    }
+
+    /* Order the affected objects so that a parent is always re-laid-out
+     * before its children: relayout_properties() reads a parent's `propval'
+     * using new-layout offsets when a property is newly inherited. */
+    std::vector<int> indegree(n, 0);
+    std::vector<std::vector<size_t> > children(n);
+
+    for (k = 0; k < n; k++) {
+        Object *o = dbpriv_dereference(snap->objs[k]);
+        if (nullptr == o)
+            continue;
+        Var parent, parents = enlist_var(var_ref(o->parents));
+        std::unordered_set<size_t> counted;
+        int i, c;
+
+        FOR_EACH(parent, parents, i, c) {
+            if (TYPE_OBJ != parent.type || NOTHING == parent.v.obj)
+                continue;
+
+            Object *po = dbpriv_find_object(parent.v.obj);
+            if (nullptr == po)
+                continue;
+
+            auto it = index.find(po);
+            if (it == index.end() || it->second == k)
+                continue;
+            /* A parents list should not contain duplicates, but tolerate
+             * one rather than deadlocking the ordering below. */
+            if (!counted.insert(it->second).second)
+                continue;
+
+            children[it->second].push_back(k);
+            indegree[k]++;
+        }
+
+        free_var(parents);
+    }
+
+    std::vector<size_t> order;
+    order.reserve(n);
+    for (k = 0; k < n; k++)
+        if (0 == indegree[k])
+            order.push_back(k);
+    for (size_t q = 0; q < order.size(); q++) {
+        std::vector<size_t> &kids = children[order[q]];
+        for (size_t j = 0; j < kids.size(); j++)
+            if (0 == --indegree[kids[j]])
+                order.push_back(kids[j]);
+    }
+    if (order.size() < n) {
+        /* Only reachable if the hierarchy is somehow cyclic.  Don't leave
+         * anybody with a stale layout. */
+        std::vector<bool> queued(n, false);
+        for (size_t q = 0; q < order.size(); q++)
+            queued[order[q]] = true;
+        for (k = 0; k < n; k++)
+            if (!queued[k])
+                order.push_back(k);
+    }
+
+    for (size_t q = 0; q < order.size(); q++) {
+        k = order[q];
+        if (nullptr == dbpriv_dereference(snap->objs[k]))
+            continue;
+        Var new_ancestors = db_ancestors(snap->objs[k], true);
+        relayout_properties(snap->objs[k], snap->old_ancestors[k], new_ancestors);
+        free_var(new_ancestors);
+    }
+
+    dbpriv_free_ancestry_snapshot(snapshot);
 }

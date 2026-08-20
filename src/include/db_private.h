@@ -201,15 +201,33 @@ extern int dbpriv_check_properties_for_chparent(Var obj,
                  * ancestors.
                  */
 
-extern void dbpriv_fix_properties_after_chparent(Var obj,
-                        Var old_ancestors,
-                        Var new_ancestors,
-                        Var anon_kids);
+extern void *dbpriv_snapshot_ancestry(Var obj, Var anon_kids);
+                /* Must be called BEFORE OBJ's parents are
+                 * changed.  Records the ancestor list that
+                 * OBJ and each of its descendants (including
+                 * anonymous children) has right now.  An
+                 * affected object's old ancestry cannot be
+                 * recovered once the graph has been mutated,
+                 * and multiple inheritance means it is not
+                 * derivable from OBJ's own old ancestors
+                 * either.
+                 */
+
+extern void dbpriv_fix_properties_after_chparent(void *snapshot);
                 /* OBJ has just had its parents changed.
                  * Fix up the properties of OBJ and its
                  * descendants, removing obsolete ones
                  * and adding clear new ones, as
-                 * appropriate for its new parents.
+                 * appropriate for its new parents.  Each
+                 * affected object is re-laid-out exactly
+                 * once, parents before children.  Consumes
+                 * (frees) SNAPSHOT.
+                 */
+
+extern void dbpriv_free_ancestry_snapshot(void *snapshot);
+                /* Discard a snapshot without using it, e.g.
+                 * when the chparent turns out to be
+                 * impossible.
                  */
 
 /*********** Verbs ***********/
