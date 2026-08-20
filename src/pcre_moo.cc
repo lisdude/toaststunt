@@ -3,6 +3,7 @@
 #ifdef PCRE2_FOUND
 
 #include <ctype.h>
+#include <pthread.h>
 #include <unordered_map>
 #include <limits.h>
 #include <string>
