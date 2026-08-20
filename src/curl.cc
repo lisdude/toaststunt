@@ -40,8 +40,8 @@
  *
  * Security posture:
  *   - wizard-only, and disabled entirely when outbound networking is off.
- *   - protocol allowlist (http/https, plus dict in the legacy form only);
- *     redirects, when enabled at all, are restricted to http/https.
+ *   - protocol allowlist (http/https/dict); redirects, when enabled at all,
+ *     are restricted to http/https.
  *   - TLS peer/host verification is always on and cannot be disabled in-MOO.
  *   - request methods come from a fixed allowlist, which can be narrowed at
  *     compile time via CURL_ALLOWED_METHODS in options.h; header names/values
@@ -92,7 +92,6 @@ typedef struct curl_request {
     bool include_headers;       /* legacy CURLOPT_HEADER behavior */
     bool parse;                 /* parse response body as JSON */
     bool full;                  /* return ["status", "headers", "body", "url"] */
-    const char *protocols;      /* libcurl protocol allowlist */
     /* Written by libcurl callbacks on the worker thread: */
     bool shutdown_abort;        /* transfer aborted for server shutdown */
 } curl_request;
@@ -536,7 +535,7 @@ static void curl_thread_callback(Var arglist, Var *ret, void *extra_data)
     header_chunk.overflowed = false;
 
     curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-    curl_easy_setopt(curl_handle, CURLOPT_PROTOCOLS_STR, req->protocols);
+    curl_easy_setopt(curl_handle, CURLOPT_PROTOCOLS_STR, "http,https,dict");
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, CurlWriteMemoryCallback);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, req->user_agent);
@@ -677,7 +676,6 @@ bf_curl(Var arglist, Byte next, void *vdata, Objid progr)
     req->json_max_depth = server_int_option("json_max_parse_depth", JSON_MAX_PARSE_DEPTH);
 
     const bool options_mode = nargs >= 2 && arglist.v.list[2].type == TYPE_MAP;
-    req->protocols = options_mode ? "http,https" : "http,https,dict";
 
     if (options_mode) {
         if (nargs > 2) {
