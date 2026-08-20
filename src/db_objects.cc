@@ -563,30 +563,43 @@ db_renumber_object(Objid old)
             int i1, c1, i2, c2;
             Var obj1, obj2;
 
+/* Rewrite every occurrence of `old' in LIST, not just the first, and
+ * write nothing at all if there is none.  The original code broke out of
+ * a search loop and then stored unconditionally -- when the search fell
+ * through, FOR_EACH left the index at cnt + 1 and the store landed one
+ * Var past the end of the list.
+ */
+#define     RENUMBER_IN_LIST(lst)                           \
+    {                                       \
+        Var *_l = (lst).v.list;                         \
+        Num _n = _l[0].v.num, _k;                       \
+        for (_k = 1; _k <= _n; _k++)                        \
+            if (_l[_k].v.obj == old)                    \
+                _l[_k].v.obj = _new;                    \
+    }
+
 #define     FIX(up, down)                           \
     if (TYPE_LIST == o->up.type) {                  \
         FOR_EACH(obj1, o->up, i1, c1) {                 \
-            FOR_EACH(obj2, objects[obj1.v.obj]->down, i2, c2)       \
-            if (obj2.v.obj == old)                  \
-                break;                      \
-            objects[obj1.v.obj]->down.v.list[i2].v.obj = _new;      \
+            Object *_p = dbpriv_find_object(obj1.v.obj);        \
+            if (_p)                             \
+                RENUMBER_IN_LIST(_p->down);             \
         }                               \
     }                                   \
     else if (TYPE_OBJ == o->up.type && NOTHING != o->up.v.obj) {    \
-        FOR_EACH(obj1, objects[o->up.v.obj]->down, i2, c2)      \
-        if (obj1.v.obj == old)                      \
-            break;                          \
-        objects[o->up.v.obj]->down.v.list[i2].v.obj = _new;     \
+        Object *_p = dbpriv_find_object(o->up.v.obj);           \
+        if (_p)                             \
+            RENUMBER_IN_LIST(_p->down);                 \
     }                                   \
     FOR_EACH(obj1, o->down, i1, c1) {                   \
-        if (TYPE_LIST == objects[obj1.v.obj]->up.type) {        \
-            FOR_EACH(obj2, objects[obj1.v.obj]->up, i2, c2)     \
-            if (obj2.v.obj == old)                  \
-                break;                      \
-            objects[obj1.v.obj]->up.v.list[i2].v.obj = _new;        \
+        Object *_c = dbpriv_find_object(obj1.v.obj);            \
+        if (!_c)                                \
+            continue;                           \
+        if (TYPE_LIST == _c->up.type) {                 \
+            RENUMBER_IN_LIST(_c->up);                   \
         }                               \
         else {                              \
-            objects[obj1.v.obj]->up.v.obj = _new;           \
+            _c->up.v.obj = _new;                    \
         }                               \
     }
 
@@ -594,6 +607,7 @@ db_renumber_object(Objid old)
             FIX(location, contents);
 
 #undef      FIX
+#undef      RENUMBER_IN_LIST
 
             /* Fix up anonymous children's parent references */
             {
