@@ -1359,11 +1359,13 @@ db_object_isa(Var object, Var parent)
 
     Var ancestor, ancestors = enlist_var(var_ref(o->parents));
 
-    /* Expand each ancestor once.  Without this the walk follows every path
+    /* Expand each ancestor once; otherwise the walk follows every path
      * through the inheritance DAG, which is exponential in the number of
-     * stacked diamonds. */
+     * stacked diamonds.  A single-inheritance chain cannot reach the same
+     * object twice, so don't pay for the set until the walk branches. */
+    bool branched = (TYPE_LIST == o->parents.type
+                     && listlength(o->parents) > 1);
     std::unordered_set<Object *> seen;
-    seen.insert(o);
 
     int found = 0;
 
@@ -1384,8 +1386,12 @@ db_object_isa(Var object, Var parent)
         t = dbpriv_find_object(ancestor.v.obj);
         free_var(ancestor);
 
-        if (nullptr == t || !seen.insert(t).second)
+        if (nullptr == t)
             continue;
+        if (branched && !seen.insert(t).second)
+            continue;
+        if (TYPE_LIST == t->parents.type && listlength(t->parents) > 1)
+            branched = true;
 
         ancestors = listconcat(ancestors, enlist_var(var_ref(t->parents)));
     }
