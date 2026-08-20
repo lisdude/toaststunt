@@ -17,6 +17,8 @@
 - Fixed `$server_options.max_map_value_bytes` being ignored; map value size limits were read from `max_list_value_bytes` instead.
 - Fixed `curl()`, `url_encode()`, and `url_decode()` leaking their arguments when erroring out early.
 - Fixed a potential stack overflow when parsing JSON documents containing very long strings.
+- Fixed a PCRE2 build issue when TLS support is disabled.
+- Fixed `generate_json()` crashing on boolean map keys and failing to preserve them in embedded-types mode.
 
 ### New Features
 - `curl()` now accepts an options map as its second argument, extending it into a full HTTP client: `curl(url, ["method" -> "POST", "json" -> value, ...])`. Recognized options:
