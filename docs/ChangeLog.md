@@ -23,7 +23,8 @@
 - Fixed `check_for_duplicates()` skipping most pairs, so parent lists like `{a, b, b}` were accepted.
 - Fixed `renumber()` writing one value past a children list, and leaving a stale object number behind in a child's parents, when a parent was repeated.
 - Fixed `recreate()` accepting an invalid parent, which then indexed the object table with a bogus object number.
-- Fixed callable verb lookup, `isa()`, chparent's property check, and `add_property()`'s descendant scan walking every path through the inheritance graph rather than every object, which is exponential with nested diamonds. `isa()` also dereferenced invalid parents and leaked its work list.
+- Fixed callable verb lookup, `isa()`, chparent's property check, and `add_property()`'s descendant scan walking every path through the inheritance graph rather than every object, which is exponential with nested diamonds. `isa()` also dereferenced invalid parents and leaked the list.
+- Fixed a bug that would cause indefinitely suspended tasks (via `suspend()` with no arguments) to immediately resume upon rebooting the database.
 
 ### New Features
 - `curl()` now accepts an options map as its second argument, extending it into a full HTTP client: `curl(url, ["method" -> "POST", "json" -> value, ...])`. Recognized options:
