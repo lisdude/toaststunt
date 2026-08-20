@@ -19,6 +19,11 @@
 - Fixed a potential stack overflow when parsing JSON documents containing very long strings.
 - Fixed a PCRE2 build issue when TLS support is disabled.
 - Fixed `generate_json()` crashing on boolean map keys and failing to preserve them in embedded-types mode.
+- Fixed property layout corruption when chparenting an object that has a descendant reachable through two parents; the fixup rebuilt each descendant's old ancestor list from the already-updated graph and read and freed past the end of its property array.
+- Fixed `check_for_duplicates()` skipping most pairs, so parent lists like `{a, b, b}` were accepted.
+- Fixed `renumber()` writing one value past a children list, and leaving a stale object number behind in a child's parents, when a parent was repeated.
+- Fixed `recreate()` accepting an invalid parent, which then indexed the object table with a bogus object number.
+- Fixed callable verb lookup, `isa()`, chparent's property check, and `add_property()`'s descendant scan walking every path through the inheritance graph rather than every object, which is exponential with nested diamonds. `isa()` also dereferenced invalid parents and leaked its work list.
 
 ### New Features
 - `curl()` now accepts an options map as its second argument, extending it into a full HTTP client: `curl(url, ["method" -> "POST", "json" -> value, ...])`. Recognized options:
