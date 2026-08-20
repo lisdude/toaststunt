@@ -1000,7 +1000,7 @@ check_for_duplicates(Var list)
         return 1;
 
     for (i = 1; i <= c; i++)
-        for (j = i + i; j <= c; j++)
+        for (j = i + 1; j <= c; j++)
             if (equality(list.v.list[i], list.v.list[j], 1))
                 return 0;
 
