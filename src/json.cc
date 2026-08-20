@@ -546,11 +546,13 @@ static yajl_callbacks callbacks = {
  * in rather than read from $server_options here.
  */
 int
-json_parse_string(const char *str, size_t len, int embedded_types, int max_depth, Var *out)
+json_parse_string(const char *str, size_t len, int embedded_types, int max_depth,
+                  int strict, Var *out)
 {
     yajl_handle hand;
-    yajl_parser_config cfg = { 1, 1 };
+    yajl_parser_config cfg = { strict ? 0U : 1U, 1 };
     yajl_status stat;
+    unsigned int consumed = 0;
 
     struct parse_context pctx;
     pctx.top = &pctx.stack;
@@ -566,9 +568,19 @@ json_parse_string(const char *str, size_t len, int embedded_types, int max_depth
      * for bare scalars it reports "insufficient data" until
      * yajl_parse_complete() finishes the value, and any real error is
      * reported by yajl_parse_complete() as well. */
-    if (len > 0)
+    if (len > 0) {
         yajl_parse(hand, (const unsigned char *)str, len);
+        consumed = yajl_get_bytes_consumed(hand);
+    }
     stat = yajl_parse_complete(hand);
+
+    if (strict) {
+        while (consumed < len && (str[consumed] == ' ' || str[consumed] == '\t'
+                                  || str[consumed] == '\r' || str[consumed] == '\n'))
+            consumed++;
+        if (consumed != len)
+            stat = yajl_status_error;
+    }
 
     int ok;
     if (stat != yajl_status_ok || pctx.top == &pctx.stack) {
@@ -645,7 +657,7 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
     package pack;
     Var v;
 
-    if (json_parse_string(str, strlen(str), embedded_types, max_depth, &v))
+    if (json_parse_string(str, strlen(str), embedded_types, max_depth, 0, &v))
         pack = make_var_pack(v);
     else
         pack = make_error_pack(E_INVARG);

@@ -36,8 +36,10 @@
  * stores the value in `out' on success, 0 on failure.  `max_depth'
  * bounds nesting (callers on the main thread normally pass
  * server_int_option("json_max_parse_depth", JSON_MAX_PARSE_DEPTH)).
+ * `strict' rejects comments and non-whitespace trailing content.
  * Safe to call from background threads. */
-extern int json_parse_string(const char *str, size_t len, int embedded_types, int max_depth, Var *out);
+extern int json_parse_string(const char *str, size_t len, int embedded_types,
+                             int max_depth, int strict, Var *out);
 
 /* Generate JSON text for a MOO value.  Returns a str_dup()'d string
  * (release with free_str()) or nullptr on failure.  Main thread only. */

@@ -550,9 +550,46 @@
 
 /******************************************************************************
  * The default maximum number of seconds a curl() transfer can last.
-*/
+ * Can be overridden with $server_options.curl_timeout.
+ */
 
 #define CURL_TIMEOUT 60
+
+/******************************************************************************
+ * The largest timeout (in seconds) a curl() caller may request.  Requests
+ * asking for more than this raise E_INVARG.  Can be overridden with
+ * $server_options.curl_max_timeout.
+ */
+
+#define CURL_MAX_TIMEOUT 300
+
+/******************************************************************************
+ * The maximum number of response bytes curl() will accept before aborting
+ * the transfer.  Callers may lower (but not raise) this per request with
+ * the "max_size" option.  Can be overridden with
+ * $server_options.curl_max_response_bytes.
+ */
+
+#define CURL_MAX_RESPONSE_BYTES (10 * 1024 * 1024)
+
+/******************************************************************************
+ * The default number of redirects curl() will follow when the
+ * "follow_redirects" option is enabled, and the most a caller may ask for.
+ */
+
+#define CURL_MAX_REDIRECTS 5
+#define CURL_MAX_REDIRECTS_LIMIT 20
+
+/******************************************************************************
+ * The HTTP request methods curl() is permitted to use, as a comma-separated
+ * list drawn from: GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS.  Requests
+ * for a method not listed here raise E_PERM.  Set it to "GET,HEAD" for a
+ * read-only curl().
+ */
+
+#ifndef CURL_ALLOWED_METHODS
+#define CURL_ALLOWED_METHODS "GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS"
+#endif
 
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
