@@ -58,6 +58,7 @@ endif()
 
 # Compiler Flags
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 99)
 
 # These flags are shared by the RELEASE and WARN build types.
