@@ -240,8 +240,6 @@ refers_to(Var target, Var key, bool waif_self_check)
 
     switch ((int) target.type) {
         case TYPE_LIST:
-            if (target.v.list == key.v.list)
-                return 1;
             for (i = 1; i <= target.v.list[0].v.num; ++i)
                 if (refers_to(target.v.list[i], key, true))
                     return 1;
@@ -255,16 +253,11 @@ refers_to(Var target, Var key, bool waif_self_check)
                 if (refers_to(*p++, key, true))
                     return 1;
             return 0;
-        case TYPE_FLOAT:
-            return target.v.fnum == key.v.fnum;
-        case TYPE_STR:
-            return target.v.str == key.v.str;
         case TYPE_MAP:
             return mapforeach(target, map_refers_to, &key);
-
-
+        default:
+            return 0;
     }
-    return 0;
 }
 
 Var
