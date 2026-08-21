@@ -68,6 +68,22 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     end
   end
 
+  ## Only the object scenario: the verb builtins reject anonymous
+  ## objects outright, so the round-trip assertions below could not run.
+  def test_that_add_verb_accepts_numeric_preposition_specs
+    run_test_as('programmer') do
+      o = create(:object, 0)
+      assert_not_equal E_INVARG, add_verb(o, [player, 'x', 'numeric-prep'], ['this', '#4', 'this'])
+      assert_equal ['this', 'on top of/on/onto/upon', 'this'], verb_args(o, 'numeric-prep')
+      assert_not_equal E_INVARG, add_verb(o, [player, 'x', 'hashed-phrase-prep'], ['this', '#in front of', 'this'])
+      assert_equal ['this', 'in front of', 'this'], verb_args(o, 'hashed-phrase-prep')
+      assert_not_equal E_INVARG, add_verb(o, [player, 'x', 'hashed-alias-prep'], ['this', '#with/using', 'this'])
+      assert_equal ['this', 'with/using', 'this'], verb_args(o, 'hashed-alias-prep')
+      assert_equal E_INVARG, add_verb(o, [player, 'x', 'out-of-range-prep'], ['this', '#99', 'this'])
+      assert_equal E_INVARG, add_verb(o, [player, 'x', 'unknown-prep'], ['this', '#nonsense', 'this'])
+    end
+  end
+
   def test_that_add_verb_fails_if_the_owner_is_not_valid
     SCENARIOS.each do |args|
       run_test_as('programmer') do

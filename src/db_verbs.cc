@@ -156,13 +156,13 @@ db_match_prep(const char *prepname)
     int argc;
     char *ptr;
     char **argv;
-    char *s, first;
+    char *s, *s1, first;
 
-    s = str_dup(prepname);
-    first = s[0];
+    s = s1 = str_dup(prepname);
+    first = s1[0];
     if (first == '#')
-        first = (++s)[0];
-    prep = (db_prep_spec)strtol(s, &ptr, 10);
+        first = (++s1)[0];
+    prep = (db_prep_spec)strtol(s1, &ptr, 10);
     if (*ptr == '\0') {
         free_str(s);
         if (!isdigit(first) || prep >= NPREPS)
@@ -170,11 +170,11 @@ db_match_prep(const char *prepname)
         else
             return prep;
     }
-    ptr = strchr(s, '/');
+    ptr = strchr(s1, '/');
     if (ptr != nullptr)
         *ptr = '\0';
 
-    argv = parse_into_words(s, &argc);
+    argv = parse_into_words(s1, &argc);
     prep = db_find_prep(argc, argv, nullptr, nullptr);
     free_str(s);
     return prep;
