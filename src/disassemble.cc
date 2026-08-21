@@ -192,6 +192,12 @@ finish_insn(Stream * s, Stream * insn)
     output(s);
 }
 
+static const char *
+var_name(unsigned i, const char **names, unsigned num_names)
+{
+    return i < num_names ? names[i] : "*** Unknown variable ***";
+}
+
 static void
 disassemble(Program * prog, Printer p, void *data)
 {
@@ -202,8 +208,8 @@ disassemble(Program * prog, Printer p, void *data)
     Bytecodes bc;
     const char *ptr;
     const char **names = prog->var_names;
-    unsigned tmp, num_names = prog->num_var_names;
-#   define NAMES(i) (tmp = i, tmp < num_names ? names[tmp] : "*** Unknown variable ***")
+    unsigned num_names = prog->num_var_names;
+#   define NAMES(i) var_name(i, names, num_names)
     Var *literals = prog->literals;
 
     initialize_tables();
