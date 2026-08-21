@@ -80,6 +80,17 @@ class TestObjectsAndProperties < Test::Unit::TestCase
     [:object, 0]
   ]
 
+  ## These built-ins take a permanent object only.  Reading and clearing
+  ## property values on an anonymous one is covered by the tests below.
+  def test_that_property_builtins_reject_anonymous_objects
+    run_test_as('programmer') do
+      o = create(:anonymous, 1)
+      assert_equal E_TYPE, add_property(o, 'foobar', 0, [player, ''])
+      assert_equal E_TYPE, delete_property(o, 'foobar')
+      assert_equal E_TYPE, set_property_info(o, 'foobar', [player, ''])
+    end
+  end
+
   ## add_property
 
   def test_that_add_property_works_on_objects
@@ -310,7 +321,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   ## is_clear_property
 
   def test_that_is_clear_property_works_on_objects
-    PERMANENT_SCENARIOS.each do |args|
+    SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
         add_property(o, 'foobar', 123, ['player', ''])
@@ -361,7 +372,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_is_clear_property_fails_if_the_programmer_does_not_have_read_permission
-    PERMANENT_SCENARIOS.each do |args|
+    SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -375,7 +386,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_is_clear_property_succeeds_if_the_programmer_has_read_permission
-    PERMANENT_SCENARIOS.each do |args|
+    SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -389,7 +400,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_is_clear_property_succeeds_if_the_programmer_is_a_wizard
-    PERMANENT_SCENARIOS.each do |args|
+    SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -411,7 +422,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   # Stunt fixes this inconsistency.
 
   def test_that_clear_property_works_on_objects
-    PERMANENT_SCENARIOS.each do |args|
+    SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
         add_property(o, 'foobar', 123, ['player', ''])
@@ -463,7 +474,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_clear_property_fails_if_the_programmer_does_not_have_write_permission
-    PERMANENT_SCENARIOS.each do |args|
+    SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -477,7 +488,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_clear_property_succeeds_if_the_programmer_has_write_permission
-    PERMANENT_SCENARIOS.each do |args|
+    SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -491,7 +502,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_clear_property_succeeds_if_the_programmer_is_a_wizard
-    PERMANENT_SCENARIOS.each do |args|
+    SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -1224,7 +1235,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_adding_and_deleting_properties_works_with_multiple_inheritance
-    PERMANENT_SCENARIOS.each do |args|
+    SCENARIOS.each do |args|
       run_test_as('programmer') do
         a = create(NOTHING)
         add_property(a, 'x', 1, [player, ''])

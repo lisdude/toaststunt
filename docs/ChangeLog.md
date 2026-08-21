@@ -61,6 +61,7 @@
 - A map passed as `curl()`'s second argument is now interpreted as an options map. Legacy calls that used an arbitrary nonempty map merely as a truthy `include_headers` value must pass a non-map truthy value or use `["include_headers" -> 1]` instead.
 - curl responses larger than 10MB now fail with an `E_QUOTA` error map, and explicit timeouts above 300 seconds now raise `E_INVARG`. Raise `$server_options.curl_max_response_bytes` / `$server_options.curl_max_timeout` if you need more.
 - curl requests now identify themselves as `ToastStunt/<version>` instead of `libcurl-agent/1.0` and advertise `Accept-Encoding` (compressed responses are decoded for you).
+- `add_verb()`, `delete_verb()`, `set_verb_info()`, `verb_args()`, `set_verb_args()`, `set_verb_code()`, `add_property()`, `delete_property()` and `set_property_info()` now raise `E_TYPE` for an anonymous object.
 
 ## 2.7.3 (Jun 20, 2025)
 ### Bug Fixes

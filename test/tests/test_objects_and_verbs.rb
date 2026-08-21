@@ -60,6 +60,30 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     [:object, 0]
   ]
 
+  ## These built-ins take a permanent object only.
+  def test_that_verb_builtins_reject_anonymous_objects
+    run_test_as('programmer') do
+      o = create(:anonymous, 1)
+      assert_equal E_TYPE, add_verb(o, [player, 'x', 'foobar'], ['this', 'none', 'this'])
+      assert_equal E_TYPE, delete_verb(o, 'foobar')
+      assert_equal E_TYPE, set_verb_info(o, 'foobar', [player, 'x', 'foobar'])
+      assert_equal E_TYPE, verb_args(o, 'foobar')
+      assert_equal E_TYPE, set_verb_args(o, 'foobar', ['this', 'none', 'this'])
+      assert_equal E_TYPE, set_verb_code(o, 'foobar', ['return 0;'])
+    end
+  end
+
+  ## The rest still take one, and find nothing on it.
+  def test_that_the_remaining_verb_builtins_accept_anonymous_objects
+    run_test_as('programmer') do
+      o = create(:anonymous, 1)
+      assert_equal [], verbs(o)
+      assert_equal E_VERBNF, verb_info(o, 'foobar')
+      assert_equal E_VERBNF, verb_code(o, 'foobar')
+      assert_equal 0, respond_to(o, 'foobar')
+    end
+  end
+
   ## add_verb
 
   def test_that_add_verb_works_on_objects
