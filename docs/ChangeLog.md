@@ -25,9 +25,12 @@
 - Fixed `recreate()` accepting an invalid parent, which then indexed the object table with a bogus object number.
 - Fixed callable verb lookup, `isa()`, chparent's property check, and `add_property()`'s descendant scan walking every path through the inheritance graph rather than every object, which is exponential with nested diamonds. `isa()` also dereferenced invalid parents and leaked the list.
 - Fixed a bug that would cause indefinitely suspended tasks (via `suspend()` with no arguments) to immediately resume upon rebooting the database.
+- Fixed an invalid free while parsing numeric verb prepositions.
+- Fixed waif self-reference detection to only identify actual self-references while traversing values.
+- In emergency mode, the wizard created for a completely empty database now owns itself instead of retaining an uninitialized owner.
 
 ### New Features
-- Updated the CMake configuration for compatibility with CMake 4.4 policies and eliminated configuration warnings.
+- Updated the CMake configuration for compatibility with CMake 4.4 policies, eliminated configuration warnings, and moved to C++17.
 - `curl()` now accepts an options map as its second argument, extending it into a full HTTP client: `curl(url, ["method" -> "POST", "json" -> value, ...])`. Recognized options:
     - `"method"`: `"GET"`, `"HEAD"`, `"POST"`, `"PUT"`, `"PATCH"`, `"DELETE"`, or `"OPTIONS"` (defaults to `"GET"`, or `"POST"` when a body is supplied)
     - `"body"`: a (binary) string sent as the request body
@@ -56,12 +59,6 @@
 - JSON null values now map to E_NONE instead of the string "null" when parsing JSON.
 - Allow empty subjects in pcre_match.
 - Add an optional third argument to generate_json to disable binary string escaping.
-
-### *** COMPATIBILITY WARNINGS ***
-- A map passed as `curl()`'s second argument is now interpreted as an options map. Legacy calls that used an arbitrary nonempty map merely as a truthy `include_headers` value must pass a non-map truthy value or use `["include_headers" -> 1]` instead.
-- curl responses larger than 10MB now fail with an `E_QUOTA` error map, and explicit timeouts above 300 seconds now raise `E_INVARG`. Raise `$server_options.curl_max_response_bytes` / `$server_options.curl_max_timeout` if you need more.
-- curl requests now identify themselves as `ToastStunt/<version>` instead of `libcurl-agent/1.0` and advertise `Accept-Encoding` (compressed responses are decoded for you).
-- `add_verb()`, `delete_verb()`, `set_verb_info()`, `verb_args()`, `set_verb_args()`, `set_verb_code()`, `add_property()`, `delete_property()` and `set_property_info()` now raise `E_TYPE` for an anonymous object.
 
 ## 2.7.3 (Jun 20, 2025)
 ### Bug Fixes
