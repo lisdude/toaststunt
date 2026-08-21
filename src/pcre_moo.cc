@@ -27,7 +27,7 @@ struct std::hash<cache_type>
     }
 };
 
-struct CacheEqual : public std::binary_function<const cache_type&, const cache_type&, bool>
+struct CacheEqual
 {
 public:
     bool operator() (const cache_type& c1, const cache_type& c2) const
