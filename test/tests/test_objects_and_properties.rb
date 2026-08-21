@@ -73,10 +73,17 @@ class TestObjectsAndProperties < Test::Unit::TestCase
     [:anonymous, 1]
   ]
 
+  ## Anonymous objects cannot have verbs or properties added to them, so a
+  ## test that reaches one of those built-ins only runs the permanent object
+  ## scenario; the anonymous half could not exercise what it is asserting.
+  PERMANENT_SCENARIOS = [
+    [:object, 0]
+  ]
+
   ## add_property
 
   def test_that_add_property_works_on_objects
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         r = add_property(o, 'foobar', 0, ['player', ''])
@@ -90,7 +97,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_add_property_fails_if_the_owner_is_not_valid
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         assert_equal E_INVARG, add_property(o, 'foobar', 0, [:nothing, ''])
@@ -99,7 +106,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_add_property_fails_if_the_perms_are_garbage
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         assert_equal E_INVARG, add_property(o, 'foobar', 0, ['player', 'abc'])
@@ -108,7 +115,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_add_property_fails_if_the_object_is_not_valid
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         recycle(o)
@@ -118,7 +125,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_add_property_fails_if_the_property_is_built_in
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         assert_equal E_INVARG, add_property(o, 'name', 0, ['player', ''])
@@ -127,7 +134,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_add_property_fails_if_the_property_is_already_defined_on_an_ancestor
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
         add_property(o, 'foobar', 123, ['player', ''])
@@ -149,7 +156,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_add_property_fails_if_the_programmer_does_not_have_write_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -162,7 +169,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_add_property_succeeds_if_the_programmer_has_write_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -175,7 +182,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_add_property_succeeds_if_the_programmer_is_a_wizard
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -188,7 +195,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_add_property_fails_if_the_programmer_is_not_the_owner_specified_in_propinfo
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         assert_equal E_PERM, add_property(o, 'foobar', 0, [:system, ''])
@@ -197,7 +204,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_add_property_succeeds_if_the_programmer_is_the_owner_specified_in_propinfo
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         assert_not_equal E_PERM, add_property(o, 'foobar', 0, [player, ''])
@@ -206,7 +213,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_add_property_sets_the_owner_if_the_programmer_is_a_wizard
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('wizard') do
         o = create(*args)
         assert_not_equal E_PERM, add_property(o, 'foobar', 0, [:system, ''])
@@ -217,7 +224,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   ## delete_property
 
   def test_that_delete_property_works_on_objects
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         add_property(o, 'foobar', 0, ['player', ''])
@@ -231,7 +238,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_delete_property_fails_if_the_object_is_not_valid
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         recycle(o)
@@ -241,7 +248,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_delete_property_fails_if_the_property_does_not_exist
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         assert_equal E_PROPNF, delete_property(o, 'foobar')
@@ -250,7 +257,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_delete_property_fails_if_the_property_is_built_in
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         assert_equal E_PROPNF, delete_property(o, 'name')
@@ -259,7 +266,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_delete_property_fails_if_the_programmer_does_not_have_write_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -273,7 +280,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_delete_property_succeeds_if_the_programmer_has_write_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -287,7 +294,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_delete_property_succeeds_if_the_programmer_is_a_wizard
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -303,7 +310,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   ## is_clear_property
 
   def test_that_is_clear_property_works_on_objects
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
         add_property(o, 'foobar', 123, ['player', ''])
@@ -344,7 +351,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_is_clear_property_returns_false_if_called_on_the_definer
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         add_property(o, 'foobar', 0, ['player', ''])
@@ -354,7 +361,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_is_clear_property_fails_if_the_programmer_does_not_have_read_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -368,7 +375,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_is_clear_property_succeeds_if_the_programmer_has_read_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -382,7 +389,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_is_clear_property_succeeds_if_the_programmer_is_a_wizard
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -404,7 +411,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   # Stunt fixes this inconsistency.
 
   def test_that_clear_property_works_on_objects
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
         add_property(o, 'foobar', 123, ['player', ''])
@@ -446,7 +453,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_clear_property_raises_an_error_if_called_on_the_definer
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         add_property(o, 'foobar', 0, ['player', ''])
@@ -456,7 +463,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_clear_property_fails_if_the_programmer_does_not_have_write_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -470,7 +477,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_clear_property_succeeds_if_the_programmer_has_write_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -484,7 +491,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_clear_property_succeeds_if_the_programmer_is_a_wizard
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       p = nil
       run_test_as('programmer') do
         o = simplify(command(%Q|; return create($nothing);|))
@@ -500,7 +507,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   ## property_info
 
   def test_that_property_info_works_on_objects
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         add_property(o, 'foobar', 0, [player, 'rw'])
@@ -538,7 +545,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_property_info_fails_if_the_programmer_does_not_have_read_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -551,7 +558,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_property_info_succeeds_if_the_programmer_has_read_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -564,7 +571,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_property_info_succeeds_if_the_programmer_is_a_wizard
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -579,7 +586,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   ## set_property_info
 
   def test_that_set_property_info_works_on_objects
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         add_property(o, 'foobar', 0, [player, 'rw'])
@@ -590,7 +597,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_set_property_info_fails_if_the_object_is_not_valid
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         recycle(o)
@@ -600,7 +607,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_set_property_info_fails_if_the_property_does_not_exist
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         assert_equal E_PROPNF, set_property_info(o, 'foobar', [player, ''])
@@ -609,7 +616,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_set_property_info_raises_an_error_if_the_property_is_built_in
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         assert_equal E_PROPNF, set_property_info(o, 'name', [player, ''])
@@ -618,7 +625,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_set_property_info_fails_if_the_programmer_does_not_have_write_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -631,7 +638,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_set_property_info_fails_even_if_the_programmer_has_write_permission
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -644,7 +651,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_set_property_info_succeeds_if_the_programmer_is_a_wizard
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       o = nil
       run_test_as('programmer') do
         o = create(*args)
@@ -659,7 +666,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   ## properties
 
   def test_that_properties_works_on_objects
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
         assert_equal [], properties(o)
@@ -719,7 +726,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_properties_and_inheritance_work
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('wizard') do
         e = create(NOTHING)
         b = create(NOTHING)
@@ -1217,7 +1224,7 @@ class TestObjectsAndProperties < Test::Unit::TestCase
   end
 
   def test_that_adding_and_deleting_properties_works_with_multiple_inheritance
-    SCENARIOS.each do |args|
+    PERMANENT_SCENARIOS.each do |args|
       run_test_as('programmer') do
         a = create(NOTHING)
         add_property(a, 'x', 1, [player, ''])
