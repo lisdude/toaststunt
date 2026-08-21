@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5...4.4)
+cmake_minimum_required(VERSION 3.12...4.4)
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 7)
 set(VERSION_RELEASE 3)
@@ -57,7 +57,7 @@ else()
 endif()
 
 # Compiler Flags
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 99)
 
 # These flags are shared by the RELEASE and WARN build types.
