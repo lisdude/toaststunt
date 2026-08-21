@@ -1055,6 +1055,7 @@ emergency_mode()
             if (!is_wizard(wizard)) {
                 if (first_valid < 0) {
                     first_valid = db_create_object(-1);
+                    db_set_object_owner(first_valid, first_valid);
                     db_change_parents(Var::new_obj(first_valid), new_list(0), none);
                     printf("** No objects in database; created #%" PRIdN ".\n",
                            first_valid);
