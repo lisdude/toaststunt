@@ -45,6 +45,8 @@ yajl_string_encode(yajl_buf buf, const unsigned char * str,
     yajl_string_encode2((const yajl_print_t) &yajl_buf_append, buf, str, len, 0);
 }
 
+static void charToHex(unsigned char c, char * hexBuf);
+
 void
 yajl_string_encode2(const yajl_print_t print,
                     void * ctx,
@@ -59,13 +61,17 @@ yajl_string_encode2(const yajl_print_t print,
     hexBuf[6] = 0;
 
     while (end < len) {
+        const char * escaped = NULL;
         if (end < len - 1 && str[end] == '\\' && str[end + 1] == '~') {
+            /* MOO: "\~" forces the rest of the string to be emitted raw
+               (the binary translation below skips tildes preceded by a
+               backslash); the backslash itself is consumed. */
             print(ctx, (const char *) (str + beg), end - beg);
             beg = ++end;
             continue;
         } else if (!disable_binary_escapes && end < len - 2 && (end == 0 || str[end-1] != '\\') && str[end] == '~' && (str[end + 1] == '0' || str[end + 1] == '1') && isxdigit(str[end + 2])) {
+            /* MOO binary string escape (~XX) -> proper JSON escape */
             char c1, c2;
-            const char * escaped = NULL;
             if ((c1 = str[end + 1]) == '0' && (c2 = str[end + 2]) == '8')
                  escaped = "\\b";
             else if (c1 == '0' && (c2 == 'c' || c2 == 'C'))
@@ -79,25 +85,32 @@ yajl_string_encode2(const yajl_print_t print,
                 hexBuf[5] = str[end + 2];
                 escaped = hexBuf;
             }
-            if (escaped != NULL) {
-                print(ctx, (const char *) (str + beg), end - beg);
-                print(ctx, escaped, (unsigned int)strlen(escaped));
-                beg = (end += 3);
-            } else {
-                ++end;
-            }
-        } else if (str[end] == '\t') {
-            const char * escaped = "\\t";
             print(ctx, (const char *) (str + beg), end - beg);
             print(ctx, escaped, (unsigned int)strlen(escaped));
-            beg = ++end;
-        } else if (str[end] == '"') {
-            const char * escaped = "\\\"";
-            print(ctx, (const char *) (str + beg), end - beg);
-            print(ctx, escaped, (unsigned int)strlen(escaped));
-            beg = ++end;
-        } else if (str[end] == '\\') {
-            const char * escaped = "\\\\";
+            beg = (end += 3);
+            continue;
+        }
+        /* Same escaping as upstream yajl: the shorthand control characters,
+           quote and backslash, and everything else below 0x20 as \u00XX.
+           MOO strings can hold RAW control characters (e.g. built with
+           chr()), not just ~XX binary escapes — without this they pass
+           through unescaped and produce invalid JSON. */
+        switch (str[end]) {
+            case '\r': escaped = "\\r"; break;
+            case '\n': escaped = "\\n"; break;
+            case '\\': escaped = "\\\\"; break;
+            case '"': escaped = "\\\""; break;
+            case '\f': escaped = "\\f"; break;
+            case '\b': escaped = "\\b"; break;
+            case '\t': escaped = "\\t"; break;
+            default:
+                if (str[end] < 32) {
+                    charToHex(str[end], hexBuf + 4);
+                    escaped = hexBuf;
+                }
+                break;
+        }
+        if (escaped != NULL) {
             print(ctx, (const char *) (str + beg), end - beg);
             print(ctx, escaped, (unsigned int)strlen(escaped));
             beg = ++end;
