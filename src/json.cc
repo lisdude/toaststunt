@@ -557,10 +557,10 @@ static yajl_callbacks callbacks = {
  */
 int
 json_parse_string(const char *str, size_t len, int embedded_types, int max_depth,
-                  int strict, Var *out)
+                  int strict, int disable_binary_escapes, Var *out)
 {
     yajl_handle hand;
-    yajl_parser_config cfg = { strict ? 0U : 1U, 1 };
+    yajl_parser_config cfg = { strict ? 0U : 1U, 1, disable_binary_escapes };
     yajl_status stat;
     unsigned int consumed = 0;
 
@@ -649,6 +649,7 @@ static package
 bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
 {
     int embedded_types = 0;
+    unsigned int disable_binary_escapes = 0;
 
     if (1 < arglist.v.list[0].v.num) {
         if (!strcasecmp(arglist.v.list[2].v.str, "common-subset")) {
@@ -659,6 +660,9 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
             free_var(arglist);
             return make_error_pack(E_INVARG);
         }
+        if (2 < arglist.v.list[0].v.num) {
+            disable_binary_escapes = is_true(arglist.v.list[3]);
+        }
     }
 
     const char *str = arglist.v.list[1].v.str;
@@ -667,7 +671,7 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
     package pack;
     Var v;
 
-    if (json_parse_string(str, strlen(str), embedded_types, max_depth, 0, &v))
+    if (json_parse_string(str, strlen(str), embedded_types, max_depth, 0, disable_binary_escapes, &v))
         pack = make_var_pack(v);
     else
         pack = make_error_pack(E_INVARG);
@@ -732,6 +736,6 @@ bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
 void
 register_yajl(void)
 {
-    register_function("parse_json", 1, 2, bf_parse_json, TYPE_STR, TYPE_STR);
+    register_function("parse_json", 1, 3, bf_parse_json, TYPE_STR, TYPE_STR, TYPE_ANY);
     register_function("generate_json", 1, 3, bf_generate_json, TYPE_ANY, TYPE_STR, TYPE_ANY);
 }
