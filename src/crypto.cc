@@ -369,8 +369,14 @@ bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
         r.v.str = str_dup(ret);
     }
     else {
+        /* crypt() may return NULL for a setting it rejects (e.g. libxcrypt). */
+        const char *hashed = crypt(arglist.v.list[1].v.str, salt);
+        if (!hashed) {
+            free_var(arglist);
+            return make_error_pack(E_INVARG);
+        }
         r.type = TYPE_STR;
-        r.v.str = str_dup(crypt(arglist.v.list[1].v.str, salt));
+        r.v.str = str_dup(hashed);
     }
 
     free_var(arglist);
@@ -701,14 +707,21 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 #undef TRY_STREAM
 #undef ENDTRY_STREAM
 
+static bool
+crypt_supports(const char *prefix)
+{
+    const char *hashed = crypt("password", prefix);
+    return hashed && !strncmp(prefix, hashed, 3);
+}
+
 void
 register_crypto(void)
 {
-    if (!strncmp("$1$", crypt("password", "$1$"), 3))
+    if (crypt_supports("$1$"))
         algorithms = HAS_MD5;
-    if (!strncmp("$5$", crypt("password", "$5$"), 3))
+    if (crypt_supports("$5$"))
         algorithms = HAS_SHA256;
-    if (!strncmp("$6$", crypt("password", "$6$"), 3))
+    if (crypt_supports("$6$"))
         algorithms = HAS_SHA512;
     algorithms = HAS_BCRYPT;
 
