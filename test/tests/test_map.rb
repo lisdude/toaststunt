@@ -158,9 +158,11 @@ class TestMap < Test::Unit::TestCase
     end
   end
 
-  def test_that_anonymous_objects_cannot_be_keys
+  def test_that_anonymous_object_keys_can_be_found_and_deleted
     run_test_as('programmer') do
-      assert_equal E_TYPE, simplify(command(%Q(; mapdelete([1 -> 2, 3 -> 4], create($anonymous, 1));)))
+      assert_equal [1, 0, 1, 0], simplify(command(%Q(; a = create($anonymous, 1); b = create($anonymous, 1); m = [a -> 1]; return {maphaskey(m, a), maphaskey(m, b), length(m), length(mapdelete(m, a))};)))
+      assert_equal 0, simplify(command(%Q(; a = create($anonymous, 1); b = create($anonymous, 1); return length(mapdelete([a -> 1, b -> 2], {a, b}));)))
+      assert_equal E_RANGE, simplify(command(%Q(; mapdelete([1 -> 2, 3 -> 4], create($anonymous, 1));)))
     end
   end
 
