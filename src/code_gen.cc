@@ -77,6 +77,7 @@ struct state {
     Byte *bytes;
 #ifdef BYTECODE_REDUCE_REF
     Byte *pushmap;
+    unsigned *slotmap;  /* variable slot of each PUSH/PUT in pushmap */
     Byte *trymap;
     unsigned try_depth;
 #endif              /* BYTECODE_REDUCE_REF */
@@ -139,6 +140,7 @@ init_state(State * state, GState * gstate)
     state->bytes = (Byte *)mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
 #ifdef BYTECODE_REDUCE_REF
     state->pushmap = (Byte *)mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+    state->slotmap = (unsigned *)mymalloc(sizeof(unsigned) * state->max_bytes, M_BYTECODES);
     state->trymap = (Byte *)mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
     state->try_depth = 0;
 #endif              /* BYTECODE_REDUCE_REF */
@@ -160,6 +162,7 @@ free_state(State state)
     myfree(state.bytes, M_BYTECODES);
 #ifdef BYTECODE_REDUCE_REF
     myfree(state.pushmap, M_BYTECODES);
+    myfree(state.slotmap, M_BYTECODES);
     myfree(state.trymap, M_BYTECODES);
 #endif              /* BYTECODE_REDUCE_REF */
     myfree(state.loops, M_CODE_GEN);
@@ -175,6 +178,8 @@ emit_byte(Byte b, State * state)
 #ifdef BYTECODE_REDUCE_REF
         state->pushmap = (Byte *)myrealloc(state->pushmap, sizeof(Byte) * new_max,
                                            M_BYTECODES);
+        state->slotmap = (unsigned *)myrealloc(state->slotmap, sizeof(unsigned) * new_max,
+                                               M_BYTECODES);
         state->trymap = (Byte *)myrealloc(state->trymap, sizeof(Byte) * new_max,
                                           M_BYTECODES);
 #endif              /* BYTECODE_REDUCE_REF */
@@ -505,15 +510,20 @@ emit_ending_op(Opcode op, State * state)
 static void
 emit_var_op(Opcode op, unsigned slot, State * state)
 {
+#ifdef BYTECODE_REDUCE_REF
+    unsigned op_byte = state->num_bytes;
+#endif              /* BYTECODE_REDUCE_REF */
+
     if (slot >= NUM_READY_VARS) {
         emit_byte(op + NUM_READY_VARS, state);
         add_var_ref(slot, state);
-    } else {
+    } else
         emit_byte(op + slot, state);
+
 #ifdef BYTECODE_REDUCE_REF
-        state->pushmap[state->num_bytes - 1] = op;
+    state->pushmap[op_byte] = op;
+    state->slotmap[op_byte] = slot;
 #endif              /* BYTECODE_REDUCE_REF */
-    }
 }
 
 static void generate_expr(Expr *, State *);
@@ -1215,7 +1225,8 @@ stmt_to_code(Stmt * stmt, GState * gstate)
     int old_i, new_i, fix_i;
 #ifdef BYTECODE_REDUCE_REF
     int *bbd, n_bbd;        /* basic block delimiters */
-    unsigned varbits;       /* variables we've seen */
+    unsigned *varbits;      /* variables we've seen, one bit per slot */
+    unsigned n_varwords, w;
 #if NUM_READY_VARS > 32
 #error assumed NUM_READY_VARS was 32
 #endif
@@ -1282,6 +1293,12 @@ stmt_to_code(Stmt * stmt, GState * gstate)
             bbd[n_bbd++] = fixup->pc;
     qsort(bbd, n_bbd, sizeof(*bbd), (int (*)(const void *, const void *))bbd_cmp);
 
+    /* Slots 0..NUM_READY_VARS-1 are in the first word, so the VR mask
+     * below only needs to touch varbits[0].
+     */
+    n_varwords = max(state.max_var_ref + 1, (unsigned) NUM_READY_VARS) / 32 + 1;
+    varbits = (unsigned *)mymalloc(sizeof(unsigned) * n_varwords, M_CODE_GEN);
+
     /*
      * For every basic block, search backwards for PUT ops.  The first
      * PUSH we find for each variable slot (looking backwards, remember)
@@ -1291,14 +1308,16 @@ stmt_to_code(Stmt * stmt, GState * gstate)
      * holding spurious references to it.
      */
     while (n_bbd-- > 1) {
-        varbits = 0;
+        for (w = 0; w < n_varwords; w++)
+            varbits[w] = 0;
 
         for (old_i = bbd[n_bbd] - 1; old_i >= bbd[n_bbd - 1]; --old_i) {
             if (state.pushmap[old_i] == OP_PUSH) {
-                int id = PUSH_n_INDEX(state.bytes[old_i]);
+                unsigned id = state.slotmap[old_i];
 
-                if (varbits & (1 << id)) {
-                    varbits &= ~(1 << id);
+                if (varbits[id / 32] & (1U << (id % 32))) {
+                    varbits[id / 32] &= ~(1U << (id % 32));
+                    /* PUSH n -> PUSH_CLEAR n, G_PUSH -> G_PUSH_CLEAR */
                     state.bytes[old_i] += OP_PUSH_CLEAR - OP_PUSH;
                 }
             } else if (state.trymap[old_i] > 0) {
@@ -1307,25 +1326,27 @@ stmt_to_code(Stmt * stmt, GState * gstate)
                  * execute, so they can't set any bits.
                  */ ;
             } else if (state.pushmap[old_i] == OP_PUT) {
-                int id = PUT_n_INDEX(state.bytes[old_i]);
-                varbits |= 1 << id;
+                unsigned id = state.slotmap[old_i];
+                varbits[id / 32] |= 1U << (id % 32);
             } else if (state.pushmap[old_i] == OP_DONE) {
                 /*
                  * If the verb ends, all variables are unneeded.  This
                  * means things like `return pass(@args)' will not hold
                  * a ref to `args' during the called verb.
                  */
-                varbits = ~0U;
+                for (w = 0; w < n_varwords; w++)
+                    varbits[w] = ~0U;
             } else if (state.pushmap[old_i] == OP_CALL_VERB) {
                 /*
                  * Verb calls implicitly pass the VR variables (dobj,
                  * dobjstr, player, etc).  They can't be clear at the
                  * time of a verbcall.
                  */
-                varbits &= NON_VR_VAR_MASK;
+                varbits[0] &= NON_VR_VAR_MASK;
             }
         }
     }
+    myfree(varbits, M_CODE_GEN);
     myfree(bbd, M_CODE_GEN);
 #endif              /* BYTECODE_REDUCE_REF */
 
