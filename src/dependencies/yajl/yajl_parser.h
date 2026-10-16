@@ -68,6 +68,8 @@ struct yajl_handle_t {
     yajl_bytestack stateStack;
     /* memory allocation routines */
     yajl_alloc_funcs alloc;
+    /* toaststunt hack to disable binary escapes */
+    unsigned int disable_binary_escapes;
 };
 
 yajl_status

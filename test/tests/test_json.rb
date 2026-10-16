@@ -325,6 +325,35 @@ class TestJson < Test::Unit::TestCase
     end
   end
 
+  def test_that_parse_json_can_disable_binary_string_processing
+    run_test_as('wizard') do
+      # With binary processing disabled, control character escapes should come
+      # through as raw control characters instead of MOO binary escapes.
+      assert_equal({"foo" => "bar\bbaz"}, parse_json('{\"foo\":\"bar\\\\bbaz\"}', 'common-subset', 1))
+      assert_equal({"foo" => "bar\fbaz"}, parse_json('{\"foo\":\"bar\\\\fbaz\"}', 'common-subset', 1))
+      assert_equal({"foo" => "bar\tbaz"}, parse_json('{\"foo\":\"bar\\\\tbaz\"}', 'common-subset', 1))
+
+      # Raw newlines and carriage returns cannot survive the test harness's
+      # line-based result transport, so compare them in-MOO instead.
+      assert(simplify(command(%q|; return parse_json("{\"foo\":\"bar\\\\nbaz\"}", "common-subset", 1) == ["foo" -> "bar" + chr(10) + "baz"]; |)))
+      assert(simplify(command(%q|; return parse_json("{\"foo\":\"bar\\\\rbaz\"}", "common-subset", 1) == ["foo" -> "bar" + chr(13) + "baz"]; |)))
+
+      # Default behavior (binary processing enabled) should still work
+      assert_equal({"foo" => "bar~08baz"}, parse_json('{\"foo\":\"bar\\\\bbaz\"}', 'common-subset', 0))
+      assert_equal({"foo" => "bar~0Abaz"}, parse_json('{\"foo\":\"bar\\\\nbaz\"}'))
+
+      # Any truthy value enables it, not just 1
+      assert_equal({"foo" => "bar\bbaz"}, parse_json('{\"foo\":\"bar\\\\bbaz\"}', 'common-subset', "yes"))
+    end
+  end
+
+  def test_that_disabling_binary_string_processing_does_not_affect_unicode_escapes
+    run_test_as('programmer') do
+      assert_equal(["~0A", "~0D", "~1B", "~7F"], parse_json('[\"\\\\u000A\",\"\\\\u000D\",\"\\\\u001b\",\"\\\\u007f\"]', 'common-subset', 1))
+      assert_equal("~0A~0D", parse_json('[\"\\\\u000A\\\\u000D\"]', 'common-subset', 1))
+    end
+  end
+
   def test_that_json_with_unicode_escapes_parse_into_binary_strings
     run_test_as('programmer') do
       assert_equal(["~0A", "~0D", "~1B", "~7F"], parse_json('[\"\\\\u000A\",\"\\\\u000D\",\"\\\\u001b\",\"\\\\u007f\"]'))
@@ -374,6 +403,16 @@ class TestJson < Test::Unit::TestCase
     end
   end
 
+  def test_that_round_tripping_works_with_binary_string_processing_disabled
+    run_test_as('wizard') do
+      # Raw control characters survive a round trip when both directions
+      # leave MOO binary escapes alone.
+      assert(simplify(command(%q|; x = "foo" + chr(10) + "bar" + chr(13) + "baz"; return x == parse_json(generate_json(x, "common-subset", 1), "common-subset", 1); |)))
+      # Binary escapes that are already in the string pass through unchanged.
+      assert(simplify(command(%q|; x = "foo~0Abar"; return x == parse_json(generate_json(x, "common-subset", 1), "common-subset", 1); |)))
+    end
+  end
+
   def test_that_round_tripping_works_on_fuzzy_inputs
     run_test_as('wizard') do
       with_mutating_binary_string("~A7~CED~8E~D2L~16a~F6~F2~01UZ2~BC~B0)~EC~02~86v~CD~9B~05~E66~F3.vx<~F0") do |g|
@@ -417,8 +456,10 @@ class TestJson < Test::Unit::TestCase
     end
   end
 
-  def parse_json(value, mode = nil)
-    if mode.nil?
+  def parse_json(value, mode = nil, disable_binary_escapes = nil)
+    if !disable_binary_escapes.nil?
+      simplify command %Q|; return parse_json(#{value_ref(value)}, #{value_ref(mode)}, #{value_ref(disable_binary_escapes)});|
+    elsif mode.nil?
       simplify command %Q|; return parse_json(#{value_ref(value)});|
     else
       simplify command %Q|; return parse_json(#{value_ref(value)}, #{value_ref(mode)});|
