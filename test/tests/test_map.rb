@@ -203,4 +203,22 @@ class TestMap < Test::Unit::TestCase
     end
   end
 
+  def test_that_a_map_keyed_by_waifs_keeps_one_entry_per_waif
+    run_test_as('programmer') do
+      assert_equal [40, 40, 40], simplify(command(%Q(; ws = {}; for i in [1..40]; ws = {@ws, $waif:new()}; endfor; m = []; for pass in [1..3]; for i in [1..40]; m[ws[i]] = i; endfor; endfor; found = 0; for i in [1..40]; if (maphaskey(m, ws[i]) && m[ws[i]] == i); found = found + 1; endif; endfor; return {length(m), length(mapkeys(m)), found};)))
+    end
+  end
+
+  def test_that_waif_keys_can_be_deleted_from_a_map
+    run_test_as('programmer') do
+      assert_equal [0, 0], simplify(command(%Q(; ws = {}; for i in [1..40]; ws = {@ws, $waif:new()}; endfor; m = []; for i in [1..40]; m[ws[i]] = i; endfor; for i in [1..40]; m = mapdelete(m, ws[i]); endfor; return {length(m), length(mapkeys(m))};)))
+    end
+  end
+
+  def test_that_a_map_keyed_by_bools_keeps_one_entry_per_bool
+    run_test_as('programmer') do
+      assert_equal [2, 2, 1, 2], simplify(command(%Q(; m = []; for pass in [1..3]; m[true] = 1; m[false] = 2; endfor; return {length(m), length(mapkeys(m)), m[true], m[false]};)))
+    end
+  end
+
 end
