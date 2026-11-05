@@ -362,6 +362,15 @@ handle_end_map(void *ctx)
     for (v = POP(pctx->top), k = POP(pctx->top);
             (int)v.type > MAP_SENTINEL && (int)k.type > MAP_SENTINEL;
             v = POP(pctx->top), k = POP(pctx->top)) {
+        /* Reject two members that map to the same MOO key (an exact
+         * duplicate, or names that differ only in case or collide after
+         * decoding), rather than silently keeping one of them. */
+        if (maplookup(map, k, nullptr, 0)) {
+            free_var(k);
+            free_var(v);
+            free_var(map);
+            return 0;
+        }
         map = mapinsert(map, k, v);
     }
     PUSH(pctx->top, map);
