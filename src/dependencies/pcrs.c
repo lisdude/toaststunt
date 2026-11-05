@@ -575,7 +575,6 @@ pcrs_job *pcrs_compile(const char *pattern, const char *substitute, const char *
    pcrs_job *newjob;
    unsigned int flags;
    int capturecount;
-   int ret;
 
    *errptr = 0;
 
@@ -622,14 +621,7 @@ pcrs_job *pcrs_compile(const char *pattern, const char *substitute, const char *
 #else
    if (!(flags & PCRS_DYNAMIC))
    {
-      /* Try to enable JIT compilation but continue if it's unsupported. */
-      if ((ret = pcre2_jit_compile(newjob->pattern, PCRE2_JIT_COMPLETE)) &&
-          (ret != PCRE2_ERROR_JIT_BADOPTION))
-      {
-         *errptr = ret;
-         pcrs_free_job(newjob);
-         return NULL;
-       }
+      (void)pcre2_jit_compile(newjob->pattern, PCRE2_JIT_COMPLETE);
    }
 #endif
 

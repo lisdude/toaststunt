@@ -111,14 +111,8 @@ get_pcre(const char *string, unsigned char options)
             snprintf(buf, sizeof(buf), "PCRE2 compile error at offset %zu: %s", error_offset, (char*)error_buffer);
             entry->error = str_dup(buf);
         } else {
-            int jit_result = pcre2_jit_compile(entry->re, PCRE2_JIT_COMPLETE);
-            if (jit_result < 0) {
-                PCRE2_UCHAR error_buffer[256];
-                pcre2_get_error_message(jit_result, error_buffer, sizeof(error_buffer));
-                entry->error = str_dup((const char*)error_buffer);
-            } else {
-                (void)pcre2_pattern_info(entry->re, PCRE2_INFO_CAPTURECOUNT, &(entry->captures));
-            }
+            (void)pcre2_jit_compile(entry->re, PCRE2_JIT_COMPLETE);
+            (void)pcre2_pattern_info(entry->re, PCRE2_INFO_CAPTURECOUNT, &(entry->captures));
         }
 
         if (entry->error == nullptr) {
@@ -492,17 +486,34 @@ void sqlite_regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv)
 }
 #endif /* SQLITE3_FOUND */
 
+/* PCRE2_CONFIG_JIT reports build support but it doesn't mean it actually works. This is
+ * a quick test to make sure it actually works before we report that it will. */
+static const char *
+jit_status()
+{
+    uint32_t jit_available = 0;
+    pcre2_config(PCRE2_CONFIG_JIT, &jit_available);
+    if (!jit_available)
+        return "";
+
+    int errorcode;
+    PCRE2_SIZE error_offset;
+    pcre2_code *re = pcre2_compile((PCRE2_SPTR)"a", PCRE2_ZERO_TERMINATED, 0, &errorcode, &error_offset, nullptr);
+    if (re == nullptr)
+        return "";
+
+    int jit_result = pcre2_jit_compile(re, PCRE2_JIT_COMPLETE);
+    pcre2_code_free(re);
+
+    return jit_result == 0 ? " (JIT)" : " (JIT unavailable, using interpreter)";
+}
+
 void
 register_pcre() {
     char version_buffer[64];
     pcre2_config(PCRE2_CONFIG_VERSION, version_buffer);
 
-    uint32_t jit_available;
-    pcre2_config(PCRE2_CONFIG_JIT, &jit_available);
-
-    oklog("REGISTER_PCRE: Using PCRE2 Library v%s%s\n",
-        version_buffer,
-        jit_available ? " (JIT)" : "");
+    oklog("REGISTER_PCRE: Using PCRE2 Library v%s%s\n", version_buffer, jit_status());
 
     //                                                   string    pattern   ?case     ?find_all
     register_function("pcre_match", 2, 4, bf_pcre_match, TYPE_STR, TYPE_STR, TYPE_INT, TYPE_INT);
