@@ -974,7 +974,9 @@ next_opcode:
         error_bv = bv;
         op = (Opcode)(*bv++);
 
-        if (COUNT_TICK(op)) {
+        /* Extended opcodes must enforce the same limits as ordinary ones. */
+        if (COUNT_TICK(op)
+                || (op == OP_EXTENDED && COUNT_EOP_TICK(*bv))) {
             if (--ticks_remaining <= 0) {
                 STORE_STATE_VARIABLES();
                 abort_task(ABORT_TICKS);
@@ -2302,8 +2304,6 @@ else if (obj.type == TYPE_##t1) {           \
             {
                 enum Extended_Opcode eop = (Extended_Opcode)(*bv);
                 bv++;
-                if (COUNT_EOP_TICK(eop))
-                    ticks_remaining--;
                 switch (eop) {
                     case EOP_RANGESET:
                     {
