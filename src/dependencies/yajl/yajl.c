@@ -97,6 +97,7 @@ yajl_alloc(const yajl_callbacks * callbacks,
     hand->lexer = yajl_lex_alloc(&(hand->alloc), allowComments, validateUTF8);
     hand->bytesConsumed = 0;
     hand->decodeBuf = yajl_buf_alloc(&(hand->alloc));
+    hand->disable_binary_escapes = config->disable_binary_escapes;
     yajl_bs_init(hand->stateStack, &(hand->alloc));
 
     yajl_bs_push(hand->stateStack, yajl_state_start);    

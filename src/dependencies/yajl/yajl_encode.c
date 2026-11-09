@@ -177,7 +177,7 @@ static void Utf32toUtf8(unsigned int codepoint, char * utf8Buf)
 }
 
 void yajl_string_decode(yajl_buf buf, const unsigned char * str,
-                        unsigned int len)
+                        unsigned int len, unsigned int disable_binary_escapes)
 {
     unsigned int beg = 0;
     unsigned int end = 0;
@@ -191,10 +191,10 @@ void yajl_string_decode(yajl_buf buf, const unsigned char * str,
                 case '"': unescaped = "\""; break;
                 case '\\': unescaped = "\\"; break;
                 case '/': unescaped = "/"; break;
-                case 'b': unescaped = "~08"; break;
-                case 'f': unescaped = "~0C"; break;
-                case 'n': unescaped = "~0A"; break;
-                case 'r': unescaped = "~0D"; break;
+                case 'b': unescaped = disable_binary_escapes ? "\b" : "~08"; break;
+                case 'f': unescaped = disable_binary_escapes ? "\f" : "~0C"; break;
+                case 'n': unescaped = disable_binary_escapes ? "\n" : "~0A"; break;
+                case 'r': unescaped = disable_binary_escapes ? "\r" : "~0D"; break;
                 case 't': unescaped = "\t"; break;
                 case 'u': {
                     unsigned int codepoint = 0;

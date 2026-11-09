@@ -596,7 +596,7 @@ static void curl_thread_callback(Var arglist, Var *ret, void *extra_data)
 
         if (req->parse) {
             if (!json_parse_string(chunk.result, chunk.size, 0,
-                                   req->json_max_depth, 1, &body_var)) {
+                                   req->json_max_depth, 1, 0, &body_var)) {
                 make_error_map(E_INVARG, "Response body is not valid JSON", ret);
                 ok = false;
             }
