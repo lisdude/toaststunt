@@ -36,7 +36,6 @@
  *   "parse"            -> ANY: truthy parses the response body as JSON
  *   "full"             -> ANY: truthy returns ["status", "headers", "body", "url"]
  *   "include_headers"  -> ANY: truthy prepends raw headers to the body (legacy)
- *   "user_agent"       -> STR: override the User-Agent header
  *
  * Security posture:
  *   - wizard-only, and disabled entirely when outbound networking is off.
@@ -417,13 +416,6 @@ parse_one_option(Var key, Var value, void *data, int first)
         req->full = is_true(value);
     } else if (!strcasecmp(name, "include_headers")) {
         req->include_headers = is_true(value);
-    } else if (!strcasecmp(name, "user_agent")) {
-        if (value.type != TYPE_STR || !valid_header_value(value.v.str)) {
-            st->err = "\"user_agent\" must be a plain string";
-            return 1;
-        }
-        free(req->user_agent);
-        req->user_agent = strdup(value.v.str);
     } else {
         st->err = "Unknown curl option";
         st->err_value = str_dup_to_var(name);
@@ -757,8 +749,7 @@ bf_curl(Var arglist, Byte next, void *vdata, Objid progr)
             method);
     }
 
-    if (req->user_agent == nullptr)
-        asprintf(&req->user_agent, "ToastStunt/%s", server_version);
+    asprintf(&req->user_agent, "ToastStunt/%s", server_version);
     if (req->user_agent == nullptr) {
         free_var(arglist);
         curl_request_free(req);

@@ -312,11 +312,11 @@ class TestCurl < Test::Unit::TestCase
     end
   end
 
-  def test_that_the_user_agent_can_be_overridden
+  def test_that_the_user_agent_can_be_overridden_with_a_header
     with_http_server([response('200 OK', 'ok'), response('200 OK', 'ok')]) do |port, requests|
       run_test_as('wizard') do
         curl(%|"http://127.0.0.1:#{port}/"|)
-        curl(%|"http://127.0.0.1:#{port}/", ["user_agent" -> "MyMOO/1.0"]|)
+        curl(%|"http://127.0.0.1:#{port}/", ["headers" -> ["User-Agent" -> "MyMOO/1.0"]]|)
       end
       assert requests[0].headers['user-agent'] =~ /^ToastStunt\//, "default UA was #{requests[0].headers['user-agent'].inspect}"
       assert_equal 'MyMOO/1.0', requests[1].headers['user-agent']

@@ -42,7 +42,6 @@
     - `"parse"`: parse the response body as JSON in common-subset mode
     - `"full"`: return `["status" -> INT, "headers" -> MAP, "body" -> STR|parsed, "url" -> STR]` instead of just the body; repeated response headers accumulate into a list
     - `"include_headers"`: prepend the raw response headers to the body (equivalent to the legacy second argument)
-    - `"user_agent"`: override the User-Agent header
 
   Calls without an options map keep the old behavior.
 - New `CURL_ALLOWED_METHODS` compile-time option (options.h): a comma-separated list restricting which request methods curl may use (checked after the method is fully resolved, so it also covers the implicit POST selected by a `"body"`/`"json"` option). For example, `"GET,HEAD"` makes curl read-only. Defaults to all supported methods.
