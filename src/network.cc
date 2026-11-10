@@ -683,7 +683,7 @@ close_nlistener(nlistener * l)
     free_str(l->name);
     free_str(l->ip_addr);
 #ifdef USE_TLS
-    if (l->tls_key_path)
+    if (l->tls_certificate_path)
         free_str(l->tls_certificate_path);
     if (l->tls_key_path)
         free_str(l->tls_key_path);
