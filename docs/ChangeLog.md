@@ -30,6 +30,7 @@
 - Fixed waif self-reference detection to only identify actual self-references while traversing values.
 - In emergency mode, the wizard created for a completely empty database now owns itself instead of retaining an uninitialized owner.
 - Fixed a use-after-free in `mapdelete()` when one of several keys is not found.
+- Fixed `strtr()` accessing memory out of bounds for bytes above 127. Those bytes now translate normally.
 
 ### New Features
 - Flag arguments to `isa()`, `locate_by_name()`, `occupants()`, `locations()`, `explode()`, `sort()`, `queued_tasks()`, `switch_player()`, `set_thread_mode()`, `is_member()`, `maphaskey()`, `file_grep()`, and `pcre_match()` now accept `true` and `false` as well as integers. `function_info()` reports these arguments as type `-3`.
