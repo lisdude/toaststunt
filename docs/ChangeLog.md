@@ -32,6 +32,7 @@
 - Fixed a use-after-free in `mapdelete()` when one of several keys is not found.
 - Fixed `strtr()` accessing memory out of bounds for bytes above 127. Those bytes now translate normally.
 - Fixed `/ -1` and `% -1` crashing on the most negative integer, `%` overflowing with very large divisors, and `-9223372036854775807 / -1` returning a negative result.
+- Fixed reading or assigning a missing property on a waif leaking memory and possibly recycling a waif that was still in use.
 
 ### New Features
 - Flag arguments to `isa()`, `locate_by_name()`, `occupants()`, `locations()`, `explode()`, `sort()`, `queued_tasks()`, `switch_player()`, `set_thread_mode()`, `is_member()`, `maphaskey()`, `file_grep()`, and `pcre_match()` now accept `true` and `false` as well as integers. `function_info()` reports these arguments as type `-3`.
