@@ -39,6 +39,7 @@
 - Fixed a crash when closing a TLS listener that had a private key path but no certificate path.
 - Fixed `queue_info()` reporting `hold_input` from the wrong field.
 - Fixed `queued_tasks()` ignoring its first argument when given two arguments.
+- `#0:handle_signal()` now runs from the main loop instead of inside the SIGUSR1/SIGUSR2 handler, where it could corrupt memory or deadlock the server.
 
 ### New Features
 - Flag arguments to `isa()`, `locate_by_name()`, `occupants()`, `locations()`, `explode()`, `sort()`, `queued_tasks()`, `switch_player()`, `set_thread_mode()`, `is_member()`, `maphaskey()`, `file_grep()`, and `pcre_match()` now accept `true` and `false` as well as integers. `function_info()` reports these arguments as type `-3`.
