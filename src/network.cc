@@ -1487,7 +1487,7 @@ rewrite_connection_name(const network_handle nh, const char *destination, const 
     struct addrinfo *address;
     int ret = 0, status = getaddrinfo(source, source_port, &tcp_hint, &address);
 
-    if (status < 0) {
+    if (status != 0) {
         errlog("getaddrinfo failed while rewriting connection_name: %s\n", gai_strerror(status));
         ret = -1;
     } else {
@@ -1590,7 +1590,7 @@ lookup_network_connection_name(const network_handle nh, const char **name)
     struct addrinfo *address = 0;
     int status = getaddrinfo(ipaddr_copy, nullptr, &tcp_hint, &address);
 
-    if (status < 0) {
+    if (status != 0) {
         // Better luck next time.
         pthread_mutex_lock(h->name_mutex);
         *name = str_dup(h->name);

@@ -35,6 +35,7 @@
 - Fixed reading or assigning a missing property on a waif leaking memory and possibly recycling a waif that was still in use.
 - `file_read()` now raises `E_INVARG` for a record length of zero or less. Negative lengths used to overflow a buffer.
 - Fixed `file_grep()` writing out of bounds on lines that begin with a NUL byte, and dropping the last character of a final line with no newline.
+- Fixed a crash on macOS and BSD when a hostname lookup fails, such as for a PROXY-protocol connection.
 
 ### New Features
 - Flag arguments to `isa()`, `locate_by_name()`, `occupants()`, `locations()`, `explode()`, `sort()`, `queued_tasks()`, `switch_player()`, `set_thread_mode()`, `is_member()`, `maphaskey()`, `file_grep()`, and `pcre_match()` now accept `true` and `false` as well as integers. `function_info()` reports these arguments as type `-3`.
