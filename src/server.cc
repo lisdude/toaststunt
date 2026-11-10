@@ -812,15 +812,9 @@ main_loop(void)
 
     /* Now, we enter the main server loop */
     while (!shutdown_triggered) {
-        /* Check how long we have until the next task will be ready to run.
-         * We only care about three cases (== 0, == 1, and > 1), so we can
-         * map a `never' result from the task subsystem into 2.
+        /* Before GC: SIGUSR2 may request a checkpoint, which collects first.
+         * Before next_task_start(): #0:handle_signal may queue a task.
          */
-        int task_useconds = next_task_start();
-        int useconds_left = task_useconds < 0 ? 1000000 : task_useconds;
-        shandle *h, *nexth;
-
-        /* Before GC: SIGUSR2 may request a checkpoint, which collects first. */
         if (sigusr1_pending) {
             sigusr1_pending = 0;
             handle_user_defined_signal(SIGUSR1);
@@ -829,6 +823,14 @@ main_loop(void)
             sigusr2_pending = 0;
             handle_user_defined_signal(SIGUSR2);
         }
+
+        /* Check how long we have until the next task will be ready to run.
+         * We only care about three cases (== 0, == 1, and > 1), so we can
+         * map a `never' result from the task subsystem into 2.
+         */
+        int task_useconds = next_task_start();
+        int useconds_left = task_useconds < 0 ? 1000000 : task_useconds;
+        shandle *h, *nexth;
 
 #ifdef ENABLE_GC
         if (gc_run_called || gc_roots_count > GC_ROOTS_LIMIT
