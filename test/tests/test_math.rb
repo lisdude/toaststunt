@@ -75,8 +75,10 @@ class TestMath < Test::Unit::TestCase
   def test_the_minint_edge_case
     run_test_as('programmer') do
         if @@options['64bit']
-            assert_equal -9223372036854775807, simplify(command(%Q|; return -9223372036854775807 / -1; |))
-            assert_equal 0, simplify(command(%Q|; return -9223372036854775807 % -1; |))
+            # -9223372036854775808 can't be written as a literal; build it with a shift.
+            assert_equal -9223372036854775808, simplify(command(%Q|; return (1 << 63) / -1; |))
+            assert_equal 0, simplify(command(%Q|; return (1 << 63) % -1; |))
+            assert_equal 9223372036854775807, simplify(command(%Q|; return -9223372036854775807 / -1; |))
         else
             assert_equal -2147483648, simplify(command(%Q|; return -2147483648 / -1; |))
             assert_equal 0, simplify(command(%Q|; return -2147483648 % -1; |))
