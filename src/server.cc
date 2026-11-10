@@ -401,6 +401,7 @@ handle_user_defined_signal(int sig)
 {
     Var args, result;
 
+    result.type = TYPE_INT;   /* not written unless the task completes */
     args = new_list(1);
     args.v.list[1].type = TYPE_STR;
     args.v.list[1].v.str = str_dup(sig == SIGUSR1 ? "SIGUSR1" : "SIGUSR2");
