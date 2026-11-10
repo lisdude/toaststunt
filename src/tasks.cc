@@ -2289,7 +2289,7 @@ bf_queue_info(Var arglist, Byte next, void *vdata, Objid progr)
             res = mapinsert(res, var_ref(queue_suspended), Var::new_bool(tq->input_suspended));
             res = mapinsert(res, var_ref(queue_usage), Var::new_int(tq->usage));
             res = mapinsert(res, var_ref(queue_num_bg_tasks), Var::new_int(tq->num_bg_tasks));
-            res = mapinsert(res, var_ref(queue_hold_input), Var::new_bool(tq->usage));
+            res = mapinsert(res, var_ref(queue_hold_input), Var::new_bool(tq->hold_input));
             res = mapinsert(res, var_ref(queue_disable_oob), Var::new_bool(tq->disable_oob));
             res = mapinsert(res, var_ref(queue_reading), Var::new_bool(tq->reading));
             res = mapinsert(res, var_ref(queue_parsing), Var::new_bool(tq->parsing));
