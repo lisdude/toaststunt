@@ -209,11 +209,12 @@ add_request_header(struct curl_opt_state *st, const char *name, const char *valu
     }
 
     char *line = nullptr;
+    int len;
     if (*value == '\0')
-        asprintf(&line, "%s;", name);       /* libcurl: empty-valued header */
+        len = asprintf(&line, "%s;", name);       /* libcurl: empty-valued header */
     else
-        asprintf(&line, "%s: %s", name, value);
-    if (line == nullptr) {
+        len = asprintf(&line, "%s: %s", name, value);
+    if (len < 0) {
         st->err = "Out of memory building request headers";
         return 1;
     }
@@ -749,8 +750,8 @@ bf_curl(Var arglist, Byte next, void *vdata, Objid progr)
             method);
     }
 
-    asprintf(&req->user_agent, "ToastStunt/%s", server_version);
-    if (req->user_agent == nullptr) {
+    if (asprintf(&req->user_agent, "ToastStunt/%s", server_version) < 0) {
+        req->user_agent = nullptr;
         free_var(arglist);
         curl_request_free(req);
         return make_error_pack(E_QUOTA);
