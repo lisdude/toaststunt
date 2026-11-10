@@ -2,6 +2,7 @@
 ## 2.8.0 (In progress)
 ### Bug Fixes
 - Temporarily reenable the emptylist bandaid until we can find the culprit.
+- Check execution limits when decrementing ticks for extended opcodes. Not accounting here would cause the server to block indefinitely. As such, if your MOO allows untrusted programmers, you should upgrade as soon as possible.
 - Fix various race conditions and threading bugs / pitfalls.
 - `occupants()` and `locate_by_name()` are no longer threaded functions, as they do unsafe database accesses.
 - Fixed crash on malloc failure when compiling PCRE patterns.
