@@ -38,6 +38,7 @@
 - Fixed a crash on macOS and BSD when a hostname lookup fails, such as for a PROXY-protocol connection.
 - Fixed a crash when closing a TLS listener that had a private key path but no certificate path.
 - Fixed `queue_info()` reporting `hold_input` from the wrong field.
+- Fixed `queued_tasks()` ignoring its first argument when given two arguments.
 
 ### New Features
 - Flag arguments to `isa()`, `locate_by_name()`, `occupants()`, `locations()`, `explode()`, `sort()`, `queued_tasks()`, `switch_player()`, `set_thread_mode()`, `is_member()`, `maphaskey()`, `file_grep()`, and `pcre_match()` now accept `true` and `false` as well as integers. `function_info()` reports these arguments as type `-3`.
