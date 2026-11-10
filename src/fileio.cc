@@ -739,7 +739,7 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
 
     errno = 0;
 
-    read_length = (record_length > sizeof(buffer)) ? sizeof(buffer) : record_length;
+    read_length = (record_length > (Num) sizeof(buffer)) ? (Num) sizeof(buffer) : record_length;
 
     if (str == nullptr)
         str = new_stream(FILE_IO_BUFFER_LENGTH);
@@ -750,6 +750,8 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
         r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
     } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_READ))
         r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
+    else if (record_length <= 0)
+        r = make_raise_pack(E_INVARG, "Record length must be positive", arglist.v.list[2]);
     else {
         type = file_handle_type(fhandle);
 
