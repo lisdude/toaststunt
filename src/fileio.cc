@@ -1581,7 +1581,7 @@ register_fileio(void)
     register_function("file_readline", 1, 1, bf_file_readline, TYPE_INT);
     register_function("file_readlines", 3, 3, bf_file_readlines, TYPE_INT, TYPE_INT, TYPE_INT);
     register_function("file_writeline", 2, 2, bf_file_writeline, TYPE_INT, TYPE_STR);
-    register_function("file_grep", 2, 3, bf_file_grep, TYPE_INT, TYPE_STR, TYPE_INT);
+    register_function("file_grep", 2, 3, bf_file_grep, TYPE_INT, TYPE_STR, TYPE_FLAG);
 
     register_function("file_read", 2, 2, bf_file_read, TYPE_INT, TYPE_INT);
     register_function("file_write", 2, 2, bf_file_write, TYPE_INT, TYPE_STR);

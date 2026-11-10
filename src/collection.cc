@@ -92,5 +92,5 @@ bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
 void
 register_collection(void)
 {
-    register_function("is_member", 2, 3, bf_is_member, TYPE_ANY, TYPE_ANY, TYPE_INT);
+    register_function("is_member", 2, 3, bf_is_member, TYPE_ANY, TYPE_ANY, TYPE_FLAG);
 }

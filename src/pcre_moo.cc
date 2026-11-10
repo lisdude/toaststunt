@@ -143,7 +143,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
     pattern = arglist.v.list[2].v.str;
     options = (arglist.v.list[0].v.num >= 3 && is_true(arglist.v.list[3])) ? 0 : PCRE2_CASELESS;
 
-    if (arglist.v.list[0].v.num >= 4 && arglist.v.list[4].v.num == 0)
+    if (arglist.v.list[0].v.num >= 4 && !is_true(arglist.v.list[4]))
         flags ^= FIND_ALL;
 
     /* Return E_INVARG if the pattern is empty. */
@@ -516,7 +516,7 @@ register_pcre() {
     oklog("REGISTER_PCRE: Using PCRE2 Library v%s%s\n", version_buffer, jit_status());
 
     //                                                   string    pattern   ?case     ?find_all
-    register_function("pcre_match", 2, 4, bf_pcre_match, TYPE_STR, TYPE_STR, TYPE_INT, TYPE_INT);
+    register_function("pcre_match", 2, 4, bf_pcre_match, TYPE_STR, TYPE_STR, TYPE_FLAG, TYPE_FLAG);
     register_function("pcre_replace", 2, 2, bf_pcre_replace, TYPE_STR, TYPE_STR);
     register_function("pcre_cache_stats", 0, 0, bf_pcre_cache_stats);
 

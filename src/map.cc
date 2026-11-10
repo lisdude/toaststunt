@@ -1144,5 +1144,5 @@ register_map(void)
     register_function("mapdelete", 2, 2, bf_mapdelete, TYPE_MAP, TYPE_ANY);
     register_function("mapkeys", 1, 1, bf_mapkeys, TYPE_MAP);
     register_function("mapvalues", 1, -1, bf_mapvalues, TYPE_MAP);
-    register_function("maphaskey", 2, 3, bf_maphaskey, TYPE_MAP, TYPE_ANY, TYPE_INT);
+    register_function("maphaskey", 2, 3, bf_maphaskey, TYPE_MAP, TYPE_ANY, TYPE_FLAG);
 }
