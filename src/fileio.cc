@@ -1505,12 +1505,11 @@ bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
             if (len > 0 && strindex(line, len, arglist.v.list[2].v.str, arg_length, 0))
             {
                 tmp = new_list(0);
-                // Have to get rid of the newline, woops
-//        line[strcspn(line, "\r\n")] = 0;
-                // strcspn is more elegant but slower
-                /* For good reason, you can't modify a const char. But shh, we're doing it anyway. */
+                /* Strip the trailing newline using the length we were given;
+                 * strlen() would stop at an embedded NUL. */
                 char *dirty_hack = (char*)line;
-                dirty_hack[strlen(dirty_hack) - 1] = '\0';
+                if (dirty_hack[len - 1] == '\n')
+                    dirty_hack[len - 1] = '\0';
                 tmp_name.v.str = str_dup(dirty_hack);
                 tmp = listappend(tmp, tmp_name);
                 tmp_num.v.num = line_num;
