@@ -1,11 +1,11 @@
 # ToastStunt ChangeLog
-## 2.8.0 (In progress)
+## 2.8.0 (Nov 11, 2026)
 ### *** SECURITY WARNING ***
 This release fixes many ways for any programmer to crash or freeze the server, some of which may pre-exist on LambdaMOO or Stunt. If your MOO has programmers you don't fully trust, upgrade as soon as possible.
 
 ### Bug Fixes
 #### Language and tasks
-- Check execution limits when decrementing ticks for extended opcodes. Not accounting here would cause the server to block indefinitely. As such, if your MOO allows untrusted programmers, you should upgrade as soon as possible.
+- Check execution limits when decrementing ticks for extended opcodes.
 - Fix various crashes with division arithmetic operations.
 - Fixed a double-free when forking with a non-numeric delay and debug disabled.
 - Fixed tasks suspended with `suspend()` and no arguments resuming as soon as the server restarts.
@@ -54,6 +54,9 @@ This release fixes many ways for any programmer to crash or freeze the server, s
 - Fixed a PCRE2 build issue when TLS support is disabled.
 
 ### New Features
+#### Objects and waifs
+- Anonymous children are no longer invalidated when properties change on their parents.
+
 #### curl
 - `curl()` now accepts an options map as its second argument, such as `curl(url, ["method" -> "POST", "json" -> value])`. The options are:
     - `"method"`: `"GET"`, `"HEAD"`, `"POST"`, `"PUT"`, `"PATCH"`, `"DELETE"`, or `"OPTIONS"` (defaults to `"GET"`, or `"POST"` when a body is supplied)
@@ -83,9 +86,6 @@ This release fixes many ways for any programmer to crash or freeze the server, s
 - JSON null values now map to E_NONE instead of the string "null" when parsing JSON.
 - Allow empty subjects in pcre_match.
 - Add an optional third argument to generate_json to disable binary string escaping.
-
-#### Objects and waifs
-- Anonymous children are no longer invalidated when properties change on their parents.
 
 #### Build
 - The build now supports CMake 4.4 without warnings and uses C++17.
