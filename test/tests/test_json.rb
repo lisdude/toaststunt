@@ -174,6 +174,32 @@ class TestJson < Test::Unit::TestCase
     end
   end
 
+  def test_that_parsing_json_fails_for_duplicate_object_keys
+    run_test_as('wizard') do
+      assert_equal E_INVARG, parse_json('{\"a\": 1, \"a\": 2}')
+      assert_equal E_INVARG, parse_json('{\"roles\": [], \"roles\": [\"_admin\"]}')
+      assert_equal E_INVARG, parse_json('{\"a\": 1, \"b\": 2, \"a\": 3}')
+      assert_equal E_INVARG, parse_json('{\"x\": {\"a\": 1, \"a\": 2}}')
+      assert_equal E_INVARG, parse_json('[1, {\"a\": 1, \"a\": 2}]')
+      # MOO map keys are case-insensitive, so these would collapse into one key
+      assert_equal E_INVARG, parse_json('{\"a\": 1, \"A\": 2}')
+      # the parser decodes the JSON escape for "A" to the MOO string ~41
+      assert_equal E_INVARG, parse_json('{\"~41\": 1, \"\\\\u0041\": 2}')
+      assert_equal E_INVARG, parse_json('{\"a\": 1, \"a\": 2}', 'common-subset')
+      assert_equal E_INVARG, parse_json('{\"a\": 1, \"a|str\": 2}', 'embedded-types')
+      assert_equal E_INVARG, parse_json('{\"#5|obj\": 1, \"5|obj\": 2}', 'embedded-types')
+    end
+  end
+
+  def test_that_parsing_json_accepts_distinct_object_keys
+    run_test_as('wizard') do
+      assert_equal({"a" => 1, "b" => 2}, parse_json('{\"a\": 1, \"b\": 2}'))
+      assert_equal [{"a" => 1}, {"a" => 2}], parse_json('[{\"a\": 1}, {\"a\": 2}]')
+      assert_equal({"a" => {"a" => 1}}, parse_json('{\"a\": {\"a\": 1}}'))
+      assert_equal({1 => 1, "1" => 2}, parse_json('{\"1|int\": 1, \"1\": 2}', 'embedded-types'))
+    end
+  end
+
   def test_that_parsing_a_very_long_json_string_does_not_overflow_the_stack
     run_test_as('programmer') do
       # Build the input in-MOO so the test protocol and Ruby parser do not
