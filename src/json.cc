@@ -364,14 +364,14 @@ handle_end_map(void *ctx)
             v = POP(pctx->top), k = POP(pctx->top)) {
         /* Reject two members that map to the same MOO key (an exact
          * duplicate, or names that differ only in case or collide after
-         * decoding), rather than silently keeping one of them. */
-        if (maplookup(map, k, nullptr, 0)) {
-            free_var(k);
-            free_var(v);
+         * decoding), rather than silently keeping one of them.
+         * mapinsert() replaces an existing key, so the size is unchanged. */
+        Num size = maplength(map);
+        map = mapinsert(map, k, v);
+        if (maplength(map) == size) {
             free_var(map);
             return 0;
         }
-        map = mapinsert(map, k, v);
     }
     PUSH(pctx->top, map);
     pctx->depth--;
