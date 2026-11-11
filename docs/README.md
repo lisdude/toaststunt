@@ -40,7 +40,7 @@ ToastStunt is a network accessible, multi-user, programmable, interactive system
 
 - Basic threading support:
     - background.cc (a library, of sorts, to make it easier to thread builtins)
-    - Threaded builtins: sqlite_query, sqlite_execute, locate_by_name, sort, argon2, argon2_verify, connection_name_lookup
+    - Threaded builtins: sqlite_query, sqlite_execute, sort, argon2, argon2_verify, connection_name_lookup
     - set_thread_mode (an argument of 0 will disable threading for all builtins in the current verb, 1 will re-enable, and no arguments will print the current mode)
     - `thread_pool()` (database control over the the thread pools)
 
