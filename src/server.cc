@@ -115,7 +115,6 @@ static bool reopen_logfile_requested = false;
  * only touch async-signal-safe state; it must not allocate or run MOO code. */
 static volatile sig_atomic_t sigusr1_pending = 0;
 static volatile sig_atomic_t sigusr2_pending = 0;
-static volatile sig_atomic_t shutdown_signal_received = 0;
 
 static void handle_user_defined_signal(int sig);
 
@@ -367,7 +366,6 @@ panic_signal(int sig)
 static void
 shutdown_signal(int sig)
 {
-    shutdown_signal_received = 1;
     shutdown_triggered = true;
 }
 
@@ -955,7 +953,7 @@ main_loop(void)
         }
     }
 
-    if (shutdown_signal_received && shutdown_message.str().empty())
+    if (shutdown_message.str().empty())
         shutdown_message << "shutdown signal received";
 
     applog(LOG_WARNING, "SHUTDOWN: %s\n", shutdown_message.str().c_str());
