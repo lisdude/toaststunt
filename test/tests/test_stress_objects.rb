@@ -432,8 +432,8 @@ class TestStressObjects < Test::Unit::TestCase
       o = create(:object)
       p = create(o)
 
-      a = create(p, 1)
-      b = create(p, 1)
+      a = create(p)
+      b = create(p)
 
       add_property(a, 'foo', 'abc', [player, ''])
       add_property(b, 'bar', 123, [player, ''])

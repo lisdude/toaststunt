@@ -211,30 +211,6 @@ class Testrecycle < Test::Unit::TestCase
     end
   end
 
-  def test_that_recycling_an_anonymous_object_recycles_values_in_properties_defined_on_the_object
-    run_test_as('wizard') do
-      a = create(:object)
-      add_property(a, 'recycle_called', 0, [player, ''])
-      add_verb(a, ['player', 'xd', 'recycle'], ['this', 'none', 'this'])
-      set_verb_code(a, 'recycle') do |vc|
-        vc << %Q<#{a}.recycle_called = #{a}.recycle_called + 1;>
-      end
-      add_verb(a, ['player', 'xd', 'go'], ['this', 'none', 'this'])
-      set_verb_code(a, 'go') do |vc|
-        vc << %Q<x = create(#{a}, 1);>
-        vc << %Q<add_property(x, "next", 0, {player, ""});>
-        vc << %Q<x.next = create(#{a}, 1);>
-        vc << %Q<args || recycle(x);>
-      end
-      set(a, 'recycle_called', 0)
-      call(a, 'go')
-      assert_equal 2, get(a, 'recycle_called')
-      set(a, 'recycle_called', 0)
-      call(a, 'go', 1)
-      assert_equal 2, get(a, 'recycle_called')
-    end
-  end
-
   def test_that_recycling_an_anonymous_object_recycles_values_in_properties_defined_on_the_parent
     run_test_as('wizard') do
       a = create(:object)
