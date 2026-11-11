@@ -7,7 +7,7 @@
 0 suspended tasks
 0 interrupted tasks
 0 active connections with listeners
-4
+5
 #0
 System Object
 16
@@ -92,6 +92,28 @@ Wizard
 0
 0
 0
+#4
+
+0
+3
+1
+-1
+10
+0
+4
+0
+1
+-1
+4
+0
+0
+1
+two
+1
+0
+0
+3
+0
 0
 1
 #0:0
@@ -104,8 +126,8 @@ server_log("again.  On load, there should be no reference to either object.");
 server_log("----------------------------------------------------------------------");
 suspend(0);
 if (!("one" in properties(#0)))
-add_property(#0, "one", create(#-1, 1), {$owner, ""});
-add_property($one, "two", create(#-1, 1), {$one.owner, ""});
+add_property(#0, "one", create(#4, 1), {$owner, ""});
+$one.two = create(#4, 1);
 $one.name = "One One One!";
 $one.two.name = "Two Two Two!";
 server_log(tostr("$one is ", `valid($one) ! E_PROPNF, E_TYPE' ? "valid" | "invalid"));
