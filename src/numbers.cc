@@ -366,7 +366,7 @@ do_power(Var lhs, Var rhs)
         if (b < 0) {
             switch (a) {
                 case -1:
-                    ans.v.num = (b & 1) ? 1 : -1;
+                    ans.v.num = (b & 1) ? -1 : 1;
                     break;
                 case 0:
                     ans.type = TYPE_ERR;

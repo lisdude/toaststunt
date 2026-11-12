@@ -1,6 +1,7 @@
 # ToastStunt ChangeLog
 ## 2.8.1 (In Progress)
 ### Bug Fixes
+- Fixed negative integer powers of -1 returning the wrong sign.
 - `parse_json()` and the `"parse"` option in `curl()` now reject JSON objects with duplicate keys instead of silently keeping the first value. This includes keys that differ only in case or become identical after decoding escapes or embedded types.
 
 ## 2.8.0 (Nov 11, 2026)
