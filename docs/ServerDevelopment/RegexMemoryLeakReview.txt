@@ -1,0 +1,109 @@
+Regex ownership review and regression results
+Reviewed and tested 2026-11-12 on ecks-server (Linux x86-64).
+
+Scope and exact baseline
+------------------------
+Upstream: lisdude/toaststunt, master at
+ d505ad7e8dca8aa62183af470edbe9a9dc94cb97
+ (Update changelog for 2.8.0 and start 2.8.1).
+Fetched and verified before reproducing and fixing these issues. This review
+supersedes the earlier Sindome combined-branch regex results. No Sindome-specific
+code or local uncommitted changes are included in the proposed fix branch.
+The final publication check verified upstream/master still advertised d505ad7.
+
+Two confirmed ownership defects
+-------------------------------
+1. src/pcre_moo.cc, bf_pcre_match(), baseline lines 208-229.
+   Both execution-error and iteration-limit returns release match data, arguments,
+   and the cache reference, but abandon ret and named_groups. Earlier successful
+   matches become unreachable. The usual return also leaves the final empty-map
+   reference unbalanced; this shared singleton alone is not a growing heap leak.
+   Impact: repeated failing calls retain memory proportional to accumulated
+   matches and the configured iteration limit.
+   Fix: free both abandoned Vars on the two error exits, and balance the final
+   temporary map reference on successful/no-match/empty-subject completion.
+   The returned result and cached compiled pattern retain their existing owners.
+
+2. src/pcre_moo.cc, bf_pcre_replace(), baseline lines 380-405.
+   A compiled pcrs_job is released only after successful execution. On execution
+   error, pcrs_execute releases its own match buffers but leaves the caller-owned
+   job intact (see src/dependencies/pcrs.c, error return around lines 840-846).
+   Impact: every failed execution retains a compiled job and associated storage.
+   Fix: release the job immediately after pcrs_execute returns, before branching
+   on its status. The separately owned result is still freed only on success;
+   no uninitialized result pointer is freed on an early error.
+
+Reproduction inputs
+-------------------
+A. pcre_match against 1001 copies of "a", pattern "a", default global mode and
+   pcre_match_max_iterations=1000. It raises E_MAXREC after 999 stored matches.
+B. pcre_match against "x" + 80 copies of "a" + "!", pattern
+   (*LIMIT_MATCH=10)(?:x|(a+)+$)
+   A successful first match is followed by E_INVARG / PCRE2 match limit -47.
+C. pcre_replace against 80 copies of "a" + "!", replacement command
+   s/(*LIMIT_MATCH=1)(a+)+$/X/g
+   It raises E_INVARG / PCRE2 match limit -47 after the job was compiled.
+These are bounded local builtin tests; no server or database is required.
+
+Measured upstream baseline
+--------------------------
+With the original single-call diagnostic harness on unmodified d505ad7:
+ - A: 327,672 bytes in 7,992 allocations.
+ - B: 314 bytes in 7 allocations.
+ - C: 972 bytes in 5 allocations.
+With the committed regression harness, two calls per process on the same baseline:
+ - match-limit:         655,372 bytes in 15,985 allocations, exit 23.
+ - match-partial-error:     712 bytes in 18 allocations, exit 23.
+ - replace-error:         1,944 bytes in 10 allocations, exit 23.
+All three leaks remained after garbage collection and regex-cache shutdown.
+The other ten scenarios passed. The runner reported failure as expected.
+Allocator/GC bookkeeping and repeated-call collection can affect exact counts;
+these figures describe this build and are not promised on every platform.
+
+Validation of proposed fixes
+----------------------------
+The full LeakCheck server build passed before and after the fix.
+The identical 13-scenario regression suite passed after the fix (two calls each):
+ match-ok, match-named, match-none, match-empty, match-global, match-single,
+ match-compile-error, match-error, match-partial-error, match-limit,
+ replace-ok, replace-compile-error, replace-error.
+No AddressSanitizer or LeakSanitizer errors were reported in the passing run.
+Behavioral assertions verify returned type/count, successful replacement text,
+expected error codes, and that limit-error tests actually reached PCRE2 -47.
+The immediate match-error control fails before any result is accumulated; it
+reports no growing heap leak on either version and is deliberately distinguished
+from partial-success errors. Compile-error controls exercise paths with no job.
+
+How to repeat
+-------------
+Requires Linux/GCC ASan+LSan, GNU objcopy, Python 3, PCRE2 development files, and
+the normal ToastStunt build dependencies. From the patched repository root:
+ cmake -S . -B build-leaks -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=LeakCheck
+ cmake --build build-leaks -j2
+ python3 test/memory/run_regex_leaks.py build-leaks --repeat 2
+
+For the before-fix control, export d505ad7 to a separate directory, copy only
+ test/memory/ from the proposed patch into that baseline, then run the same
+commands there. Do not copy the fixed src/pcre_moo.cc. The three error scenarios
+should report leaks and the runner must exit nonzero. The runner continues all
+scenarios so the ten passing controls and three failures can be inspected.
+
+Method and limits
+-----------------
+ASAN_OPTIONS=detect_leaks=1:leak_check_at_exit=0; explicit recoverable leak check
+runs after gc_collect(), pcre_shutdown(), and a second gc_collect().
+Test environment: PCRE2 10.46 with JIT, GCC, CMake Unix Makefiles, x86-64 Linux.
+The harness includes the actual regex translation unit and links the freshly
+built server objects. Only a temporary server object has its main symbol renamed.
+The harness checks allocation ownership in the actual builtins, with their
+original entry points, without starting the production server or loading a DB.
+No repository source is instrumented or stubbed. A separate noinline call frame
+reduces false reachability from stale builtin stack locals.
+
+This is targeted regex validation, not a whole-server leak-free certification.
+It does not cover production load, concurrency, JIT-disabled platforms, deliberate
+allocation failures, the full Ruby integration suite, or custom database options.
+The optional test runner currently supports Linux/GNU tools and Makefiles only.
+No database queries, deployment, or production-state changes were performed.
+SQLite and PostgreSQL observations from the earlier branch review are excluded.
+The known libpqxx exit double-free is separate and is not included as a new leak.

@@ -28,3 +28,28 @@ To run the tests:
 
 9) Clean up the moo executable and the files created in /tmp:
     make clean
+
+Regex memory regressions (Linux, GCC/ASan, GNU binutils, Python 3):
+
+    cmake -S . -B build-leaks -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=LeakCheck
+    cmake --build build-leaks -j2
+    python3 test/memory/run_regex_leaks.py build-leaks --repeat 2
+
+Run these commands from the repository root. PCRE2 development headers and library
+must be installed. This optional suite does not require the Ruby test server or a
+MOO database. It invokes the real regex builtins, checks success/error behavior,
+then runs garbage collection, clears the regex cache, collects again, and checks
+for leaks. LeakSanitizer needs permission to inspect the test process; it cannot
+perform this check under ptrace or some restricted runners. A sanitizer failure
+is a test failure, not a passing result.
+
+The runner currently requires a CMake Unix Makefiles build (CMakeFiles/moo.dir/
+link.txt), GNU objcopy, and LeakSanitizer. It links temporary copies of the server
+objects with the regex harness, renaming main only in a temporary object. It does
+not start a network listener or modify the server's build objects. Each scenario
+runs in a separate process with two calls by default, covering partial-result
+errors, iteration limits, replacement errors, compile errors, named/numbered
+matches, no matches, empty subjects, and global/single matching.
+
+For the upstream baseline, measured results, and limitations, see
+../docs/ServerDevelopment/RegexMemoryLeakReview.txt.
