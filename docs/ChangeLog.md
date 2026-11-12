@@ -1,4 +1,8 @@
 # ToastStunt ChangeLog
+## 2.8.1 (In Progress)
+### Bug Fixes
+- `parse_json()` and the `"parse"` option in `curl()` now reject JSON objects with duplicate keys instead of silently keeping the first value. This includes keys that differ only in case or become identical after decoding escapes or embedded types.
+
 ## 2.8.0 (Nov 11, 2026)
 ### *** SECURITY WARNING ***
 This release fixes many ways for any programmer to crash or freeze the server, some of which may pre-exist on LambdaMOO or Stunt. If your MOO has programmers you don't fully trust, upgrade as soon as possible.
@@ -6,6 +10,7 @@ This release fixes many ways for any programmer to crash or freeze the server, s
 ### Bug Fixes
 #### Language and tasks
 - Check execution limits when decrementing ticks for extended opcodes.
+- Fixed list and map updates unnecessarily copying entire collections when stored beyond the first 32 variable slots. This dramatically increases performance when dealing with lists and maps if the verb has many programmer defined variables.
 - Fix various crashes with division arithmetic operations.
 - Fixed a double-free when forking with a non-numeric delay and debug disabled.
 - Fixed tasks suspended with `suspend()` and no arguments resuming as soon as the server restarts.
@@ -23,6 +28,7 @@ This release fixes many ways for any programmer to crash or freeze the server, s
 - Fixed `generate_json()` crashing on boolean map keys and failing to preserve them in embedded-types mode.
 - Fixed generate_json mangling strings with ~0 or ~1 followed by non-hex characters.
 - Fixed `compare()` truncating 64-bit integer and object map keys to 32 bits.
+- Fixed ordering of waif, anon, and boolean map keys.
 - Fixed `curl()`, `url_encode()`, and `url_decode()` leaking memory on errors.
 - `file_read()` now raises `E_INVARG` for a record length of zero or less. Negative lengths used to overflow a buffer.
 - Fixed `file_grep()` writing out of bounds on lines that begin with a NUL byte, and dropping the last character of a final line with no newline.
@@ -82,6 +88,7 @@ This release fixes many ways for any programmer to crash or freeze the server, s
 #### Built-in functions
 - Add an optional unclean_shutdown parameter to `shutdown()`, which replicates the functionality found in the `panic()` builtin.
 - Remove the `panic()` builtin.
+- `mapdelete()` and `maphaskey()` now accept anonymous objects as map keys.
 - Flag arguments to `isa()`, `locate_by_name()`, `occupants()`, `locations()`, `explode()`, `sort()`, `queued_tasks()`, `switch_player()`, `set_thread_mode()`, `is_member()`, `maphaskey()`, `file_grep()`, and `pcre_match()` now accept `true` and `false` as well as integers. `function_info()` reports these arguments as type `-3`.
 - JSON null values now map to E_NONE instead of the string "null" when parsing JSON.
 - Allow empty subjects in pcre_match.

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12...4.4)
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 8)
 set(VERSION_RELEASE 0)
-set(VERSION_EXT "")
+set(VERSION_EXT "_1")
 project(ToastStunt VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_RELEASE} LANGUAGES CXX C)
 
 # Compile Options
