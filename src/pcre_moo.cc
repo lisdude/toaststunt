@@ -214,6 +214,8 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
             /* Don't delete cache entry on match errors - pattern compiled successfully */
             free_entry(entry);
             free_var(arglist);
+            free_var(named_groups);
+            free_var(ret);
             return make_raise_pack(E_INVARG, err, var_ref(zero));
         } else if (rc == PCRE2_ERROR_NOMATCH) {
             /* There are no more matches. */
@@ -225,6 +227,8 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
             /* Don't delete cache entry - pattern is valid, just too many matches */
             free_entry(entry);
             free_var(arglist);
+            free_var(named_groups);
+            free_var(ret);
             return make_raise_pack(E_MAXREC, err, var_ref(zero));
         } else {
             /* We'll use a bit array to indicate which index matches are superfluous. e.g. which results
@@ -315,6 +319,7 @@ bf_pcre_match(Var arglist, Byte next, void *vdata, Objid progr)
     pcre2_match_data_free(match_data);
     free_entry(entry);
     free_var(arglist);
+    free_var(named_groups);
     return make_var_pack(ret);
 }
 
@@ -377,6 +382,7 @@ bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr)
     size_t length = memo_strlen(linebuf);
 
     err = pcrs_execute(job, linebuf, length, &result, &length);
+    pcrs_free_job(job);
     if (err >= 0)
     {
         /* Sanitize the result so people don't introduce 'dangerous' characters into the database */
@@ -393,7 +399,6 @@ bf_pcre_replace(Var arglist, Byte next, void *vdata, Objid progr)
         ret.v.str = str_dup(result);
 
         free_var(arglist);
-        pcrs_free_job(job);
         free(result);
 
         return make_var_pack(ret);
