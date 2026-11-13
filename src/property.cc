@@ -20,6 +20,7 @@
 #include "list.h"
 #include "storage.h"
 #include "utils.h"
+#include "waif.h"
 
 struct prop_data {
     Var r;
@@ -340,6 +341,13 @@ bf_property_exists(Var arglist, Byte next, void *vdata, Objid progr)
 
     if (arglist.v.list[0].v.num == 3)
         direct = is_true(arglist.v.list[3]);
+
+    if (obj.type == TYPE_WAIF) {
+        int exists;
+        enum error e = waif_property_exists(obj.v.waif, pname, direct, progr, &exists);
+        free_var(arglist);
+        return e == E_NONE ? make_var_pack(Var::new_int(exists)) : make_error_pack(e);
+    }
 
     if (!obj.is_object()) {
         free_var(arglist);

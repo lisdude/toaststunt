@@ -650,6 +650,41 @@ waif_property_allows(Waif *w, db_prop_handle h, Objid progr, db_prop_flag flag)
            is_wizard(progr);
 }
 
+/* Check definitions without reading or referencing a property value.  As with
+ * property_exists() on objects, intrinsic properties have no direct definition,
+ * and an invalid target is E_INVARG even when the requested name is intrinsic.
+ */
+enum error
+waif_property_exists(Waif *w, const char *name, int direct, Objid progr, int *exists)
+{
+    update_waif_propdefs(w);
+    if (!valid(w->_class))
+        return E_INVARG;
+
+    if (!strcasecmp(name, "owner") || !strcasecmp(name, "class")
+        || !strcasecmp(name, "wizard") || !strcasecmp(name, "programmer")) {
+        *exists = !direct;
+        return E_NONE;
+    }
+
+    static Stream *s;
+    if (!s)
+        s = new_stream(50);
+    stream_add_char(s, WAIF_PROP_PREFIX);
+    stream_add_string(s, name);
+
+    Var class_obj = Var::new_obj(w->_class);
+    db_prop_handle h = db_find_property(class_obj, reset_stream(s), nullptr);
+    if (!h.ptr)
+        *exists = 0;
+    else if (!waif_property_allows(w, h, progr, PF_READ))
+        return E_PERM;
+    else
+        *exists = !direct || db_is_property_defined_on(h, class_obj);
+
+    return E_NONE;
+}
+
 /* called from execute.c run() when reading a property value.  This returns
  * the prop ALREADY REFERENCED because the interpreter is going to free OBJ
  * immediately upon return, and if that is the last ref the prop returned
