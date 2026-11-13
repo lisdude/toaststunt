@@ -45,6 +45,8 @@ typedef struct WaifPropdefs {
 extern void free_waif(Waif *);
 extern Waif *dup_waif(Waif *);
 extern enum error waif_get_prop(Waif *, const char *, Var *, Objid progr);
+extern enum error waif_property_exists(Waif *, const char *, int direct,
+                                      Objid progr, int *exists);
 extern enum error waif_put_prop(Waif *, const char *, Var, Objid progr);
 extern int waif_bytes(Waif *);
 extern void waif_before_saving();
