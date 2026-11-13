@@ -739,7 +739,7 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
 
     errno = 0;
 
-    read_length = (record_length > sizeof(buffer)) ? sizeof(buffer) : record_length;
+    read_length = (record_length > (Num) sizeof(buffer)) ? (Num) sizeof(buffer) : record_length;
 
     if (str == nullptr)
         str = new_stream(FILE_IO_BUFFER_LENGTH);
@@ -750,6 +750,8 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
         r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
     } else if (!((mode = file_handle_mode(fhandle)) & FILE_O_READ))
         r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
+    else if (record_length <= 0)
+        r = make_raise_pack(E_INVARG, "Record length must be positive", arglist.v.list[2]);
     else {
         type = file_handle_type(fhandle);
 
@@ -1503,12 +1505,11 @@ bf_file_grep(Var arglist, Byte next, void *vdata, Objid progr)
             if (len > 0 && strindex(line, len, arglist.v.list[2].v.str, arg_length, 0))
             {
                 tmp = new_list(0);
-                // Have to get rid of the newline, woops
-//        line[strcspn(line, "\r\n")] = 0;
-                // strcspn is more elegant but slower
-                /* For good reason, you can't modify a const char. But shh, we're doing it anyway. */
+                /* Strip the trailing newline using the length we were given;
+                 * strlen() would stop at an embedded NUL. */
                 char *dirty_hack = (char*)line;
-                dirty_hack[strlen(dirty_hack) - 1] = '\0';
+                if (dirty_hack[len - 1] == '\n')
+                    dirty_hack[len - 1] = '\0';
                 tmp_name.v.str = str_dup(dirty_hack);
                 tmp = listappend(tmp, tmp_name);
                 tmp_num.v.num = line_num;
@@ -1581,7 +1582,7 @@ register_fileio(void)
     register_function("file_readline", 1, 1, bf_file_readline, TYPE_INT);
     register_function("file_readlines", 3, 3, bf_file_readlines, TYPE_INT, TYPE_INT, TYPE_INT);
     register_function("file_writeline", 2, 2, bf_file_writeline, TYPE_INT, TYPE_STR);
-    register_function("file_grep", 2, 3, bf_file_grep, TYPE_INT, TYPE_STR, TYPE_INT);
+    register_function("file_grep", 2, 3, bf_file_grep, TYPE_INT, TYPE_STR, TYPE_FLAG);
 
     register_function("file_read", 2, 2, bf_file_read, TYPE_INT, TYPE_INT);
     register_function("file_write", 2, 2, bf_file_write, TYPE_INT, TYPE_STR);

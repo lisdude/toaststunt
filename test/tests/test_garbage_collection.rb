@@ -155,21 +155,21 @@ class TestGarbageCollection < Test::Unit::TestCase
   def test_the_garbage_collector_by_fuzzing_1
     run_test_as('wizard') do
       a = create(:object, 0)
-      simplify(command(%Q|; add_property(#{a}, "next", #{a}, {player, ""}); |))
+      simplify(command(%Q|; add_property(#{a}, "next", #{a}, {player, ""}); add_property(#{a}, "foo", 0, {player, ""}); add_property(#{a}, "bar", 0, {player, ""}); |))
       add_verb(a, ['player', 'xd', 'go'], ['this', 'none', 'this'])
       set_verb_code(a, 'go') do |vc|
         lines = <<-EOF
-          r = o = #{a}.next = create($nothing, 1);
+          r = o = #{a}.next = create(#{a}, 1);
           for i in [1..1000];
             ticks_left() < 1000 || seconds_left() < 2 && suspend(0);
             if ((e = random(8)) == 1)
-              n = create($nothing, 1);
-              add_property(n, "next", o, {player, ""});
+              n = create(#{a}, 1);
+              n.next = o;
               o = n;
             elseif (e == 2)
-              n = create($nothing, 1);
-              add_property(n, "foo", o, {player, ""});
-              add_property(n, "bar", o, {player, ""});
+              n = create(#{a}, 1);
+              n.foo = o;
+              n.bar = o;
               o = n;
             elseif (e == 3)
               n = create(#{a}, 1);
@@ -185,7 +185,7 @@ class TestGarbageCollection < Test::Unit::TestCase
               o = [1 -> o, 2 -> o];
             endif
           endfor;
-          add_property(r, "next", o, {player, ""});
+          r.next = o;
           #{a}.next = 0;
         EOF
         lines.split("\n").each do |line|
@@ -200,21 +200,21 @@ class TestGarbageCollection < Test::Unit::TestCase
   def test_the_garbage_collector_by_fuzzing_2
     run_test_as('wizard') do
       a = create(:object, 0)
-      simplify(command(%Q|; add_property(#{a}, "next", #{a}, {player, ""}); |))
+      simplify(command(%Q|; add_property(#{a}, "next", #{a}, {player, ""}); add_property(#{a}, "foo", 0, {player, ""}); add_property(#{a}, "bar", 0, {player, ""}); |))
       add_verb(a, ['player', 'xd', 'go'], ['this', 'none', 'this'])
       set_verb_code(a, 'go') do |vc|
         lines = <<-EOF
-          r = o = #{a}.next = create($nothing, 1);
+          r = o = #{a}.next = create(#{a}, 1);
           for i in [1..1000];
             ticks_left() < 1000 || seconds_left() < 2 && suspend(0);
             if ((e = random(8)) == 1)
-              n = create($nothing, 1);
-              add_property(n, "next", o, {player, ""});
+              n = create(#{a}, 1);
+              n.next = o;
               o = n;
             elseif (e == 2)
-              n = create($nothing, 1);
-              add_property(n, "foo", o, {player, ""});
-              add_property(n, "bar", o, {player, ""});
+              n = create(#{a}, 1);
+              n.foo = o;
+              n.bar = o;
               o = n;
             elseif (e == 3)
               n = create(#{a}, 1);
@@ -230,7 +230,7 @@ class TestGarbageCollection < Test::Unit::TestCase
               o = [1 -> o, 2 -> o];
             endif
           endfor;
-          add_property(r, "next", o, {player, ""});
+          r.next = o;
           recycle(#{a});
         EOF
         lines.split("\n").each do |line|
@@ -245,21 +245,21 @@ class TestGarbageCollection < Test::Unit::TestCase
   def test_the_garbage_collector_by_fuzzing_3
     run_test_as('wizard') do
       a = create(:object, 0)
-      simplify(command(%Q|; add_property(#{a}, "next", #{a}, {player, ""}); |))
+      simplify(command(%Q|; add_property(#{a}, "next", #{a}, {player, ""}); add_property(#{a}, "foo", 0, {player, ""}); add_property(#{a}, "bar", 0, {player, ""}); |))
       add_verb(a, ['player', 'xd', 'go'], ['this', 'none', 'this'])
       set_verb_code(a, 'go') do |vc|
         lines = <<-EOF
-          r = o = #{a}.next = create($nothing, 1);
+          r = o = #{a}.next = create(#{a}, 1);
           for i in [1..1000];
             ticks_left() < 1000 || seconds_left() < 2 && suspend(0);
             if ((e = random(8)) == 1)
-              n = create($nothing, 1);
-              add_property(n, "next", o, {player, ""});
+              n = create(#{a}, 1);
+              n.next = o;
               o = n;
             elseif (e == 2)
-              n = create($nothing, 1);
-              add_property(n, "foo", o, {player, ""});
-              add_property(n, "bar", o, {player, ""});
+              n = create(#{a}, 1);
+              n.foo = o;
+              n.bar = o;
               o = n;
             elseif (e == 3)
               n = create(#{a}, 1);
@@ -289,21 +289,21 @@ class TestGarbageCollection < Test::Unit::TestCase
   def test_the_garbage_collector_by_fuzzing_4
     run_test_as('wizard') do
       a = create(:object, 0)
-      simplify(command(%Q|; add_property(#{a}, "next", #{a}, {player, ""}); |))
+      simplify(command(%Q|; add_property(#{a}, "next", #{a}, {player, ""}); add_property(#{a}, "foo", 0, {player, ""}); add_property(#{a}, "bar", 0, {player, ""}); |))
       add_verb(a, ['player', 'xd', 'go'], ['this', 'none', 'this'])
       set_verb_code(a, 'go') do |vc|
         lines = <<-EOF
-          r = o = #{a}.next = create($nothing, 1);
+          r = o = #{a}.next = create(#{a}, 1);
           for i in [1..1000];
             ticks_left() < 1000 || seconds_left() < 2 && suspend(0);
             if ((e = random(8)) == 1)
-              n = create($nothing, 1);
-              add_property(n, "next", o, {player, ""});
+              n = create(#{a}, 1);
+              n.next = o;
               o = n;
             elseif (e == 2)
-              n = create($nothing, 1);
-              add_property(n, "foo", o, {player, ""});
-              add_property(n, "bar", o, {player, ""});
+              n = create(#{a}, 1);
+              n.foo = o;
+              n.bar = o;
               o = n;
             elseif (e == 3)
               n = create(#{a}, 1);
@@ -342,12 +342,6 @@ class TestGarbageCollection < Test::Unit::TestCase
     run_test_as('wizard') do
       simplify(command(%Q|; o = create(#{x}, 1); o.next = o; recycle(o); run_gc();|))
     end
-    run_test_as('wizard') do
-      simplify(command(%Q|; o = create($nothing, 1); add_property(o, "next", o, {player, ""}); run_gc();|))
-    end
-    run_test_as('wizard') do
-      simplify(command(%Q|; o = create($nothing, 1); add_property(o, "next", o, {player, ""}); recycle(o); run_gc();|))
-    end
   end
 
   def test_that_dual_cyclic_self_references_dont_crash_the_server_or_leak_memory
@@ -363,44 +357,48 @@ class TestGarbageCollection < Test::Unit::TestCase
     run_test_as('wizard') do
       simplify(command(%Q|; o = create(#{a}, 1); o.x = o; o.y = o; recycle(o); run_gc();|))
     end
-    run_test_as('wizard') do
-      simplify(command(%Q|; o = create($nothing, 1); add_property(o, "x", o, {player, ""}); add_property(o, "y", o, {player, ""}); run_gc();|))
-    end
-    run_test_as('wizard') do
-      simplify(command(%Q|; o = create($nothing, 1); add_property(o, "x", o, {player, ""}); add_property(o, "y", o, {player, ""}); recycle(o); run_gc();|))
-    end
   end
 
   #
   def test_that_cyclic_references_through_lists_and_maps_dont_crash_the_server_or_leak_memory
+    a = nil
     run_test_as('wizard') do
-      simplify(command(%Q|; x = {o = create($nothing, 1), o, o}; add_property(o, "next", x, {player, ""}); run_gc();|))
+      a = create(:nothing)
+      add_property(a, 'next', 0, [player, ''])
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; x = {o = create($nothing, 1), o, o}; add_property(o, "next", x, {player, ""}); recycle(o); run_gc();|))
+      simplify(command(%Q|; x = {o = create(#{a}, 1), o, o}; o.next = x; run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; x = [1 -> o = create($nothing, 1), 2 -> o, 3 -> o]; add_property(o, "next", x, {player, ""}); run_gc();|))
+      simplify(command(%Q|; x = {o = create(#{a}, 1), o, o}; o.next = x; recycle(o); run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; x = [1 -> o = create($nothing, 1), 2 -> o, 3 -> o]; add_property(o, "next", x, {player, ""}); recycle(o); run_gc();|))
+      simplify(command(%Q|; x = [1 -> o = create(#{a}, 1), 2 -> o, 3 -> o]; o.next = x; run_gc();|))
+    end
+    run_test_as('wizard') do
+      simplify(command(%Q|; x = [1 -> o = create(#{a}, 1), 2 -> o, 3 -> o]; o.next = x; recycle(o); run_gc();|))
     end
   end
 
   # the following tests contrived cases where a specific value type
   # (object, list, map) will be the root of the cycle
   def test_that_any_value_may_be_the_root_of_the_cycle
+    a = nil
     run_test_as('wizard') do
-      simplify(command(%Q|; x = y = {create($nothing, 1)}; add_property(x[1], "next", x, {player, ""}); run_gc(); suspend(0); x = y = 0; run_gc();|))
+      a = create(:nothing)
+      add_property(a, 'next', 0, [player, ''])
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; x = y = create($nothing, 1); add_property(x, "next", {x}, {player, ""}); run_gc(); suspend(0); x = y = 0; run_gc();|))
+      simplify(command(%Q|; x = y = {create(#{a}, 1)}; x[1].next = x; run_gc(); suspend(0); x = y = 0; run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; x = y = [1 -> create($nothing, 1)]; add_property(x[1], "next", x, {player, ""}); run_gc(); suspend(0); x = y = 0; run_gc();|))
+      simplify(command(%Q|; x = y = create(#{a}, 1); x.next = {x}; run_gc(); suspend(0); x = y = 0; run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; x = y = create($nothing, 1); add_property(x, "next", [1 -> x], {player, ""}); run_gc(); suspend(0); x = y = 0; run_gc();|))
+      simplify(command(%Q|; x = y = [1 -> create(#{a}, 1)]; x[1].next = x; run_gc(); suspend(0); x = y = 0; run_gc();|))
+    end
+    run_test_as('wizard') do
+      simplify(command(%Q|; x = y = create(#{a}, 1); x.next = [1 -> x]; run_gc(); suspend(0); x = y = 0; run_gc();|))
     end
   end
 
@@ -420,16 +418,6 @@ class TestGarbageCollection < Test::Unit::TestCase
         simplify(command(%Q|; x = y = create(#{a}, 1); for i in [1..#{n + 1}]; x.next = create(#{a}, 1); x = x.next; endfor; x.next = y; recycle(y); run_gc();|))
       end
     end
-    run_test_as('wizard') do
-      9.times do |n|
-        simplify(command(%Q|; x = y = create($nothing, 1); for i in [1..#{n + 1}]; add_property(x, "next", create($nothing, 1), {player, ""}); x = x.next; endfor; add_property(x, "next", y, {player, ""}); run_gc();|))
-      end
-    end
-    run_test_as('wizard') do
-      8.times do |n|
-        simplify(command(%Q|; x = y = create($nothing, 1); for i in [1..#{n + 1}]; add_property(x, "next", create($nothing, 1), {player, ""}); x = x.next; endfor; add_property(x, "next", y, {player, ""}); recycle(y); run_gc();|))
-      end
-    end
   end
 
   def test_that_anonymous_objects_made_invalid_dont_crash_the_server_or_leak_memory
@@ -437,28 +425,33 @@ class TestGarbageCollection < Test::Unit::TestCase
       simplify(command(%Q|; o = create($nothing); p = create(o, 1); add_property(o, "foo", 0, {player, ""}); run_gc();|))
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; o = create($nothing); p = create(o, 1); add_property(p, "next", p, {player, ""}); add_property(o, "foo", 0, {player, ""}); run_gc();|))
+      simplify(command(%Q|; o = create($nothing); add_property(o, "next", 0, {player, ""}); p = create(o, 1); p.next = p; add_property(o, "foo", 0, {player, ""}); run_gc();|))
     end
   end
 
   # these tests add/leave a purple root value, and then destroy that value...
   def test_contrived_example_that_accesses_an_already_recycled_object
+    a = nil
     run_test_as('wizard') do
-      simplify(command(%Q|; x = y = create($nothing, 1); add_property(x, "next", create($nothing, 1), {player, ""}); add_property(x.next, "next", x, {player, ""}); recycle(y); run_gc();|))
+      a = create(:nothing)
+      add_property(a, 'next', 0, [player, ''])
     end
     run_test_as('wizard') do
-      simplify(command(%Q|; x = y = create($nothing, 1); add_property(x, "next", create($nothing, 1), {player, ""}); add_property(x.next, "next", x, {player, ""}); recycle(x); run_gc();|))
+      simplify(command(%Q|; x = y = create(#{a}, 1); x.next = create(#{a}, 1); x.next.next = x; recycle(y); run_gc();|))
+    end
+    run_test_as('wizard') do
+      simplify(command(%Q|; x = y = create(#{a}, 1); x.next = create(#{a}, 1); x.next.next = x; recycle(x); run_gc();|))
     end
   end
 
   # these tests ensure that the heavily shared empty list/map are always green
   def test_that_empty_lists_and_maps_are_green
     run_test_as('wizard') do
-      gc = simplify(command(%Q|; o = p = create($nothing, 1); add_property(o, "list", {}, {player, ""}); run_gc(); suspend(0); o = p = 0; run_gc(); suspend(0); x = {}; return gc_stats();|))
+      gc = simplify(command(%Q|; p = create($nothing); add_property(p, "list", {}, {player, ""}); o = create(p, 1); run_gc(); suspend(0); o = p = 0; run_gc(); suspend(0); x = {}; return gc_stats();|))
       assert_equal 0, gc['purple']
     end
     run_test_as('wizard') do
-      gc = simplify(command(%Q|; o = p = create($nothing, 1); add_property(o, "map", [], {player, ""}); run_gc(); suspend(0); o = p = 0; run_gc(); suspend(0); x = []; return gc_stats();|))
+      gc = simplify(command(%Q|; p = create($nothing); add_property(p, "map", [], {player, ""}); o = create(p, 1); run_gc(); suspend(0); o = p = 0; run_gc(); suspend(0); x = []; return gc_stats();|))
       assert_equal 0, gc['purple']
     end
   end

@@ -7,7 +7,7 @@
 0 suspended tasks
 0 interrupted tasks
 0 active connections with listeners
-4
+5
 #0
 System Object
 16
@@ -92,26 +92,46 @@ Wizard
 0
 0
 0
+#4
+
+0
+3
+1
+-1
+10
+0
+4
 0
 1
+-1
+4
+0
+1
+recycle
+3
+172
+-1
+1
+next
+1
+0
+0
+3
+0
+0
+2
 #0:0
 server_log("----------------------------------------------------------------------");
 server_log("Creates cyclic garbage and shuts down.  The garbage will be in the    ");
-server_log("pending anonymous objects as #4 and #5.  There will also be objects #4");
-server_log("and #5.  When the server restarts from the dumped database, the       ");
+server_log("pending anonymous objects as #5 and #6.  There will also be objects #5");
+server_log("and #6.  When the server restarts from the dumped database, the       ");
 server_log("pending objects will be recycled.                                     ");
 server_log("----------------------------------------------------------------------");
 suspend(0);
 try
 try
-a = create(#-1, 1);
-add_property(a, "next", 0, {task_perms(), ""});
-add_verb(a, {task_perms(), "xd", "recycle"}, {"this", "none", "this"});
-set_verb_code(a, "recycle", {"server_log(\"recycle called on A\");"});
-b = create(#-1, 1);
-add_property(b, "next", 0, {task_perms(), ""});
-add_verb(b, {task_perms(), "xd", "recycle"}, {"this", "none", "this"});
-set_verb_code(b, "recycle", {"server_log(\"recycle called on B\");"});
+a = create(#4, 1);
+b = create(#4, 1);
 a.name = "A";
 b.name = "B";
 a.next = b;
@@ -122,4 +142,7 @@ endtry
 finally
 shutdown();
 endtry
+.
+#4:0
+server_log("recycle called on " + this.name);
 .

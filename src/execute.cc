@@ -974,7 +974,9 @@ next_opcode:
         error_bv = bv;
         op = (Opcode)(*bv++);
 
-        if (COUNT_TICK(op)) {
+        /* Extended opcodes must enforce the same limits as ordinary ones. */
+        if (COUNT_TICK(op)
+                || (op == OP_EXTENDED && COUNT_EOP_TICK(*bv))) {
             if (--ticks_remaining <= 0) {
                 STORE_STATE_VARIABLES();
                 abort_task(ABORT_TICKS);
@@ -1879,13 +1881,12 @@ finish_comparison:
                     enum error err;
 
                     err = waif_get_prop(obj.v.waif, propname.v.str, &prop, RUN_ACTIV.progr);
-                    free_var(obj);
                     if (err == E_PROPNF) {
-                        var_ref(propname);
-                        var_ref(obj);
+                        /* Takes over our references to propname and obj. */
                         PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
                     }
                     else {
+                        free_var(obj);
                         free_var(propname);
                         if (err == E_NONE)
                             PUSH(prop);
@@ -1984,16 +1985,17 @@ finish_comparison:
                     enum error err;
 
                     err = waif_put_prop(obj.v.waif, propname.v.str, rhs, RUN_ACTIV.progr);
-                    free_var(obj);
                     if (err == E_NONE) {
+                        free_var(obj);
                         free_var(propname);
                         PUSH(rhs);
                     } else {
                         free_var(rhs);
                         if (err == E_PROPNF) {
-                            var_ref(obj);
+                            /* Takes over our references to propname and obj. */
                             PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
                         } else {
+                            free_var(obj);
                             free_var(propname);
                             PUSH_ERROR(err);
                         }
@@ -2302,8 +2304,6 @@ else if (obj.type == TYPE_##t1) {           \
             {
                 enum Extended_Opcode eop = (Extended_Opcode)(*bv);
                 bv++;
-                if (COUNT_EOP_TICK(eop))
-                    ticks_remaining--;
                 switch (eop) {
                     case EOP_RANGESET:
                     {

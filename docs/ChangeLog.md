@@ -1,64 +1,103 @@
 # ToastStunt ChangeLog
-## 2.8.0 (In progress)
+## 2.8.1 (In Progress)
 ### Bug Fixes
-- Temporarily reenable the emptylist bandaid until we can find the culprit.
-- Fix various race conditions and threading bugs / pitfalls.
-- `occupants()` and `locate_by_name()` are no longer threaded functions, as they do unsafe database accesses.
+- Fixed negative integer powers of -1 returning the wrong sign.
+- `parse_json()` and the `"parse"` option in `curl()` now reject JSON objects with duplicate keys instead of silently keeping the first value. This includes keys that differ only in case or become identical after decoding escapes or embedded types.
+
+## 2.8.0 (Nov 11, 2026)
+### *** SECURITY WARNING ***
+This release fixes many ways for any programmer to crash or freeze the server, some of which may pre-exist on LambdaMOO or Stunt. If your MOO has programmers you don't fully trust, upgrade as soon as possible.
+
+### Bug Fixes
+#### Language and tasks
+- Check execution limits when decrementing ticks for extended opcodes.
+- Fixed list and map updates unnecessarily copying entire collections when stored beyond the first 32 variable slots. This dramatically increases performance when dealing with lists and maps if the verb has many programmer defined variables.
+- Fix various crashes with division arithmetic operations.
+- Fixed a double-free when forking with a non-numeric delay and debug disabled.
+- Fixed tasks suspended with `suspend()` and no arguments resuming as soon as the server restarts.
+- Fixed an invalid free while parsing numeric verb prepositions.
+- Fixed `queue_info()` reporting `hold_input` from the wrong field.
+- Fixed `queued_tasks()` ignoring its first argument when given two arguments.
+
+#### Built-in functions
+- Fixed a use-after-free in `mapdelete()` when one of several keys is not found.
+- Fixed `strtr()` accessing memory out of bounds for bytes above 127. Those bytes now translate normally.
+- Fixed a heap buffer overflow in `pcre_match()` named-group handling.
 - Fixed crash on malloc failure when compiling PCRE patterns.
 - Fixed crash when PCRE substring extraction fails.
-- Fixed generate_json mangling strings with ~0 or ~1 followed by non-hex characters.
-- Fixed the build against Nettle 4.0, which dropped the length argument from its `*_digest` functions.
-- Fixed a heap buffer overflow in `pcre_match()` named-group handling.
-- Fixed `push_output()` dropping connections on zero-length writes.
-- Fixed `compare()` truncating 64-bit integer and object map keys to 32 bits.
-- Fixed a double-free when forking with a non-numeric delay and debug disabled.
-- Fixed `next_recycled_object()` skipping a recycled max object.
-- Fixed --tls-port to actually consider the port, like its shorter equivalent.
-- Fixed `$server_options.max_map_value_bytes` being ignored; map value size limits were read from `max_list_value_bytes` instead.
-- Fixed `curl()`, `url_encode()`, and `url_decode()` leaking their arguments when erroring out early.
 - Fixed a potential stack overflow when parsing JSON documents containing very long strings.
-- Fixed a PCRE2 build issue when TLS support is disabled.
 - Fixed `generate_json()` crashing on boolean map keys and failing to preserve them in embedded-types mode.
-- Fixed property layout corruption when chparenting an object that has a descendant reachable through two parents; the fixup rebuilt each descendant's old ancestor list from the already-updated graph and read and freed past the end of its property array.
-- Fixed `check_for_duplicates()` skipping most pairs, so parent lists like `{a, b, b}` were accepted.
-- Fixed `renumber()` writing one value past a children list, and leaving a stale object number behind in a child's parents, when a parent was repeated.
-- Fixed `recreate()` accepting an invalid parent, which then indexed the object table with a bogus object number.
-- Fixed callable verb lookup, `isa()`, chparent's property check, and `add_property()`'s descendant scan walking every path through the inheritance graph rather than every object, which is exponential with nested diamonds. `isa()` also dereferenced invalid parents and leaked the list.
-- Fixed a bug that would cause indefinitely suspended tasks (via `suspend()` with no arguments) to immediately resume upon rebooting the database.
-- Fixed an invalid free while parsing numeric verb prepositions.
-- Fixed waif self-reference detection to only identify actual self-references while traversing values.
-- In emergency mode, the wizard created for a completely empty database now owns itself instead of retaining an uninitialized owner.
+- Fixed generate_json mangling strings with ~0 or ~1 followed by non-hex characters.
+- Fixed `compare()` truncating 64-bit integer and object map keys to 32 bits.
+- Fixed ordering of waif, anon, and boolean map keys.
+- Fixed `curl()`, `url_encode()`, and `url_decode()` leaking memory on errors.
+- `file_read()` now raises `E_INVARG` for a record length of zero or less. Negative lengths used to overflow a buffer.
+- Fixed `file_grep()` writing out of bounds on lines that begin with a NUL byte, and dropping the last character of a final line with no newline.
+- Fixed `next_recycled_object()` skipping a recycled max object.
+
+#### Objects and waifs
+- Fixed `chparents()` corrupting the properties of descendants that inherit from the object through more than one path.
+- Fixed verb lookup, `isa()`, `chparents()`, and `add_property()` slowing down exponentially when ancestors are shared through several paths. `isa()` also no longer crashes on invalid parents or leaks memory.
+- Fixed duplicate parents, such as `{a, b, b}`, being accepted.
+- Fixed `renumber()` corrupting parent and child lists when an object lists the same parent twice.
+- Fixed `recreate()` accepting an invalid parent, which could crash the server.
+- Fixed reading or assigning a missing property on a waif leaking memory and possibly recycling a waif that was still in use.
+- Fixed waif property assignments sometimes being rejected as self-references when they weren't.
+- Fixed the wizard that emergency mode creates for an empty database having an uninitialized owner. It now owns itself.
+
+#### Server and networking
+- `#0:handle_signal()` now runs from the main loop instead of inside the SIGUSR1/SIGUSR2 handler, where it could corrupt memory or deadlock the server.
+- Fixed a crash on macOS and BSD when a hostname lookup fails, such as for a PROXY-protocol connection.
+- Fixed a crash when closing a TLS listener that had a private key path but no certificate path.
+- Fixed `--tls-port` being ignored. It now works like `-t`.
+- Fixed `push_output()` dropping connections on zero-length writes.
+- Fixed `$server_options.max_map_value_bytes` being ignored in favor of `max_list_value_bytes`.
+- Fix various race conditions and threading bugs / pitfalls.
+- `occupants()` and `locate_by_name()` are no longer threaded functions, as they do unsafe database accesses.
+- Temporarily reenable the emptylist bandaid until we can find the culprit.
+
+#### Build
+- Fixed the build against Nettle 4.0, which dropped the length argument from its `*_digest` functions.
+- Fixed a PCRE2 build issue when TLS support is disabled.
 
 ### New Features
-- Updated the CMake configuration for compatibility with CMake 4.4 policies, eliminated configuration warnings, and moved to C++17.
-- `curl()` now accepts an options map as its second argument, extending it into a full HTTP client: `curl(url, ["method" -> "POST", "json" -> value, ...])`. Recognized options:
+#### Objects and waifs
+- Anonymous children are no longer invalidated when properties change on their parents.
+
+#### curl
+- `curl()` now accepts an options map as its second argument, such as `curl(url, ["method" -> "POST", "json" -> value])`. The options are:
     - `"method"`: `"GET"`, `"HEAD"`, `"POST"`, `"PUT"`, `"PATCH"`, `"DELETE"`, or `"OPTIONS"` (defaults to `"GET"`, or `"POST"` when a body is supplied)
     - `"body"`: a (binary) string sent as the request body
     - `"json"`: any MOO value, serialized as the JSON request body (sets `Content-Type: application/json` unless you provide your own)
-    - `"headers"`: a map of request headers (`["Authorization" -> "Bearer ...", "X-Multi" -> {"a", "b"}]`); names and values are validated so header injection is impossible
+    - `"headers"`: a map of request headers (`["Authorization" -> "Bearer ...", "X-Multi" -> {"a", "b"}]`); names and values are checked to prevent header injection
     - `"timeout"`: seconds, between 1 and `$server_options.curl_max_timeout`
     - `"max_size"`: lower the response size cap for this request
     - `"follow_redirects"`: follow http(s) redirects, which are never followed by default; `1` (or `true`) uses the default limit of 5 hops, a larger integer sets the limit (up to 20)
     - `"parse"`: parse the response body as JSON in common-subset mode
     - `"full"`: return `["status" -> INT, "headers" -> MAP, "body" -> STR|parsed, "url" -> STR]` instead of just the body; repeated response headers accumulate into a list
     - `"include_headers"`: prepend the raw response headers to the body (equivalent to the legacy second argument)
-    - `"user_agent"`: override the User-Agent header
 
   Calls without an options map keep the old behavior.
-- New `CURL_ALLOWED_METHODS` compile-time option (options.h): a comma-separated list restricting which request methods curl may use (checked after the method is fully resolved, so it also covers the implicit POST selected by a `"body"`/`"json"` option). For example, `"GET,HEAD"` makes curl read-only. Defaults to all supported methods.
+- New `CURL_ALLOWED_METHODS` option in options.h limits which request methods curl may use, including the POST implied by `"body"` or `"json"`. For example, `"GET,HEAD"` makes curl read-only. All supported methods are allowed by default.
 - curl responses are capped by `$server_options.curl_max_response_bytes` (default 10MB).
 - curl timeouts are limited by `$server_options.curl_max_timeout` (default 300s), with the default set by `$server_options.curl_timeout`.
-- curl advertises `Accept-Encoding` and transparently decodes compressed responses.
+- curl now requests and decodes compressed responses.
 - curl now uses `ToastStunt/<version>` as its default User-Agent.
 - curl transfers abort promptly during server shutdown.
 - curl sets `CURLOPT_NOSIGNAL` for thread safety.
+
+#### Built-in functions
 - Add an optional unclean_shutdown parameter to `shutdown()`, which replicates the functionality found in the `panic()` builtin.
 - Remove the `panic()` builtin.
-- Anonymous children are no longer invalidated when properties change on their parents.
-- Migrated from PCRE to the PCRE2 library. See the README for updated build instructions.
+- `mapdelete()` and `maphaskey()` now accept anonymous objects as map keys.
+- Flag arguments to `isa()`, `locate_by_name()`, `occupants()`, `locations()`, `explode()`, `sort()`, `queued_tasks()`, `switch_player()`, `set_thread_mode()`, `is_member()`, `maphaskey()`, `file_grep()`, and `pcre_match()` now accept `true` and `false` as well as integers. `function_info()` reports these arguments as type `-3`.
 - JSON null values now map to E_NONE instead of the string "null" when parsing JSON.
 - Allow empty subjects in pcre_match.
 - Add an optional third argument to generate_json to disable binary string escaping.
+
+#### Build
+- The build now supports CMake 4.4 without warnings and uses C++17.
+- Migrated from PCRE to the PCRE2 library. See the README for updated build instructions.
 
 ## 2.7.3 (Jun 20, 2025)
 ### Bug Fixes

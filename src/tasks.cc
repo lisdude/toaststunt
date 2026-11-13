@@ -2289,7 +2289,7 @@ bf_queue_info(Var arglist, Byte next, void *vdata, Objid progr)
             res = mapinsert(res, var_ref(queue_suspended), Var::new_bool(tq->input_suspended));
             res = mapinsert(res, var_ref(queue_usage), Var::new_int(tq->usage));
             res = mapinsert(res, var_ref(queue_num_bg_tasks), Var::new_int(tq->num_bg_tasks));
-            res = mapinsert(res, var_ref(queue_hold_input), Var::new_bool(tq->usage));
+            res = mapinsert(res, var_ref(queue_hold_input), Var::new_bool(tq->hold_input));
             res = mapinsert(res, var_ref(queue_disable_oob), Var::new_bool(tq->disable_oob));
             res = mapinsert(res, var_ref(queue_reading), Var::new_bool(tq->reading));
             res = mapinsert(res, var_ref(queue_parsing), Var::new_bool(tq->parsing));
@@ -2503,7 +2503,7 @@ bf_queued_tasks(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var tasks;
     int nargs = arglist.v.list[0].v.num;
-    bool include_variables = (nargs == 1 && is_true(arglist.v.list[1]));
+    bool include_variables = (nargs >= 1 && is_true(arglist.v.list[1]));
     bool return_count = (nargs == 2 && is_true(arglist.v.list[2]));
     bool show_all = is_wizard(progr);
     tqueue *tq;
@@ -3044,7 +3044,7 @@ void
 register_tasks(void)
 {
     register_function("task_id", 0, 0, bf_task_id);
-    register_function("queued_tasks", 0, 2, bf_queued_tasks, TYPE_INT, TYPE_INT);
+    register_function("queued_tasks", 0, 2, bf_queued_tasks, TYPE_FLAG, TYPE_FLAG);
 #ifdef SAVE_FINISHED_TASKS
     register_function("finished_tasks", 0, 0, bf_finished_tasks);
 #endif
@@ -3059,6 +3059,6 @@ register_tasks(void)
     register_function("set_task_local", 1, 1, bf_set_task_local, TYPE_ANY);
     register_function("task_local", 0, 0, bf_task_local);
     register_function("switch_player", 2, 3, bf_switch_player,
-                      TYPE_OBJ, TYPE_OBJ, TYPE_INT);
-    register_function("set_thread_mode", 0, 1, bf_set_thread_mode, TYPE_INT);
+                      TYPE_OBJ, TYPE_OBJ, TYPE_FLAG);
+    register_function("set_thread_mode", 0, 1, bf_set_thread_mode, TYPE_FLAG);
 }

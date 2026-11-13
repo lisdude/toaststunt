@@ -111,6 +111,11 @@ static int checkpoint_finished = 0; /* 1 = failure, 2 = success */
 
 static bool reopen_logfile_requested = false;
 
+/* Set by the signal handlers and acted on in the main loop.  A handler may
+ * only touch async-signal-safe state; it must not allocate or run MOO code. */
+static volatile sig_atomic_t sigusr1_pending = 0;
+static volatile sig_atomic_t sigusr2_pending = 0;
+
 static void handle_user_defined_signal(int sig);
 
 #ifdef OUTBOUND_NETWORK
@@ -362,7 +367,6 @@ static void
 shutdown_signal(int sig)
 {
     shutdown_triggered = true;
-    shutdown_message << "shutdown signal received";
 }
 
 static void
@@ -376,15 +380,26 @@ static void
 checkpoint_signal(int sig)
 {
     checkpoint_requested = CHKPT_SIGNAL;
-
-    signal(sig, handle_user_defined_signal);
 }
 
+static void
+user_defined_signal_received(int sig)
+{
+    if (sig == SIGUSR1)
+        sigusr1_pending = 1;
+    else if (sig == SIGUSR2)
+        sigusr2_pending = 1;
+
+    signal(sig, user_defined_signal_received);
+}
+
+/* Called from the main loop, not in signal context. */
 static void
 handle_user_defined_signal(int sig)
 {
     Var args, result;
 
+    result.type = TYPE_INT;   /* not written unless the task completes */
     args = new_list(1);
     args.v.list[1].type = TYPE_STR;
     args.v.list[1].v.str = str_dup(sig == SIGUSR1 ? "SIGUSR1" : "SIGUSR2");
@@ -471,8 +486,8 @@ setup_signals(void)
 
     signal(SIGINT, shutdown_signal);
     signal(SIGTERM, shutdown_signal);
-    signal(SIGUSR1, handle_user_defined_signal);
-    signal(SIGUSR2, handle_user_defined_signal);
+    signal(SIGUSR1, user_defined_signal_received);
+    signal(SIGUSR2, user_defined_signal_received);
 
     signal(SIGCHLD, child_completed_signal);
 }
@@ -796,6 +811,18 @@ main_loop(void)
 
     /* Now, we enter the main server loop */
     while (!shutdown_triggered) {
+        /* Before GC: SIGUSR2 may request a checkpoint, which collects first.
+         * Before next_task_start(): #0:handle_signal may queue a task.
+         */
+        if (sigusr1_pending) {
+            sigusr1_pending = 0;
+            handle_user_defined_signal(SIGUSR1);
+        }
+        if (sigusr2_pending) {
+            sigusr2_pending = 0;
+            handle_user_defined_signal(SIGUSR2);
+        }
+
         /* Check how long we have until the next task will be ready to run.
          * We only care about three cases (== 0, == 1, and > 1), so we can
          * map a `never' result from the task subsystem into 2.
@@ -925,6 +952,9 @@ main_loop(void)
             all_shandles_mutex.unlock();
         }
     }
+
+    if (shutdown_message.str().empty())
+        shutdown_message << "shutdown signal received";
 
     applog(LOG_WARNING, "SHUTDOWN: %s\n", shutdown_message.str().c_str());
     send_shutdown_message(shutdown_message.str().c_str());

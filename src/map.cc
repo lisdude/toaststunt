@@ -1036,10 +1036,12 @@ bf_mapdelete(Var arglist, Byte next, void *vdata, Objid progr)
                 stream_add_string(s, " not found in map");
                 const char *msg = str_dup(stream_contents(s));
                 free_stream(s);
-                
+
+                /* `key' belongs to arglist; take our own reference before freeing it. */
+                Var value = var_ref(key);
                 free_var(r);
                 free_var(arglist);
-                return make_raise_pack(E_RANGE, msg, var_dup(key));
+                return make_raise_pack(E_RANGE, msg, value);
             }
         }
     } else {
@@ -1144,5 +1146,5 @@ register_map(void)
     register_function("mapdelete", 2, 2, bf_mapdelete, TYPE_MAP, TYPE_ANY);
     register_function("mapkeys", 1, 1, bf_mapkeys, TYPE_MAP);
     register_function("mapvalues", 1, -1, bf_mapvalues, TYPE_MAP);
-    register_function("maphaskey", 2, 3, bf_maphaskey, TYPE_MAP, TYPE_ANY, TYPE_INT);
+    register_function("maphaskey", 2, 3, bf_maphaskey, TYPE_MAP, TYPE_ANY, TYPE_FLAG);
 }

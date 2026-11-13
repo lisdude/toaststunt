@@ -7,7 +7,7 @@
 0 suspended tasks
 0 interrupted tasks
 0 active connections with listeners
-4
+5
 #0
 System Object
 16
@@ -92,25 +92,47 @@ Wizard
 0
 0
 0
+#4
+
+0
+3
+1
+-1
+10
+0
+4
 0
 1
+-1
+4
+0
+1
+recycle
+3
+172
+-1
+0
+0
+0
+2
 #0:0
 server_log("----------------------------------------------------------------------");
 server_log("Creates garbage and shuts down.  The garbage will be in the pending   ");
-server_log("anonymous objects as #4.  There will also be an object #4.  When the  ");
+server_log("anonymous objects as #5.  There will also be an object #5.  When the  ");
 server_log("server restarts from the dumped database, the pending object will be  ");
 server_log("recycled.                                                             ");
 server_log("----------------------------------------------------------------------");
 suspend(0);
 try
 try
-l = {o = create(#-1, 1)};
-add_verb(o, {task_perms(), "xd", "recycle"}, {"this", "none", "this"});
-set_verb_code(o, "recycle", {"server_log(\"recycle called\");"});
+l = {o = create(#4, 1)};
 except ex (ANY)
 server_log(toliteral(ex));
 endtry
 finally
 shutdown();
 endtry
+.
+#4:0
+server_log("recycle called");
 .

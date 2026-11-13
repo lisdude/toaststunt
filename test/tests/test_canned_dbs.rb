@@ -46,7 +46,7 @@ class TestCannedDbs < Test::Unit::TestCase
       '---',
       '> 1 values pending finalization',
       '> 12',
-      '> 4'
+      '> 5'
     ]
 
     assert log1.none? { |l| l =~ /recycle called/ }
@@ -65,9 +65,9 @@ class TestCannedDbs < Test::Unit::TestCase
       '---',
       '> 2 values pending finalization',
       '> 12',
-      '> 4',
+      '> 5',
       '> 12',
-      '> 5'
+      '> 6'
     ]
 
     assert log1.none? { |l| l =~ /recycle called/ }
@@ -108,13 +108,13 @@ class TestCannedDbs < Test::Unit::TestCase
       '---',
       '> 1 values pending finalization',
       '> 12',
-      '> 4'
+      '> 5'
     ]
 
     delta3 = [
       '< 1 values pending finalization',
       '< 12',
-      '< 4',
+      '< 5',
       '---',
       '> 0 values pending finalization'
     ]

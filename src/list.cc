@@ -1773,10 +1773,10 @@ register_list(void)
     register_function("listset", 3, 3, bf_listset,
                       TYPE_LIST, TYPE_ANY, TYPE_INT);
     register_function("equal", 2, 2, bf_equal, TYPE_ANY, TYPE_ANY);
-    register_function("explode", 1, 3, bf_explode, TYPE_STR, TYPE_STR, TYPE_INT);
+    register_function("explode", 1, 3, bf_explode, TYPE_STR, TYPE_STR, TYPE_FLAG);
     register_function("reverse", 1, 1, bf_reverse, TYPE_ANY);
     register_function("slice", 1, 3, bf_slice, TYPE_LIST, TYPE_ANY, TYPE_ANY);
-    register_function("sort", 1, 4, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_INT, TYPE_INT);
+    register_function("sort", 1, 4, bf_sort, TYPE_LIST, TYPE_LIST, TYPE_FLAG, TYPE_FLAG);
     register_function("all_members", 2, 2, bf_all_members, TYPE_ANY, TYPE_LIST);
 
     /* string */
