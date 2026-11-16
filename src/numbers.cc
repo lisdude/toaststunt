@@ -775,24 +775,32 @@ bf_reseed_random(Var arglist, Byte next, void *vdata, Objid progr)
     return no_var_pack();
 }
 
-/* Return a random floating point value between 0.0..args[1] or args[1]..args[2] */
+/* Return a random floating point value between 0.0..args[1] or args[1]..args[2], rounded to args[3] decimal places */
 static package
 bf_frandom(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    double fmin = (arglist.v.list[0].v.num > 1 ? arglist.v.list[1].v.fnum : 0.0);
-    double fmax = (arglist.v.list[0].v.num > 1 ? arglist.v.list[2].v.fnum : arglist.v.list[1].v.fnum);
+    int nargs = arglist.v.list[0].v.num;
+    double fmin = (nargs > 1 ? arglist.v.list[1].v.fnum : 0.0);
+    double fmax = (nargs > 1 ? arglist.v.list[2].v.fnum : arglist.v.list[1].v.fnum);
+    bool has_precision = (nargs > 2);
+    Num precision = (has_precision ? arglist.v.list[3].v.num : 0);
 
     free_var(arglist);
+
+    if (has_precision && (precision < 0 || precision > 15))
+        return make_error_pack(E_INVARG);
 
     double f = std::generate_canonical<double, std::numeric_limits<double>::digits>(rng);
     f = fmin + f * (fmax - fmin);
 
-    Var ret;
-    ret.type = TYPE_FLOAT;
-    ret.v.fnum = f;
+    if (has_precision) {
+        double scale = pow(10.0, (double)precision);
+        f = round(f * scale) / scale;
+        double lo = std::min(fmin, fmax), hi = std::max(fmin, fmax);
+        f = std::min(std::max(f, lo), hi);
+    }
 
-    return make_var_pack(ret);
-
+    return make_var_pack(Var::new_float(f));
 }
 
 /* Round numbers to the nearest integer value to args[1] */
@@ -962,7 +970,7 @@ register_numbers(void)
     register_function("abs", 1, 1, bf_abs, TYPE_NUMERIC);
     register_function("random", 0, 2, bf_random, TYPE_INT, TYPE_INT);
     register_function("reseed_random", 0, 0, bf_reseed_random);
-    register_function("frandom", 1, 2, bf_frandom, TYPE_FLOAT, TYPE_FLOAT);
+    register_function("frandom", 1, 3, bf_frandom, TYPE_FLOAT, TYPE_FLOAT, TYPE_INT);
     register_function("round", 1, 1, bf_round, TYPE_FLOAT);
     register_function("random_bytes", 1, 1, bf_random_bytes, TYPE_INT);
     register_function("time", 0, 0, bf_time);
