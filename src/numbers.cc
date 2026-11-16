@@ -20,7 +20,11 @@
 #include <errno.h>
 #include <float.h>
 #include <random>
+#include <chrono>
 #include <limits>
+#include <cstdint>
+#include <vector>
+#include <thread>
 #include <algorithm>
 #include <functional>
 #ifdef __MACH__
@@ -48,15 +52,28 @@
 sosemanuk_key_context key_context;
 sosemanuk_run_context run_context;
 
-static std::mt19937 rng;
+static std::mt19937_64 rng;
 
 static void reseed_rng()
 {
     std::random_device entropy_source;
-    std::seed_seq::result_type data[std::mt19937::state_size];
-    std::generate_n(data, std::mt19937::state_size, std::ref(entropy_source));
+    int stack_marker = 0;
+    std::vector<std::uint32_t> data(std::mt19937_64::state_size * 2 + 8);
+    for (auto &w : data)
+        w = entropy_source();
 
-    std::seed_seq prng_seed(data, data + std::mt19937::state_size);
+    std::uint64_t extra[4] = {
+        (std::uint64_t)std::chrono::high_resolution_clock::now().time_since_epoch().count(),
+        (std::uint64_t)std::chrono::steady_clock::now().time_since_epoch().count(),
+        (std::uint64_t)std::hash<std::thread::id>()(std::this_thread::get_id()),
+        (std::uint64_t)(std::uintptr_t)&stack_marker
+    };
+    for (int i = 0; i < 4; i++) {
+        data[i * 2] ^= (std::uint32_t)extra[i];
+        data[i * 2 + 1] ^= (std::uint32_t)(extra[i] >> 32);
+    }
+
+    std::seed_seq prng_seed(data.begin(), data.end());
     rng.seed(prng_seed);
 }
 
