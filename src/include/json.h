@@ -39,7 +39,7 @@
  * `strict' rejects comments and non-whitespace trailing content.
  * Safe to call from background threads. */
 extern int json_parse_string(const char *str, size_t len, int embedded_types,
-                             int max_depth, int strict, Var *out);
+                             int max_depth, int strict, int disable_binary_escapes, Var *out);
 
 /* Generate JSON text for a MOO value.  Returns a str_dup()'d string
  * (release with free_str()) or nullptr on failure.  Main thread only. */
