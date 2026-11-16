@@ -1825,9 +1825,11 @@ finish_comparison:
                         free_var(base);
                         PUSH_ERROR(E_RANGE);
                     } else {
+                        int f = from.v.num <= to.v.num ? (int)from.v.num : 1;
+                        int t = from.v.num <= to.v.num ? (int)to.v.num : 0;
                         PUSH((base.type == TYPE_STR
-                              ? substr(base, from.v.num, to.v.num)
-                              : sublist(base, from.v.num, to.v.num)));
+                              ? substr(base, f, t)
+                              : sublist(base, f, t)));
                         /* base freed by substr/sublist */
                         free_var(from);
                         free_var(to);
@@ -2384,7 +2386,10 @@ else if (obj.type == TYPE_##t1) {           \
                                 free_var(value);
                                 PUSH_ERROR(E_RANGE);
                             } else {
-                                res = listrangeset(base, from.v.num, to.v.num, value);
+                                Num len = base.v.list[0].v.num;
+                                Num f = from.v.num < 1 ? 1 : from.v.num;
+                                Num t = to.v.num > len ? len : to.v.num;
+                                res = listrangeset(base, (int)f, (int)t, value);
                                 if (value_bytes(res) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
                                     PUSH(res);
                                 else {
@@ -2401,7 +2406,10 @@ else if (obj.type == TYPE_##t1) {           \
                                 free_var(value);
                                 PUSH_ERROR(E_RANGE);
                             } else {
-                                res = strrangeset(base, from.v.num, to.v.num, value);
+                                Num len = memo_strlen(base.v.str);
+                                Num f = from.v.num < 1 ? 1 : from.v.num;
+                                Num t = to.v.num > len ? len : to.v.num;
+                                res = strrangeset(base, (int)f, (int)t, value);
                                 if (memo_strlen(res.v.str) <= server_int_option_cached(SVO_MAX_STRING_CONCAT))
                                     PUSH(res);
                                 else {

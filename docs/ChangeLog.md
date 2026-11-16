@@ -3,6 +3,7 @@
 ### Bug Fixes
 - Fixed negative integer powers of -1 returning the wrong sign.
 - Fixed + on lists ignoring max_list_value_bytes.
+- Fixed a crash when using a list or string range with indices larger than 32 bits.
 - `parse_json()` and the parse option in `curl()` now reject JSON objects with duplicate keys instead of silently keeping the first value. This includes keys that differ only in case or become identical after decoding escapes or embedded types.
 
 ## 2.8.0 (Nov 11, 2026)
