@@ -1497,6 +1497,12 @@ finish_comparison:
                     } else {
                         ans = listappend(var_ref(lhs), var_ref(rhs));
                     }
+
+                    if (value_bytes(ans) > server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES)) {
+                        free_var(ans);
+                        ans.type = TYPE_ERR;
+                        ans.v.err = E_QUOTA;
+                    }
                 } else {
                     ans.type = TYPE_ERR;
                     ans.v.err = E_TYPE;
