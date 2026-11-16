@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <float.h>
 #include <random>
+#include <limits>
 #include <algorithm>
 #include <functional>
 #ifdef __MACH__
@@ -766,7 +767,7 @@ bf_frandom(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
 
-    double f = (double)rand() / RAND_MAX;
+    double f = std::generate_canonical<double, std::numeric_limits<double>::digits>(rng);
     f = fmin + f * (fmax - fmin);
 
     Var ret;
