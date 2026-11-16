@@ -809,7 +809,7 @@ int pcrs_execute(pcrs_job *job, const char *subject, size_t subject_length, char
 
       /* chunk after match */
       matches[i].submatch_offset[PCRS_MAX_SUBMATCHES + 1] = (int)offsets[1];
-      matches[i].submatch_length[PCRS_MAX_SUBMATCHES + 1] = subject_length - (size_t)offsets[1] - 1;
+      matches[i].submatch_length[PCRS_MAX_SUBMATCHES + 1] = subject_length - (size_t)offsets[1];
       newsize += (subject_length - (size_t)offsets[1]) * (size_t)job->substitute->backref_count[PCRS_MAX_SUBMATCHES + 1];
 
       /* Storage for matches exhausted? -> Extend! */
@@ -893,8 +893,9 @@ int pcrs_execute(pcrs_job *job, const char *subject, size_t subject_length, char
          if (k != job->substitute->backrefs
              /* ..in legal range.. */
              && job->substitute->backref[k] < PCRS_MAX_SUBMATCHES + 2
-             /* ..and referencing a real submatch.. */
-             && job->substitute->backref[k] < matches[i].submatches
+             /* ..and referencing a real submatch, or the pre/post-match chunk.. */
+             && (job->substitute->backref[k] < matches[i].submatches
+                 || job->substitute->backref[k] >= PCRS_MAX_SUBMATCHES)
              /* ..that is nonempty.. */
              && matches[i].submatch_length[job->substitute->backref[k]] > 0)
          {
