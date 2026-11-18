@@ -23,6 +23,7 @@
 #define WAIF_h
 
 #include <unordered_map>
+#include <vector>
 
 #define WAIF_PROP_PREFIX	':'
 #define WAIF_VERB_PREFIX	':'
@@ -46,7 +47,8 @@ extern void free_waif(Waif *);
 extern Waif *dup_waif(Waif *);
 extern enum error waif_get_prop(Waif *, const char *, Var *, Objid progr);
 extern enum error waif_put_prop(Waif *, const char *, Var, Objid progr);
-extern int waif_bytes(Waif *);
+extern int waif_bytes(Waif *, int depth);
+extern int waif_shallow_bytes(Waif *, std::vector<Var> &kids);
 extern void waif_before_saving();
 extern void waif_after_saving();
 extern void waif_before_loading();

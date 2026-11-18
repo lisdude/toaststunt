@@ -36,7 +36,7 @@ extern Var setremove(Var list, Var value);
 extern Var sublist(Var list, int lower, int upper);
 extern int listequal(Var lhs, Var rhs, int case_matters);
 
-extern int list_sizeof(Var *list);
+extern int list_sizeof(Var *list, int depth);
 
 typedef int (*listfunc) (Var value, void *data, int first);
 extern int listforeach(Var list, listfunc func, void *data);

@@ -81,6 +81,7 @@ extern Var get_system_property(const char *);
 extern Objid get_system_object(const char *);
 
 extern int value_bytes(Var);
+extern int value_bytes_depth(Var, int depth);
 
 extern void stream_add_raw_bytes_to_clean(Stream *, const char *buffer, int buflen);
 extern const char *raw_bytes_to_clean(const char *buffer, int buflen);

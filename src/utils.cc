@@ -20,6 +20,8 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include <unordered_map>
+#include <vector>
 
 #include "config.h"
 #include "db.h"
@@ -606,8 +608,129 @@ get_system_object(const char *name)
         return value.v.obj;
 }
 
+/* Past this nesting depth, value_bytes_deep() sizes the value without
+ * recursing on the C stack.
+ */
+#define VALUE_BYTES_MAX_DEPTH 256
+
+static inline int
+scalar_bytes(Var v)
+{
+    int size = sizeof(Var);
+
+    if (v.type == TYPE_STR)
+        size += memo_strlen(v.v.str) + 1;
+    else if (v.type == TYPE_FLOAT)
+        size += sizeof(double);
+
+    return size;
+}
+
+static inline bool
+is_sized_container(Var v)
+{
+    return v.type == TYPE_LIST || v.type == TYPE_MAP || v.type == TYPE_WAIF;
+}
+
+static inline const void *
+container_ptr(Var v)
+{
+    return v.type == TYPE_LIST ? (const void *) v.v.list
+           : v.type == TYPE_MAP ? (const void *) v.v.tree
+           : (const void *) v.v.waif;
+}
+
+#ifdef MEMO_SIZE
+static inline uint32_t &
+container_memo(Var v)   /* only for lists and maps */
+{
+    return ((var_metadata *) container_ptr(v))[-1].size;
+}
+#endif
+
+struct bytes_frame {
+    Var v;
+    std::vector<Var> kids;  /* maps and waifs only; lists are walked in place */
+    size_t next;
+    int shallow;
+    int acc;
+};
+
+/* Same result as the recursive path, including the memoized sizes. */
+static int
+value_bytes_deep(Var root)
+{
+    /* Sizes of finished containers that have no memo (waifs, or everything
+     * without MEMO_SIZE), so shared substructure is walked once. */
+    std::unordered_map<const void *, int> done;
+    std::vector<bytes_frame> stack;
+
+    auto open = [&](Var v) {
+        bytes_frame f;
+        f.v = v;
+        f.next = 0;
+        f.acc = 0;
+        if (v.type == TYPE_LIST)
+            f.shallow = sizeof(Var);    /* for the `length' element */
+        else if (v.type == TYPE_MAP)
+            f.shallow = map_shallow_bytes(v.v.tree, f.kids);
+        else
+            f.shallow = waif_shallow_bytes(v.v.waif, f.kids);
+        stack.push_back(std::move(f));
+    };
+
+    open(root);
+    for (;;) {
+        bytes_frame &f = stack.back();
+        size_t nkids = f.v.type == TYPE_LIST ? (size_t) f.v.v.list[0].v.num
+                       : f.kids.size();
+
+        if (f.next < nkids) {
+            Var c = f.v.type == TYPE_LIST ? f.v.v.list[++f.next]
+                    : f.kids[f.next++];
+
+            if (!is_sized_container(c)) {
+                f.acc += scalar_bytes(c);
+                continue;
+            }
+
+            int known = 0;
+#ifdef MEMO_SIZE
+            if (c.type != TYPE_WAIF)
+                known = container_memo(c);
+            else
+#endif
+            {
+                auto it = done.find(container_ptr(c));
+                if (it != done.end())
+                    known = it->second;
+            }
+            if (known)
+                f.acc += sizeof(Var) + known;
+            else
+                open(c);    /* invalidates `f' */
+            continue;
+        }
+
+        int total = f.shallow + f.acc;
+        Var v = f.v;
+
+#ifdef MEMO_SIZE
+        if (v.type != TYPE_WAIF)
+            container_memo(v) = total;
+        else
+#endif
+            done[container_ptr(v)] = total;
+        stack.pop_back();
+
+        if (stack.empty())
+            return sizeof(Var) + total;
+        stack.back().acc += sizeof(Var) + total;
+    }
+}
+
 int
-value_bytes(Var v)
+value_bytes_depth(Var v, int depth)
 {
     int size = sizeof(Var);
 
@@ -619,19 +742,31 @@ value_bytes(Var v)
             size += sizeof(double);
             break;
         case TYPE_LIST:
-            size += list_sizeof(v.v.list);
+            if (depth >= VALUE_BYTES_MAX_DEPTH)
+                return value_bytes_deep(v);
+            size += list_sizeof(v.v.list, depth);
             break;
         case TYPE_MAP:
-            size += map_sizeof(v.v.tree);
+            if (depth >= VALUE_BYTES_MAX_DEPTH)
+                return value_bytes_deep(v);
+            size += map_sizeof(v.v.tree, depth);
             break;
         case TYPE_WAIF:
-            size += waif_bytes(v.v.waif);
+            if (depth >= VALUE_BYTES_MAX_DEPTH)
+                return value_bytes_deep(v);
+            size += waif_bytes(v.v.waif, depth);
             break;
         default:
             break;
     }
 
     return size;
+}
+
+int
+value_bytes(Var v)
+{
+    return value_bytes_depth(v, 0);
 }
 
 void

@@ -522,7 +522,7 @@ unparse_value(Stream * s, Var v)
 
 /* called from utils.c */
 int
-list_sizeof(Var *list)
+list_sizeof(Var *list, int depth)
 {
 #ifdef MEMO_SIZE
     var_metadata *metadata = ((var_metadata*)list) - 1;
@@ -537,7 +537,7 @@ list_sizeof(Var *list)
     size = sizeof(Var); /* for the `length' element */
     len = list[0].v.num;
     for (i = 1; i <= len; i++) {
-        size += value_bytes(list[i]);
+        size += value_bytes_depth(list[i], depth + 1);
     }
 
 #ifdef MEMO_SIZE

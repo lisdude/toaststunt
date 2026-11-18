@@ -27,6 +27,8 @@
   policies, either expressed or implied, of Todd Sundsted.
  *****************************************************************************/
 
+#include <vector>
+
 #include "structures.h"
 
 extern Var new_map(void);
@@ -41,7 +43,8 @@ extern int mapequal(Var lhs, Var rhs, int case_matters);
 extern Num maplength(Var map);
 extern int mapempty(Var map);
 
-extern int map_sizeof(rbtree *tree);
+extern int map_sizeof(rbtree *tree, int depth);
+extern int map_shallow_bytes(rbtree *tree, std::vector<Var> &kids);
 
 extern int mapfirst(Var map, var_pair *pair);
 extern int maplast(Var map, var_pair *pair);

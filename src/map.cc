@@ -646,7 +646,7 @@ map_dup(Var map)
 
 /* called from utils.c */
 int
-map_sizeof(rbtree *tree)
+map_sizeof(rbtree *tree, int depth)
 {
 #ifdef MEMO_SIZE
     var_metadata *metadata = ((var_metadata*)tree) - 1;
@@ -663,13 +663,31 @@ map_sizeof(rbtree *tree)
     size = sizeof(rbtree);
     for (pnode = rbtfirst(&trav, tree); pnode; pnode = rbtnext(&trav)) {
         size += sizeof(rbnode) - 2 * sizeof(Var);
-        size += value_bytes(pnode->key);
-        size += value_bytes(pnode->value);
+        size += value_bytes_depth(pnode->key, depth + 1);
+        size += value_bytes_depth(pnode->value, depth + 1);
     }
 
 #ifdef MEMO_SIZE
     metadata->size = size;
 #endif
+
+    return size;
+}
+
+/* called from value_bytes_deep(): size of the map itself, with its keys and
+ * values appended to `kids' */
+int
+map_shallow_bytes(rbtree *tree, std::vector<Var> &kids)
+{
+    rbtrav trav;
+    const rbnode *pnode;
+    int size = sizeof(rbtree);
+
+    for (pnode = rbtfirst(&trav, tree); pnode; pnode = rbtnext(&trav)) {
+        size += sizeof(rbnode) - 2 * sizeof(Var);
+        kids.push_back(pnode->key);
+        kids.push_back(pnode->value);
+    }
 
     return size;
 }

@@ -822,7 +822,7 @@ waif_put_prop(Waif *w, const char *name, Var val, Objid progr)
 /* Called from value_bytes()
  */
 int
-waif_bytes(Waif *w)
+waif_bytes(Waif *w, int depth)
 {
     int len;
     int cnt;
@@ -836,7 +836,23 @@ waif_bytes(Waif *w)
     len = sizeof(Waif);
     cnt = count_waif_propvals(w);
     while (cnt--)
-        len += value_bytes(w->propvals[cnt]);
+        len += value_bytes_depth(w->propvals[cnt], depth + 1);
+    return len;
+}
+
+/* Called from value_bytes_deep(): size of the waif itself, with its property
+ * values appended to `kids'.
+ */
+int
+waif_shallow_bytes(Waif *w, std::vector<Var> &kids)
+{
+    int len = sizeof(Waif);
+    int cnt;
+
+    update_waif_propdefs(w);
+    cnt = count_waif_propvals(w);
+    while (cnt--)
+        kids.push_back(w->propvals[cnt]);
     return len;
 }
 
