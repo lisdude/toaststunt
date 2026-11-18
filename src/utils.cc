@@ -19,6 +19,7 @@
 
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unordered_map>
 #include <vector>
@@ -133,6 +134,84 @@ aux_free(Var v)
     }
 }
 
+/* Past FREE_MAX_DEPTH levels of nesting, dead containers go on a per-thread
+ * worklist drained by the outermost release_container() call, so freeing a
+ * deeply nested value doesn't recurse on the C stack.
+ */
+#define FREE_MAX_DEPTH 256
+
+/* No constructor, so thread_local access needs no initialization guard. */
+struct free_state {
+    int depth;          /* nesting of release_container() calls */
+    Var *deferred;      /* containers waiting for the outermost call */
+    size_t ndeferred;
+    size_t capdeferred;
+};
+
+static thread_local free_state free_st;
+
+/* Free a list or map whose refcount has reached zero. */
+static inline void
+destroy_container(Var v)
+{
+    if (v.type == TYPE_LIST) {
+        destroy_list(v);
+#ifdef ENABLE_GC
+        gc_set_color(v.v.list, GC_BLACK);
+        if (!gc_is_buffered(v.v.list))
+            myfree(v.v.list, M_LIST);
+#endif
+    } else {
+        destroy_map(v);
+#ifdef ENABLE_GC
+        gc_set_color(v.v.tree, GC_BLACK);
+        if (!gc_is_buffered(v.v.tree))
+            myfree(v.v.tree, M_TREE);
+#endif
+    }
+}
+
+static void
+defer_container(free_state *st, Var v)
+{
+    if (st->ndeferred == st->capdeferred) {
+        size_t cap = st->capdeferred ? st->capdeferred * 2 : 1024;
+        Var *p = (Var *) realloc(st->deferred, cap * sizeof(Var));
+
+        if (p == nullptr)
+            panic_moo("RELEASE_CONTAINER: out of memory");
+        st->deferred = p;
+        st->capdeferred = cap;
+    }
+    st->deferred[st->ndeferred++] = v;
+}
+
+static void
+release_container(Var v)
+{
+    free_state *st = &free_st;
+
+    if (st->depth >= FREE_MAX_DEPTH) {
+        defer_container(st, v);
+        return;
+    }
+
+    bool outermost = (st->depth == 0);
+
+    st->depth++;
+    destroy_container(v);
+    if (outermost) {
+        while (st->ndeferred > 0)
+            destroy_container(st->deferred[--st->ndeferred]);
+        if (st->capdeferred > 1024) {   /* don't hang on to a huge buffer */
+            free(st->deferred);
+            st->deferred = nullptr;
+            st->capdeferred = 0;
+        }
+    }
+    st->depth--;
+}
+
 #ifdef ENABLE_GC
 /* Corresponds to `Decrement' and `Release' in Bacon and Rajan. */
 void
@@ -144,22 +223,14 @@ complex_free_var(Var v)
                 free_str(v.v.str);
             break;
         case TYPE_LIST:
-            if (v.v.list != emptylist.v.list && delref(v.v.list) == 0) {
-                destroy_list(v);
-                gc_set_color(v.v.list, GC_BLACK);
-                if (!gc_is_buffered(v.v.list))
-                    myfree(v.v.list, M_LIST);
-            }
+            if (v.v.list != emptylist.v.list && delref(v.v.list) == 0)
+                release_container(v);
             else
                 gc_possible_root(v);
             break;
         case TYPE_MAP:
-            if (delref(v.v.tree) == 0) {
-                destroy_map(v);
-                gc_set_color(v.v.tree, GC_BLACK);
-                if (!gc_is_buffered(v.v.tree))
-                    myfree(v.v.tree, M_TREE);
-            }
+            if (delref(v.v.tree) == 0)
+                release_container(v);
             else
                 gc_possible_root(v);
             break;
@@ -217,11 +288,11 @@ complex_free_var(Var v)
             break;
         case TYPE_LIST:
             if (v.v.list != emptylist.v.list && delref(v.v.list) == 0)
-                destroy_list(v);
+                release_container(v);
             break;
         case TYPE_MAP:
             if (delref(v.v.tree) == 0)
-                destroy_map(v);
+                release_container(v);
             break;
         case TYPE_ITER:
             if (delref(v.v.trav) == 0)
