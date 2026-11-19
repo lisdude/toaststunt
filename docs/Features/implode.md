@@ -33,20 +33,16 @@ Element conversion happens inside the engine. If a database customizes or
 restricts `tostr()` through `protect_tostr`, review that policy before switching
 callers since the reference verb calls `tostr()` explicitly.
 
-The engine appends converted elements and separators into one growable stream.
-It does not repeatedly copy the accumulated string as the reference MOO loop does.
-`implode()` charges the normal builtin-call tick cost, not a tick per element; CPU
-work still grows with the output size. Large inputs can therefore use substantial
-CPU within one call, as with `tostr(@values)`.
+The engine appends converted elements and separators into one growable stream,
+avoiding the repeated copying of the reference MOO loop.
 
 ## Compatibility rollout snippet
 
 For a reviewed `$string_utils:from_list` whose body matches the reference below,
 this wrapper delegates only list inputs. Other inputs retain the original body,
 including `from_list("ab", "-") => "a-b"` and `from_list("ab") => E_TYPE`.
-The [standalone verb body](implode_from_list_compat.moo) is also exercised by the
-differential tests. Install manually only after reviewing the actual destination verb. No callers or
-live database verbs are changed by this engine patch.
+The [standalone verb body](implode_from_list_compat.moo) can be used after
+reviewing the destination verb.
 
 ```moo
 if (args && typeof(args[1]) == LIST)
@@ -67,34 +63,3 @@ endif
 ```
 
 Only callers with a known list should switch directly to `implode()`.
-
-## Tests and benchmark
-
-```bash
-python3 test/implode_integration.py /absolute/path/to/moo test/Test.db
-python3 test/implode_integration.py /absolute/path/to/moo /absolute/path/to/toastcore.db
-python3 test/benchmark_implode.py /absolute/path/to/moo /absolute/path/to/toastcore.db /tmp/implode-results.json
-python3 test/benchmark_implode.py /absolute/path/to/moo /absolute/path/to/toastcore.db /tmp/implode-10000.json --elements 10000
-python3 test/benchmark_implode.py /absolute/path/to/moo /absolute/path/to/toastcore.db /tmp/implode-matrix.json --elements 1 10 100 1000 --widths 1 10 100
-```
-
-The Python scripts need only the standard library and a compatible database with
-`$server_options` and `$waif`. They create a disposable output database and private
-loopback handler, disable outbound connections, and leave the input unchanged.
-The integration script compares against the exact reference verb, checks list-only
-argument validation, and exercises both catchable and task-aborting string limits.
-
-The benchmark waits 60 seconds after startup, uses the same Release binary for
-both paths, pins the MOO to one allowed CPU, and alternates measurement order.
-By default it compares five- and 1,000-element lists with comma-space and empty
-separators; `--elements` selects other list sizes. `--widths` selects string
-element lengths, filled with repeated `x` characters; without it the original
-six-character `Ab~00 ` elements are used.
-Each path is calibrated separately to approximately 0.15 CPU seconds per sample,
-with three warmups and 16 measured samples. The reported CPU time per call includes
-the common driver loop and call overhead. Tick counts are measured separately
-using `ticks_left()`; they are not CPU timings. Foreground quotas and the string
-limit are raised only in the disposable benchmark database. Input and executable
-SHA256 hashes and all samples are retained in the JSON output.
-
-Measured CPU/tick results and validation are recorded in [the benchmark report](implode_benchmark.md).
