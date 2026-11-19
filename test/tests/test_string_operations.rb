@@ -2,6 +2,14 @@ require 'test_helper'
 
 class TestStringOperations < Test::Unit::TestCase
 
+  def test_that_implode_converts_values_and_preserves_blank_elements
+    run_test_as('programmer') do
+      assert_equal ' | 42 | ', evaluate('implode({"", 42, ""}, " | ")')
+      assert_equal 'ab', evaluate('implode({"a", "b"})')
+      assert_equal E_TYPE, evaluate('implode("ab", "-")')
+    end
+  end
+
   def test_that_index_finds_position_of_substring_in_a_string
     run_test_as('programmer') do
       assert_equal 0, index('foobar', 'x')
