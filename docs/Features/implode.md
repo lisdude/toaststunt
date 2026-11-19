@@ -41,8 +41,6 @@ avoiding the repeated copying of the reference MOO loop.
 For a reviewed `$string_utils:from_list` whose body matches the reference below,
 this wrapper delegates only list inputs. Other inputs retain the original body,
 including `from_list("ab", "-") => "a-b"` and `from_list("ab") => E_TYPE`.
-The [standalone verb body](implode_from_list_compat.moo) can be used after
-reviewing the destination verb.
 
 ```moo
 if (args && typeof(args[1]) == LIST)
