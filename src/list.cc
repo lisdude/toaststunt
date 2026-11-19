@@ -1186,6 +1186,36 @@ bf_tostr(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
+bf_implode(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    package p;
+    Stream *s = new_stream(100);
+    Var values = arglist.v.list[1];
+    bool has_separator = arglist.v.list[0].v.num == 2
+        && (arglist.v.list[2].type != TYPE_STR || arglist.v.list[2].v.str[0] != '\0');
+
+    TRY_STREAM;
+    try {
+        for (Num i = 1; i <= listlength(values); i++) {
+            if (i > 1 && has_separator)
+                stream_add_tostr(s, arglist.v.list[2]);
+            stream_add_tostr(s, values.v.list[i]);
+        }
+        Var r;
+        r.type = TYPE_STR;
+        r.v.str = str_dup(stream_contents(s));
+        p = make_var_pack(r);
+    }
+    catch (stream_too_big& exception) {
+        p = make_space_pack();
+    }
+    ENDTRY_STREAM;
+    free_stream(s);
+    free_var(arglist);
+    return p;
+}
+
+static package
 bf_toliteral(Var arglist, Byte next, void *vdata, Objid progr)
 {
     package p;
@@ -1781,6 +1811,7 @@ register_list(void)
 
     /* string */
     register_function("tostr", 0, -1, bf_tostr);
+    register_function("implode", 1, 2, bf_implode, TYPE_LIST, TYPE_ANY);
     register_function("toliteral", 1, 1, bf_toliteral, TYPE_ANY);
     setup_pattern_cache();
     register_function("match", 2, 3, bf_match, TYPE_STR, TYPE_STR, TYPE_ANY);
