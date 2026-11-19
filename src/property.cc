@@ -20,6 +20,7 @@
 #include "list.h"
 #include "storage.h"
 #include "utils.h"
+#include "waif.h"
 
 struct prop_data {
     Var r;
@@ -329,6 +330,49 @@ bf_is_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
         return make_error_pack(e);
 }
 
+static package
+bf_property_exists(Var arglist, Byte next, void *vdata, Objid progr)
+{   /* (object, prop-name [, direct-only]) */
+    Var obj = arglist.v.list[1];
+    const char *pname = arglist.v.list[2].v.str;
+    int direct = 0;
+    db_prop_handle h;
+    Var r;
+
+    if (arglist.v.list[0].v.num == 3)
+        direct = is_true(arglist.v.list[3]);
+
+    if (obj.type == TYPE_WAIF) {
+        int exists;
+        enum error e = waif_property_exists(obj.v.waif, pname, direct, progr, &exists);
+        free_var(arglist);
+        return e == E_NONE ? make_var_pack(Var::new_int(exists)) : make_error_pack(e);
+    }
+
+    if (!obj.is_object()) {
+        free_var(arglist);
+        return make_error_pack(E_TYPE);
+    }
+    else if (!is_valid(obj)) {
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
+    }
+
+    h = db_find_property(obj, pname, nullptr);
+
+    if (!h.ptr)
+        r = Var::new_int(0);
+    else if (!db_is_property_built_in(h) && !db_property_allows(h, progr, PF_READ)) {
+        free_var(arglist);
+        return make_error_pack(E_PERM);
+    }
+    else
+        r = Var::new_int(!direct || db_is_property_defined_on(h, obj));
+
+    free_var(arglist);
+    return make_var_pack(r);
+}
+
 void
 register_property(void)
 {
@@ -346,4 +390,6 @@ register_property(void)
                              TYPE_ANY, TYPE_STR);
     (void) register_function("is_clear_property", 2, 2, bf_is_clear_prop,
                              TYPE_ANY, TYPE_STR);
+    (void) register_function("property_exists", 2, 3, bf_property_exists,
+                             TYPE_ANY, TYPE_STR, TYPE_INT);
 }
