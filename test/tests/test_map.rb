@@ -126,6 +126,20 @@ class TestMap < Test::Unit::TestCase
     end
   end
 
+  def test_chained_indexed_assignment_updates_both_map_keys
+    run_test_as('programmer') do
+      assert_equal([1, 1, 1], simplify(command(
+        '; m = ["a" -> 0, "b" -> 0]; result = (m["a"] = m["b"] = 1); return {m["a"], m["b"], result};'
+      )))
+      assert_equal([2, 7, 7], simplify(command(
+        '; m = [1 -> 0, 2 -> 0]; i = 0; m[i = i + 1] = m[i = i + 1] = 7; return {i, m[1], m[2]};'
+      )))
+      assert_equal([3, 3, 0], simplify(command(
+        '; m = ["part" -> ["a" -> 0, "b" -> 0]]; old = m; m["part"]["a"] = m["part"]["b"] = 3; return {m["part"]["a"], m["part"]["b"], old["part"]["b"]};'
+      )))
+    end
+  end
+
   def test_that_indexed_access_on_objects_mutates_those_objects
     run_test_as('programmer') do
       o = create(:nothing)

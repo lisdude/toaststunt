@@ -115,6 +115,82 @@ class TestIndexAndRangeExtensions < Test::Unit::TestCase
     end
   end
 
+  def test_indexed_assignment_preserves_writes_from_either_expression
+    run_test_as('programmer') do
+      assert_equal [3, 1], eval('m = ["a" -> 0, "b" -> 0]; m["a"] = (m["b"] = 1) + 2; return {m["a"], m["b"]};')
+      assert_equal [2, 1], eval('m = ["a" -> 0, "b" -> 0]; m["a"] = (m["b"] = 1) ? 2 | 9; return {m["a"], m["b"]};')
+      assert_equal [2, 1], eval('m = ["a" -> 0, "b" -> 0]; m[(m["b"] = 1) ? "a" | "b"] = 2; return {m["a"], m["b"]};')
+      assert_equal [1, 0, 0, 1], eval('m = ["a" -> 0, "b" -> 0]; n = m; m["a"] = n["b"] = 1; return {m["a"], m["b"], n["a"], n["b"]};')
+    end
+  end
+
+  def test_indexed_and_ranged_assignment_preserve_writes_for_all_container_types
+    run_test_as('programmer') do
+      assert_equal [1, 1], eval('l = {0, 0}; l[1] = l[2] = 1; return l;')
+      assert_equal 'xx', eval('s = "ab"; s[1] = s[2] = "x"; return s;')
+      assert_equal [1, 2, 1, 2], eval('l = {0, 0, 0, 0}; l[1..2] = l[3..4] = {1, 2}; return l;')
+      assert_equal 'xyxy', eval('s = "abcd"; s[1..2] = s[3..4] = "xy"; return s;')
+      assert_equal [1, 4], eval('m = [1 -> 0, 2 -> 0]; m[1] = length(m[2..2] = [2 -> 4]); return {m[1], m[2]};')
+      assert_equal [10, 1, 30], eval('l = {10, 20}; l[$] = length(l[3..2] = {30}); return l;')
+      assert_equal [1, 1], eval('m = ["part" -> {0, 0}]; m["part"][1] = m["part"][2] = 1; return m["part"];')
+      assert_equal [1, 1], eval('l = {["a" -> 0, "b" -> 0]}; l[1]["a"] = l[1]["b"] = 1; return {l[1]["a"], l[1]["b"]};')
+      assert_equal [7, 1], eval('l = {{0}, {0}}; l[l[2][1] = 1][1] = 7; return {l[1][1], l[2][1]};')
+      assert_equal [5, 6, 0], eval('l = {{0, 0}}; old = l; l[1][1..1] = {l[1][2] = 6, 5}[2..2]; return {l[1][1], l[1][2], old[1][2]};')
+    end
+  end
+
+  def test_indexed_property_assignment_preserves_writes_from_other_verbs
+    run_test_as('programmer') do
+      o = create(:nothing)
+      add_property(o, 'p', {'a' => 0, 'b' => 0}, [player, ''])
+      add_verb(o, [player, 'xd', 'change'], ['this', 'none', 'this'])
+      set_verb_code(o, 'change', ['this.p["b"] = this.p["b"] + 1;', 'return 3;'])
+
+      assert_equal [1, 1], eval(%Q{o = #{o}; o.p["a"] = o.("P")["b"] = 1; return {o.p["a"], o.p["b"]};})
+      assert_equal [3, 2], eval(%Q{o = #{o}; o.p["a"] = o:change(); return {o.p["a"], o.p["b"]};})
+      assert_equal [4, 3], eval(%Q{o = #{o}; o.p[o:change() ? "a" | "b"] = 4; return {o.p["a"], o.p["b"]};})
+      assert_equal [5, 4], eval(<<~MOO.tr("\n", " "))
+        o = #{o};
+        fork (0)
+          o:change();
+        endfork
+        o.p["a"] = {suspend(0), 5}[2];
+        return {o.p["a"], o.p["b"]};
+      MOO
+    end
+  end
+
+  def test_indexed_assignment_handles_a_removed_intermediate_key
+    run_test_as('programmer') do
+      o = create(:nothing)
+      add_verb(o, [player, 'x', 'assign'], ['this', 'none', 'this'])
+      set_verb_code(o, 'assign', [
+        'm = ["part" -> ["a" -> 0]];',
+        'result = (m["part"]["a"] = length(m = []));',
+        'return {result, length(m)};'
+      ])
+      assert_equal [E_RANGE, 0], call(o, 'assign')
+      assert_match(/m\["part"\]\["a"\] = length\(m = \[\]\)/, verb_code(o, 'assign').join("\n"))
+      assert disassemble(o, 'assign').any? { |line| line.include?('REFRESH_LVALUE') }
+      assert_equal [E_RANGE, 0], eval(<<~MOO.tr("\n", " "))
+        m = ["part" -> ["a" -> 0]];
+        try
+          m["part"]["a"] = length(m = []);
+        except error (E_RANGE)
+          return {error[1], length(m)};
+        endtry
+      MOO
+    end
+  end
+
+  def test_indexed_waif_property_assignment_preserves_both_writes
+    run_test_as('programmer') do
+      waif_class = create(:waif)
+      add_property(waif_class, ':data', [0, 0], [player, ''])
+      assert_equal [1, 1], eval(%Q{w = #{waif_class}:new(); w.data[1] = w.data[2] = 1; return w.data;})
+    end
+  end
+
   def test_that_disassemble_works
     run_test_as('programmer') do
       o = create(:nothing)
