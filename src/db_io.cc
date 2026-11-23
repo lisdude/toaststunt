@@ -174,8 +174,12 @@ dbio_read_var(void)
             r.v.str = dbio_read_string_intern();
             r.type = TYPE_STR;
             break;
-        case TYPE_OBJ:
         case TYPE_ERR:
+            /* Older databases may hold stray upper bits; keep the code. */
+            r.v.num = 0;
+            r.v.err = (enum error) dbio_read_num();
+            break;
+        case TYPE_OBJ:
         case TYPE_INT:
         case TYPE_CATCH:
         case TYPE_FINALLY:
@@ -366,8 +370,11 @@ dbio_write_var(Var v)
         case TYPE_STR:
             dbio_write_string(v.v.str);
             break;
-        case TYPE_OBJ:
         case TYPE_ERR:
+            /* Only the enum error part of the union is ever set. */
+            dbio_write_num(v.v.err);
+            break;
+        case TYPE_OBJ:
         case TYPE_INT:
         case TYPE_CATCH:
         case TYPE_FINALLY:
