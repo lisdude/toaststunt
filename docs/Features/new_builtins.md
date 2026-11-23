@@ -6,6 +6,7 @@
     - ftime (precise time, including an argument for monotonic timing)
     - locate_by_name (quickly locate objects by their .name property)
     - usage (returns {load averages}, user time, system time, page reclaims, page faults, block input ops, block output ops, voluntary context switches, involuntary context switches, signals received)
+    - [implode](implode.md) (join list elements using tostr conversions and an optional separator)
     - explode (serverified version of the LambdaCore verb on $string_utils)
     - slice (serverified version of the LambdaCore verb on $list_utils)
     - occupants (return a list of objects of parent parent, optionally with a player flag check)
