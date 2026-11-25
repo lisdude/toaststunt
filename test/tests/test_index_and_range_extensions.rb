@@ -124,6 +124,27 @@ class TestIndexAndRangeExtensions < Test::Unit::TestCase
     end
   end
 
+  def test_indexed_local_assignment_skips_refresh_for_unrelated_writes
+    run_test_as('programmer') do
+      o = create(:nothing)
+      add_verb(o, [player, 'xd', 'assign'], ['this', 'none', 'this'])
+      set_verb_code(o, 'assign', [
+        'l = {0, 0}; i = 0; n = 2;',
+        'l[i = i + 1] = (n = n + 1);',
+        'l[2] = length({n} = {8});',
+        'return {l, i, n};'
+      ])
+      assert_equal [[3, 1], 1, 8], call(o, 'assign')
+      assert_equal [], disassemble(o, 'assign').grep(/REFRESH_LVALUE/)
+    end
+  end
+
+  def test_indexed_local_assignment_refreshes_a_scatter_target
+    run_test_as('programmer') do
+      assert_equal [1, 5], eval('l = {0, 0}; l[1] = length({l} = {{4, 5}}); return l;')
+    end
+  end
+
   def test_indexed_and_ranged_assignment_preserve_writes_for_all_container_types
     run_test_as('programmer') do
       assert_equal [1, 1], eval('l = {0, 0}; l[1] = l[2] = 1; return l;')

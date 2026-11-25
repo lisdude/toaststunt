@@ -16,6 +16,7 @@
  *****************************************************************************/
 
 #include <limits.h>
+#include <vector>
 
 #include "ast.h"
 #include "opcode.h"
@@ -84,6 +85,7 @@ struct state {
     unsigned cur_stack, max_stack;
     unsigned saved_stack;
     unsigned assignments, calls;
+    std::vector<unsigned> local_assignments;
     unsigned num_loops, max_loops;
     Loop *loops;
     GState *gstate;
@@ -158,7 +160,7 @@ init_state(State * state, GState * gstate)
 }
 
 static void
-free_state(State state)
+free_state(const State &state)
 {
     myfree(state.fixups, M_CODE_GEN);
     myfree(state.bytes, M_BYTECODES);
@@ -531,6 +533,14 @@ emit_var_op(Opcode op, unsigned slot, State * state)
 static void generate_expr(Expr *, State *);
 
 static void
+record_local_assignment(unsigned slot, State *state)
+{
+    if (slot >= state->local_assignments.size())
+        state->local_assignments.resize(slot + 1);
+    state->local_assignments[slot] = state->assignments;
+}
+
+static void
 generate_map_list(Map_List *mappings, State *state)
 {
     emit_byte(OP_MAP_CREATE, state);
@@ -878,6 +888,7 @@ generate_expr(Expr * expr, State * state)
                 emit_byte(nreq, state);
                 emit_byte(rest, state);
                 for (sc = e->e.scatter; sc; sc = sc->next) {
+                    record_local_assignment(sc->id, state);
                     add_var_ref(sc->id, state);
                     if (sc->kind != SCAT_OPTIONAL)
                         add_pseudo_label(0, state);
@@ -906,11 +917,17 @@ generate_expr(Expr * expr, State * state)
                 Expr *base = push_lvalue(e, 0, state);
                 unsigned target_top = state->cur_stack;
                 generate_expr(expr->e.bin.rhs, state);
-                // Locals only change through assignments in this frame.
-                // Calls can also change a property through another frame.
-                if (indexed && (state->assignments != assignments
-                                || (base->kind == EXPR_PROP && state->calls != calls))) {
-                    bool property = base->kind == EXPR_PROP;
+                bool property = base->kind == EXPR_PROP;
+                bool refresh;
+                if (property) {
+                    // Another lvalue or a call can change the same property.
+                    refresh = state->assignments != assignments || state->calls != calls;
+                } else {
+                    unsigned slot = base->e.id;
+                    refresh = slot < state->local_assignments.size()
+                              && state->local_assignments[slot] > assignments;
+                }
+                if (indexed && refresh) {
                     emit_extended_byte(EOP_REFRESH_LVALUE, state);
 #ifdef BYTECODE_REDUCE_REF
                     if (!property) {
@@ -943,6 +960,7 @@ generate_expr(Expr * expr, State * state)
                             is_indexed = 1;
                             continue;
                         case EXPR_ID:
+                            record_local_assignment(e->e.id, state);
                             emit_var_op(OP_PUT, e->e.id, state);
                             break;
                         case EXPR_PROP:
