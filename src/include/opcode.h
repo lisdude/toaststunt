@@ -40,6 +40,8 @@ enum Extended_Opcode {
     EOP_BITOR, EOP_BITAND, EOP_BITXOR,
     EOP_BITSHL, EOP_BITSHR, EOP_COMPLEMENT,
 
+    EOP_REFRESH_LVALUE,
+
     Last_Extended_Opcode = 255
 };
 

@@ -16,6 +16,7 @@
  *****************************************************************************/
 
 #include <limits.h>
+#include <vector>
 
 #include "ast.h"
 #include "opcode.h"
@@ -83,6 +84,8 @@ struct state {
 #endif              /* BYTECODE_REDUCE_REF */
     unsigned cur_stack, max_stack;
     unsigned saved_stack;
+    unsigned assignments, calls;
+    std::vector<unsigned> local_assignments;
     unsigned num_loops, max_loops;
     Loop *loops;
     GState *gstate;
@@ -147,6 +150,7 @@ init_state(State * state, GState * gstate)
 
     state->cur_stack = state->max_stack = 0;
     state->saved_stack = UINT_MAX;
+    state->assignments = state->calls = 0;
 
     state->num_loops = 0;
     state->max_loops = 5;
@@ -156,7 +160,7 @@ init_state(State * state, GState * gstate)
 }
 
 static void
-free_state(State state)
+free_state(const State &state)
 {
     myfree(state.fixups, M_CODE_GEN);
     myfree(state.bytes, M_BYTECODES);
@@ -529,6 +533,14 @@ emit_var_op(Opcode op, unsigned slot, State * state)
 static void generate_expr(Expr *, State *);
 
 static void
+record_local_assignment(unsigned slot, State *state)
+{
+    if (slot >= state->local_assignments.size())
+        state->local_assignments.resize(slot + 1);
+    state->local_assignments[slot] = state->assignments;
+}
+
+static void
 generate_map_list(Map_List *mappings, State *state)
 {
     emit_byte(OP_MAP_CREATE, state);
@@ -562,35 +574,37 @@ generate_arg_list(Arg_List * args, State * state)
     }
 }
 
-static void
+static Expr *
 push_lvalue(Expr * expr, int indexed_above, State * state)
 {
+    Expr *base;
     unsigned old;
 
     switch (expr->kind) {
         case EXPR_RANGE:
-            push_lvalue(expr->e.range.base, 1, state);
+            base = push_lvalue(expr->e.range.base, 1, state);
             old = save_stack_top(state);
             generate_expr(expr->e.range.from, state);
             generate_expr(expr->e.range.to, state);
             restore_stack_top(old, state);
-            break;
+            return base;
         case EXPR_INDEX:
-            push_lvalue(expr->e.bin.lhs, 1, state);
+            base = push_lvalue(expr->e.bin.lhs, 1, state);
             old = save_stack_top(state);
             generate_expr(expr->e.bin.rhs, state);
             restore_stack_top(old, state);
             if (indexed_above) {
                 emit_byte(OP_PUSH_REF, state);
                 push_stack(1, state);
+                state->calls++;  /* May call a waif's index verb. */
             }
-            break;
+            return base;
         case EXPR_ID:
             if (indexed_above) {
                 emit_var_op(OP_PUSH, expr->e.id, state);
                 push_stack(1, state);
             }
-            break;
+            return expr;
         case EXPR_PROP:
             generate_expr(expr->e.bin.lhs, state);
             generate_expr(expr->e.bin.rhs, state);
@@ -598,10 +612,11 @@ push_lvalue(Expr * expr, int indexed_above, State * state)
                 emit_byte(OP_PUSH_GET_PROP, state);
                 push_stack(1, state);
             }
-            break;
+            return expr;
         default:
             panic_moo("Bad lvalue in PUSH_LVALUE()");
     }
+    return nullptr;
 }
 
 static void
@@ -770,6 +785,7 @@ generate_expr(Expr * expr, State * state)
             generate_expr(expr->e.bin.rhs, state);
             restore_stack_top(old, state);
             emit_byte(OP_REF, state);
+            state->calls++;  /* May call a waif's index verb. */
             pop_stack(1, state);
         }
         break;
@@ -817,11 +833,13 @@ generate_expr(Expr * expr, State * state)
             generate_arg_list(expr->e.list, state);
             break;
         case EXPR_CALL:
+            state->calls++;
             generate_arg_list(expr->e.call.args, state);
             emit_byte(OP_BI_FUNC_CALL, state);
             emit_byte(expr->e.call.func, state);
             break;
         case EXPR_VERB:
+            state->calls++;
             generate_expr(expr->e.verb.obj, state);
             generate_expr(expr->e.verb.verb, state);
             generate_arg_list(expr->e.verb.args, state);
@@ -848,6 +866,7 @@ generate_expr(Expr * expr, State * state)
         case EXPR_ASGN:
         {
             Expr *e = expr->e.bin.lhs;
+            state->assignments++;
 
             if (e->kind == EXPR_SCATTER) {
                 int nargs = 0, nreq = 0, rest = -1;
@@ -869,6 +888,7 @@ generate_expr(Expr * expr, State * state)
                 emit_byte(nreq, state);
                 emit_byte(rest, state);
                 for (sc = e->e.scatter; sc; sc = sc->next) {
+                    record_local_assignment(sc->id, state);
                     add_var_ref(sc->id, state);
                     if (sc->kind != SCAT_OPTIONAL)
                         add_pseudo_label(0, state);
@@ -889,10 +909,41 @@ generate_expr(Expr * expr, State * state)
                 define_label(done, state);
             } else {
                 int is_indexed = 0;
+                int refresh_done = -1;
+                bool indexed = e->kind == EXPR_RANGE || e->kind == EXPR_INDEX;
+                unsigned start = state->cur_stack;
+                unsigned assignments = state->assignments, calls = state->calls;
 
-                push_lvalue(e, 0, state);
+                Expr *base = push_lvalue(e, 0, state);
+                unsigned target_top = state->cur_stack;
                 generate_expr(expr->e.bin.rhs, state);
-                if (e->kind == EXPR_RANGE || e->kind == EXPR_INDEX)
+                bool property = base->kind == EXPR_PROP;
+                bool refresh;
+                if (property) {
+                    // Another lvalue or a call can change the same property.
+                    refresh = state->assignments != assignments || state->calls != calls;
+                } else {
+                    unsigned slot = base->e.id;
+                    refresh = slot < state->local_assignments.size()
+                              && state->local_assignments[slot] > assignments;
+                }
+                if (indexed && refresh) {
+                    emit_extended_byte(EOP_REFRESH_LVALUE, state);
+#ifdef BYTECODE_REDUCE_REF
+                    if (!property) {
+                        // A read of the local without a corresponding PUSH.
+                        state->pushmap[state->num_bytes - 1] = OP_G_PUSH;
+                        state->slotmap[state->num_bytes - 1] = base->e.id;
+                    }
+#endif
+                    emit_byte(property, state);
+                    if (!property)
+                        add_var_ref(base->e.id, state);
+                    add_stack_ref(start, state);
+                    add_stack_ref(target_top - (e->kind == EXPR_RANGE ? 3 : 2), state);
+                    refresh_done = add_label(state);
+                }
+                if (indexed)
                     emit_byte(OP_PUT_TEMP, state);
                 while (1) {
                     switch (e->kind) {
@@ -909,6 +960,7 @@ generate_expr(Expr * expr, State * state)
                             is_indexed = 1;
                             continue;
                         case EXPR_ID:
+                            record_local_assignment(e->e.id, state);
                             emit_var_op(OP_PUT, e->e.id, state);
                             break;
                         case EXPR_PROP:
@@ -924,6 +976,8 @@ generate_expr(Expr * expr, State * state)
                     emit_byte(OP_POP, state);
                     emit_byte(OP_PUSH_TEMP, state);
                 }
+                if (refresh_done != -1)
+                    define_label(refresh_done, state);
             }
         }
         break;
@@ -1320,6 +1374,9 @@ stmt_to_code(Stmt * stmt, GState * gstate)
                     /* PUSH n -> PUSH_CLEAR n, G_PUSH -> G_PUSH_CLEAR */
                     state.bytes[old_i] += OP_PUSH_CLEAR - OP_PUSH;
                 }
+            } else if (state.pushmap[old_i] == OP_G_PUSH) {
+                unsigned id = state.slotmap[old_i];
+                varbits[id / 32] &= ~(1U << (id % 32));
             } else if (state.trymap[old_i] > 0) {
                 /*
                  * Operations inside of exception handling blocks might not

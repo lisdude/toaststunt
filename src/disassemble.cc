@@ -119,7 +119,8 @@ struct mapping ext_mappings[] =
     {EOP_BITXOR, "BITXOR"},
     {EOP_BITSHL, "BITSHL"},
     {EOP_BITSHR, "BITSHR"},
-    {EOP_COMPLEMENT, "COMPLEMENT"}
+    {EOP_COMPLEMENT, "COMPLEMENT"},
+    {EOP_REFRESH_LVALUE, "REFRESH_LVALUE"}
 };
 
 static void
@@ -276,6 +277,18 @@ disassemble(Program * prog, Printer p, void *data)
                 stream_add_string(insn, COUNT_EOP_TICK(b) ? " * " : "   ");
                 stream_add_string(insn, ext_mnemonics[b]);
                 switch ((Extended_Opcode) b) {
+                    case EOP_REFRESH_LVALUE:
+                        if (ADD_BYTES(1))
+                            stream_add_string(insn, " property");
+                        else {
+                            a1 = ADD_BYTES(bc.numbytes_var_name);
+                            stream_printf(insn, " %s", NAMES(a1));
+                        }
+                        a1 = ADD_BYTES(bc.numbytes_stack);
+                        a2 = ADD_BYTES(bc.numbytes_stack);
+                        stream_printf(insn, " %d %d -> %d", a1, a2,
+                                      ADD_BYTES(bc.numbytes_label));
+                        break;
                     case EOP_WHILE_ID:
                         a1 = ADD_BYTES(bc.numbytes_var_name);
                         a2 = ADD_BYTES(bc.numbytes_label);

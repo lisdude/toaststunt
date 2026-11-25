@@ -534,6 +534,15 @@ finish_indexed_assignment:
                 Extended_Opcode eop = (Extended_Opcode)(*ptr++);
 
                 switch (eop) {
+                    case EOP_REFRESH_LVALUE:
+                        if (!READ_BYTES(1))
+                            READ_ID();
+                        READ_STACK();
+                        READ_STACK();
+                        READ_LABEL();
+                        if (op_hot)
+                            asgn_hot = 1;
+                        break;
                     case EOP_RANGESET:
                         /* Most of the lvalue has already been constructed on the
                          * stack.  Add the final subranging.

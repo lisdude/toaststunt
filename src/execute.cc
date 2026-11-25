@@ -788,6 +788,76 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass, bool
 #define bi_prop_protected(prop, progr) ((!is_wizard(progr)) && server_flag_option_cached(prop))
 #endif              /* IGNORE_PROP_PROTECTED */
 
+/* The caller has already checked the receiver and property name. */
+static enum error
+read_property(Var obj, const char *name, Objid progr, Var *value)
+{
+    if (obj.type == TYPE_WAIF)
+        return waif_get_prop(obj.v.waif, name, value, progr);
+
+    if (!is_valid(obj))
+        return E_INVIND;
+
+    db_prop_handle h = db_find_property(obj, name, value);
+    if (!h.ptr)
+        return E_PROPNF;
+
+    int built_in = db_is_property_built_in(h);
+    if (built_in ? bi_prop_protected(built_in, progr)
+                 : !db_property_allows(h, progr, PF_READ)) {
+        if (built_in)
+            free_var(*value);
+        return E_PERM;
+    }
+
+    if (!built_in)
+        *value = var_ref(*value);
+    return E_NONE;
+}
+
+/* The stack alternates containers and indices. OP_PUSH_REF can
+ * leave detached copies of the intermediate containers. Walk the current
+ * root using the saved indices, retaining each new container until
+ * INDEXSET/RANGESET folds the modified child back into its parent.
+ */
+static enum error
+refresh_lvalue(Var *path, const Var *leaf, Var current)
+{
+    for (; path < leaf; path += 2) {
+        Var index = path[1];
+        Var child;
+
+        if (current.type == TYPE_MAP) {
+            if (index.is_collection() && index.type != TYPE_ANON)
+                return E_TYPE;
+            if (!maplookup(current, index, &child, 0))
+                return E_RANGE;
+        } else if (current.type == TYPE_LIST) {
+            if (index.type != TYPE_INT)
+                return E_TYPE;
+            if (index.v.num <= 0 || index.v.num > current.v.list[0].v.num)
+                return E_RANGE;
+            child = current.v.list[index.v.num];
+        } else if (current.type == TYPE_WAIF && path->type == TYPE_WAIF
+                   && current.v.waif == path->v.waif) {
+            // The saved child came from this waif's index verb.
+            return E_NONE;
+        } else {
+            return E_TYPE;
+        }
+
+        Var replacement = var_ref(current);
+        free_var(*path);
+        *path = replacement;
+        current = child;
+    }
+
+    Var replacement = var_ref(current);
+    free_var(*path);
+    *path = replacement;
+    return E_NONE;
+}
+
 /**
   the main interpreter -- run()
   everything is just an entry point to it
@@ -1880,104 +1950,37 @@ finish_comparison:
 #endif              /* BYTECODE_REDUCE_REF */
 
             case OP_GET_PROP:
+            case OP_PUSH_GET_PROP:
             {
-                Var propname, obj, prop;
+                Var prop, propname = TOP_RT_VALUE, obj = NEXT_TOP_RT_VALUE;
+                if (op == OP_GET_PROP)
+                    rts -= 2;
 
-                propname = POP();   /* should be string */
-                obj = POP();        /* should be an object */
-                if (obj.type == TYPE_WAIF && propname.type == TYPE_STR) {
-                    enum error err;
-
-                    err = waif_get_prop(obj.v.waif, propname.v.str, &prop, RUN_ACTIV.progr);
-                    if (err == E_PROPNF) {
-                        /* Takes over our references to propname and obj. */
-                        PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
-                    }
-                    else {
-                        free_var(obj);
+                if ((obj.type != TYPE_WAIF && !obj.is_object()) || propname.type != TYPE_STR) {
+                    var_type incorrect_type = propname.type != TYPE_STR ? propname.type : obj.type;
+                    if (op == OP_GET_PROP) {
                         free_var(propname);
+                        free_var(obj);
+                    }
+                    PUSH_TYPE_MISMATCH(1, incorrect_type, incorrect_type == TYPE_STR ? TYPE_OBJ : TYPE_STR);
+                } else {
+                    enum error err = read_property(obj, propname.v.str, RUN_ACTIV.progr, &prop);
+                    if (err == E_PROPNF) {
+                        if (op == OP_PUSH_GET_PROP) {
+                            var_ref(propname);
+                            var_ref(obj);
+                        }
+                        PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
+                    } else {
+                        if (op == OP_GET_PROP) {
+                            free_var(propname);
+                            free_var(obj);
+                        }
                         if (err == E_NONE)
                             PUSH(prop);
                         else
                             PUSH_ERROR(err);
                     }
-                } else if (!obj.is_object() || propname.type != TYPE_STR) {
-                    var_type incorrect_type = propname.type != TYPE_STR ? propname.type : obj.type;
-                    free_var(propname);
-                    free_var(obj);
-                    PUSH_TYPE_MISMATCH(1, incorrect_type, incorrect_type == TYPE_STR ? TYPE_OBJ : TYPE_STR);
-                } else if (!is_valid(obj)) {
-                    free_var(propname);
-                    free_var(obj);
-                    PUSH_ERROR(E_INVIND);
-                } else {
-                    db_prop_handle h;
-                    int built_in;
-
-                    h = db_find_property(obj, propname.v.str, &prop);
-                    built_in = db_is_property_built_in(h);
-
-                    if (!h.ptr) {
-                        PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
-                    } else {
-                        free_var(propname);
-                        free_var(obj);
-
-                        if (built_in
-                                ? bi_prop_protected(built_in, RUN_ACTIV.progr)
-                                : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
-                            PUSH_ERROR(E_PERM);
-                        else if (built_in)
-                            PUSH(prop); /* it's already freshly allocated */
-                        else
-                            PUSH_REF(prop);
-                    }
-                }
-            }
-            break;
-
-            case OP_PUSH_GET_PROP:
-            {
-                Var propname, obj, prop;
-
-                propname = TOP_RT_VALUE;    /* should be string */
-                obj = NEXT_TOP_RT_VALUE;    /* should be an object */
-                if (obj.type == TYPE_WAIF && propname.type == TYPE_STR) {
-                    enum error err;
-
-                    err = waif_get_prop(obj.v.waif, propname.v.str, &prop, RUN_ACTIV.progr);
-                    if (err == E_NONE)
-                        PUSH(prop);
-                    else if (err == E_PROPNF) {
-                        var_ref(propname);
-                        var_ref(obj);
-                        PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
-                    }
-                    else
-                        PUSH_ERROR(err);
-                } else if (!obj.is_object() || propname.type != TYPE_STR) {
-                    var_type incorrect_type = propname.type != TYPE_STR ? propname.type : obj.type;
-                    PUSH_TYPE_MISMATCH(1, incorrect_type, incorrect_type == TYPE_STR ? TYPE_OBJ : TYPE_STR);
-                } else if (!is_valid(obj))
-                    PUSH_ERROR(E_INVIND);
-                else {
-                    db_prop_handle h;
-                    int built_in;
-
-                    h = db_find_property(obj, propname.v.str, &prop);
-                    built_in = db_is_property_built_in(h);
-                    if (!h.ptr) {
-                        var_ref(propname);
-                        var_ref(obj);
-                        PUSH_X_NOT_FOUND(E_PROPNF, propname, obj);
-                    } else if (built_in
-                               ? bi_prop_protected(built_in, RUN_ACTIV.progr)
-                               : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
-                        PUSH_ERROR(E_PERM);
-                    else if (built_in)
-                        PUSH(prop); /* it's already freshly allocated */
-                    else
-                        PUSH_REF(prop);
                 }
             }
             break;
@@ -2313,6 +2316,40 @@ else if (obj.type == TYPE_##t1) {           \
                 enum Extended_Opcode eop = (Extended_Opcode)(*bv);
                 bv++;
                 switch (eop) {
+                    case EOP_REFRESH_LVALUE:
+                    {
+                        bool property = READ_BYTES(bv, 1);
+                        unsigned id = property ? 0 : READ_BYTES(bv, bc.numbytes_var_name);
+                        Var *start = RUN_ACTIV.base_rt_stack + READ_BYTES(bv, bc.numbytes_stack);
+                        Var *leaf = RUN_ACTIV.base_rt_stack + READ_BYTES(bv, bc.numbytes_stack);
+                        unsigned done = READ_BYTES(bv, bc.numbytes_label);
+                        enum error err;
+                        if (property) {
+                            Var obj = start[0], name = start[1], current;
+                            if ((obj.type != TYPE_WAIF && !obj.is_object()) || name.type != TYPE_STR)
+                                err = E_TYPE;
+                            else
+                                err = read_property(obj, name.v.str, RUN_ACTIV.progr, &current);
+                            if (err == E_NONE) {
+                                err = refresh_lvalue(start + 2, leaf, current);
+                                free_var(current);
+                            }
+                        } else {
+                            Var current = RUN_ACTIV.rt_env[id];
+                            err = current.type == TYPE_NONE ? E_VARNF
+                                                            : refresh_lvalue(start, leaf, current);
+                        }
+                        if (err != E_NONE) {
+                            while (rts > start)
+                                free_var(POP());
+                            // Skip the writeback if the verb runs without the
+                            // debug bit and receives the error as a value.
+                            PUSH_ERROR(err);
+                            JUMP(done);
+                        }
+                    }
+                    break;
+
                     case EOP_RANGESET:
                     {
                         Var base, from, to, value;
